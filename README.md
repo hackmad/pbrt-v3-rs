@@ -1,7 +1,7 @@
 # Physically Based Rendering in Rust
 
 The motivation is to explore the algorithms outlined in the
-[book]((http://www.pbr-book.org/) while simultaneously learning a new language
+[book](http://www.pbr-book.org/) while simultaneously learning a new language
 like Rust.
 
 ## Releases
