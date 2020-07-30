@@ -1,7 +1,7 @@
 //! 2-D Points
 
 #![allow(dead_code)]
-use super::{abs, vector2, Axis, Float, Int, Point3, Vector2};
+use super::{abs, max, min, vector2, Axis, Float, Int, Point3, Vector2};
 use num_traits::{Num, Zero};
 use std::ops;
 
@@ -74,10 +74,7 @@ impl<T: Num> Point2<T> {
     where
         T: PartialOrd + Copy,
     {
-        point2(
-            if self.x.lt(&other.x) { self.x } else { other.x },
-            if self.y.lt(&other.y) { self.y } else { other.y },
-        )
+        point2(min(self.x, other.x), min(self.y, other.y))
     }
 
     /// Return the component-wise maximum coordinate values with another point.
@@ -87,10 +84,7 @@ impl<T: Num> Point2<T> {
     where
         T: PartialOrd + Copy,
     {
-        point2(
-            if self.x.gt(&other.x) { self.x } else { other.x },
-            if self.y.gt(&other.y) { self.y } else { other.y },
-        )
+        point2(max(self.x, other.x), max(self.y, other.y))
     }
 
     /// Returns a new point with permuted coordinates according to given axes.

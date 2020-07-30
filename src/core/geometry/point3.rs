@@ -1,7 +1,7 @@
 //! 3-D Points
 
 #![allow(dead_code)]
-use super::{abs, vector3, Axis, Float, Int, Vector3};
+use super::{abs, max, min, vector3, Axis, Float, Int, Vector3};
 use num_traits::{Num, Zero};
 use std::ops;
 
@@ -79,9 +79,9 @@ impl<T: Num> Point3<T> {
         T: PartialOrd + Copy,
     {
         point3(
-            if self.x.lt(&other.x) { self.x } else { other.x },
-            if self.y.lt(&other.y) { self.y } else { other.y },
-            if self.z.lt(&other.z) { self.z } else { other.z },
+            min(self.x, other.x),
+            min(self.y, other.y),
+            min(self.z, other.z),
         )
     }
 
@@ -93,9 +93,9 @@ impl<T: Num> Point3<T> {
         T: PartialOrd + Copy,
     {
         point3(
-            if self.x.gt(&other.x) { self.x } else { other.x },
-            if self.y.gt(&other.y) { self.y } else { other.y },
-            if self.z.gt(&other.z) { self.z } else { other.z },
+            max(self.x, other.x),
+            max(self.y, other.y),
+            max(self.z, other.z),
         )
     }
 

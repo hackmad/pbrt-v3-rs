@@ -45,6 +45,22 @@ where
     }
 }
 
+/// Union trait allows union between two objects.
+pub trait Union<T> {
+    /// Return the result of a union with an another object of type `T`.
+    ///
+    /// * `other` - The other object.
+    fn union(&self, other: &T) -> Self;
+}
+
+/// Intersect trait allows intersection between objects.
+pub trait Intersect<T> {
+    /// Return the result of an intersection with an another object of type `T`.
+    ///
+    /// * `other` - The other object.
+    fn intersect(&self, other: &T) -> Self;
+}
+
 /// Linearly interpolate between two points for parameters in [0, 1] and
 /// extrapolate for parameters outside that interval.
 ///

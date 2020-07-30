@@ -1,3 +1,4 @@
+extern crate float_cmp;
 extern crate num_traits;
 
 mod core;

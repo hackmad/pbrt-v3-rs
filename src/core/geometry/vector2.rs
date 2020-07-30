@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 use super::common::*;
-use super::{abs, Axis, Float, Int, Point2};
+use super::{abs, max, min, Axis, Float, Int, Point2};
 use num_traits::{Num, Zero};
 use std::ops;
 
@@ -119,10 +119,7 @@ impl<T: Num> Vector2<T> {
     where
         T: PartialOrd + Copy,
     {
-        vector2(
-            if self.x.lt(&other.x) { self.x } else { other.x },
-            if self.y.lt(&other.y) { self.y } else { other.y },
-        )
+        vector2(min(self.x, other.x), min(self.y, other.y))
     }
 
     /// Return the component-wise maximum coordinate values with another vector.
@@ -132,10 +129,7 @@ impl<T: Num> Vector2<T> {
     where
         T: PartialOrd + Copy,
     {
-        vector2(
-            if self.x.gt(&other.x) { self.x } else { other.x },
-            if self.y.gt(&other.y) { self.y } else { other.y },
-        )
+        vector2(max(self.x, other.x), max(self.y, other.y))
     }
 
     /// Returns a new vector with permuted coordinates according to given axes.

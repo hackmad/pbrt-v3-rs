@@ -44,6 +44,36 @@ where
     }
 }
 
+/// Returns the minimum of 2 numbers.
+///
+/// * `a` - First number.
+/// * `b` - Second number.
+pub fn min<T>(a: T, b: T) -> T
+where
+    T: Num + PartialOrd + Copy,
+{
+    if a < b {
+        a
+    } else {
+        b
+    }
+}
+
+/// Returns the maximum of 2 numbers.
+///
+/// * `a` - First number.
+/// * `b` - Second number.
+pub fn max<T>(a: T, b: T) -> T
+where
+    T: Num + PartialOrd + Copy,
+{
+    if a > b {
+        a
+    } else {
+        b
+    }
+}
+
 // ----------------------------------------------------------------------------
 // Tests
 // ----------------------------------------------------------------------------
