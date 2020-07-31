@@ -19,14 +19,14 @@ pub struct Bounds2<T: Num> {
     pub p_max: Point2<T>,
 }
 
-/// 2-D bounds containing `Float` points.
+/// 2-D bounding box containing `Float` points.
 pub type Bounds2f = Bounds2<Float>;
 
-/// 2-D bounds containing `Int` points.
+/// 2-D bounding box containing `Int` points.
 pub type Bounds2i = Bounds2<Int>;
 
-/// Creates a new 2-D bounds from 2 points. The minimum and maximum bounds are
-/// used for each coordinate axis.
+/// Creates a new 2-D bounding box from 2 points. The minimum and maximum bounds
+/// are used for each coordinate axis.
 ///
 /// * `p1`: First point.
 /// * `p2`: Second point.
@@ -37,9 +37,9 @@ pub fn bounds2<T: Num + PartialOrd + Copy>(p1: Point2<T>, p2: Point2<T>) -> Boun
     }
 }
 
-/// Returns a bounds where minimum and maximum bounds are maximum and minimum
-/// values respectively of the type's limits. This is so we can easily grow
-/// the bounds from nothing iteratively.
+/// Returns a 2-D bounding box where minimum and maximum bounds are maximum and
+/// minimum values respectively of the type's limits. This is so we can easily
+/// grow the boundng box from nothing iteratively.
 pub fn empty_bounds2<T: Num + Bounded + PartialOrd + Copy>() -> Bounds2<T> {
     // Don't call bounds2<T>() because it'll create the largest bounding box
     // by flipping p_min and p_max.
@@ -59,7 +59,7 @@ impl<T: Num + PartialOrd + Copy> From<Point2<T>> for Bounds2<T> {
 }
 
 impl<T: Num + Copy> Bounds2<T> {
-    /// Returns true if the bounds describes an empty box where all the
+    /// Returns true if the bounding box describes an empty box where any the
     /// components of any p_max are less than p_max.
     fn is_empty(&self) -> bool
     where
@@ -67,6 +67,7 @@ impl<T: Num + Copy> Bounds2<T> {
     {
         self.p_max.x < self.p_min.x || self.p_max.y < self.p_min.y
     }
+
     /// Returns the vector along the box diagonal from the minimum point to
     /// the maximum point.
     fn diagonal(&self) -> Vector2<T> {
@@ -215,9 +216,9 @@ impl<T: Num + Copy> Bounds2<T> {
 impl<T: Num> ops::Index<u8> for Bounds2<T> {
     type Output = Point2<T>;
 
-    /// Index the bounds.
+    /// Index the minimum and maximum bounds.
     ///
-    /// * `i` - A 2-D coordinate axis.
+    /// * `i` - 0 for minimum and 1 for maximum.
     fn index(&self, index: u8) -> &Self::Output {
         match index {
             0 => &self.p_min,
