@@ -87,6 +87,7 @@ macro_rules! prop_point3 {
 }
 
 mod bounds2;
+mod bounds3;
 mod common;
 mod coordinate_system;
 mod normal;
@@ -98,6 +99,7 @@ mod vector3;
 
 // Re-export
 pub use bounds2::*;
+pub use bounds3::*;
 pub use common::*;
 pub use coordinate_system::*;
 pub use normal::*;

@@ -2,8 +2,7 @@
 
 #![allow(dead_code)]
 use super::{
-    lerp, max, min, point3, vector3, Axis, Float, Int, Intersect, Point3, Point3f, Point3i, Union,
-    Vector3,
+    lerp, max, min, point3, vector3, Axis, Float, Int, Intersect, Point3, Point3f, Union, Vector3,
 };
 use num_traits::bounds::Bounded;
 use num_traits::{Num, Zero};
@@ -30,7 +29,7 @@ pub type Bounds3i = Bounds3<Int>;
 ///
 /// * `p1`: First point.
 /// * `p2`: Second point.
-pub fn bounds3<T: Num + PartialOrd + Copy>(p1: Point3<T>, p3: Point3<T>) -> Bounds3<T> {
+pub fn bounds3<T: Num + PartialOrd + Copy>(p1: Point3<T>, p2: Point3<T>) -> Bounds3<T> {
     Bounds3 {
         p_min: point3(min(p1.x, p2.x), min(p1.y, p2.y), min(p1.z, p2.z)),
         p_max: point3(max(p1.x, p2.x), max(p1.y, p2.y), max(p1.z, p2.z)),
@@ -83,7 +82,8 @@ impl<T: Num + Copy> Bounds3<T> {
             T::zero()
         } else {
             let d = self.diagonal();
-            2.0 * (d.x * d.y + d.x * d.z + d.y * d.z)
+            let h = d.x * d.y + d.x * d.z + d.y * d.z;
+            h + h
         }
     }
 
@@ -218,8 +218,8 @@ impl<T: Num + Copy> Bounds3<T> {
         // Don't call bounds2<T>() to prevent flipping p_min and p_max when
         // the input is empty box.
         Bounds3 {
-            p_min: self.p_min - vector2(delta, delta, delta),
-            p_max: self.p_max + vector2(delta, delta, delta),
+            p_min: self.p_min - vector3(delta, delta, delta),
+            p_max: self.p_max + vector3(delta, delta, delta),
         }
     }
 
