@@ -4,7 +4,9 @@
 use super::common::*;
 use super::{abs, max, min, Axis, Float, Int, Normal3, Point3};
 use num_traits::{Num, Zero};
-use std::ops;
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+};
 
 /// A 3-D vector containing numeric values.
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -27,9 +29,9 @@ pub type Vector3i = Vector3<Int>;
 
 /// Creates a new 3-D vector.
 ///
-/// * `x`: X-coordinate.
-/// * `y`: Y-coordinate.
-/// * `z`: Z-coordinate.
+/// * `x` - X-coordinate.
+/// * `y` - Y-coordinate.
+/// * `z` - Z-coordinate.
 pub fn vector3<T>(x: T, y: T, z: T) -> Vector3<T> {
     Vector3 { x, y, z }
 }
@@ -51,7 +53,7 @@ impl<T: Num> Vector3<T> {
     /// Returns the square of the vector's length.
     pub fn length_squared(&self) -> T
     where
-        T: ops::Mul<Output = T> + ops::Add<Output = T> + Copy,
+        T: Mul<Output = T> + Add<Output = T> + Copy,
     {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
@@ -75,7 +77,7 @@ impl<T: Num> Vector3<T> {
     /// Returns a new vector containing absolute values of the components.
     pub fn abs(&self) -> Vector3<T>
     where
-        T: ops::Neg<Output = T> + PartialOrd + Copy,
+        T: Neg<Output = T> + PartialOrd + Copy,
     {
         vector3(abs(self.x), abs(self.y), abs(self.z))
     }
@@ -189,74 +191,74 @@ impl<T: Num> Vector3<T> {
     }
 }
 
-impl<T: Num + ops::Neg<Output = T> + PartialOrd + Copy> Dot<Vector3<T>> for Vector3<T> {
+impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Vector3<T>> for Vector3<T> {
     type Output = T;
 
     /// Returns the dot product with another vector.
     ///
-    /// * `other` - The other vector.
+    /// * `other` -  The other vector.
     fn dot(&self, other: &Vector3<T>) -> T {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 }
 
-impl<T: Num + ops::Neg<Output = T> + PartialOrd + Copy> Dot<Normal3<T>> for Vector3<T> {
+impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Normal3<T>> for Vector3<T> {
     type Output = T;
 
     /// Returns the dot product with another normal.
     ///
-    /// * `other` - The other normal.
+    /// * `other` -  The other normal.
     fn dot(&self, other: &Normal3<T>) -> T {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 }
 
-impl<T: Num> ops::Add for Vector3<T> {
+impl<T: Num> Add for Vector3<T> {
     type Output = Vector3<T>;
 
     /// Adds the given vector and returns the result.
     ///
-    /// * `other` - The vector to add.
+    /// * `other` -  The vector to add.
     fn add(self, other: Self) -> Self::Output {
         vector3(self.x + other.x, self.y + other.y, self.z + other.z)
     }
 }
 
-impl<T: Num + Copy> ops::AddAssign for Vector3<T> {
+impl<T: Num + Copy> AddAssign for Vector3<T> {
     /// Performs the `+=` operation.
     ///
-    /// * `other` - The vector to add.
+    /// * `other` -  The vector to add.
     fn add_assign(&mut self, other: Self) {
         *self = vector3(self.x + other.x, self.y + other.y, self.z + other.z);
     }
 }
 
-impl<T: Num> ops::Sub for Vector3<T> {
+impl<T: Num> Sub for Vector3<T> {
     type Output = Vector3<T>;
 
     /// Subtracts the given vector and returns the result.
     ///
-    /// * `other` - The vector to subtract.
+    /// * `other` -  The vector to subtract.
     fn sub(self, other: Self) -> Self::Output {
         vector3(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 }
 
-impl<T: Num + Copy> ops::SubAssign for Vector3<T> {
+impl<T: Num + Copy> SubAssign for Vector3<T> {
     /// Performs the `-=` operation.
     ///
-    /// * `other` - The vector to subtract.
+    /// * `other` -  The vector to subtract.
     fn sub_assign(&mut self, other: Self) {
         *self = vector3(self.x - other.x, self.y - other.y, self.z - other.z);
     }
 }
 
-impl<T: Num + Copy> ops::Mul<T> for Vector3<T> {
+impl<T: Num + Copy> Mul<T> for Vector3<T> {
     type Output = Vector3<T>;
 
     /// Scale the vector.
     ///
-    /// * `f` - The scaling factor.
+    /// * `f` -  The scaling factor.
     fn mul(self, f: T) -> Self::Output {
         vector3(f * self.x, f * self.y, f * self.z)
     }
@@ -264,11 +266,11 @@ impl<T: Num + Copy> ops::Mul<T> for Vector3<T> {
 
 macro_rules! premul {
     ($t: ty) => {
-        impl ops::Mul<Vector3<$t>> for $t {
+        impl Mul<Vector3<$t>> for $t {
             type Output = Vector3<$t>;
             /// Scale the vector.
             ///
-            /// * `v` - The vector.
+            /// * `v` -  The vector.
             fn mul(self, v: Vector3<$t>) -> Vector3<$t> {
                 vector3(self * v.x, self * v.y, self * v.z)
             }
@@ -287,21 +289,21 @@ premul!(u16);
 premul!(u32);
 premul!(u64);
 
-impl<T: Num + Copy> ops::MulAssign<T> for Vector3<T> {
+impl<T: Num + Copy> MulAssign<T> for Vector3<T> {
     /// Scale and assign the result to the vector.
     ///
-    /// * `f` - The scaling factor.
+    /// * `f` -  The scaling factor.
     fn mul_assign(&mut self, f: T) {
         *self = vector3(f * self.x, f * self.y, f * self.z);
     }
 }
 
-impl<T: Num + Copy> ops::Div<T> for Vector3<T> {
+impl<T: Num + Copy> Div<T> for Vector3<T> {
     type Output = Vector3<T>;
 
     /// Scale the vector by 1/f.
     ///
-    /// * `f` - The scaling factor.
+    /// * `f` -  The scaling factor.
     fn div(self, f: T) -> Self::Output {
         debug_assert!(!f.is_zero());
 
@@ -310,10 +312,10 @@ impl<T: Num + Copy> ops::Div<T> for Vector3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::DivAssign<T> for Vector3<T> {
+impl<T: Num + Copy> DivAssign<T> for Vector3<T> {
     /// Scale the vector by 1/f and assign the result to the vector.
     ///
-    /// * `f` - The scaling factor.
+    /// * `f` -  The scaling factor.
     fn div_assign(&mut self, f: T) {
         debug_assert!(!f.is_zero());
 
@@ -322,7 +324,7 @@ impl<T: Num + Copy> ops::DivAssign<T> for Vector3<T> {
     }
 }
 
-impl<T: Num + ops::Neg<Output = T>> ops::Neg for Vector3<T> {
+impl<T: Num + Neg<Output = T>> Neg for Vector3<T> {
     type Output = Vector3<T>;
 
     /// Flip the vector's direction (scale by -1).
@@ -331,12 +333,12 @@ impl<T: Num + ops::Neg<Output = T>> ops::Neg for Vector3<T> {
     }
 }
 
-impl<T> ops::Index<Axis> for Vector3<T> {
+impl<T> Index<Axis> for Vector3<T> {
     type Output = T;
 
     /// Index the vector by an axis to get the immutable coordinate axis value.
     ///
-    /// * `axis` - A 2-D coordinate axis.
+    /// * `axis` -  A 2-D coordinate axis.
     fn index(&self, axis: Axis) -> &Self::Output {
         match axis {
             Axis::X => &self.x,
@@ -346,10 +348,10 @@ impl<T> ops::Index<Axis> for Vector3<T> {
     }
 }
 
-impl<T> ops::IndexMut<Axis> for Vector3<T> {
+impl<T> IndexMut<Axis> for Vector3<T> {
     /// Index the vector by an axis to get a mutable coordinate axis value.
     ///
-    /// * `axis` - A 2-D coordinate axis.
+    /// * `axis` -  A 2-D coordinate axis.
     fn index_mut(&mut self, axis: Axis) -> &mut Self::Output {
         match axis {
             Axis::X => &mut self.x,
@@ -362,7 +364,7 @@ impl<T> ops::IndexMut<Axis> for Vector3<T> {
 impl<T> From<Point3<T>> for Vector3<T> {
     /// Convert a 3-D point to a 3-D vector.
     ///
-    /// * `p` - 3-D point.
+    /// * `p` -  3-D point.
     fn from(p: Point3<T>) -> Self {
         vector3(p.x, p.y, p.z)
     }
@@ -371,7 +373,7 @@ impl<T> From<Point3<T>> for Vector3<T> {
 impl<T> From<Normal3<T>> for Vector3<T> {
     /// Convert a 3-D normal to a 3-D vector.
     ///
-    /// * `n` - 3-D normal.
+    /// * `n` -  3-D normal.
     fn from(n: Normal3<T>) -> Self {
         vector3(n.x, n.y, n.z)
     }

@@ -7,7 +7,7 @@ use super::{
 };
 use num_traits::bounds::Bounded;
 use num_traits::{Num, Zero};
-use std::ops;
+use std::ops::{DivAssign, Index, Mul};
 
 /// 2-D Axis Aligned Bounding Box.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -28,8 +28,8 @@ pub type Bounds2i = Bounds2<Int>;
 /// Creates a new 2-D bounding box from 2 points. The minimum and maximum bounds
 /// are used for each coordinate axis.
 ///
-/// * `p1`: First point.
-/// * `p2`: Second point.
+/// * `p1` - First point.
+/// * `p2` - Second point.
 pub fn bounds2<T: Num + PartialOrd + Copy>(p1: Point2<T>, p2: Point2<T>) -> Bounds2<T> {
     Bounds2 {
         p_min: point2(min(p1.x, p2.x), min(p1.y, p2.y)),
@@ -121,7 +121,7 @@ impl<T: Num + Copy> Bounds2<T> {
     /// * `p` - The point.
     fn offset(&self, p: &Point2<T>) -> Vector2<T>
     where
-        T: num_traits::Float + ops::DivAssign<T> + PartialOrd + Copy,
+        T: num_traits::Float + DivAssign<T> + PartialOrd + Copy,
     {
         let mut o = *p - self.p_min;
         if self.p_max.x > self.p_min.x {
@@ -159,7 +159,7 @@ impl<T: Num + Copy> Bounds2<T> {
     fn bounding_circle(&self) -> (Point2<T>, T)
     where
         T: num_traits::Float + Zero,
-        Float: ops::Mul<Point2<T>, Output = Point2<T>>,
+        Float: Mul<Point2<T>, Output = Point2<T>>,
     {
         let center = lerp(0.5, self.p_min, self.p_max);
         let radius = if self.contains(&center) {
@@ -176,7 +176,7 @@ impl<T: Num + Copy> Bounds2<T> {
     /// * `t` - The interpolation parameter in x and y directions.
     fn lerp(&self, t: &Point2f) -> Point2<T>
     where
-        Float: ops::Mul<T, Output = T>,
+        Float: Mul<T, Output = T>,
     {
         point2(
             lerp::<T>(t.x, self.p_min.x, self.p_max.x),
@@ -213,7 +213,7 @@ impl<T: Num + Copy> Bounds2<T> {
     }
 }
 
-impl<T: Num> ops::Index<u8> for Bounds2<T> {
+impl<T: Num> Index<u8> for Bounds2<T> {
     type Output = Point2<T>;
 
     /// Index the minimum and maximum bounds.
@@ -223,7 +223,7 @@ impl<T: Num> ops::Index<u8> for Bounds2<T> {
         match index {
             0 => &self.p_min,
             1 => &self.p_max,
-            _ => panic!("Invalid index for std::ops::Index on Bounds2<T>"),
+            _ => panic!("Invalid index for std::Index on Bounds2<T>"),
         }
     }
 }

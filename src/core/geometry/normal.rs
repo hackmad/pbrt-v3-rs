@@ -4,7 +4,9 @@
 use super::common::*;
 use super::{Axis, Float, Vector3};
 use num_traits::{Num, Zero};
-use std::ops;
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+};
 
 /// A 3-D normal containing numeric values.
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -24,9 +26,9 @@ pub type Normal3f = Normal3<Float>;
 
 /// Creates a new 3-D normal.
 ///
-/// * `x`: X-coordinate.
-/// * `y`: Y-coordinate.
-/// * `z`: Z-coordinate.
+/// * `x` - X-coordinate.
+/// * `y` - Y-coordinate.
+/// * `z` - Z-coordinate.
 pub fn normal3<T>(x: T, y: T, z: T) -> Normal3<T> {
     Normal3 { x, y, z }
 }
@@ -48,7 +50,7 @@ impl<T: Num> Normal3<T> {
     /// Returns the square of the normal's length.
     pub fn length_squared(&self) -> T
     where
-        T: ops::Mul<Output = T> + ops::Add<Output = T> + Copy,
+        T: Mul<Output = T> + Add<Output = T> + Copy,
     {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
@@ -70,7 +72,7 @@ impl<T: Num> Normal3<T> {
     }
 }
 
-impl<T: Num + ops::Neg<Output = T> + PartialOrd + Copy> Dot<Normal3<T>> for Normal3<T> {
+impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Normal3<T>> for Normal3<T> {
     type Output = T;
 
     /// Returns the dot product with another normal.
@@ -81,7 +83,7 @@ impl<T: Num + ops::Neg<Output = T> + PartialOrd + Copy> Dot<Normal3<T>> for Norm
     }
 }
 
-impl<T: Num + ops::Neg<Output = T> + PartialOrd + Copy> Dot<Vector3<T>> for Normal3<T> {
+impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Vector3<T>> for Normal3<T> {
     type Output = T;
 
     /// Returns the dot product with another vector.
@@ -94,9 +96,9 @@ impl<T: Num + ops::Neg<Output = T> + PartialOrd + Copy> Dot<Vector3<T>> for Norm
 
 /// Implement FaceForward trait which allows pointing vectors in the same
 /// hemisphere as another normal/vector.
-impl<T: Num + ops::Neg<Output = T> + PartialOrd + Copy> FaceForward<T, Vector3<T>> for Normal3<T> {}
+impl<T: Num + Neg<Output = T> + PartialOrd + Copy> FaceForward<T, Vector3<T>> for Normal3<T> {}
 
-impl<T: Num> ops::Add for Normal3<T> {
+impl<T: Num> Add for Normal3<T> {
     type Output = Normal3<T>;
 
     /// Adds the given normal and returns the result.
@@ -107,7 +109,7 @@ impl<T: Num> ops::Add for Normal3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::AddAssign for Normal3<T> {
+impl<T: Num + Copy> AddAssign for Normal3<T> {
     /// Performs the `+=` operation.
     ///
     /// * `other` - The normal to add.
@@ -116,7 +118,7 @@ impl<T: Num + Copy> ops::AddAssign for Normal3<T> {
     }
 }
 
-impl<T: Num> ops::Sub for Normal3<T> {
+impl<T: Num> Sub for Normal3<T> {
     type Output = Normal3<T>;
 
     /// Subtracts the given normal and returns the result.
@@ -127,7 +129,7 @@ impl<T: Num> ops::Sub for Normal3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::SubAssign for Normal3<T> {
+impl<T: Num + Copy> SubAssign for Normal3<T> {
     /// Performs the `-=` operation.
     ///
     /// * `other` - The normal to subtract.
@@ -136,7 +138,7 @@ impl<T: Num + Copy> ops::SubAssign for Normal3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::Mul<T> for Normal3<T> {
+impl<T: Num + Copy> Mul<T> for Normal3<T> {
     type Output = Normal3<T>;
 
     /// Scale the vector.
@@ -149,7 +151,7 @@ impl<T: Num + Copy> ops::Mul<T> for Normal3<T> {
 
 macro_rules! premul {
     ($t: ty) => {
-        impl ops::Mul<Normal3<$t>> for $t {
+        impl Mul<Normal3<$t>> for $t {
             type Output = Normal3<$t>;
             /// Scale the normal.
             ///
@@ -172,7 +174,7 @@ premul!(u16);
 premul!(u32);
 premul!(u64);
 
-impl<T: Num + Copy> ops::MulAssign<T> for Normal3<T> {
+impl<T: Num + Copy> MulAssign<T> for Normal3<T> {
     /// Scale and assign the result to the vector.
     ///
     /// * `f` - The scaling factor.
@@ -181,7 +183,7 @@ impl<T: Num + Copy> ops::MulAssign<T> for Normal3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::Div<T> for Normal3<T> {
+impl<T: Num + Copy> Div<T> for Normal3<T> {
     type Output = Normal3<T>;
 
     /// Scale the vector by 1/f.
@@ -195,7 +197,7 @@ impl<T: Num + Copy> ops::Div<T> for Normal3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::DivAssign<T> for Normal3<T> {
+impl<T: Num + Copy> DivAssign<T> for Normal3<T> {
     /// Scale the vector by 1/f and assign the result to the vector.
     ///
     /// * `f` - The scaling factor.
@@ -207,7 +209,7 @@ impl<T: Num + Copy> ops::DivAssign<T> for Normal3<T> {
     }
 }
 
-impl<T: Num + ops::Neg<Output = T>> ops::Neg for Normal3<T> {
+impl<T: Num + Neg<Output = T>> Neg for Normal3<T> {
     type Output = Normal3<T>;
 
     /// Flip the vector's direction (scale by -1).
@@ -216,7 +218,7 @@ impl<T: Num + ops::Neg<Output = T>> ops::Neg for Normal3<T> {
     }
 }
 
-impl<T> ops::Index<Axis> for Normal3<T> {
+impl<T> Index<Axis> for Normal3<T> {
     type Output = T;
 
     /// Index the vector by an axis to get the immutable coordinate axis value.
@@ -231,7 +233,7 @@ impl<T> ops::Index<Axis> for Normal3<T> {
     }
 }
 
-impl<T> ops::IndexMut<Axis> for Normal3<T> {
+impl<T> IndexMut<Axis> for Normal3<T> {
     /// Index the vector by an axis to get a mutable coordinate axis value.
     ///
     /// * `axis` - A 2-D coordinate axis.

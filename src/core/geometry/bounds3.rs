@@ -6,7 +6,7 @@ use super::{
 };
 use num_traits::bounds::Bounded;
 use num_traits::{Num, Zero};
-use std::ops;
+use std::ops::{DivAssign, Index, Mul};
 
 /// 3-D Axis Aligned Bounding Box.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -27,8 +27,8 @@ pub type Bounds3i = Bounds3<Int>;
 /// Creates a new 3-D bounding box from 2 points. The minimum and maximum bounds
 /// are used for each coordinate axis.
 ///
-/// * `p1`: First point.
-/// * `p2`: Second point.
+/// * `p1` - First point.
+/// * `p2` - Second point.
 pub fn bounds3<T: Num + PartialOrd + Copy>(p1: Point3<T>, p2: Point3<T>) -> Bounds3<T> {
     Bounds3 {
         p_min: point3(min(p1.x, p2.x), min(p1.y, p2.y), min(p1.z, p2.z)),
@@ -137,7 +137,7 @@ impl<T: Num + Copy> Bounds3<T> {
     /// * `p` - The point.
     fn offset(&self, p: &Point3<T>) -> Vector3<T>
     where
-        T: num_traits::Float + ops::DivAssign<T> + PartialOrd + Copy,
+        T: num_traits::Float + DivAssign<T> + PartialOrd + Copy,
     {
         let mut o = *p - self.p_min;
         if self.p_max.x > self.p_min.x {
@@ -182,7 +182,7 @@ impl<T: Num + Copy> Bounds3<T> {
     fn bounding_sphere(&self) -> (Point3<T>, T)
     where
         T: num_traits::Float + Zero,
-        Float: ops::Mul<Point3<T>, Output = Point3<T>>,
+        Float: Mul<Point3<T>, Output = Point3<T>>,
     {
         let center = lerp(0.5, self.p_min, self.p_max);
         let radius = if self.contains(&center) {
@@ -199,7 +199,7 @@ impl<T: Num + Copy> Bounds3<T> {
     /// * `t` - The interpolation parameter in x and y directions.
     fn lerp(&self, t: &Point3f) -> Point3<T>
     where
-        Float: ops::Mul<T, Output = T>,
+        Float: Mul<T, Output = T>,
     {
         point3(
             lerp::<T>(t.x, self.p_min.x, self.p_max.x),
@@ -238,7 +238,7 @@ impl<T: Num + Copy> Bounds3<T> {
     }
 }
 
-impl<T: Num> ops::Index<u8> for Bounds3<T> {
+impl<T: Num> Index<u8> for Bounds3<T> {
     type Output = Point3<T>;
 
     /// Index the minimum and maximum bounds.
@@ -248,7 +248,7 @@ impl<T: Num> ops::Index<u8> for Bounds3<T> {
         match index {
             0 => &self.p_min,
             1 => &self.p_max,
-            _ => panic!("Invalid index for std::ops::Index on Bounds3<T>"),
+            _ => panic!("Invalid index for std::Index on Bounds3<T>"),
         }
     }
 }

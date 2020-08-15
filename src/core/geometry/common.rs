@@ -2,11 +2,11 @@
 
 use super::{abs, Float};
 use num_traits::{Num, Zero};
-use std::ops;
+use std::ops::{Add, Mul, Neg};
 
 /// Dot product trait.
 pub trait Dot<V> {
-    type Output: Num + Zero + ops::Neg<Output = Self::Output> + PartialOrd + Copy;
+    type Output: Num + Zero + Neg<Output = Self::Output> + PartialOrd + Copy;
 
     /// Returns the dot product.
     ///
@@ -29,8 +29,8 @@ pub trait Dot<V> {
 /// example of type bounds and generics.
 pub trait FaceForward<T, V>
 where
-    T: Num + Zero + ops::Neg<Output = T> + PartialOrd + Copy,
-    Self: Dot<V, Output = T> + ops::Neg<Output = Self> + Sized + Copy,
+    T: Num + Zero + Neg<Output = T> + PartialOrd + Copy,
+    Self: Dot<V, Output = T> + Neg<Output = Self> + Sized + Copy,
 {
     /// If the vector/normal is not in the same hemisphere as another,
     /// return flipped vector/normal. Otherwise, return itself.
@@ -69,8 +69,8 @@ pub trait Intersect<T> {
 /// * `p1` - Point at t=1.
 pub fn lerp<P>(t: Float, p0: P, p1: P) -> P
 where
-    Float: ops::Mul<P, Output = P>,
-    P: ops::Add<P, Output = P>,
+    Float: Mul<P, Output = P>,
+    P: Add<P, Output = P>,
 {
     (1.0 - t) * p0 + t * p1
 }

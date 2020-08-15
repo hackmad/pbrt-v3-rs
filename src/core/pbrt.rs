@@ -3,10 +3,11 @@
 #![allow(dead_code)]
 
 use num_traits::Num;
-use std::ops;
+use std::ops::Neg;
 
 /// Use 32-bit precision for floating point numbers.
 pub type Float = f32;
+
 /// Default signed integer to 32-bit.
 pub type Int = i32;
 
@@ -22,6 +23,9 @@ pub const PI_OVER_TWO: Float = PI * 0.5;
 /// 2*PI (2π)
 pub const TWO_PI: Float = PI * 2.0;
 
+/// Machine Epsilon
+pub const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
+
 /// Axis enumeration
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Axis {
@@ -35,7 +39,7 @@ pub enum Axis {
 /// * `n` - The number.
 pub fn abs<T>(n: T) -> T
 where
-    T: Num + ops::Neg<Output = T> + PartialOrd + Copy,
+    T: Num + Neg<Output = T> + PartialOrd + Copy,
 {
     if n < T::zero() {
         -n
@@ -72,6 +76,13 @@ where
     } else {
         b
     }
+}
+
+/// Returns the error bound for adding n terms.
+///
+/// * `n` - Number of terms
+pub fn gamma(n: Int) -> Float {
+    (n as Float * MACHINE_EPSILON) / (1.0 - n as Float * MACHINE_EPSILON)
 }
 
 // ----------------------------------------------------------------------------

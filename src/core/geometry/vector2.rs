@@ -4,7 +4,9 @@
 use super::common::*;
 use super::{abs, max, min, Axis, Float, Int, Point2};
 use num_traits::{Num, Zero};
-use std::ops;
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+};
 
 /// A 2-D vector containing numeric values.
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -24,8 +26,8 @@ pub type Vector2i = Vector2<Int>;
 
 /// Creates a new 2-D vector.
 ///
-/// * `x`: X-coordinate.
-/// * `y`: Y-coordinate.
+/// * `x` - X-coordinate.
+/// * `y` - Y-coordinate.
 pub fn vector2<T>(x: T, y: T) -> Vector2<T> {
     Vector2 { x, y }
 }
@@ -47,7 +49,7 @@ impl<T: Num> Vector2<T> {
     /// Returns the square of the vector's length.
     pub fn length_squared(&self) -> T
     where
-        T: ops::Mul<Output = T> + ops::Add<Output = T> + Copy,
+        T: Mul<Output = T> + Add<Output = T> + Copy,
     {
         self.x * self.x + self.y * self.y
     }
@@ -71,7 +73,7 @@ impl<T: Num> Vector2<T> {
     /// Returns a new vector containing absolute values of the components.
     pub fn abs(&self) -> Vector2<T>
     where
-        T: ops::Neg<Output = T> + PartialOrd + Copy,
+        T: Neg<Output = T> + PartialOrd + Copy,
     {
         vector2(abs(self.x), abs(self.y))
     }
@@ -114,7 +116,7 @@ impl<T: Num> Vector2<T> {
 
     /// Return the component-wise minimum coordinate values with another vector.
     ///
-    /// * `other` - The other vector.
+    /// * `other` -  The other vector.
     pub fn min(&self, other: &Self) -> Self
     where
         T: PartialOrd + Copy,
@@ -124,7 +126,7 @@ impl<T: Num> Vector2<T> {
 
     /// Return the component-wise maximum coordinate values with another vector.
     ///
-    /// * `other` - The other vector.
+    /// * `other` -  The other vector.
     pub fn max(&self, other: &Self) -> Self
     where
         T: PartialOrd + Copy,
@@ -134,8 +136,8 @@ impl<T: Num> Vector2<T> {
 
     /// Returns a new vector with permuted coordinates according to given axes.
     ///
-    /// * `x` - Axis to use for the x-coordinate of returned vector.
-    /// * `y` - Axis to use for the y-coordinate of returned vector.
+    /// * `x` -  Axis to use for the x-coordinate of returned vector.
+    /// * `y` -  Axis to use for the y-coordinate of returned vector.
     pub fn permute(&self, x: Axis, y: Axis) -> Self
     where
         T: Copy,
@@ -144,63 +146,63 @@ impl<T: Num> Vector2<T> {
     }
 }
 
-impl<T: Num + ops::Neg<Output = T> + PartialOrd + Copy> Dot<Vector2<T>> for Vector2<T> {
+impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Vector2<T>> for Vector2<T> {
     type Output = T;
 
     /// Returns the dot product with another vector.
     ///
-    /// * `other` - The other vector.
+    /// * `other` -  The other vector.
     fn dot(&self, other: &Vector2<T>) -> T {
         self.x * other.x + self.y * other.y
     }
 }
 
-impl<T: Num> ops::Add for Vector2<T> {
+impl<T: Num> Add for Vector2<T> {
     type Output = Vector2<T>;
 
     /// Adds the given vector and returns the result.
     ///
-    /// * `other` - The vector to add.
+    /// * `other` -  The vector to add.
     fn add(self, other: Self) -> Self::Output {
         vector2(self.x + other.x, self.y + other.y)
     }
 }
 
-impl<T: Num + Copy> ops::AddAssign for Vector2<T> {
+impl<T: Num + Copy> AddAssign for Vector2<T> {
     /// Performs the `+=` operation.
     ///
-    /// * `other` - The vector to add.
+    /// * `other` -  The vector to add.
     fn add_assign(&mut self, other: Self) {
         *self = vector2(self.x + other.x, self.y + other.y);
     }
 }
 
-impl<T: Num> ops::Sub for Vector2<T> {
+impl<T: Num> Sub for Vector2<T> {
     type Output = Vector2<T>;
 
     /// Subtracts the given vector and returns the result.
     ///
-    /// * `other` - The vector to subtract.
+    /// * `other` -  The vector to subtract.
     fn sub(self, other: Self) -> Self::Output {
         vector2(self.x - other.x, self.y - other.y)
     }
 }
 
-impl<T: Num + Copy> ops::SubAssign for Vector2<T> {
+impl<T: Num + Copy> SubAssign for Vector2<T> {
     /// Performs the `-=` operation.
     ///
-    /// * `other` - The vector to subtract.
+    /// * `other` -  The vector to subtract.
     fn sub_assign(&mut self, other: Self) {
         *self = vector2(self.x - other.x, self.y - other.y);
     }
 }
 
-impl<T: Num + Copy> ops::Mul<T> for Vector2<T> {
+impl<T: Num + Copy> Mul<T> for Vector2<T> {
     type Output = Vector2<T>;
 
     /// Scale the vector.
     ///
-    /// * `f` - The scaling factor.
+    /// * `f` -  The scaling factor.
     fn mul(self, f: T) -> Self::Output {
         vector2(f * self.x, f * self.y)
     }
@@ -208,11 +210,11 @@ impl<T: Num + Copy> ops::Mul<T> for Vector2<T> {
 
 macro_rules! premul {
     ($t: ty) => {
-        impl ops::Mul<Vector2<$t>> for $t {
+        impl Mul<Vector2<$t>> for $t {
             type Output = Vector2<$t>;
             /// Scale the vector.
             ///
-            /// * `v` - The vector.
+            /// * `v` -  The vector.
             fn mul(self, v: Vector2<$t>) -> Vector2<$t> {
                 vector2(self * v.x, self * v.y)
             }
@@ -231,21 +233,21 @@ premul!(u16);
 premul!(u32);
 premul!(u64);
 
-impl<T: Num + Copy> ops::MulAssign<T> for Vector2<T> {
+impl<T: Num + Copy> MulAssign<T> for Vector2<T> {
     /// Scale and assign the result to the vector.
     ///
-    /// * `f` - The scaling factor.
+    /// * `f` -  The scaling factor.
     fn mul_assign(&mut self, f: T) {
         *self = vector2(f * self.x, f * self.y)
     }
 }
 
-impl<T: Num + Copy> ops::Div<T> for Vector2<T> {
+impl<T: Num + Copy> Div<T> for Vector2<T> {
     type Output = Vector2<T>;
 
     /// Scale the vector by 1/f.
     ///
-    /// * `f` - The scaling factor.
+    /// * `f` -  The scaling factor.
     fn div(self, f: T) -> Self::Output {
         debug_assert!(!f.is_zero());
 
@@ -254,10 +256,10 @@ impl<T: Num + Copy> ops::Div<T> for Vector2<T> {
     }
 }
 
-impl<T: Num + Copy> ops::DivAssign<T> for Vector2<T> {
+impl<T: Num + Copy> DivAssign<T> for Vector2<T> {
     /// Scale the vector by 1/f and assign the result to the vector.
     ///
-    /// * `f` - The scaling factor.
+    /// * `f` -  The scaling factor.
     fn div_assign(&mut self, f: T) {
         debug_assert!(!f.is_zero());
 
@@ -266,7 +268,7 @@ impl<T: Num + Copy> ops::DivAssign<T> for Vector2<T> {
     }
 }
 
-impl<T: Num + ops::Neg<Output = T>> ops::Neg for Vector2<T> {
+impl<T: Num + Neg<Output = T>> Neg for Vector2<T> {
     type Output = Vector2<T>;
 
     /// Flip the vector's direction (scale by -1).
@@ -275,22 +277,22 @@ impl<T: Num + ops::Neg<Output = T>> ops::Neg for Vector2<T> {
     }
 }
 
-impl<T> ops::Index<Axis> for Vector2<T> {
+impl<T> Index<Axis> for Vector2<T> {
     type Output = T;
 
     /// Index the vector by an axis to get the immutable coordinate axis value.
     ///
-    /// * `axis` - A 2-D coordinate axis.
+    /// * `axis` -  A 2-D coordinate axis.
     fn index(&self, axis: Axis) -> &Self::Output {
         match axis {
             Axis::X => &self.x,
             Axis::Y => &self.y,
-            _ => panic!("Invalid axis for std::ops::Index on Vector2<T>"),
+            _ => panic!("Invalid axis for std::Index on Vector2<T>"),
         }
     }
 }
 
-impl<T> ops::IndexMut<Axis> for Vector2<T> {
+impl<T> IndexMut<Axis> for Vector2<T> {
     /// Index the vector by an axis to get a mutable coordinate axis value.
     ///
     /// * `axis` - A 2-D coordinate axis.
@@ -298,7 +300,7 @@ impl<T> ops::IndexMut<Axis> for Vector2<T> {
         match axis {
             Axis::X => &mut self.x,
             Axis::Y => &mut self.y,
-            _ => panic!("Invalid axis for std::ops::IndexMut on Vector2<T>"),
+            _ => panic!("Invalid axis for std::IndexMut on Vector2<T>"),
         }
     }
 }

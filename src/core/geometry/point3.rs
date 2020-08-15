@@ -3,7 +3,9 @@
 #![allow(dead_code)]
 use super::{abs, max, min, vector3, Axis, Float, Int, Vector3};
 use num_traits::{Num, Zero};
-use std::ops;
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+};
 
 /// A 3-D point containing numeric values.
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -26,9 +28,9 @@ pub type Point3i = Point3<Int>;
 
 /// Creates a new 3-D point.
 ///
-/// * `x`: X-coordinate.
-/// * `y`: Y-coordinate.
-/// * `z`: Z-coordinate.
+/// * `x` - X-coordinate.
+/// * `y` - Y-coordinate.
+/// * `z` - Z-coordinate.
 pub fn point3<T>(x: T, y: T, z: T) -> Point3<T> {
     Point3 { x, y, z }
 }
@@ -50,7 +52,7 @@ impl<T: Num> Point3<T> {
     /// Returns a new point containing absolute values of the components.
     pub fn abs(&self) -> Point3<T>
     where
-        T: ops::Neg<Output = T> + PartialOrd + Copy,
+        T: Neg<Output = T> + PartialOrd + Copy,
     {
         point3(abs(self.x), abs(self.y), abs(self.z))
     }
@@ -132,7 +134,7 @@ impl<T: Num> Point3<T> {
     }
 }
 
-impl<T: Num> ops::Add for Point3<T> {
+impl<T: Num> Add for Point3<T> {
     type Output = Point3<T>;
 
     /// Adds the given point and returns the result.
@@ -143,7 +145,7 @@ impl<T: Num> ops::Add for Point3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::AddAssign for Point3<T> {
+impl<T: Num + Copy> AddAssign for Point3<T> {
     /// Performs the `+=` operation.
     ///
     /// * `other` - The point to add.
@@ -152,7 +154,7 @@ impl<T: Num + Copy> ops::AddAssign for Point3<T> {
     }
 }
 
-impl<T: Num> ops::Add<Vector3<T>> for Point3<T> {
+impl<T: Num> Add<Vector3<T>> for Point3<T> {
     type Output = Point3<T>;
 
     /// Offsets the point by the given vector.
@@ -163,7 +165,7 @@ impl<T: Num> ops::Add<Vector3<T>> for Point3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::AddAssign<Vector3<T>> for Point3<T> {
+impl<T: Num + Copy> AddAssign<Vector3<T>> for Point3<T> {
     /// Performs the `+=` operation.
     ///
     /// * `other` - The vector to add.
@@ -172,7 +174,7 @@ impl<T: Num + Copy> ops::AddAssign<Vector3<T>> for Point3<T> {
     }
 }
 
-impl<T: Num> ops::Sub for Point3<T> {
+impl<T: Num> Sub for Point3<T> {
     type Output = Vector3<T>;
 
     /// Subtracts the given point and returns the vector towards that point.
@@ -183,7 +185,7 @@ impl<T: Num> ops::Sub for Point3<T> {
     }
 }
 
-impl<T: Num> ops::Sub<Vector3<T>> for Point3<T> {
+impl<T: Num> Sub<Vector3<T>> for Point3<T> {
     type Output = Point3<T>;
 
     /// Subtracts the given vector and returns the result.
@@ -194,7 +196,7 @@ impl<T: Num> ops::Sub<Vector3<T>> for Point3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::SubAssign<Vector3<T>> for Point3<T> {
+impl<T: Num + Copy> SubAssign<Vector3<T>> for Point3<T> {
     /// Performs the `-=` operation.
     ///
     /// * `other` - The vector to subtract.
@@ -203,7 +205,7 @@ impl<T: Num + Copy> ops::SubAssign<Vector3<T>> for Point3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::Mul<T> for Point3<T> {
+impl<T: Num + Copy> Mul<T> for Point3<T> {
     type Output = Point3<T>;
 
     /// Scale the point.
@@ -216,7 +218,7 @@ impl<T: Num + Copy> ops::Mul<T> for Point3<T> {
 
 macro_rules! premul {
     ($t: ty) => {
-        impl ops::Mul<Point3<$t>> for $t {
+        impl Mul<Point3<$t>> for $t {
             type Output = Point3<$t>;
             /// Scale the point.
             ///
@@ -239,7 +241,7 @@ premul!(u16);
 premul!(u32);
 premul!(u64);
 
-impl<T: Num + Copy> ops::MulAssign<T> for Point3<T> {
+impl<T: Num + Copy> MulAssign<T> for Point3<T> {
     /// Scale and assign the result to the point.
     ///
     /// * `f` - The scaling factor.
@@ -248,7 +250,7 @@ impl<T: Num + Copy> ops::MulAssign<T> for Point3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::Div<T> for Point3<T> {
+impl<T: Num + Copy> Div<T> for Point3<T> {
     type Output = Point3<T>;
 
     /// Scale the point by 1/f.
@@ -262,7 +264,7 @@ impl<T: Num + Copy> ops::Div<T> for Point3<T> {
     }
 }
 
-impl<T: Num + Copy> ops::DivAssign<T> for Point3<T> {
+impl<T: Num + Copy> DivAssign<T> for Point3<T> {
     /// Scale the point by 1/f and assign the result to the point.
     ///
     /// * `f` - The scaling factor.
@@ -274,7 +276,7 @@ impl<T: Num + Copy> ops::DivAssign<T> for Point3<T> {
     }
 }
 
-impl<T: Num + ops::Neg<Output = T>> ops::Neg for Point3<T> {
+impl<T: Num + Neg<Output = T>> Neg for Point3<T> {
     type Output = Point3<T>;
 
     /// Flip the point's direction (scale by -1).
@@ -283,7 +285,7 @@ impl<T: Num + ops::Neg<Output = T>> ops::Neg for Point3<T> {
     }
 }
 
-impl<T> ops::Index<Axis> for Point3<T> {
+impl<T> Index<Axis> for Point3<T> {
     type Output = T;
 
     /// Index the point by an axis to get the immutable coordinate axis value.
@@ -298,7 +300,7 @@ impl<T> ops::Index<Axis> for Point3<T> {
     }
 }
 
-impl<T> ops::IndexMut<Axis> for Point3<T> {
+impl<T> IndexMut<Axis> for Point3<T> {
     /// Index the point by an axis to get a mutable coordinate axis value.
     ///
     /// * `axis` - A 3-D coordinate axis.
