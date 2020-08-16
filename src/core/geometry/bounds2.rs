@@ -61,7 +61,7 @@ impl<T: Num + PartialOrd + Copy> From<Point2<T>> for Bounds2<T> {
 impl<T: Num + Copy> Bounds2<T> {
     /// Returns true if the bounding box describes an empty box where any the
     /// components of any p_max are less than p_max.
-    fn is_empty(&self) -> bool
+    pub fn is_empty(&self) -> bool
     where
         T: PartialOrd,
     {
@@ -70,12 +70,12 @@ impl<T: Num + Copy> Bounds2<T> {
 
     /// Returns the vector along the box diagonal from the minimum point to
     /// the maximum point.
-    fn diagonal(&self) -> Vector2<T> {
+    pub fn diagonal(&self) -> Vector2<T> {
         self.p_max - self.p_min
     }
 
     /// Returns the area of the bounding box.
-    fn area(&self) -> T
+    pub fn area(&self) -> T
     where
         T: PartialOrd,
     {
@@ -90,7 +90,7 @@ impl<T: Num + Copy> Bounds2<T> {
     /// Returns the index of which of the axes is longest. This is useful, for
     /// example, when deciding which axis to subdivide when building some of
     /// the ray-intersection acceleration structures.
-    fn maximum_extent(&self) -> Axis
+    pub fn maximum_extent(&self) -> Axis
     where
         T: PartialOrd,
     {
@@ -105,7 +105,7 @@ impl<T: Num + Copy> Bounds2<T> {
     /// Returns true if extents of another bounding box overlap with this one.
     ///
     /// * `other` - The other bounding box.
-    fn overlaps(&self, other: &Self) -> bool
+    pub fn overlaps(&self, other: &Self) -> bool
     where
         T: PartialOrd,
     {
@@ -119,7 +119,7 @@ impl<T: Num + Copy> Bounds2<T> {
     /// point at the maximum corner has offset is `(1, 1)`.
     ///
     /// * `p` - The point.
-    fn offset(&self, p: &Point2<T>) -> Vector2<T>
+    pub fn offset(&self, p: &Point2<T>) -> Vector2<T>
     where
         T: num_traits::Float + DivAssign<T> + PartialOrd + Copy,
     {
@@ -136,7 +136,7 @@ impl<T: Num + Copy> Bounds2<T> {
     /// Returns true if a point is inside the bounding box.
     ///
     /// * `p` - The point.
-    fn contains(&self, p: &Point2<T>) -> bool
+    pub fn contains(&self, p: &Point2<T>) -> bool
     where
         T: PartialOrd,
     {
@@ -147,7 +147,7 @@ impl<T: Num + Copy> Bounds2<T> {
     /// is considered out of bounds. This is useful for integer-typed bounds.
     ///
     /// * `p` - The point.
-    fn contains_exclusive(&self, p: &Point2<T>) -> bool
+    pub fn contains_exclusive(&self, p: &Point2<T>) -> bool
     where
         T: PartialOrd,
     {
@@ -156,7 +156,7 @@ impl<T: Num + Copy> Bounds2<T> {
 
     /// Return the center and radius of a circle bounded on the corners of the
     /// bounding box.
-    fn bounding_circle(&self) -> (Point2<T>, T)
+    pub fn bounding_circle(&self) -> (Point2<T>, T)
     where
         T: num_traits::Float + Zero,
         Float: Mul<Point2<T>, Output = Point2<T>>,
@@ -174,7 +174,7 @@ impl<T: Num + Copy> Bounds2<T> {
     /// in each dimension.
     ///
     /// * `t` - The interpolation parameter in x and y directions.
-    fn lerp(&self, t: &Point2f) -> Point2<T>
+    pub fn lerp(&self, t: &Point2f) -> Point2<T>
     where
         Float: Mul<T, Output = T>,
     {
@@ -187,7 +187,7 @@ impl<T: Num + Copy> Bounds2<T> {
     /// Pad the bounding box by a constant factor in all dimensions.
     ///
     /// * `delta` - Padding amount.
-    fn expand(&self, delta: T) -> Bounds2<T>
+    pub fn expand(&self, delta: T) -> Bounds2<T>
     where
         T: PartialOrd,
     {
@@ -202,7 +202,7 @@ impl<T: Num + Copy> Bounds2<T> {
     /// Returns the coordinates of one of the four corners.
     ///
     /// * `corner` -
-    fn corner(&self, corner: u8) -> Point2<T>
+    pub fn corner(&self, corner: u8) -> Point2<T>
     where
         T: Copy,
     {

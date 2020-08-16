@@ -78,6 +78,26 @@ where
     }
 }
 
+/// Clamps a value x to [min, max].
+///
+/// See https://github.com/rust-lang/rust/issues/44095
+///
+/// * `x` - The number to clamp.
+/// * `min` - Minimum value.
+/// * `max` - Maximum value.
+pub fn clamp<T>(x: T, min: T, max: T) -> T
+where
+    T: Num + PartialOrd + Copy,
+{
+    if x < min {
+        min
+    } else if x > max {
+        max
+    } else {
+        x
+    }
+}
+
 /// Returns the error bound for adding n terms.
 ///
 /// * `n` - Number of terms

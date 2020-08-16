@@ -39,7 +39,7 @@ pub fn bounds3<T: Num + PartialOrd + Copy>(p1: Point3<T>, p2: Point3<T>) -> Boun
 /// Returns a 3-D bounding box where minimum and maximum bounds are maximum and
 /// minimum values respectively of the type's limits. This is so we can easily grow
 /// the bounding box from nothing iteratively.
-pub fn empty_bounds2<T: Num + Bounded + PartialOrd + Copy>() -> Bounds3<T> {
+pub fn empty_bounds3<T: Num + Bounded + PartialOrd + Copy>() -> Bounds3<T> {
     // Don't call bounds2<T>() because it'll create the largest bounding box
     // by flipping p_min and p_max.
     Bounds3 {
@@ -60,7 +60,7 @@ impl<T: Num + PartialOrd + Copy> From<Point3<T>> for Bounds3<T> {
 impl<T: Num + Copy> Bounds3<T> {
     /// Returns true if the bounds describes an empty box where any the
     /// components of any p_max are less than p_max.
-    fn is_empty(&self) -> bool
+    pub fn is_empty(&self) -> bool
     where
         T: PartialOrd,
     {
@@ -69,12 +69,12 @@ impl<T: Num + Copy> Bounds3<T> {
 
     /// Returns the vector along the box diagonal from the minimum point to
     /// the maximum point.
-    fn diagonal(&self) -> Vector3<T> {
+    pub fn diagonal(&self) -> Vector3<T> {
         self.p_max - self.p_min
     }
 
     /// Returns the surface area of the bounding box.
-    fn surface_area(&self) -> T
+    pub fn surface_area(&self) -> T
     where
         T: PartialOrd,
     {
@@ -88,7 +88,7 @@ impl<T: Num + Copy> Bounds3<T> {
     }
 
     /// Returns the volume of the bounding box.
-    fn volume(&self) -> T
+    pub fn volume(&self) -> T
     where
         T: PartialOrd,
     {
@@ -103,7 +103,7 @@ impl<T: Num + Copy> Bounds3<T> {
     /// Returns the index of which of the axes is longest. This is useful, for
     /// example, when deciding which axis to subdivide when building some of
     /// the ray-intersection acceleration structures.
-    fn maximum_extent(&self) -> Axis
+    pub fn maximum_extent(&self) -> Axis
     where
         T: PartialOrd,
     {
@@ -120,7 +120,7 @@ impl<T: Num + Copy> Bounds3<T> {
     /// Returns true if extents of another bounding box overlap with this one.
     ///
     /// * `other` - The other bounding box.
-    fn overlaps(&self, other: &Self) -> bool
+    pub fn overlaps(&self, other: &Self) -> bool
     where
         T: PartialOrd,
     {
@@ -135,7 +135,7 @@ impl<T: Num + Copy> Bounds3<T> {
     /// point at the maximum corner has offset is `(1, 1, 1)`.
     ///
     /// * `p` - The point.
-    fn offset(&self, p: &Point3<T>) -> Vector3<T>
+    pub fn offset(&self, p: &Point3<T>) -> Vector3<T>
     where
         T: num_traits::Float + DivAssign<T> + PartialOrd + Copy,
     {
@@ -155,7 +155,7 @@ impl<T: Num + Copy> Bounds3<T> {
     /// Returns true if a point is inside the bounding box.
     ///
     /// * `p` - The point.
-    fn contains(&self, p: &Point3<T>) -> bool
+    pub fn contains(&self, p: &Point3<T>) -> bool
     where
         T: PartialOrd,
     {
@@ -168,7 +168,7 @@ impl<T: Num + Copy> Bounds3<T> {
     /// is considered out of bounds. This is useful for integer-typed bounds.
     ///
     /// * `p` - The point.
-    fn contains_exclusive(&self, p: &Point3<T>) -> bool
+    pub fn contains_exclusive(&self, p: &Point3<T>) -> bool
     where
         T: PartialOrd,
     {
@@ -179,7 +179,7 @@ impl<T: Num + Copy> Bounds3<T> {
 
     /// Return the center and radius of a sphere bounded on the corners of the
     /// bounding box.
-    fn bounding_sphere(&self) -> (Point3<T>, T)
+    pub fn bounding_sphere(&self) -> (Point3<T>, T)
     where
         T: num_traits::Float + Zero,
         Float: Mul<Point3<T>, Output = Point3<T>>,
@@ -197,7 +197,7 @@ impl<T: Num + Copy> Bounds3<T> {
     /// in each dimension.
     ///
     /// * `t` - The interpolation parameter in x and y directions.
-    fn lerp(&self, t: &Point3f) -> Point3<T>
+    pub fn lerp(&self, t: &Point3f) -> Point3<T>
     where
         Float: Mul<T, Output = T>,
     {
@@ -211,7 +211,7 @@ impl<T: Num + Copy> Bounds3<T> {
     /// Pad the bounding box by a constant factor in all dimensions.
     ///
     /// * `delta` - Padding amount.
-    fn expand(&self, delta: T) -> Bounds3<T>
+    pub fn expand(&self, delta: T) -> Bounds3<T>
     where
         T: PartialOrd,
     {
@@ -226,7 +226,7 @@ impl<T: Num + Copy> Bounds3<T> {
     /// Returns the coordinates of one of the four corners.
     ///
     /// * `corner` -
-    fn corner(&self, corner: u8) -> Point3<T>
+    pub fn corner(&self, corner: u8) -> Point3<T>
     where
         T: Copy,
     {

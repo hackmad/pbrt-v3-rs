@@ -5,7 +5,7 @@ use super::{abs, Float};
 use std::ops::{Index, Mul};
 
 /// A 4x4 vector containing Float values.
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Matrix4x4 {
     /// Stores a 2-D array of Float
     pub m: [[Float; 4]; 4],
@@ -144,6 +144,13 @@ impl Matrix4x4 {
     }
 }
 
+impl Default for Matrix4x4 {
+    /// Returns the default as identity matrix.
+    fn default() -> Self {
+        IDENTITY_MATRIX
+    }
+}
+
 impl Mul<Matrix4x4> for Matrix4x4 {
     type Output = Matrix4x4;
 
@@ -151,7 +158,7 @@ impl Mul<Matrix4x4> for Matrix4x4 {
     ///
     /// * `other` - The other matrix
     fn mul(self, other: Matrix4x4) -> Self::Output {
-        let mut m = ZERO_MATRIX;
+        let mut m = Matrix4x4::default();
 
         for i in 0..4 {
             for j in 0..4 {

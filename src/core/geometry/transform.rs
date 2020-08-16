@@ -140,7 +140,7 @@ pub fn rotate_axis(theta: Float, a: &Vector3f) -> Transform {
     let r = theta.to_radians();
     let sin_theta = r.sin();
     let cos_theta = r.cos();
-    let mut m = IDENTITY_MATRIX;
+    let mut m = Matrix4x4::default();
 
     // Compute rotation of first basis vector
     m.m[0][0] = a.x * a.x + (1.0 - a.x * a.x) * cos_theta;
