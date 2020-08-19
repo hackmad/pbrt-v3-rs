@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 use super::common::*;
-use super::{Axis, Float, Vector3};
+use super::{abs, Axis, Float, Vector3};
 use num_traits::{Num, Zero};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
@@ -69,6 +69,14 @@ impl<T: Num> Normal3<T> {
         T: num_traits::Float,
     {
         *self / self.length()
+    }
+
+    /// Returns a new normal containing absolute values of the components.
+    pub fn abs(&self) -> Normal3<T>
+    where
+        T: Neg<Output = T> + PartialOrd + Copy,
+    {
+        normal3(abs(self.x), abs(self.y), abs(self.z))
     }
 }
 
