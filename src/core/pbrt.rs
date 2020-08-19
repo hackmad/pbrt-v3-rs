@@ -26,12 +26,25 @@ pub const TWO_PI: Float = PI * 2.0;
 /// Machine Epsilon
 pub const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
 
+/// Shadow Epsilon
+pub const SHADOW_EPSILON: Float = 0.0001;
+
 /// Axis enumeration
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Axis {
     X = 0,
     Y = 1,
     Z = 2,
+}
+impl From<usize> for Axis {
+    fn from(i: usize) -> Self {
+        match i {
+            0 => Axis::X,
+            1 => Axis::Y,
+            2 => Axis::Z,
+            _ => panic!("invalid axis value"),
+        }
+    }
 }
 
 /// Returns the absolute value of a number.
@@ -103,6 +116,77 @@ where
 /// * `n` - Number of terms
 pub fn gamma(n: Int) -> Float {
     (n as Float * MACHINE_EPSILON) / (1.0 - n as Float * MACHINE_EPSILON)
+}
+
+/// Convert a 32-bit floating point value to its constituent bits and
+/// return the representation as 32-bit unsigned integer.
+///
+/// * `f` - The 32-bit floating point number.
+pub fn float_to_bits(f: f32) -> u32 {
+    let result: u32;
+    unsafe {
+        let i: u32 = std::mem::transmute_copy(&f);
+        result = i;
+    }
+    result
+}
+
+/// Convert the bits of a 32-bit unsigned interger value and return the
+/// representation as a 32-bit floating point value.
+///
+/// * `i` - The 32-bit unsigned interger.
+pub fn bits_to_float(i: u32) -> f32 {
+    let result: f32;
+    unsafe {
+        let f: f32 = std::mem::transmute_copy(&i);
+        result = f;
+    }
+    result
+}
+
+/// Bump a floating point value up to the next greater representable floating
+/// point value.
+///
+/// * `v` - Floating point value.
+pub fn next_float_up(v: Float) -> Float {
+    // Handle infinity and negative zero for next_float_up
+    if v.is_infinite() && v > 0.0 {
+        return v;
+    }
+
+    let nv = if v == -0.0 { 0.0 } else { v };
+
+    // Advance v to next higher float
+    let mut ui = float_to_bits(nv);
+    if nv >= 0.0 {
+        ui += 1;
+    } else {
+        ui -= 1;
+    }
+
+    bits_to_float(ui)
+}
+
+/// Bump a floating point value up to the next lower representable floating
+/// point value.
+///
+/// * `v` - Floating point value.
+pub fn next_float_down(v: Float) -> Float {
+    // Handle infinity and positive zero for next_float_down
+    if v.is_infinite() && v < 0.0 {
+        return v;
+    }
+
+    // Advance v to next lower float
+    let nv = if v == 0.0 { -0.0 } else { v };
+    let mut ui = float_to_bits(v);
+    if nv > 0.0 {
+        ui -= 1;
+    } else {
+        ui += 1;
+    }
+
+    bits_to_float(ui)
 }
 
 // ----------------------------------------------------------------------------
