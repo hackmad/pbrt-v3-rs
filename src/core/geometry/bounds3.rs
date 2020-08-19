@@ -2,10 +2,12 @@
 
 #![allow(dead_code)]
 use super::{
-    lerp, max, min, point3, vector3, Axis, Float, Int, Intersect, Point3, Point3f, Union, Vector3,
+    gamma, lerp, max, min, point3, vector3, Axis, Float, Int, Intersect, Point3, Point3f, Ray,
+    Union, Vector3, Vector3f,
 };
 use num_traits::bounds::Bounded;
 use num_traits::{Num, Zero};
+use std::mem::swap;
 use std::ops::{DivAssign, Index, Mul};
 
 /// 3-D Axis Aligned Bounding Box.
@@ -235,6 +237,82 @@ impl<T: Num + Copy> Bounds3<T> {
         let y = if corner & 2 == 0 { 0 } else { 1 };
         let z = if corner & 4 == 0 { 0 } else { 1 };
         point3(self[x].x, self[y].y, self[z].z)
+    }
+
+    /// Returns the near and far ray parameters where it intersects the bounding
+    /// box. If no intersection occurs `None` is returned.
+    ///
+    /// * `ray` - The ray
+    pub fn intersect_p(&self, ray: &Ray) -> Option<(Float, Float)>
+    where
+        T: num_traits::Float + Copy + PartialOrd + Into<Float>,
+    {
+        let mut t0 = 0.0;
+        let mut t1 = ray.t_max;
+
+        for i in (0..3).map(|idx| Axis::from(idx)) {
+            // Update interval for ith bounding box slab
+            let inv_ray_dir = 1.0 / ray.d[i];
+
+            let mut t_near = (self.p_min[i].into() - ray.o[i]) * inv_ray_dir;
+            let mut t_far = (self.p_max[i].into() - ray.o[i]) * inv_ray_dir;
+
+            // Update parametric interval from slab intersection values
+            if t_near > t_far {
+                swap(&mut t_near, &mut t_far);
+            }
+
+            // Update tFar to ensure robust ray–bounds intersection
+            t0 = if t_near > t0 { t_near } else { t0 };
+            t1 = if t_far < t1 { t_far } else { t1 };
+            if t0 > t1 {
+                return None;
+            }
+        }
+
+        Some((t0, t1))
+    }
+
+    /// Uses the reciprocal of a rays direction and returns `true` if it
+    /// intersects the bounding box; otherwise `false`.
+    ///
+    /// * `ray`        - The ray.
+    /// * `inv_dir`    - Reciprocal of `ray`'s direction.
+    /// * `dir_is_neg` - Ray direction is negative.
+    #[rustfmt::skip]
+    pub fn intersect_p_inv(&self, ray: &Ray, inv_dir: &Vector3f, dir_is_neg: [u8; 3]) -> bool
+    where
+        T: num_traits::Float + Copy + PartialOrd + Into<Float>,
+    {
+        let bounds = *self;
+
+        // Check for ray intersection against and slabs
+        let mut t_min   = (bounds[    dir_is_neg[0]].x.into() - ray.o.x) * inv_dir.x;
+        let mut t_max   = (bounds[1 - dir_is_neg[0]].x.into() - ray.o.x) * inv_dir.x;
+        let t_y_min     = (bounds[    dir_is_neg[1]].y.into() - ray.o.y) * inv_dir.y;
+        let mut t_y_max = (bounds[1 - dir_is_neg[1]].y.into() - ray.o.y) * inv_dir.y;
+
+        // Update t_max and t_y_max to ensure robust bounds intersection
+        let gamma_3 = gamma(3);
+        t_max   *= 1.0 + 2.0 * gamma_3;
+        t_y_max *= 1.0 + 2.0 * gamma_3;
+
+        if t_min > t_y_max || t_y_min > t_max { return false; }
+
+        if t_y_min > t_min { t_min = t_y_min; }
+        if t_y_max < t_max { t_max = t_y_max; }
+
+        // Check for ray intersection against slab
+        let t_z_min = (bounds[    dir_is_neg[2]].z.into() - ray.o.z) * inv_dir.z;
+        let t_z_max = (bounds[1 - dir_is_neg[2]].z.into() - ray.o.z) * inv_dir.z;
+
+        // Update t_z_max to ensure robust bounds intersection
+        if t_min > t_z_max || t_z_min > t_max { return false; }
+
+        if t_z_min > t_min { t_min = t_z_min; }
+        if t_z_max < t_max { t_max = t_z_max; }
+
+        t_min < ray.t_max && t_max > 0.0
     }
 }
 
