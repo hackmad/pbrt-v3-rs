@@ -2,8 +2,10 @@ extern crate float_cmp;
 extern crate num_traits;
 
 mod core;
+mod shapes;
 
 use self::core::geometry::*;
+use self::shapes::*;
 
 fn main() {
     let mut v = zero_vector2();

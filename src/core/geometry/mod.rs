@@ -1,4 +1,5 @@
 //! Geometry
+use super::medium::*;
 use super::pbrt::*;
 
 // Define macros for property based testing.
@@ -91,6 +92,7 @@ mod bounds2;
 mod bounds3;
 mod common;
 mod coordinate_system;
+mod interaction;
 mod interval;
 mod matrix4x4;
 mod normal;
@@ -98,6 +100,8 @@ mod point2;
 mod point3;
 mod quaternion;
 mod ray;
+mod shape;
+mod surface_interaction;
 mod transform;
 mod vector2;
 mod vector3;
@@ -108,6 +112,7 @@ pub use bounds2::*;
 pub use bounds3::*;
 pub use common::*;
 pub use coordinate_system::*;
+pub use interaction::*;
 pub use interval::*;
 pub use matrix4x4::*;
 pub use normal::*;
@@ -115,6 +120,8 @@ pub use point2::*;
 pub use point3::*;
 pub use quaternion::*;
 pub use ray::*;
+pub use shape::*;
+pub use surface_interaction::*;
 pub use transform::*;
 pub use vector2::*;
 pub use vector3::*;

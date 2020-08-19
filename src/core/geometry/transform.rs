@@ -2,12 +2,13 @@
 
 #![allow(dead_code)]
 use super::{
-    abs, gamma, matrix4x4, normal3, point3, ray, ray_differential, ray_with_differentials, vector3,
-    Bounds3, Bounds3f, Dot, Float, Matrix4x4, Normal3f, Point3f, Ray, Union, Vector3f,
-    IDENTITY_MATRIX,
+    abs, gamma, matrix4x4, normal3, point3, ray, ray_differential, ray_with_differentials, shading,
+    surface_interaction, vector3, Bounds3, Bounds3f, Dot, FaceForward, Float, Matrix4x4, Normal3f,
+    Point3f, Ray, SurfaceInteraction, Union, Vector3, Vector3f, IDENTITY_MATRIX,
 };
 use std::cmp::{Eq, Ord, Ordering, PartialOrd};
 use std::ops::Mul;
+use std::sync::Arc;
 
 /// A transformation for mapping from points to points and vectors to vectors.
 #[derive(Copy, Clone, Debug, Default)]
@@ -18,6 +19,9 @@ pub struct Transform {
     /// The inverse transformation matrix.
     pub m_inv: Matrix4x4,
 }
+
+/// Atomic reference counted `Transform`.
+pub type ArcTransform = Arc<Transform>;
 
 /// Create a transformation from a 2-dimensional array representing a 4x4 matrix.
 ///
@@ -394,9 +398,9 @@ impl Transform {
                 self.transform_vector(&diff.rx_direction),
                 self.transform_vector(&diff.ry_direction),
             );
-            ray_with_differentials(o, d, t_max, r.time, td)
+            ray_with_differentials(o, d, t_max, r.time, td, r.medium.clone())
         } else {
-            ray(o, d, t_max, r.time)
+            ray(o, d, t_max, r.time, r.medium.clone())
         }
     }
 
@@ -425,12 +429,16 @@ impl Transform {
             );
 
             (
-                ray_with_differentials(o, d, r.t_max, r.time, td),
+                ray_with_differentials(o, d, r.t_max, r.time, td, r.medium.clone()),
                 o_error,
                 d_error,
             )
         } else {
-            (ray(o, d, r.t_max, r.time), o_error, d_error)
+            (
+                ray(o, d, r.t_max, r.time, r.medium.clone()),
+                o_error,
+                d_error,
+            )
         }
     }
 
@@ -466,6 +474,44 @@ impl Transform {
             .union(&self.transform_point(&point3(b.p_max.x, b.p_max.y, b.p_min.z)))
             .union(&self.transform_point(&point3(b.p_max.x, b.p_min.y, b.p_max.z)))
             .union(&self.transform_point(&point3(b.p_max.x, b.p_max.y, b.p_max.z)))
+    }
+
+    /// Applies transformation to a given surface interaction.
+    ///
+    /// * `si` - The surface interaction.
+    pub fn transform_surface_interaction(&self, si: &SurfaceInteraction) -> SurfaceInteraction {
+        // Transform p and p_error in SurfaceInteraction
+        let (p, p_error) = self.transform_point_with_error(&si.hit.p);
+
+        // Transform remaining members of SurfaceInteraction
+        let mut si = surface_interaction(
+            p,
+            p_error,
+            si.uv,
+            self.transform_vector(&si.hit.wo).normalize(),
+            self.transform_vector(&si.dpdu),
+            self.transform_vector(&si.dpdv),
+            self.transform_normal(&si.dndu),
+            self.transform_normal(&si.dndv),
+            si.hit.time,
+            si.shape.clone(),
+        );
+
+        // Transform n in SurfaceInteraction.hit
+        let n = self.transform_normal(&si.hit.n).normalize();
+        si.hit.n = n;
+
+        // Handle transformations for shading parameters..
+        si.shading = shading(
+            self.transform_normal(&si.shading.n).normalize(),
+            self.transform_vector(&si.shading.dpdu),
+            self.transform_vector(&si.shading.dpdv),
+            self.transform_normal(&si.shading.dndu),
+            self.transform_normal(&si.shading.dndv),
+        );
+        si.shading.n = si.shading.n.face_forward(&Vector3::from(n));
+
+        si
     }
 
     /// Returns `true` if the transformation changes the handedness of the
