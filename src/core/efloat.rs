@@ -123,8 +123,13 @@ impl EFloat {
     }
 
     /// Returns the relative error in the 64-bit precision value.
-    pub fn relative_error(&self) -> f64 {
-        ((self.v_precise - (self.v as f64)) / self.v_precise).abs()
+    pub fn relative_error(&self) -> f32 {
+        (((self.v_precise - (self.v as f64)) / self.v_precise).abs()) as f32
+    }
+
+    /// Returns the absolute error.
+    pub fn get_absolute_error(&self) -> f32 {
+        next_float_up(max((self.high - self.v).abs(), (self.v - self.low).abs()))
     }
 
     /// Returns the square root.

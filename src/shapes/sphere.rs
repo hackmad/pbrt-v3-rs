@@ -39,7 +39,7 @@ pub struct Sphere {
 /// * `world_to_object`     - The world to object transfomation.
 /// * `reverse_orientation` - Indicates whether their surface normal directions
 ///                           should be reversed from the default
-/// * `radius`              - Radius.
+/// * `radius`              - Radius of sphere.
 /// * `z_min`               - Minimum z-value to truncate sphere.
 /// * `z_max`               - Maximum z-value to truncate sphere.
 /// * `phi_max`             - Maximum spherical coordinate for Φ.
@@ -89,7 +89,7 @@ impl Shape for Sphere {
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
     fn intersect(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection> {
-        // Transform _Ray_ to object space
+        // Transform ray to object space
         let (ray, o_err, d_err) = self.data.world_to_object.transform_ray_with_error(r);
 
         // Compute quadratic sphere coefficients
@@ -131,6 +131,7 @@ impl Shape for Sphere {
             if p_hit.x == 0.0 && p_hit.y == 0.0 {
                 p_hit.x = 1e-5 * self.radius;
             }
+
             let mut phi = p_hit.y.atan2(p_hit.x);
             if phi < 0.0 {
                 phi += TWO_PI;
@@ -253,7 +254,7 @@ impl Shape for Sphere {
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
     fn intersect_p(&self, r: &Ray, _test_alpha_texture: bool) -> bool {
-        // Transform _Ray_ to object space
+        // Transform ray to object space
         let (ray, o_err, d_err) = self.data.world_to_object.transform_ray_with_error(r);
 
         // Compute quadratic sphere coefficients
@@ -295,6 +296,7 @@ impl Shape for Sphere {
             if p_hit.x == 0.0 && p_hit.y == 0.0 {
                 p_hit.x = 1e-5 * self.radius;
             }
+
             let mut phi = p_hit.y.atan2(p_hit.x);
             if phi < 0.0 {
                 phi += TWO_PI;

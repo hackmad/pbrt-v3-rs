@@ -1,43 +1,42 @@
-//! Cylinders
+//! Paraboloids
 
 #![allow(dead_code)]
 use super::{
-    bounds3, clamp, efloat, gamma, intersection, max, min, point2, point3, quadratic, shape_data,
+    bounds3, clamp, efloat, intersection, max, min, point2, point3, quadratic, shape_data,
     surface_interaction, vector3, ArcTransform, Bounds3f, Dot, EFloat, Float, Intersection,
     Normal3, Ray, Shape, ShapeData, TWO_PI,
 };
 use std::sync::Arc;
 
-/// A cylinder.
+/// A paraboloid centered on the z-axis.
 #[derive(Clone)]
-pub struct Cylinder {
+pub struct Paraboloid {
     /// Common shape data.
     pub data: ShapeData,
 
-    /// Radius of cylinder.
+    /// Radius of paraboloid.
     pub radius: Float,
 
-    /// Minimum z-value to truncate cylinder.
+    /// Minimum z-value to truncate paraboloid.
     pub z_min: Float,
 
-    /// Maximum z-value to truncate cylinder.
+    /// Maximum z-value to truncate paraboloid.
     pub z_max: Float,
 
-    /// Maximum angle Φ to truncate cylinder.
+    /// Maximum angle Φ to truncate paraboloid.
     pub phi_max: Float,
 }
 
-/// Create a new cylinder.
+/// Create a new paraboloid centered on the z-axis and base at origin [0, 0, 0].
 ///
 /// * `object_to_world`     - The object to world transfomation.
 /// * `world_to_object`     - The world to object transfomation.
 /// * `reverse_orientation` - Indicates whether their surface normal directions
 ///                           should be reversed from the default
-/// * `radius`              - Radius of cylinder.
-/// * `z_min`               - Minimum z-value to truncate cylinder.
-/// * `z_max`               - Maximum z-value to truncate cylinder.
-/// * `phi_max`             - Maximum angle Φ to truncate cylinder.
-pub fn cylinder(
+/// * `radius`              - Radius of paraboloid.
+/// * `z_min`               - Minimum z-value to truncate paraboloid.
+/// * `z_max`               - Maximum z-value to truncate paraboloid.
+pub fn paraboloid(
     object_to_world: ArcTransform,
     world_to_object: ArcTransform,
     reverse_orientation: bool,
@@ -45,10 +44,10 @@ pub fn cylinder(
     z_min: Float,
     z_max: Float,
     phi_max: Float,
-) -> Cylinder {
+) -> Paraboloid {
     let zmin = clamp(min(z_min, z_max), -radius, radius);
     let zmax = clamp(max(z_min, z_max), -radius, radius);
-    Cylinder {
+    Paraboloid {
         radius,
         z_min: zmin,
         z_max: zmax,
@@ -61,7 +60,7 @@ pub fn cylinder(
     }
 }
 
-impl Shape for Cylinder {
+impl Shape for Paraboloid {
     /// Returns the underlying shape data.
     fn get_data(&self) -> ShapeData {
         self.data.clone()
@@ -84,18 +83,22 @@ impl Shape for Cylinder {
         // Transform ray to object space
         let (ray, o_err, d_err) = self.data.world_to_object.transform_ray_with_error(r);
 
-        // Compute quadratic cylinder coefficients
+        // Compute quadratic paraboloid coefficients
 
         // Initialize EFloat ray coordinate values
         let ox = efloat(ray.o.x, o_err.x);
         let oy = efloat(ray.o.y, o_err.y);
+        let oz = efloat(ray.o.z, o_err.z);
 
         let dx = efloat(ray.d.x, d_err.x);
         let dy = efloat(ray.d.y, d_err.y);
+        let dz = efloat(ray.d.z, d_err.z);
 
-        let a = dx * dx + dy * dy;
-        let b = 2.0 * (dx * ox + dy * oy);
-        let c = ox * ox + oy * oy - EFloat::from(self.radius) * EFloat::from(self.radius);
+        let k = EFloat::from(self.z_max) / (EFloat::from(self.radius) * EFloat::from(self.radius));
+
+        let a = k * (dx * dx + dy * dy);
+        let b = 2.0 * k * (dx * ox + dy * oy) - dz;
+        let c = k * (ox * ox + oy * oy) - oz;
 
         // Solve quadratic equation for t values
         if let Some((t0, t1)) = quadratic(a, b, c) {
@@ -109,40 +112,31 @@ impl Shape for Cylinder {
                 t_shape_hit = t1;
                 if t_shape_hit.upper_bound() > ray.t_max {
                     return None;
-                }
+                };
             }
 
-            // Compute cylinder hit position and phi
+            // Compute paraboloid inverse mapping
             let mut p_hit = ray.at(Float::from(t_shape_hit));
-
-            // Refine cylinder intersection point
-            let hit_rad = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
-            p_hit.x *= self.radius / hit_rad;
-            p_hit.y *= self.radius / hit_rad;
 
             let mut phi = p_hit.y.atan2(p_hit.x);
             if phi < 0.0 {
                 phi += TWO_PI;
             }
 
-            // Test cylinder intersection against clipping parameters
+            // Test paraboloid intersection against clipping parameters
             if p_hit.z < self.z_min || p_hit.z > self.z_max || phi > self.phi_max {
                 if t_shape_hit == t1 {
-                    return None;
-                }
-                if t1.upper_bound() > ray.t_max {
                     return None;
                 }
 
                 t_shape_hit = t1;
 
-                // Compute cylinder hit position and phi
-                p_hit = ray.at(Float::from(t_shape_hit));
+                if t1.upper_bound() > ray.t_max {
+                    return None;
+                }
 
-                // Refine cylinder intersection point
-                let hit_rad = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
-                p_hit.x *= self.radius / hit_rad;
-                p_hit.y *= self.radius / hit_rad;
+                // Compute paraboloid inverse mapping
+                p_hit = ray.at(Float::from(t_shape_hit));
 
                 phi = p_hit.y.atan2(p_hit.x);
                 if phi < 0.0 {
@@ -154,18 +148,27 @@ impl Shape for Cylinder {
                 }
             }
 
-            // Find parametric representation of cylinder hit
+            // Find parametric representation of paraboloid hit
             let u = phi / self.phi_max;
             let v = (p_hit.z - self.z_min) / (self.z_max - self.z_min);
 
-            // Compute cylinder dpdu and dpdv
+            // Compute paraboloid dpdu and dpdv
             let dpdu = vector3(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
-            let dpdv = vector3(0.0, 0.0, self.z_max - self.z_min);
+            let dpdv = (self.z_max - self.z_min)
+                * vector3(p_hit.x / (2.0 * p_hit.z), p_hit.y / (2.0 * p_hit.z), 1.0);
 
-            // Compute cylinder dndu and dndv
+            // Compute paraboloid dndu and dndv
             let d2p_duu = -self.phi_max * self.phi_max * vector3(p_hit.x, p_hit.y, 0.0);
-            let d2p_duv = vector3(0.0, 0.0, 0.0);
-            let d2p_dvv = vector3(0.0, 0.0, 0.0);
+            let d2p_duv = (self.z_max - self.z_min)
+                * self.phi_max
+                * vector3(-p_hit.y / (2.0 * p_hit.z), p_hit.x / (2.0 * p_hit.z), 0.0);
+            let d2p_dvv = -(self.z_max - self.z_min)
+                * (self.z_max - self.z_min)
+                * vector3(
+                    p_hit.x / (4.0 * p_hit.z * p_hit.z),
+                    p_hit.y / (4.0 * p_hit.z * p_hit.z),
+                    0.0,
+                );
 
             // Compute normal
             let n = dpdu.cross(&dpdv).normalize();
@@ -189,8 +192,16 @@ impl Shape for Cylinder {
                 (g2 * f1 - f2 * g1) * inv_egf_1 * dpdu + (f2 * f1 - g2 * e1) * inv_egf_1 * dpdv,
             );
 
-            // Compute error bounds for cylinder intersection
-            let p_error = gamma(3) * vector3(p_hit.x, p_hit.y, 0.0).abs();
+            // Compute error bounds for paraboloid intersection
+            // Compute error bounds for intersection computed with ray equation
+            let px = ox + t_shape_hit * dx;
+            let py = oy + t_shape_hit * dy;
+            let pz = oz + t_shape_hit * dz;
+            let p_error = vector3(
+                px.get_absolute_error(),
+                py.get_absolute_error(),
+                pz.get_absolute_error(),
+            );
 
             // Initialize SurfaceInteraction from parametric information
             let si = surface_interaction(
@@ -223,18 +234,22 @@ impl Shape for Cylinder {
         // Transform ray to object space
         let (ray, o_err, d_err) = self.data.world_to_object.transform_ray_with_error(r);
 
-        // Compute quadratic cylinder coefficients
+        // Compute quadratic paraboloid coefficients
 
         // Initialize EFloat ray coordinate values
         let ox = efloat(ray.o.x, o_err.x);
         let oy = efloat(ray.o.y, o_err.y);
+        let oz = efloat(ray.o.z, o_err.z);
 
         let dx = efloat(ray.d.x, d_err.x);
         let dy = efloat(ray.d.y, d_err.y);
+        let dz = efloat(ray.d.z, d_err.z);
 
-        let a = dx * dx + dy * dy;
-        let b = 2.0 * (dx * ox + dy * oy);
-        let c = ox * ox + oy * oy - EFloat::from(self.radius) * EFloat::from(self.radius);
+        let k = EFloat::from(self.z_max) / (EFloat::from(self.radius) * EFloat::from(self.radius));
+
+        let a = k * (dx * dx + dy * dy);
+        let b = 2.0 * k * (dx * ox + dy * oy) - dz;
+        let c = k * (ox * ox + oy * oy) - oz;
 
         // Solve quadratic equation for t values
         if let Some((t0, t1)) = quadratic(a, b, c) {
@@ -248,40 +263,31 @@ impl Shape for Cylinder {
                 t_shape_hit = t1;
                 if t_shape_hit.upper_bound() > ray.t_max {
                     return false;
-                }
+                };
             }
 
-            // Compute cylinder hit position and phi
+            // Compute paraboloid inverse mapping
             let mut p_hit = ray.at(Float::from(t_shape_hit));
-
-            // Refine cylinder intersection point
-            let hit_rad = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
-            p_hit.x *= self.radius / hit_rad;
-            p_hit.y *= self.radius / hit_rad;
 
             let mut phi = p_hit.y.atan2(p_hit.x);
             if phi < 0.0 {
                 phi += TWO_PI;
             }
 
-            // Test cylinder intersection against clipping parameters
+            // Test paraboloid intersection against clipping parameters
             if p_hit.z < self.z_min || p_hit.z > self.z_max || phi > self.phi_max {
                 if t_shape_hit == t1 {
-                    return false;
-                }
-                if t1.upper_bound() > ray.t_max {
                     return false;
                 }
 
                 t_shape_hit = t1;
 
-                // Compute cylinder hit position and phi
-                p_hit = ray.at(Float::from(t_shape_hit));
+                if t1.upper_bound() > ray.t_max {
+                    return false;
+                }
 
-                // Refine cylinder intersection point
-                let hit_rad = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
-                p_hit.x *= self.radius / hit_rad;
-                p_hit.y *= self.radius / hit_rad;
+                // Compute paraboloid inverse mapping
+                p_hit = ray.at(Float::from(t_shape_hit));
 
                 phi = p_hit.y.atan2(p_hit.x);
                 if phi < 0.0 {
@@ -301,6 +307,9 @@ impl Shape for Cylinder {
 
     /// Returns the surface area of the shape in object space.
     fn area(&self) -> Float {
-        (self.z_max - self.z_min) * self.radius * self.phi_max
+        let radius2 = self.radius * self.radius;
+        let k = 4.0 * self.z_max / radius2;
+        (radius2 * radius2 * self.phi_max / (12.0 * self.z_max * self.z_max))
+            * ((k * self.z_max + 1.0).powf(1.5) - (k * self.z_min + 1.0).powf(1.5))
     }
 }
