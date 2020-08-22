@@ -52,7 +52,7 @@ pub fn disk(
         phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
         data: shape_data(
             object_to_world.clone(),
-            world_to_object.clone(),
+            Some(world_to_object.clone()),
             reverse_orientation,
         ),
     }
@@ -82,7 +82,12 @@ impl Shape for Disk {
         //
         // We could just use transform_ray() but there is minor adjustment in
         // it that adjusts t_max which is not in transform_ray_with_error().
-        let (ray, _o_err, _d_err) = self.data.world_to_object.transform_ray_with_error(r);
+        let (ray, _o_err, _d_err) = self
+            .data
+            .world_to_object
+            .clone()
+            .unwrap()
+            .transform_ray_with_error(r);
 
         // Compute plane intersection for disk.
 
@@ -154,7 +159,12 @@ impl Shape for Disk {
         //
         // We could just use transform_ray() but there is minor adjustment in
         // it that adjusts t_max which is not in transform_ray_with_error().
-        let (ray, _o_err, _d_err) = self.data.world_to_object.transform_ray_with_error(r);
+        let (ray, _o_err, _d_err) = self
+            .data
+            .world_to_object
+            .clone()
+            .unwrap()
+            .transform_ray_with_error(r);
 
         // Compute plane intersection for disk.
 

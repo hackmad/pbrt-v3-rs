@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 
 use num_traits::Num;
-use std::ops::Neg;
+use std::ops::{Add, Neg};
 
 /// Use 32-bit precision for floating point numbers.
 pub type Float = f32;
@@ -44,6 +44,12 @@ impl From<usize> for Axis {
             2 => Axis::Z,
             _ => panic!("invalid axis value"),
         }
+    }
+}
+impl Add<usize> for Axis {
+    type Output = Axis;
+    fn add(self, i: usize) -> Self::Output {
+        Axis::from((self as usize + i) % 3)
     }
 }
 

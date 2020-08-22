@@ -1,7 +1,10 @@
 //! Surface Interactions
 
 #![allow(dead_code)]
-use super::{hit, ArcShape, Float, Hit, Interaction, Normal3f, Point2f, Point3f, Vector3f};
+use super::{
+    hit, ArcShape, FaceForward, Float, Hit, Interaction, Normal3, Normal3f, Point2f, Point3f,
+    Vector3f,
+};
 
 /// SurfaceInteraction represents geometry of a particular point on a surface.
 #[derive(Clone)]
@@ -75,6 +78,41 @@ pub fn surface_interaction(
         dndv,
         shape: shape.clone(),
         shading: shading(n, dpdu, dpdv, dndu, dndv),
+    }
+}
+
+impl SurfaceInteraction {
+    /// Returns updated shading geometry.
+    ///
+    /// * `dpdu` - Parametric partial derivative of the point ∂p/∂u.
+    /// * `dpdv` - Parametric partial derivative of the point ∂p/∂v.
+    /// * `dndu` - Differential change ∂n/∂v in surface normal as we move along u.
+    /// * `dndv` - Differential change ∂n/∂v in surface normal as we move along v.
+    pub fn update_shading_geometry(
+        &self,
+        dpdu: Vector3f,
+        dpdv: Vector3f,
+        dndu: Normal3f,
+        dndv: Normal3f,
+        orientation_is_authoritative: bool,
+    ) -> (Normal3f, Shading) {
+        // Compute normal.
+        let mut hit_n = self.hit.n;
+        let mut shading_n = Normal3::from(dpdu.cross(&dpdv)).normalize();
+
+        if let Some(s) = self.shape.clone() {
+            if s.get_data().reverse_orientation ^ s.get_data().transform_swaps_handedness {
+                shading_n = -self.shading.n;
+                if orientation_is_authoritative {
+                    hit_n = hit_n.face_forward(&shading_n.into());
+                } else {
+                    shading_n = shading_n.face_forward(&hit_n.into());
+                }
+            }
+        }
+
+        // Initialize shading partial derivative values
+        (hit_n, shading(shading_n, dpdu, dpdv, dndu, dndv))
     }
 }
 

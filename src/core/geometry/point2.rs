@@ -287,6 +287,17 @@ impl<T> Index<Axis> for Point2<T> {
     }
 }
 
+impl<T> Index<usize> for Point2<T> {
+    type Output = T;
+
+    /// Index the point by an axis to get the immutable coordinate axis value.
+    ///
+    /// * `axis` -  A 2-D coordinate axis.
+    fn index(&self, axis: usize) -> &Self::Output {
+        &self[Axis::from(axis)]
+    }
+}
+
 impl<T> IndexMut<Axis> for Point2<T> {
     /// Index the point by an axis to get a mutable coordinate axis value.
     ///
@@ -297,6 +308,15 @@ impl<T> IndexMut<Axis> for Point2<T> {
             Axis::Y => &mut self.y,
             _ => panic!("Invalid axis for std::IndexMut on Point2<T>"),
         }
+    }
+}
+
+impl<T> IndexMut<usize> for Point2<T> {
+    /// Index the point by an axis to get a mutable coordinate axis value.
+    ///
+    /// * `axis` -  A 2-D coordinate axis.
+    fn index_mut(&mut self, axis: usize) -> &mut Self::Output {
+        &mut self[Axis::from(axis)]
     }
 }
 

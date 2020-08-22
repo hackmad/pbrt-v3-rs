@@ -338,7 +338,7 @@ impl<T> Index<Axis> for Vector3<T> {
 
     /// Index the vector by an axis to get the immutable coordinate axis value.
     ///
-    /// * `axis` -  A 2-D coordinate axis.
+    /// * `axis` -  A 3-D coordinate axis.
     fn index(&self, axis: Axis) -> &Self::Output {
         match axis {
             Axis::X => &self.x,
@@ -348,16 +348,36 @@ impl<T> Index<Axis> for Vector3<T> {
     }
 }
 
+impl<T> Index<usize> for Vector3<T> {
+    type Output = T;
+
+    /// Index the vector by an axis to get the immutable coordinate axis value.
+    ///
+    /// * `axis` -  A 3-D coordinate axis.
+    fn index(&self, axis: usize) -> &Self::Output {
+        &self[Axis::from(axis)]
+    }
+}
+
 impl<T> IndexMut<Axis> for Vector3<T> {
     /// Index the vector by an axis to get a mutable coordinate axis value.
     ///
-    /// * `axis` -  A 2-D coordinate axis.
+    /// * `axis` -  A 3-D coordinate axis.
     fn index_mut(&mut self, axis: Axis) -> &mut Self::Output {
         match axis {
             Axis::X => &mut self.x,
             Axis::Y => &mut self.y,
             Axis::Z => &mut self.z,
         }
+    }
+}
+
+impl<T> IndexMut<usize> for Vector3<T> {
+    /// Index the vector by an axis to get a mutable coordinate axis value.
+    ///
+    /// * `axis` -  A 3-D coordinate axis.
+    fn index_mut(&mut self, axis: usize) -> &mut Self::Output {
+        &mut self[Axis::from(axis)]
     }
 }
 

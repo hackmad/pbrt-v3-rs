@@ -31,16 +31,33 @@ impl<T: Float> From<Vector3<T>> for CoordinateSystem<T> {
     ///
     /// * `v1` - The first unit vector to form part of the coordinate system.
     fn from(v1: Vector3<T>) -> Self {
-        let v2 = if abs(v1.x) > abs(v1.y) {
-            vector3(-v1.z, T::zero(), v1.x) / (v1.x * v1.x + v1.z * v1.z).sqrt()
-        } else {
-            vector3(T::zero(), v1.z, -v1.y) / (v1.y * v1.y + v1.z * v1.z).sqrt()
-        };
-
-        let v3 = v1.cross(&v2);
-
+        let (v2, v3) = get_coordinate_system_vectors(&v1);
         CoordinateSystem { v1, v2, v3 }
     }
+}
+
+/// Create a new coordinate system from a single unit vector and return
+/// the new vectors.
+///
+/// A second vector is constructing from the first by zeroing one of the
+/// coordinates and swapping the remaining 2 and negating one of them. This
+/// vector is also normalized.
+///
+/// The third vector is the cross product of the give vector and the second
+/// vector. Since both these are normalized, the third vector will be a unit
+/// vector.
+///
+/// * `v1` - The first unit vector to form part of the coordinate system.
+pub fn get_coordinate_system_vectors<T: Float>(v1: &Vector3<T>) -> (Vector3<T>, Vector3<T>) {
+    let v2 = if abs(v1.x) > abs(v1.y) {
+        vector3(-v1.z, T::zero(), v1.x) / (v1.x * v1.x + v1.z * v1.z).sqrt()
+    } else {
+        vector3(T::zero(), v1.z, -v1.y) / (v1.y * v1.y + v1.z * v1.z).sqrt()
+    };
+
+    let v3 = v1.cross(&v2);
+
+    (v2, v3)
 }
 
 // ----------------------------------------------------------------------------

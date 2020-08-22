@@ -55,7 +55,7 @@ pub fn cylinder(
         phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
         data: shape_data(
             object_to_world.clone(),
-            world_to_object.clone(),
+            Some(world_to_object.clone()),
             reverse_orientation,
         ),
     }
@@ -82,7 +82,12 @@ impl Shape for Cylinder {
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
     fn intersect(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection> {
         // Transform ray to object space
-        let (ray, o_err, d_err) = self.data.world_to_object.transform_ray_with_error(r);
+        let (ray, o_err, d_err) = self
+            .data
+            .world_to_object
+            .clone()
+            .unwrap()
+            .transform_ray_with_error(r);
 
         // Compute quadratic cylinder coefficients
 
@@ -221,7 +226,12 @@ impl Shape for Cylinder {
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
     fn intersect_p(&self, r: &Ray, _test_alpha_texture: bool) -> bool {
         // Transform ray to object space
-        let (ray, o_err, d_err) = self.data.world_to_object.transform_ray_with_error(r);
+        let (ray, o_err, d_err) = self
+            .data
+            .world_to_object
+            .clone()
+            .unwrap()
+            .transform_ray_with_error(r);
 
         // Compute quadratic cylinder coefficients
 

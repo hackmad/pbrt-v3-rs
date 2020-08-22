@@ -68,7 +68,7 @@ pub struct ShapeData {
     pub object_to_world: ArcTransform,
 
     /// The world to object transfomation.
-    pub world_to_object: ArcTransform,
+    pub world_to_object: Option<ArcTransform>,
 
     /// Indicates whether their surface normal directions should be reversed
     /// from the default
@@ -87,7 +87,7 @@ pub struct ShapeData {
 ///                           should be reversed from the default
 pub fn shape_data(
     object_to_world: ArcTransform,
-    world_to_object: ArcTransform,
+    world_to_object: Option<ArcTransform>,
     reverse_orientation: bool,
 ) -> ShapeData {
     ShapeData {
