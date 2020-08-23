@@ -34,7 +34,9 @@ pub trait Shape {
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_textu re` - Perform alpha texture tests.
-    fn intersect_p(&self, r: &Ray, test_alpha_texture: bool) -> bool;
+    fn intersect_p(&self, r: &Ray, test_alpha_texture: bool) -> bool {
+        !self.intersect(r, test_alpha_texture).is_none()
+    }
 
     /// Returns the surface area of the shape in object space.
     fn area(&self) -> Float;

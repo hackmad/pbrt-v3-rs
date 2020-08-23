@@ -195,6 +195,20 @@ pub fn next_float_down(v: Float) -> Float {
     bits_to_float(ui)
 }
 
+/// Returns log base 2 of a value.
+///
+/// * `v` - The floating point value.
+pub fn log2(v: Float) -> u32 {
+    if v < 1.0 {
+        0
+    } else {
+        let bits = float_to_bits(v);
+        let r = (bits >> 23) - 127;
+        let t = if bits & (1 << 22) == 0 { 0 } else { 1 };
+        r + t
+    }
+}
+
 // ----------------------------------------------------------------------------
 // Tests
 // ----------------------------------------------------------------------------

@@ -2,10 +2,9 @@
 
 #![allow(dead_code)]
 use super::{
-    empty_bounds3, gamma, get_coordinate_system_vectors, intersection, normal3, point2, shape_data,
-    surface_interaction, vector3, ArcShape, ArcTexture, ArcTransform, Bounds3f, Float,
-    Intersection, Normal3, Normal3f, Point2f, Point3f, Ray, Shape, ShapeData, Union, Vector3,
-    Vector3f,
+    coordinate_system, empty_bounds3, gamma, intersection, point2, shape_data, surface_interaction,
+    vector3, ArcShape, ArcTexture, ArcTransform, Bounds3f, Float, Intersection, Normal3, Normal3f,
+    Point2f, Point3f, Ray, Shape, ShapeData, Union, Vector3, Vector3f,
 };
 use std::mem::size_of;
 use std::sync::Arc;
@@ -291,8 +290,8 @@ impl Shape for Triangle {
         let dp12 = p1 - p2;
         let determinant = duv02[0] * duv12[1] - duv02[1] * duv12[0];
         let degenerate_uv = determinant.abs() < 1e-8;
-        let mut dpdu = vector3(0.0, 0.0, 0.0);
-        let mut dpdv = vector3(0.0, 0.0, 0.0);
+        let mut dpdu = Vector3f::default();
+        let mut dpdv = Vector3f::default();
         if !degenerate_uv {
             let invdet = 1.0 / determinant;
             dpdu = (duv12[1] * dp02 - duv02[1] * dp12) * invdet;
@@ -305,9 +304,7 @@ impl Shape for Triangle {
                 // The triangle is actually degenerate; the intersection is bogus.
                 return None;
             }
-            let (dpdu2, dpdv2) = get_coordinate_system_vectors(&ng.normalize());
-            dpdu = dpdu2;
-            dpdv = dpdv2;
+            coordinate_system(&ng.normalize(), &mut dpdu, &mut dpdv);
         }
 
         // Compute error bounds for triangle intersection.
@@ -324,13 +321,13 @@ impl Shape for Triangle {
         if test_alpha_texture && !self.mesh.alpha_mask.is_none() {
             let isect_local = surface_interaction(
                 p_hit,
-                vector3(0.0, 0.0, 0.0),
+                Vector3f::default(),
                 uv_hit,
                 -r.d,
                 dpdu,
                 dpdv,
-                normal3(0.0, 0.0, 0.0),
-                normal3(0.0, 0.0, 0.0),
+                Normal3f::default(),
+                Normal3f::default(),
                 r.time,
                 Some(Arc::new(self.clone())),
             );
@@ -349,8 +346,8 @@ impl Shape for Triangle {
             -r.d,
             dpdu,
             dpdv,
-            normal3(0.0, 0.0, 0.0),
-            normal3(0.0, 0.0, 0.0),
+            Normal3f::default(),
+            Normal3f::default(),
             r.time,
             Some(Arc::new(self.clone())),
         );
@@ -396,9 +393,7 @@ impl Shape for Triangle {
                 ts = ts.normalize();
                 ss = ts.cross(&ns.into());
             } else {
-                let (ss2, ts2) = get_coordinate_system_vectors(&ns.into());
-                ts = ts2;
-                ss = ss2;
+                coordinate_system(&ns.into(), &mut ss, &mut ts);
             }
 
             // Compute dndu and dndv for triangle shading geometry.
@@ -422,9 +417,11 @@ impl Shape for Triangle {
                         &Vector3::from(self.mesh.n[self.v + 1] - self.mesh.n[self.v]),
                     );
                     if dn.length_squared() == 0.0 {
-                        (normal3(0.0, 0.0, 0.0), normal3(0.0, 0.0, 0.0))
+                        (Normal3f::default(), Normal3f::default())
                     } else {
-                        let (dndu2, dndv2) = get_coordinate_system_vectors(&dn.into());
+                        let mut dndu2 = Vector3f::default();
+                        let mut dndv2 = Vector3f::default();
+                        coordinate_system(&dn, &mut dndu2, &mut dndv2);
                         (Normal3::from(dndu2), Normal3::from(dndv2))
                     }
                 } else {
@@ -435,7 +432,7 @@ impl Shape for Triangle {
                     )
                 }
             } else {
-                (normal3(0.0, 0.0, 0.0), normal3(0.0, 0.0, 0.0))
+                (Normal3f::default(), Normal3f::default())
             };
 
             if self.get_data().reverse_orientation {
@@ -575,8 +572,8 @@ impl Shape for Triangle {
             let determinant = duv02[0] * duv12[1] - duv02[1] * duv12[0];
             let degenerate_uv = determinant.abs() < 1e-8;
 
-            let mut dpdu = vector3(0.0, 0.0, 0.0);
-            let mut dpdv = vector3(0.0, 0.0, 0.0);
+            let mut dpdu = Vector3f::default();
+            let mut dpdv = Vector3f::default();
             if !degenerate_uv {
                 let invdet = 1.0 / determinant;
                 dpdu = (duv12[1] * dp02 - duv02[1] * dp12) * invdet;
@@ -589,9 +586,7 @@ impl Shape for Triangle {
                     // The triangle is actually degenerate; the intersection is bogus.
                     return false;
                 }
-                let (dpdu2, dpdv2) = get_coordinate_system_vectors(&ng.normalize());
-                dpdu = dpdu2;
-                dpdv = dpdv2;
+                coordinate_system(&ng.normalize(), &mut dpdu, &mut dpdv);
             }
 
             // Interpolate parametric coordinates and hit point.
@@ -600,13 +595,13 @@ impl Shape for Triangle {
 
             let isect_local = surface_interaction(
                 p_hit,
-                vector3(0.0, 0.0, 0.0),
+                Vector3f::default(),
                 uv_hit,
                 -r.d,
                 dpdu,
                 dpdv,
-                normal3(0.0, 0.0, 0.0),
-                normal3(0.0, 0.0, 0.0),
+                Normal3f::default(),
+                Normal3f::default(),
                 r.time,
                 Some(Arc::new(self.clone())),
             );

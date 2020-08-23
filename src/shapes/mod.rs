@@ -7,6 +7,7 @@ use super::core::pbrt::*;
 use super::core::texture::*;
 
 mod cone;
+mod curve;
 mod cylinder;
 mod disk;
 mod hyperboloid;
@@ -16,6 +17,7 @@ mod triangle;
 
 // Re-export
 pub use cone::*;
+pub use curve::*;
 pub use cylinder::*;
 pub use disk::*;
 pub use hyperboloid::*;
