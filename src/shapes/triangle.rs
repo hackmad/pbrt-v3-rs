@@ -69,16 +69,20 @@ pub fn triangle_mesh(
     assert!(num_triangles == 0);
 
     // Transform mesh vertices to world space.
-    let tp = p
-        .iter()
-        .map(|point| object_to_world.transform_point(&point));
+    let tp = p.iter().map(|v| object_to_world.transform_point(&v));
+
+    // Transform normals to world space.
+    let tn = n.iter().map(|v| object_to_world.transform_normal(&v));
+
+    // Transform normals to world space.
+    let ts = s.iter().map(|v| object_to_world.transform_vector(&v));
 
     TriangleMesh {
         num_triangles,
         vertex_indices,
         p: tp.collect(),
-        n,
-        s,
+        n: tn.collect(),
+        s: ts.collect(),
         uv,
         alpha_mask,
         data: shape_data(object_to_world.clone(), None, reverse_orientation),
@@ -632,9 +636,9 @@ impl Shape for Triangle {
 ///                           should be reversed from the default
 /// * `vertex_indices`      - Vertex indices for triangles. For the ith triangle,
 ///                           its three vertex positions are p[vertex_indices[3 * i]],
-/// * `p`                   - Vertex positions.
 ///                           p[vertex_indices[3 * i + 1]], and
 ///                           p[vertex_indices[3 * i + 2]]
+/// * `p`                   - Vertex positions.
 /// * `n`                   - Vertex normals.
 /// * `s`                   - Tangent vectors per vertex.
 /// * `uv`                  - Paramteric uv-coordinates.
