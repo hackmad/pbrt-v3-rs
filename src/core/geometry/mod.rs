@@ -1,6 +1,9 @@
 //! Geometry
+use super::bssrdf::*;
 use super::medium::*;
 use super::pbrt::*;
+use super::primitive::*;
+use super::reflection::*;
 
 // Define macros for property based testing.
 #[cfg(test)]

@@ -2,8 +2,8 @@
 
 #![allow(dead_code)]
 use super::{
-    hit, ArcShape, FaceForward, Float, Hit, Interaction, Normal3, Normal3f, Point2f, Point3f,
-    Vector3f,
+    hit, ArcBSDF, ArcBSSRDF, ArcShape, FaceForward, Float, Hit, Interaction, Normal3, Normal3f,
+    Point2f, Point3f, Primitive, Vector3f,
 };
 
 /// SurfaceInteraction represents geometry of a particular point on a surface.
@@ -32,6 +32,15 @@ pub struct SurfaceInteraction {
 
     /// The shape.
     pub shape: Option<ArcShape>,
+
+    /// The BSDF.
+    pub bsdf: Option<ArcBSDF>,
+
+    /// The BSSRDF.
+    pub bssrdf: Option<ArcBSSRDF>,
+
+    /// The primitive.
+    pub primitive: Option<*const dyn Primitive>,
 }
 
 /// Create a new surface interaction.
@@ -78,6 +87,9 @@ pub fn surface_interaction(
         dndv,
         shape: shape.clone(),
         shading: shading(n, dpdu, dpdv, dndu, dndv),
+        bsdf: None,
+        bssrdf: None,
+        primitive: None,
     }
 }
 

@@ -11,7 +11,7 @@ use std::mem::swap;
 use std::ops::{DivAssign, Index, Mul};
 
 /// 3-D Axis Aligned Bounding Box.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Bounds3<T: Num> {
     /// Minimum bounds.
     pub p_min: Point3<T>,
