@@ -8,7 +8,7 @@ use super::{
 
 /// SurfaceInteraction represents geometry of a particular point on a surface.
 #[derive(Clone)]
-pub struct SurfaceInteraction {
+pub struct SurfaceInteraction<'a> {
     /// The common interaction data.
     pub hit: Hit,
 
@@ -40,7 +40,7 @@ pub struct SurfaceInteraction {
     pub bssrdf: Option<ArcBSSRDF>,
 
     /// The primitive.
-    pub primitive: Option<*const dyn Primitive>,
+    pub primitive: Option<&'a dyn Primitive>,
 }
 
 /// Create a new surface interaction.
@@ -56,7 +56,7 @@ pub struct SurfaceInteraction {
 /// `dndv`             - Differential change ∂n/∂v in surface normal as we move along v.
 /// `time`             - Time when interaction occurred.
 /// `shape`            - The shape.
-pub fn surface_interaction(
+pub fn surface_interaction<'a>(
     p: Point3f,
     p_error: Vector3f,
     uv: Point2f,
@@ -67,7 +67,7 @@ pub fn surface_interaction(
     dndv: Normal3f,
     time: Float,
     shape: Option<ArcShape>,
-) -> SurfaceInteraction {
+) -> SurfaceInteraction<'a> {
     // Calculate normal n from the partial derivatives.
     let mut n = Normal3f::from(dpdu.cross(&dpdv).normalize());
 
@@ -93,7 +93,7 @@ pub fn surface_interaction(
     }
 }
 
-impl SurfaceInteraction {
+impl<'a> SurfaceInteraction<'a> {
     /// Returns updated shading geometry.
     ///
     /// * `dpdu` - Parametric partial derivative of the point ∂p/∂u.
@@ -128,7 +128,7 @@ impl SurfaceInteraction {
     }
 }
 
-impl Interaction for SurfaceInteraction {}
+impl<'a> Interaction for SurfaceInteraction<'a> {}
 
 /// Shading geometry used for perturbed values for bump mapping.
 #[derive(Clone)]

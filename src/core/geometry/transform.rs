@@ -479,7 +479,10 @@ impl Transform {
     /// Applies transformation to a given surface interaction.
     ///
     /// * `si` - The surface interaction.
-    pub fn transform_surface_interaction(&self, si: &SurfaceInteraction) -> SurfaceInteraction {
+    pub fn transform_surface_interaction<'a>(
+        &self,
+        si: &SurfaceInteraction<'a>,
+    ) -> SurfaceInteraction<'a> {
         // Transform p and p_error in SurfaceInteraction
         let (p, p_error) = self.transform_point_with_error(&si.hit.p);
 

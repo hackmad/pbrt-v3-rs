@@ -125,7 +125,7 @@ impl Curve {
     /// * `depth`         - The recursion depth.
     /// * `current_hit`   - The current hit found so far. Initialize to `None`
     ///                     for first call.
-    fn recursive_intersect(
+    fn recursive_intersect<'a>(
         &self,
         ray: &Ray,
         cp: &[Point3f],
@@ -133,8 +133,8 @@ impl Curve {
         u0: Float,
         u1: Float,
         depth: u32,
-        current_hit: Option<Intersection>,
-    ) -> Option<Intersection> {
+        current_hit: Option<Intersection<'a>>,
+    ) -> Option<Intersection<'a>> {
         let ray_length = ray.d.length();
         let z_max = ray_length * ray.t_max;
 
@@ -348,7 +348,7 @@ impl Shape for Curve {
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection> {
+    fn intersect<'a>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'a>> {
         // Transform ray to object space.
         //
         // We could just use transform_ray() but there is minor adjustment in

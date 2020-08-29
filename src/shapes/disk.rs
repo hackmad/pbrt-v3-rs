@@ -77,7 +77,7 @@ impl Shape for Disk {
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection> {
+    fn intersect<'a>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'a>> {
         // Transform ray to object space
         //
         // We could just use transform_ray() but there is minor adjustment in
