@@ -2,8 +2,7 @@
 
 #![allow(dead_code)]
 use super::{
-    next_float_down, next_float_up, ArcMedium, Axis, Dot, Float, Normal3f, Point3f, Vector3,
-    Vector3f,
+    next_float_down, next_float_up, ArcMedium, Dot, Float, Normal3f, Point3f, Vector3, Vector3f,
 };
 use std::fmt::{Debug, Formatter, Result};
 
@@ -165,8 +164,7 @@ pub fn offset_ray_origin(p: &Point3f, p_error: &Vector3f, n: &Normal3f, w: &Vect
     let mut po = *p + offset;
 
     // Round offset point po away from p.
-    for i in 0..3 {
-        let axis = Axis::from(i);
+    for axis in 0..3 {
         if offset[axis] > 0.0 {
             po[axis] = next_float_up(po[axis]);
         } else if offset[axis] < 0.0 {

@@ -73,10 +73,10 @@ impl Primitive for TransformedPrimitive {
     /// Returns a reference to the AreaLight that describes the primitive’s
     /// emission distribution, if the primitive is itself a light source.
     /// If the primitive is not emissive, this method should return `None`.  
+    ///
+    /// *NOTE*: This should never be called. Calling code should directly call
+    /// get_area_light() on the primitive from the ray-primitive intersection.
     fn get_area_light(&self) -> Option<ArcAreaLight> {
-        // This should never be called. Calling code should directly call
-        // get_area_light() on the primitive from the ray-primitive
-        // intersection.
         eprintln!(
             "TransformedPrimitive::get_area_light() shouldn't be called; \
             should've gone to GeometricPrimitive."
@@ -89,10 +89,10 @@ impl Primitive for TransformedPrimitive {
     /// ignored; the primitive only serves to delineate a volume of space for
     /// participating media. This method is also used to check if two rays have
     /// intersected the same object by comparing their Material pointers.
+    ///
+    /// *NOTE*: This should never be called. Calling code should directly call
+    /// get_material() on the primitive from the ray-primitive intersection.
     fn get_material(&self) -> Option<ArcMaterial> {
-        // This should never be called. Calling code should directly call
-        // get_material() on the primitive from the ray-primitive
-        // intersection.
         eprintln!(
             "TransformedPrimitive::get_material() shouldn't be called; \
             should've gone to GeometricPrimitive."
@@ -103,18 +103,19 @@ impl Primitive for TransformedPrimitive {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `si`                   - The surface interaction at the intersection.
-    /// * `mode`                 - Transport mode.
-    /// * `allow_multiple_lobes` - Allow multiple lobes.
+    /// *NOTE*: This should never be called. Calling code should directly call
+    /// compute_scattering_functions() on the primitive from the ray-primitive
+    /// intersection.
+    ///
+    /// * `_si`                   - The surface interaction at the intersection.
+    /// * `_mode`                 - Transport mode.
+    /// * `_allow_multiple_lobes` - Allow multiple lobes.
     fn compute_scattering_functions(
         &self,
-        si: &mut SurfaceInteraction,
-        mode: TransportMode,
-        allow_multiple_lobes: bool,
+        _si: &mut SurfaceInteraction,
+        _mode: TransportMode,
+        _allow_multiple_lobes: bool,
     ) {
-        // This should never be called. Calling code should directly call
-        // compute_scattering_functions() on the primitive from the ray-primitive
-        // intersection.
         eprintln!(
             "TransformedPrimitive::compute_scattering_functions() shouldn't be \
             called; should've gone to GeometricPrimitive."

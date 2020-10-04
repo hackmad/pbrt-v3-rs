@@ -1,11 +1,14 @@
+#![feature(iter_partition_in_place)] // Can be removed after Rust 1.49 release.
+
 extern crate float_cmp;
 extern crate num_traits;
+extern crate typed_arena;
 
+mod accelerators;
 mod core;
 mod shapes;
 
 use self::core::geometry::*;
-use self::shapes::*;
 
 fn main() {
     let mut v = zero_vector2();

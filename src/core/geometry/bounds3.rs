@@ -250,7 +250,7 @@ impl<T: Num + Copy> Bounds3<T> {
         let mut t0 = 0.0;
         let mut t1 = ray.t_max;
 
-        for i in (0..3).map(|idx| Axis::from(idx)) {
+        for i in 0..3 {
             // Update interval for ith bounding box slab
             let inv_ray_dir = 1.0 / ray.d[i];
 
