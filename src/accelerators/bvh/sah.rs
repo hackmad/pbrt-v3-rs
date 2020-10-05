@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use super::common::*;
 use super::{ArcPrimitive, Axis, Bounds3f, Float, Union};
+use order_stat::kth_by;
 use std::cmp::Ordering;
 use std::sync::{Arc, Mutex};
 
@@ -15,8 +16,9 @@ const N_BUCKETS: usize = 12;
 /// * `split_method`      - Middle|EqualCounts|SAH
 /// * `max_prims_in_node` - Maximum number of primitives in the node.
 /// * `primitive_info`    - Primitive information.
-/// * `start`             - Starting index.
-/// * `end`               - Ending index.
+/// * `start`             - Starting index. For first call it should be 0.
+/// * `end`               - Ending index + 1. For first call it should be number
+///                         of primitives.
 /// * `total_nodes`       - Used to return total number of nodes.
 /// * `ordered_prims`     - Used to return a list of primitives ordered such that
 ///                         primitives in leaf nodes occupy contiguous ranges in
@@ -126,8 +128,8 @@ pub fn recursive_build(
 /// midpoint of each region of space.
 ///
 /// * `primitive_info`  - Vector containing all primitive info.
-/// * `start`           - Start index in primitive_info.
-/// * `end`             - End index in primitive_info.
+/// * `start`           - Starting index in primitive_info.
+/// * `end`             - Ending index + 1 in primitive_info.
 /// * `dim`             - Axis used to partition primitives.
 /// * `centroid_bounds` - Bounding box of primtive centroids in primtive_info
 ///                       from start to end.
@@ -139,7 +141,7 @@ fn split_middle(
     centroid_bounds: &Bounds3f,
 ) -> usize {
     let pmid = (centroid_bounds.p_min[dim] + centroid_bounds.p_max[dim]) / 2.0;
-    let split = primitive_info[start..end + 1]
+    let split = primitive_info[start..end]
         .iter_mut()
         .partition_in_place(|pi| pi.centroid[dim] < pmid);
     let mid = start + split;
@@ -158,8 +160,8 @@ fn split_middle(
 /// chosen axis, and second have have the largest centroid coordinate values.
 ///
 /// * `primitive_info`  - Vector containing all primitive info.
-/// * `start`           - Start index in primitive_info.
-/// * `end`             - End index in primitive_info.
+/// * `start`           - Starting index in primitive_info.
+/// * `end`             - Ending index + 1 in primitive_info.
 /// * `dim`             - Axis used to partition primitives.
 fn split_equal_counts(
     primitive_info: &mut Vec<BVHPrimitiveInfo>,
@@ -180,6 +182,31 @@ fn split_equal_counts(
     });
 
     mid
+}
+
+/// Partition a subset of items between start and end inclusive such that:
+/// - k^th element will be in its sorted order
+/// - elements e in v[start, k - 1] will satisfy f(e, ek) == Ordering::Less
+/// - elements e in v[k + 1, end] will satisfy f(e, ek) == Ordering::Greater
+/// and the k^th element is returned.
+///
+/// * `v`     - Vector to partition.
+/// * `start` - Starting index.
+/// * `end`   - Ending index + 1.
+/// * `f`     - Predicate used for partitioning.
+fn kth_element_by<F, T>(v: &mut Vec<T>, start: usize, k: usize, end: usize, f: F) -> Option<T>
+where
+    F: Fn(&T, &T) -> Ordering,
+    T: Copy,
+{
+    if start >= end || end > v.len() || k < start || k >= end {
+        return None;
+    }
+
+    let w = v[start..end].as_mut();
+    let i = *kth_by(w, k - start, |&x, &y| f(&x, &y));
+
+    Some(i)
 }
 
 /// Partition primitives using Surface Area Heuristic.

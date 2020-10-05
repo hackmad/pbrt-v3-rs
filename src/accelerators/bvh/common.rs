@@ -2,8 +2,6 @@
 
 #![allow(dead_code)]
 use super::{Axis, Bounds3f, Point3f, Union};
-use order_stat::kth_by;
-use std::cmp::Ordering;
 use std::sync::Arc;
 
 /// Splitting method to use to subdivide primitives.
@@ -174,29 +172,4 @@ pub fn create_linear_bvh_interior_node(bounds: Bounds3f, offset: u32, axis: u8) 
         n_primitives: 0,
         pad: 0,
     }
-}
-
-/// Partition a subset of items between start and end inclusive such that:
-/// - k^th element will be in its sorted order
-/// - elements e in v[start, k - 1] will satisfy f(e, ek) == Ordering::Less
-/// - elements e in v[k + 1, end] will satisfy f(e, ek) == Ordering::Greater
-/// and the k^th element is returned.
-///
-/// * `v`     - Vector to partition.
-/// * `start` - Starting index.
-/// * `end`   - Ending index.
-/// * `f`     - Predicate used for partitioning.
-pub fn kth_element_by<F, T>(v: &mut Vec<T>, start: usize, k: usize, end: usize, f: F) -> Option<T>
-where
-    F: Fn(&T, &T) -> Ordering,
-    T: Copy,
-{
-    if start >= end || end >= v.len() || k < start || k > end {
-        return None;
-    }
-
-    let w = v[start..end + 1].as_mut();
-    let i = *kth_by(w, k - start, |&x, &y| f(&x, &y));
-
-    Some(i)
 }
