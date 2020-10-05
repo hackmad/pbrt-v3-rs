@@ -8,6 +8,11 @@ use rayon::prelude::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
+const N_BUCKETS: usize = 12;
+const FIRST_BIT_INDEX: usize = N_BITS - 1 - N_BUCKETS; // The index of the next bit to try splitting
+const MORTON_BITS: u32 = 10;
+const MORTON_SCALE: u32 = 1 << MORTON_BITS;
+
 /// Build the BVH structure using HLBVH algorithm.
 ///
 /// * `primitives`        - The primitives in the node.
@@ -30,9 +35,6 @@ pub fn hlbvh_build(
         .fold(Bounds3f::default(), |b, pi| b.union(&pi.bounds));
 
     // Compute Morton indices of primitives.
-    const MORTON_BITS: u32 = 10;
-    const MORTON_SCALE: u32 = 1 << MORTON_BITS;
-
     let morton_prims: Vec<MortonPrimitive> = primitive_info
         .par_iter()
         .map(|&pi| {
@@ -66,7 +68,7 @@ pub fn hlbvh_build(
     let mut treelets: Vec<Arc<BVHBuildNode>> = treelets_to_build
         .par_iter()
         .map(|&(start_index, n_primitives)| {
-            // Generate _i_th LBVH treelet
+            // Generate i^th LBVH treelet.
             let mut nodes_created = 0;
             let build_node = emit_lbvh(
                 primitives,
@@ -179,7 +181,6 @@ fn emit_lbvh(
         );
 
         // Create and return interior LBVH node
-
         let c0 = emit_lbvh(
             primitives,
             max_prims_in_node,
@@ -212,8 +213,8 @@ fn emit_lbvh(
 /// Creates a BVH of all the treelets.
 ///
 /// * `treelet_roots` - Treelet roots.
-/// * `start`         - Starting index of node.
-/// * `end`           - Ending index of node.
+/// * `start`         - Starting index. For first call it should be 0.
+/// * `end`           - Ending index + 1. For first call it should be # of nodes.
 /// * `total_nodes`   - Total number of nodes.
 fn build_upper_sah(
     treelet_roots: &mut Vec<Arc<BVHBuildNode>>,
@@ -234,7 +235,7 @@ fn build_upper_sah(
         b.union(&treelet_roots[i].bounds)
     });
 
-    // Compute bound of HLBVH node centroids, choose split dimension _dim_
+    // Compute bound of HLBVH node centroids, choose split dimension dim.
     let centroid_bounds = (start..end).fold(Bounds3f::default(), |b, i| {
         let centroid = (treelet_roots[i].bounds.p_min + treelet_roots[i].bounds.p_max) * 0.5;
         b.union(&centroid)
@@ -245,10 +246,10 @@ fn build_upper_sah(
     // Make sure the SAH split below does something... ?
     debug_assert!(centroid_bounds.p_max[dim] != centroid_bounds.p_min[dim]);
 
-    // Allocate _BucketInfo_ for SAH partition buckets
+    // Allocate BucketInfo for SAH partition buckets
     let mut buckets = [BucketInfo::default(); N_BUCKETS];
 
-    // Initialize _BucketInfo_ for HLBVH SAH partition buckets
+    // Initialize BucketInfo for HLBVH SAH partition buckets
     for i in start..end {
         let centroid =
             (treelet_roots[i].bounds.p_min[dim] + treelet_roots[i].bounds.p_max[dim]) * 0.5;
@@ -294,7 +295,7 @@ fn build_upper_sah(
     }
 
     // Split nodes and create interior HLBVH SAH node
-    let split = treelet_roots[start..end + 1]
+    let split = treelet_roots[start..end]
         .iter_mut()
         .partition_in_place(|node| {
             let centroid = (node.bounds.p_min[dim] + node.bounds.p_max[dim]) * 0.5;

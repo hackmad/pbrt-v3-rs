@@ -195,7 +195,7 @@ where
         return None;
     }
 
-    let w = v[start..end].as_mut();
+    let w = v[start..end + 1].as_mut();
     let i = *kth_by(w, k - start, |&x, &y| f(&x, &y));
 
     Some(i)

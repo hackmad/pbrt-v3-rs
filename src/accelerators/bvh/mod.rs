@@ -12,7 +12,6 @@ use super::{
 };
 use common::*;
 use hlbvh::*;
-use morton::*;
 use sah::*;
 use std::sync::{Arc, Mutex};
 
@@ -63,7 +62,7 @@ pub fn bvh_accel(
 
         // Build BVH tree for primitives using primitive_info.
         let mut total_nodes = 0;
-        let ordered_prims: Arc<Mutex<Vec<ArcPrimitive>>> = Arc::new(Mutex::new(vec![]));
+        let ordered_prims = Arc::new(Mutex::new(Vec::<ArcPrimitive>::with_capacity(n_primitives)));
 
         let root = match split_method {
             SplitMethod::HLBVH => hlbvh_build(
@@ -113,8 +112,12 @@ fn flatten_bvh_tree(
     offset: &mut u32,
 ) -> u32 {
     let my_offset = *offset;
+    *offset += 1;
 
     if node.n_primitives > 0 {
+        debug_assert!(!node.children[0].is_none() && !node.children[1].is_none());
+        debug_assert!(node.n_primitives < 65536);
+
         nodes[my_offset as usize] = create_linear_bvh_leaf_node(
             node.bounds,
             node.first_prim_offset as u32,

@@ -2,9 +2,11 @@
 
 #![allow(dead_code)]
 use super::common::*;
-use super::{ArcPrimitive, Axis, Bounds3f, Float, Union, N_BUCKETS};
+use super::{ArcPrimitive, Axis, Bounds3f, Float, Union};
 use std::cmp::Ordering;
 use std::sync::{Arc, Mutex};
+
+const N_BUCKETS: usize = 12;
 
 /// Recursively build the BVH structure for either Middle, EqualCounts or SAH
 /// algorithm.

@@ -32,29 +32,29 @@ pub fn morton_primitive(primitive_index: usize, morton_code: u32) -> MortonPrimi
 ///
 /// * `v` - The coordinate value.
 pub fn encode_morton_3(v: &Vector3f) -> u32 {
+    debug_assert!(v.x > 0.0);
+    debug_assert!(v.y > 0.0);
+    debug_assert!(v.z > 0.0);
+
     (left_shift_3(float_to_bits(v.z)) << 2)
         | (left_shift_3(float_to_bits(v.y)) << 1)
         | left_shift_3(float_to_bits(v.x))
 }
 
-pub const BITS_PER_PASS: usize = 6;
 pub const N_BITS: usize = 30;
-pub const N_PASSES: usize = N_BITS / BITS_PER_PASS; // This should divide evenly.
-pub const N_BUCKETS: usize = 12;
-pub const FIRST_BIT_INDEX: usize = N_BITS - 1 - N_BUCKETS; // The index of the next
-                                                           // bit to try splitting
+const BITS_PER_PASS: usize = 6;
+const N_PASSES: usize = N_BITS / BITS_PER_PASS; // This should divide evenly.
+const N_BUCKETS: usize = 1 << BITS_PER_PASS;
+const BIT_MASK: usize = (1 << BITS_PER_PASS) - 1;
 
 /// Sorts a list of morton primitives in place using Radix sort.
 ///
 /// *NOTE*: This version is copying the entire vector and uses a second vector
 /// of same size swapping between their references to finally copy the result.
-/// So it'll be a bit more memory intensive.
+/// So it'll be more memory intensive.
 ///
 /// * `v` - The morton primitives.
 pub fn radix_sort(v: &Vec<MortonPrimitive>) -> Vec<MortonPrimitive> {
-    const N_BUCKETS: usize = 1 << BITS_PER_PASS;
-    const BIT_MASK: usize = (1 << BITS_PER_PASS) - 1;
-
     // Copy the input vector and initialize a second one.
     let mut v1 = v.clone();
     let mut v2 = vec![MortonPrimitive::default(); v.len()];
@@ -111,12 +111,18 @@ pub fn radix_sort(v: &Vec<MortonPrimitive>) -> Vec<MortonPrimitive> {
 /// * `x` - The value.
 #[rustfmt::skip]
 fn left_shift_3(x: u32) -> u32 {
+    debug_assert!(x < 1 << 10);
+
     let mut x1 = if x == (1 << 10) { x - 1 } else { x };
 
     x1 = (x1 | (x1 << 16)) & 0b00000011000000000000000011111111;
+    // x1 = ---- --98 ---- ---- ---- ---- 7654 3210
     x1 = (x1 | (x1 << 8))  & 0b00000011000000001111000000001111;
+    // x1 = ---- --98 ---- ---- 7654 ---- ---- 3210
     x1 = (x1 | (x1 << 4))  & 0b00000011000011000011000011000011;
+    // x = ---- --98 ---- 76-- --54 ---- 32-- --10
     x1 = (x1 | (x1 << 2))  & 0b00001001001001001001001001001001;
+    // x1 = ---- 9--8 --7- -6-- 5--4 --3- -2-- 1--0
 
     x1
 }
