@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 use super::{float_to_bits, Vector3f};
+use std::cell::RefCell;
 
 /// Stores Morton codes (interleaved bits of coordinate values).
 #[derive(Copy, Clone, Default, Debug)]
@@ -49,25 +50,20 @@ const BIT_MASK: usize = (1 << BITS_PER_PASS) - 1;
 
 /// Sorts a list of morton primitives in place using Radix sort.
 ///
-/// *NOTE*: This version is copying the entire vector and uses a second vector
-/// of same size swapping between their references to finally copy the result.
-/// So it'll be more memory intensive.
-///
-/// * `v` - The morton primitives.
-pub fn radix_sort(v: &Vec<MortonPrimitive>) -> Vec<MortonPrimitive> {
-    // Copy the input vector and initialize a second one.
-    let mut v1 = v.clone();
-    let mut v2 = vec![MortonPrimitive::default(); v.len()];
+/// * `v` - A `RefCell` containing the morton primitives vector.
+pub fn radix_sort(v: &mut RefCell<Vec<MortonPrimitive>>) {
+    let n = { v.borrow().len() };
+    let mut temp_vector = RefCell::new(vec![MortonPrimitive::default(); n]);
 
     for pass in 0..N_PASSES {
         // Perform one pass of radix sort, sorting BITS_PER_PASS bits.
         let low_bit = pass * BITS_PER_PASS;
 
-        // Set in and out vector pointers for next radix sort pass.
+        // Set in and out vector pointers for radix sort pass.
         let (v_in, v_out) = if pass & 1 == 1 {
-            (&mut v2, &mut v1)
+            (temp_vector.borrow(), v.get_mut())
         } else {
-            (&mut v1, &mut v2)
+            (v.borrow(), temp_vector.get_mut())
         };
 
         // Count number of zero bits in array for current radix sort bit.
@@ -95,9 +91,7 @@ pub fn radix_sort(v: &Vec<MortonPrimitive>) -> Vec<MortonPrimitive> {
 
     // Copy final result from temp_vector, if needed.
     if N_PASSES & 1 == 1 {
-        v2
-    } else {
-        v1
+        *v.get_mut() = temp_vector.into_inner();
     }
 }
 

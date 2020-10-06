@@ -5,6 +5,7 @@ use super::common::*;
 use super::morton::*;
 use super::{ArcPrimitive, Axis, Bounds3f, Float, Union};
 use rayon::prelude::*;
+use std::cell::RefCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -45,7 +46,9 @@ pub fn hlbvh_build(
         .collect();
 
     // Radix sort primitive Morton indices.
-    let morton_prims = radix_sort(&morton_prims);
+    let mut morton_prims_cell = RefCell::new(morton_prims);
+    radix_sort(&mut morton_prims_cell);
+    let morton_prims = morton_prims_cell.into_inner();
 
     // Create LBVH treelets at bottom of BVH.
     const MASK: u32 = 0b00111111111111000000000000000000;
