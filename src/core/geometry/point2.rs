@@ -1,7 +1,7 @@
 //! 2-D Points
 
 #![allow(dead_code)]
-use super::{abs, max, min, vector2, Axis, Float, Int, Point3, Vector2};
+use super::{abs, max, min, Axis, Float, Int, Point3, Vector2};
 use num_traits::{Num, Zero};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
@@ -23,20 +23,23 @@ pub type Point2f = Point2<Float>;
 /// 2-D point containing `Int` values.
 pub type Point2i = Point2<Int>;
 
-/// Creates a new 2-D point.
-///
-/// * `x` - X-coordinate.
-/// * `y` - Y-coordinate.
-pub fn point2<T>(x: T, y: T) -> Point2<T> {
-    Point2 { x, y }
-}
-
-/// Creates a new 2-D zero point.
-pub fn zero_point2<T: Zero>() -> Point2<T> {
-    point2(T::zero(), T::zero())
-}
-
 impl<T: Num> Point2<T> {
+    /// Creates a new 2-D point.
+    ///
+    /// * `x` - X-coordinate.
+    /// * `y` - Y-coordinate.
+    pub fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+
+    /// Creates a new 2-D zero point.
+    pub fn zero() -> Self
+    where
+        T: Zero,
+    {
+        Self::new(T::zero(), T::zero())
+    }
+
     /// Returns true if either coordinate is NaN.
     pub fn has_nans(&self) -> bool
     where
@@ -46,27 +49,27 @@ impl<T: Num> Point2<T> {
     }
 
     /// Returns a new point containing absolute values of the components.
-    pub fn abs(&self) -> Point2<T>
+    pub fn abs(&self) -> Self
     where
         T: Neg<Output = T> + PartialOrd + Copy,
     {
-        point2(abs(self.x), abs(self.y))
+        Self::new(abs(self.x), abs(self.y))
     }
 
     /// Returns a new point containing floor of values of the components.
-    pub fn floor(&self) -> Point2<T>
+    pub fn floor(&self) -> Self
     where
         T: num_traits::Float,
     {
-        point2(self.x.floor(), self.y.floor())
+        Self::new(self.x.floor(), self.y.floor())
     }
 
     /// Returns a new point containing ceil of values of the components.
-    pub fn ceil(&self) -> Point2<T>
+    pub fn ceil(&self) -> Self
     where
         T: num_traits::Float,
     {
-        point2(self.x.ceil(), self.y.ceil())
+        Self::new(self.x.ceil(), self.y.ceil())
     }
 
     /// Return the component-wise minimum coordinate values with another point.
@@ -76,7 +79,7 @@ impl<T: Num> Point2<T> {
     where
         T: PartialOrd + Copy,
     {
-        point2(min(self.x, other.x), min(self.y, other.y))
+        Self::new(min(self.x, other.x), min(self.y, other.y))
     }
 
     /// Return the component-wise maximum coordinate values with another point.
@@ -86,7 +89,7 @@ impl<T: Num> Point2<T> {
     where
         T: PartialOrd + Copy,
     {
-        point2(max(self.x, other.x), max(self.y, other.y))
+        Self::new(max(self.x, other.x), max(self.y, other.y))
     }
 
     /// Returns a new point with permuted coordinates according to given axes.
@@ -97,7 +100,7 @@ impl<T: Num> Point2<T> {
     where
         T: Copy,
     {
-        point2(self[x], self[y])
+        Self::new(self[x], self[y])
     }
 
     /// Returns the distance to another point.
@@ -122,13 +125,13 @@ impl<T: Num> Point2<T> {
 }
 
 impl<T: Num> Add for Point2<T> {
-    type Output = Point2<T>;
+    type Output = Self;
 
     /// Adds the given point and returns the result.
     ///
     /// * `other` - The point to add.
     fn add(self, other: Self) -> Self::Output {
-        point2(self.x + other.x, self.y + other.y)
+        Self::Output::new(self.x + other.x, self.y + other.y)
     }
 }
 
@@ -137,18 +140,18 @@ impl<T: Num + Copy> AddAssign for Point2<T> {
     ///
     /// * `other` - The point to add.
     fn add_assign(&mut self, other: Self) {
-        *self = point2(self.x + other.x, self.y + other.y);
+        *self = Point2::new(self.x + other.x, self.y + other.y);
     }
 }
 
 impl<T: Num> Add<Vector2<T>> for Point2<T> {
-    type Output = Point2<T>;
+    type Output = Self;
 
     /// Offsets the point by the given vector.
     ///
     /// * `other` - The vector to add.
     fn add(self, other: Vector2<T>) -> Self::Output {
-        point2(self.x + other.x, self.y + other.y)
+        Self::Output::new(self.x + other.x, self.y + other.y)
     }
 }
 
@@ -157,7 +160,7 @@ impl<T: Num + Copy> AddAssign<Vector2<T>> for Point2<T> {
     ///
     /// * `other` - The vector to add.
     fn add_assign(&mut self, other: Vector2<T>) {
-        *self = point2(self.x + other.x, self.y + other.y);
+        *self = Self::new(self.x + other.x, self.y + other.y);
     }
 }
 
@@ -168,18 +171,18 @@ impl<T: Num> Sub for Point2<T> {
     ///
     /// * `other` - The point to subtract.
     fn sub(self, other: Self) -> Self::Output {
-        vector2(self.x - other.x, self.y - other.y)
+        Vector2::new(self.x - other.x, self.y - other.y)
     }
 }
 
 impl<T: Num> Sub<Vector2<T>> for Point2<T> {
-    type Output = Point2<T>;
+    type Output = Self;
 
     /// Subtracts the given vector and returns the result.
     ///
     /// * `other` - The point to subtract.
     fn sub(self, other: Vector2<T>) -> Self::Output {
-        point2(self.x - other.x, self.y - other.y)
+        Self::Output::new(self.x - other.x, self.y - other.y)
     }
 }
 
@@ -188,18 +191,18 @@ impl<T: Num + Copy> SubAssign<Vector2<T>> for Point2<T> {
     ///
     /// * `other` - The vector to subtract.
     fn sub_assign(&mut self, other: Vector2<T>) {
-        *self = point2(self.x - other.x, self.y - other.y);
+        *self = Self::new(self.x - other.x, self.y - other.y);
     }
 }
 
 impl<T: Num + Copy> Mul<T> for Point2<T> {
-    type Output = Point2<T>;
+    type Output = Self;
 
     /// Scale the point.
     ///
     /// * `f` - The scaling factor.
     fn mul(self, f: T) -> Self::Output {
-        point2(f * self.x, f * self.y)
+        Self::Output::new(f * self.x, f * self.y)
     }
 }
 
@@ -211,7 +214,7 @@ macro_rules! premul {
             ///
             /// * `p` - The point.
             fn mul(self, p: Point2<$t>) -> Point2<$t> {
-                point2(self * p.x, self * p.y)
+                Point2::<$t>::new(self * p.x, self * p.y)
             }
         }
     };
@@ -233,12 +236,12 @@ impl<T: Num + Copy> MulAssign<T> for Point2<T> {
     ///
     /// * `f` - The scaling factor.
     fn mul_assign(&mut self, f: T) {
-        *self = point2(f * self.x, f * self.y);
+        *self = Self::new(f * self.x, f * self.y);
     }
 }
 
 impl<T: Num + Copy> Div<T> for Point2<T> {
-    type Output = Point2<T>;
+    type Output = Self;
 
     /// Scale the point by 1/f.
     ///
@@ -247,7 +250,7 @@ impl<T: Num + Copy> Div<T> for Point2<T> {
         debug_assert!(!f.is_zero());
 
         let inv = T::one() / f;
-        point2(inv * self.x, inv * self.y)
+        Self::Output::new(inv * self.x, inv * self.y)
     }
 }
 
@@ -259,16 +262,16 @@ impl<T: Num + Copy> DivAssign<T> for Point2<T> {
         debug_assert!(!f.is_zero());
 
         let inv = T::one() / f;
-        *self = point2(inv * self.x, inv * self.y);
+        *self = Self::new(inv * self.x, inv * self.y);
     }
 }
 
 impl<T: Num + Neg<Output = T>> Neg for Point2<T> {
-    type Output = Point2<T>;
+    type Output = Self;
 
     /// Flip the point's direction (scale by -1).
     fn neg(self) -> Self::Output {
-        point2(-self.x, -self.y)
+        Self::Output::new(-self.x, -self.y)
     }
 }
 
@@ -325,7 +328,7 @@ impl<T> From<Vector2<T>> for Point2<T> {
     ///
     /// * `v` - 2-D vector.
     fn from(v: Vector2<T>) -> Self {
-        Point2 { x: v.x, y: v.y }
+        Self { x: v.x, y: v.y }
     }
 }
 
@@ -334,7 +337,7 @@ impl<T> From<Point3<T>> for Point2<T> {
     ///
     /// * `p` - 3-D point.
     fn from(p: Point3<T>) -> Self {
-        Point2 { x: p.x, y: p.y }
+        Self { x: p.x, y: p.y }
     }
 }
 
@@ -351,43 +354,43 @@ mod tests {
 
     #[test]
     fn zero_point() {
-        assert!(point2(0, 0) == zero_point2());
-        assert!(point2(0.0, 0.0) == zero_point2());
+        assert!(Point2::new(0, 0) == Point2::zero());
+        assert!(Point2::new(0.0, 0.0) == Point2::zero());
     }
 
     #[test]
     fn has_nans() {
-        assert!(!point2(0.0, 0.0).has_nans());
-        assert!(point2(f32::NAN, f32::NAN).has_nans());
-        assert!(point2(f64::NAN, f64::NAN).has_nans());
+        assert!(!Point2::new(0.0, 0.0).has_nans());
+        assert!(Point2::new(f32::NAN, f32::NAN).has_nans());
+        assert!(Point2::new(f64::NAN, f64::NAN).has_nans());
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn div_zero_i64() {
-        zero_point2::<i64>() / 0;
+        Point2::<i64>::zero() / 0;
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn div_zero_f64() {
-        point2::<f64>(1.0, 1.0) / 0.0;
+        Point2::<f64>::new(1.0, 1.0) / 0.0;
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn invalid_index() {
-        let z = zero_point2::<i64>()[Axis::Z];
+        let z = Point2::<i64>::zero()[Axis::Z];
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn invalid_index_mut() {
-        let mut v = zero_point2::<i64>();
+        let mut v = Point2::<i64>::zero();
         v[Axis::Z] = 1;
     }
 
@@ -420,27 +423,27 @@ mod tests {
 
         #[test]
         fn abs_i32(p in point2_i32()) {
-            prop_assert_eq!(p.abs(), point2(abs(p.x), abs(p.y)));
+            prop_assert_eq!(p.abs(), Point2::new(abs(p.x), abs(p.y)));
         }
 
         #[test]
         fn floor_f32(p in point2_f32()) {
-            prop_assert_eq!(p.floor(), point2(p.x.floor(), p.y.floor()));
+            prop_assert_eq!(p.floor(), Point2::new(p.x.floor(), p.y.floor()));
         }
 
         #[test]
         fn ceil_f32(p in point2_f32()) {
-            prop_assert_eq!(p.ceil(), point2(p.x.ceil(), p.y.ceil()));
+            prop_assert_eq!(p.ceil(), Point2::new(p.x.ceil(), p.y.ceil()));
         }
 
         #[test]
         fn min_f32(p1 in point2_f32(), p2 in point2_f32()) {
-            prop_assert_eq!(p1.min(&p2), point2(p1.x.min(p2.x), p1.y.min(p2.y)));
+            prop_assert_eq!(p1.min(&p2), Point2::new(p1.x.min(p2.x), p1.y.min(p2.y)));
         }
 
         #[test]
         fn max_f32(p1 in point2_f32(), p2 in point2_f32()) {
-            prop_assert_eq!(p1.max(&p2), point2(p1.x.max(p2.x), p1.y.max(p2.y)));
+            prop_assert_eq!(p1.max(&p2), Point2::new(p1.x.max(p2.x), p1.y.max(p2.y)));
         }
 
         #[test]
@@ -463,72 +466,72 @@ mod tests {
 
         #[test]
         fn add_point_i32(p1 in point2_i32(), p2 in point2_i32()) {
-            prop_assert_eq!(p1 + p2, point2(p1.x + p2.x, p1.y + p2.y));
+            prop_assert_eq!(p1 + p2, Point2::new(p1.x + p2.x, p1.y + p2.y));
         }
 
         #[test]
         fn add_point_f32(p1 in point2_f32(), p2 in point2_f32()) {
-            prop_assert_eq!(p1 + p2, point2(p1.x + p2.x, p1.y + p2.y));
+            prop_assert_eq!(p1 + p2, Point2::new(p1.x + p2.x, p1.y + p2.y));
         }
 
         #[test]
         fn add_vector_f32(p in point2_f32(), v in vector2_f32()) {
-            prop_assert_eq!(p + v, point2(p.x + v.x, p.y + v.y));
+            prop_assert_eq!(p + v, Point2::new(p.x + v.x, p.y + v.y));
         }
 
         #[test]
         fn add_assign_vector_i32(p in point2_i32(), v in vector2_i32()) {
             let mut p1 = p;
             p1 += v;
-            prop_assert_eq!(p1, point2(p.x + v.x, p.y + v.y));
+            prop_assert_eq!(p1, Point2::new(p.x + v.x, p.y + v.y));
         }
 
         #[test]
         fn add_assign_vector_f32(p in point2_f32(), v in vector2_f32()) {
             let mut p1 = p;
             p1 += v;
-            prop_assert_eq!(p1, point2(p.x + v.x, p.y + v.y));
+            prop_assert_eq!(p1, Point2::new(p.x + v.x, p.y + v.y));
         }
 
         #[test]
         fn sub_point_i32(p1 in point2_i32(), p2 in point2_i32()) {
-            prop_assert_eq!(p1 - p2, vector2(p1.x - p2.x, p1.y - p2.y));
+            prop_assert_eq!(p1 - p2, Vector2::new(p1.x - p2.x, p1.y - p2.y));
         }
 
         #[test]
         fn sub_point_f32(p1 in point2_f32(), p2 in point2_f32()) {
-            prop_assert_eq!(p1 - p2, vector2(p1.x - p2.x, p1.y - p2.y));
+            prop_assert_eq!(p1 - p2, Vector2::new(p1.x - p2.x, p1.y - p2.y));
         }
 
         #[test]
         fn sub_vector_f32(p in point2_f32(), v in vector2_f32()) {
-            prop_assert_eq!(p - v, point2(p.x - v.x, p.y - v.y));
+            prop_assert_eq!(p - v, Point2::new(p.x - v.x, p.y - v.y));
         }
 
         #[test]
         fn sub_assign_vector_i32(p in point2_i32(), v in vector2_i32()) {
             let mut p1 = p;
             p1 -= v;
-            prop_assert_eq!(p1, point2(p.x - v.x, p.y - v.y));
+            prop_assert_eq!(p1, Point2::new(p.x - v.x, p.y - v.y));
         }
 
         #[test]
         fn sub_assign_vector_f32(p in point2_f32(), v in vector2_f32()) {
             let mut p1 = p;
             p1 -= v;
-            prop_assert_eq!(p1, point2(p.x - v.x, p.y - v.y));
+            prop_assert_eq!(p1, Point2::new(p.x - v.x, p.y - v.y));
         }
 
         #[test]
         fn mul_i32(p in point2_i32(), f in range_i32()) {
-            let expected = point2(p.x * f, p.y * f);
+            let expected = Point2::new(p.x * f, p.y * f);
             prop_assert_eq!(p * f, expected);
             prop_assert_eq!(f * p, expected);
         }
 
         #[test]
         fn mul_f32(p in point2_f32(), f in range_f32()) {
-            let expected = point2(p.x * f, p.y * f);
+            let expected = Point2::new(p.x * f, p.y * f);
             prop_assert_eq!(p * f, expected);
             prop_assert_eq!(f * p, expected);
         }
@@ -537,14 +540,14 @@ mod tests {
         fn mul_assign_i32(p in point2_i32(), f in range_i32()) {
             let mut p1 = p;
             p1 *= f;
-            prop_assert_eq!(p1, point2(p.x * f, p.y * f));
+            prop_assert_eq!(p1, Point2::new(p.x * f, p.y * f));
         }
 
         #[test]
         fn mul_assign_f32(p in point2_f32(), f in range_f32()) {
             let mut p1 = p;
             p1 *= f;
-            prop_assert_eq!(p1, point2(p.x * f, p.y * f));
+            prop_assert_eq!(p1, Point2::new(p.x * f, p.y * f));
         }
 
         #[test]
@@ -553,13 +556,13 @@ mod tests {
             f in (-100..100i32).prop_filter("non-zero", |x| *x != 0)
         ) {
             let s = 1 / f;
-            prop_assert_eq!(p / f, point2(p.x * s, p.y * s));
+            prop_assert_eq!(p / f, Point2::new(p.x * s, p.y * s));
         }
 
         #[test]
         fn div_f32(p in point2_f32(), f in non_zero_f32()) {
             let s = 1.0 / f;
-            prop_assert_eq!(p / f, point2(p.x * s, p.y * s));
+            prop_assert_eq!(p / f, Point2::new(p.x * s, p.y * s));
         }
 
         #[test]
@@ -568,7 +571,7 @@ mod tests {
             p1 /= f;
 
             let s = 1 / f;
-            prop_assert_eq!(p1, point2(p.x * s, p.y * s));
+            prop_assert_eq!(p1, Point2::new(p.x * s, p.y * s));
         }
 
         #[test]
@@ -577,18 +580,18 @@ mod tests {
             p1 /= f;
 
             let s = 1.0 / f;
-            prop_assert_eq!(p1, point2(p.x * s, p.y * s));
+            prop_assert_eq!(p1, Point2::new(p.x * s, p.y * s));
         }
 
         #[test]
         fn neg_i32(p in point2_i32()) {
-            prop_assert_eq!(-p, point2(-p.x, -p.y));
+            prop_assert_eq!(-p, Point2::new(-p.x, -p.y));
             prop_assert_eq!(--p, p);
         }
 
         #[test]
         fn neg_f32(p in point2_f32()) {
-            prop_assert_eq!(-p, point2(-p.x, -p.y));
+            prop_assert_eq!(-p, Point2::new(-p.x, -p.y));
             prop_assert_eq!(--p, p);
         }
 
@@ -606,7 +609,7 @@ mod tests {
 
         #[test]
         fn index_mut_i32(p in point2_i32()) {
-            let mut p1 = point2(-200, 200);
+            let mut p1 = Point2::new(-200, 200);
             p1[Axis::X] = p.x;
             p1[Axis::Y] = p.y;
             prop_assert_eq!(p1, p);
@@ -614,7 +617,7 @@ mod tests {
 
         #[test]
         fn index_mut_f32(p in point2_f32()) {
-            let mut p1 = point2(-200.0, 200.0);
+            let mut p1 = Point2::new(-200.0, 200.0);
             p1[Axis::X] = p.x;
             p1[Axis::Y] = p.y;
             prop_assert_eq!(p1, p);

@@ -2,9 +2,8 @@
 
 #![allow(dead_code)]
 use super::{
-    abs, gamma, matrix4x4, normal3, point3, ray, ray_differential, ray_with_differentials, shading,
-    surface_interaction, vector3, Bounds3, Bounds3f, Dot, FaceForward, Float, Matrix4x4, Normal3f,
-    Point3f, Ray, SurfaceInteraction, Union, Vector3, Vector3f, IDENTITY_MATRIX,
+    abs, gamma, Bounds3, Bounds3f, Dot, FaceForward, Float, Matrix4x4, Normal3f, Point3, Point3f,
+    Ray, RayDifferential, Shading, SurfaceInteraction, Union, Vector3, Vector3f, IDENTITY_MATRIX,
 };
 use std::cmp::{Eq, Ord, Ordering, PartialOrd};
 use std::ops::Mul;
@@ -23,177 +22,6 @@ pub struct Transform {
 /// Atomic reference counted `Transform`.
 pub type ArcTransform = Arc<Transform>;
 
-/// Create a transformation from a 2-dimensional array representing a 4x4 matrix.
-///
-/// * `mat` - A matrix representing a transformation.
-#[rustfmt::skip]
-pub fn transform(mat: [[Float; 4]; 4]) -> Transform {
-    let m = matrix4x4(
-        mat[0][0], mat[0][1], mat[0][2], mat[0][3], 
-        mat[1][0], mat[1][1], mat[1][2], mat[1][3],
-        mat[2][0], mat[2][1], mat[2][2], mat[2][3], 
-        mat[3][0], mat[3][1], mat[3][2], mat[3][3],
-    );
-
-    Transform {
-        m,
-        m_inv: m.inverse(),
-    }
-}
-
-/// Create a transformation representing a translation.
-///
-/// * `delta` -  Translation.
-#[rustfmt::skip]
-pub fn translate(delta: &Vector3f) -> Transform {
-    Transform {
-        m: matrix4x4(
-            1.0, 0.0, 0.0, delta.x,
-            0.0, 1.0, 0.0, delta.y, 
-            0.0, 0.0, 1.0, delta.z, 
-            0.0, 0.0, 0.0, 1.0,
-        ),
-        m_inv: matrix4x4(
-            1.0, 0.0, 0.0, -delta.x, 
-            0.0, 1.0, 0.0, -delta.y, 
-            0.0, 0.0, 1.0, -delta.z,
-            0.0, 0.0, 0.0,  1.0,
-        ),
-    }
-}
-
-/// Create a transformation representing a scale.
-///
-/// * `x` -  Scaling factor in x-axis.
-/// * `y` -  Scaling factor in y-axis.
-/// * `z` -  Scaling factor in z-axis.
-#[rustfmt::skip]
-pub fn scale(x: Float, y: Float, z: Float) -> Transform {
-    Transform {
-        m: matrix4x4(
-            x,   0.0, 0.0, 0.0, 
-            0.0, y,   0.0, 0.0, 
-            0.0, 0.0, z,   0.0, 
-            0.0, 0.0, 0.0, 1.0,
-        ),
-        m_inv: matrix4x4(
-            1.0 / x, 0.0,     0.0,     0.0,
-            0.0,     1.0 / y, 0.0,     0.0,
-            0.0,     0.0,     1.0 / z, 0.0,
-            0.0,     0.0,     0.0,     1.0,
-        ),
-    }
-}
-
-/// Create a transformation representing rotation about the x-axis.
-///
-/// * `theta` -  Angle in degrees.
-#[rustfmt::skip]
-pub fn rotate_x(theta: Float) -> Transform {
-    let r = theta.to_radians();
-    let sin_theta = r.sin();
-    let cos_theta = r.cos();
-    let m = matrix4x4(
-        1.0, 0.0,        0.0,       0.0, 
-        0.0, cos_theta, -sin_theta, 0.0,
-        0.0, sin_theta,  cos_theta, 0.0, 
-        0.0, 0.0,        0.0,       1.0,
-    );
-    Transform { m, m_inv: m.transpose() }
-}
-
-/// Create a transformation representing rotation about the y-axis.
-///
-/// * `theta` -  Angle in degrees.
-#[rustfmt::skip]
-pub fn rotate_y(theta: Float) -> Transform {
-    let r = theta.to_radians();
-    let sin_theta = r.sin();
-    let cos_theta = r.cos();
-    let m = matrix4x4(
-         cos_theta, 0.0, sin_theta, 0.0, 
-         0.0,       1.0, 0.0,       0.0, 
-        -sin_theta, 0.0, cos_theta, 0.0,
-         0.0,       0.0, 0.0,       1.0,
-    );
-    Transform { m, m_inv: m.transpose() }
-}
-
-/// Create a transformation representing rotation about the z-axis.
-///
-/// * `theta` -  Angle in degrees.
-#[rustfmt::skip]
-pub fn rotate_z(theta: Float) -> Transform {
-    let r = theta.to_radians();
-    let sin_theta = r.sin();
-    let cos_theta = r.cos();
-    let m = matrix4x4(
-        cos_theta, -sin_theta, 0.0, 0.0, 
-        sin_theta,  cos_theta, 0.0, 0.0,
-        0.0,        0.0,       1.0, 0.0, 
-        0.0,        0.0,       0.0, 1.0,
-    );
-    Transform { m, m_inv: m.transpose() }
-}
-
-/// Create a transformation representing rotation about a vector.
-///
-/// * `theta` - Angle in degrees.
-/// * `a`     - Vector.
-pub fn rotate_axis(theta: Float, a: &Vector3f) -> Transform {
-    let r = theta.to_radians();
-    let sin_theta = r.sin();
-    let cos_theta = r.cos();
-    let mut m = Matrix4x4::default();
-
-    // Compute rotation of first basis vector
-    m.m[0][0] = a.x * a.x + (1.0 - a.x * a.x) * cos_theta;
-    m.m[0][1] = a.x * a.y * (1.0 - cos_theta) - a.z * sin_theta;
-    m.m[0][2] = a.x * a.z * (1.0 - cos_theta) + a.y * sin_theta;
-    m.m[0][3] = 0.0;
-
-    // Compute rotations of second and third basis vectors
-    m.m[1][0] = a.x * a.y * (1.0 - cos_theta) + a.z * sin_theta;
-    m.m[1][1] = a.y * a.y + (1.0 - a.y * a.y) * cos_theta;
-    m.m[1][2] = a.y * a.z * (1.0 - cos_theta) - a.x * sin_theta;
-    m.m[1][3] = 0.0;
-
-    m.m[2][0] = a.x * a.z * (1.0 - cos_theta) - a.y * sin_theta;
-    m.m[2][1] = a.y * a.z * (1.0 - cos_theta) + a.x * sin_theta;
-    m.m[2][2] = a.z * a.z + (1.0 - a.z * a.z) * cos_theta;
-    m.m[2][3] = 0.0;
-
-    Transform {
-        m,
-        m_inv: m.transpose(),
-    }
-}
-
-/// Generate a transformation to point a camera to a desired location.
-///
-/// * `pos`  - Position of camera.
-/// * `look` - Position to point towards.
-/// * `up`   - Used to orient the camera's viewing direction implied by `pos`
-///            and `look`.
-#[rustfmt::skip]
-pub fn look_at(pos: &Point3f, look: &Point3f, up: &Vector3f) -> Transform {
-    let dir = (*look - *pos).normalize();
-    let right = up.normalize().cross(&dir).normalize();
-    let new_up = dir.cross(&right);
-
-    let camera_to_world = matrix4x4(
-        right.x, new_up.x, dir.x, pos.x,
-        right.y, new_up.y, dir.y, pos.y,
-        right.z, new_up.z, dir.z, pos.z,
-        0.0,     0.0,      0.0,   1.0,
-    );
-
-    Transform {
-        m: camera_to_world.inverse(),
-        m_inv: camera_to_world,
-    }
-}
-
 // Returns true if x is in (0.999, 1.001) range as being close to 1.0.
 //
 // * `x` - The value to check
@@ -202,17 +30,188 @@ fn not_one(x: Float) -> bool {
 }
 
 impl Transform {
+    /// Create a transformation from a 2-dimensional array representing a 4x4 matrix.
+    ///
+    /// * `mat` - A matrix representing a transformation.
+    #[rustfmt::skip]
+    pub fn new(mat: [[Float; 4]; 4]) -> Self {
+        let m = Matrix4x4::new(
+            mat[0][0], mat[0][1], mat[0][2], mat[0][3], 
+            mat[1][0], mat[1][1], mat[1][2], mat[1][3],
+            mat[2][0], mat[2][1], mat[2][2], mat[2][3], 
+            mat[3][0], mat[3][1], mat[3][2], mat[3][3],
+        );
+
+        Self {
+            m,
+            m_inv: m.inverse(),
+        }
+    }
+
+    /// Create a transformation representing a translation.
+    ///
+    /// * `delta` -  Translation.
+    #[rustfmt::skip]
+    pub fn translate(delta: &Vector3f) -> Self {
+        Self {
+            m: Matrix4x4::new(
+                   1.0, 0.0, 0.0, delta.x,
+                   0.0, 1.0, 0.0, delta.y, 
+                   0.0, 0.0, 1.0, delta.z, 
+                   0.0, 0.0, 0.0, 1.0,
+               ),
+               m_inv: Matrix4x4::new(
+                   1.0, 0.0, 0.0, -delta.x, 
+                   0.0, 1.0, 0.0, -delta.y, 
+                   0.0, 0.0, 1.0, -delta.z,
+                   0.0, 0.0, 0.0,  1.0,
+               ),
+        }
+    }
+
+    /// Create a transformation representing a scale.
+    ///
+    /// * `x` -  Scaling factor in x-axis.
+    /// * `y` -  Scaling factor in y-axis.
+    /// * `z` -  Scaling factor in z-axis.
+    #[rustfmt::skip]
+    pub fn scale(x: Float, y: Float, z: Float) -> Self {
+        Self {
+            m: Matrix4x4::new(
+                   x,   0.0, 0.0, 0.0, 
+                   0.0, y,   0.0, 0.0, 
+                   0.0, 0.0, z,   0.0, 
+                   0.0, 0.0, 0.0, 1.0,
+               ),
+               m_inv: Matrix4x4::new(
+                   1.0 / x, 0.0,     0.0,     0.0,
+                   0.0,     1.0 / y, 0.0,     0.0,
+                   0.0,     0.0,     1.0 / z, 0.0,
+                   0.0,     0.0,     0.0,     1.0,
+               ),
+        }
+    }
+
+    /// Create a transformation representing rotation about the x-axis.
+    ///
+    /// * `theta` -  Angle in degrees.
+    #[rustfmt::skip]
+    pub fn rotate_x(theta: Float) -> Self {
+        let r = theta.to_radians();
+        let sin_theta = r.sin();
+        let cos_theta = r.cos();
+        let m = Matrix4x4::new(
+            1.0, 0.0,        0.0,       0.0, 
+            0.0, cos_theta, -sin_theta, 0.0,
+            0.0, sin_theta,  cos_theta, 0.0, 
+            0.0, 0.0,        0.0,       1.0,
+        );
+        Self { m, m_inv: m.transpose() }
+    }
+
+    /// Create a transformation representing rotation about the y-axis.
+    ///
+    /// * `theta` -  Angle in degrees.
+    #[rustfmt::skip]
+    pub fn rotate_y(theta: Float) -> Self {
+        let r = theta.to_radians();
+        let sin_theta = r.sin();
+        let cos_theta = r.cos();
+        let m = Matrix4x4::new(
+            cos_theta, 0.0, sin_theta, 0.0, 
+            0.0,       1.0, 0.0,       0.0, 
+            -sin_theta, 0.0, cos_theta, 0.0,
+            0.0,       0.0, 0.0,       1.0,
+        );
+        Self { m, m_inv: m.transpose() }
+    }
+
+    /// Create a transformation representing rotation about the z-axis.
+    ///
+    /// * `theta` -  Angle in degrees.
+    #[rustfmt::skip]
+    pub fn rotate_z(theta: Float) -> Self {
+        let r = theta.to_radians();
+        let sin_theta = r.sin();
+        let cos_theta = r.cos();
+        let m = Matrix4x4::new(
+            cos_theta, -sin_theta, 0.0, 0.0, 
+            sin_theta,  cos_theta, 0.0, 0.0,
+            0.0,        0.0,       1.0, 0.0, 
+            0.0,        0.0,       0.0, 1.0,
+        );
+        Self { m, m_inv: m.transpose() }
+    }
+
+    /// Create a transformation representing rotation about a vector.
+    ///
+    /// * `theta` - Angle in degrees.
+    /// * `a`     - Vector.
+    pub fn rotate_axis(theta: Float, a: &Vector3f) -> Self {
+        let r = theta.to_radians();
+        let sin_theta = r.sin();
+        let cos_theta = r.cos();
+        let mut m = Matrix4x4::default();
+
+        // Compute rotation of first basis vector
+        m.m[0][0] = a.x * a.x + (1.0 - a.x * a.x) * cos_theta;
+        m.m[0][1] = a.x * a.y * (1.0 - cos_theta) - a.z * sin_theta;
+        m.m[0][2] = a.x * a.z * (1.0 - cos_theta) + a.y * sin_theta;
+        m.m[0][3] = 0.0;
+
+        // Compute rotations of second and third basis vectors
+        m.m[1][0] = a.x * a.y * (1.0 - cos_theta) + a.z * sin_theta;
+        m.m[1][1] = a.y * a.y + (1.0 - a.y * a.y) * cos_theta;
+        m.m[1][2] = a.y * a.z * (1.0 - cos_theta) - a.x * sin_theta;
+        m.m[1][3] = 0.0;
+
+        m.m[2][0] = a.x * a.z * (1.0 - cos_theta) - a.y * sin_theta;
+        m.m[2][1] = a.y * a.z * (1.0 - cos_theta) + a.x * sin_theta;
+        m.m[2][2] = a.z * a.z + (1.0 - a.z * a.z) * cos_theta;
+        m.m[2][3] = 0.0;
+
+        Self {
+            m,
+            m_inv: m.transpose(),
+        }
+    }
+
+    /// Generate a transformation to point a camera to a desired location.
+    ///
+    /// * `pos`  - Position of camera.
+    /// * `look` - Position to point towards.
+    /// * `up`   - Used to orient the camera's viewing direction implied by `pos`
+    ///            and `look`.
+    #[rustfmt::skip]
+    pub fn look_at(pos: &Point3f, look: &Point3f, up: &Vector3f) -> Self {
+        let dir = (*look - *pos).normalize();
+        let right = up.normalize().cross(&dir).normalize();
+        let new_up = dir.cross(&right);
+
+        let camera_to_world = Matrix4x4::new(
+            right.x, new_up.x, dir.x, pos.x,
+            right.y, new_up.y, dir.y, pos.y,
+            right.z, new_up.z, dir.z, pos.z,
+            0.0,     0.0,      0.0,   1.0,
+        );
+
+        Self {
+            m: camera_to_world.inverse(),
+            m_inv: camera_to_world,
+        }
+    }
+
     // Returns the inverse transformation.
-    pub fn inverse(&self) -> Transform {
-        Transform {
+    pub fn inverse(&self) -> Self {
+        Self {
             m: self.m_inv,
             m_inv: self.m,
         }
     }
 
     // Returns a transformation with the matrices transposed.
-    pub fn transpose(&self) -> Transform {
-        Transform {
+    pub fn transpose(&self) -> Self {
+        Self {
             m: self.m.transpose(),
             m_inv: self.m_inv.transpose(),
         }
@@ -228,13 +227,13 @@ impl Transform {
     /// to 1.0.
     pub fn has_scale(&self) -> bool {
         let la2 = self
-            .transform_vector(&vector3(1.0, 0.0, 0.0))
+            .transform_vector(&Vector3::new(1.0, 0.0, 0.0))
             .length_squared();
         let lb2 = self
-            .transform_vector(&vector3(0.0, 1.0, 0.0))
+            .transform_vector(&Vector3::new(0.0, 1.0, 0.0))
             .length_squared();
         let lc2 = self
-            .transform_vector(&vector3(0.0, 0.0, 1.0))
+            .transform_vector(&Vector3::new(0.0, 0.0, 1.0))
             .length_squared();
 
         not_one(la2) || not_one(lb2) || not_one(lc2)
@@ -253,9 +252,9 @@ impl Transform {
         debug_assert!(wp != 0.0, "Transformation<Point3f>: wp is not zero");
 
         if wp == 1.0 {
-            point3(xp, yp, zp)
+            Point3::new(xp, yp, zp)
         } else {
-            point3(xp, yp, zp) / wp
+            Point3::new(xp, yp, zp) / wp
         }
     }
 
@@ -273,7 +272,7 @@ impl Transform {
 
         (
             self.transform_point(p),
-            gamma(3) * vector3(x_abs_sum, y_abs_sum, z_abs_sum),
+            gamma(3) * Vector3::new(x_abs_sum, y_abs_sum, z_abs_sum),
         )
     }
 
@@ -303,7 +302,7 @@ impl Transform {
             + gamma_3
                 * (abs(m[2][0] * p.x) + abs(m[2][1] * p.y) + abs(m[2][2] * p.z) + abs(m[2][3]));
 
-        vector3(abs_error_x, abs_error_y, abs_error_z)
+        Vector3::new(abs_error_x, abs_error_y, abs_error_z)
     }
 
     /// Applies transformation to a given vector.
@@ -311,7 +310,7 @@ impl Transform {
     /// * `v` - The vector.
     pub fn transform_vector(&self, v: &Vector3f) -> Vector3f {
         let m = &self.m;
-        vector3(
+        Vector3::new(
             m[0][0] * v.x + m[0][1] * v.y + m[0][2] * v.z,
             m[1][0] * v.x + m[1][1] * v.y + m[1][2] * v.z,
             m[2][0] * v.x + m[2][1] * v.y + m[2][2] * v.z,
@@ -332,7 +331,7 @@ impl Transform {
 
         (
             self.transform_vector(v),
-            gamma(3) * vector3(x_abs_err, y_abs_err, z_abs_err),
+            gamma(3) * Vector3::new(x_abs_err, y_abs_err, z_abs_err),
         )
     }
 
@@ -359,7 +358,7 @@ impl Transform {
             * (abs(m[2][0]) * v_error.x + abs(m[2][1]) * v_error.y + abs(m[2][2]) * v_error.z)
             + gamma_3 * (abs(m[2][0] * v.x) + abs(m[2][1] * v.y) + abs(m[2][2] * v.z));
 
-        vector3(abs_error_x, abs_error_y, abs_error_z)
+        Vector3::new(abs_error_x, abs_error_y, abs_error_z)
     }
 
     /// Applies transformation to a given normal.
@@ -367,7 +366,7 @@ impl Transform {
     /// * `n` - The normal.
     pub fn transform_normal(&self, n: &Normal3f) -> Normal3f {
         let m_inv = &self.m_inv.m;
-        normal3(
+        Normal3f::new(
             m_inv[0][0] * n.x + m_inv[1][0] * n.y + m_inv[2][0] * n.z,
             m_inv[0][1] * n.x + m_inv[1][1] * n.y + m_inv[2][1] * n.z,
             m_inv[0][2] * n.x + m_inv[1][2] * n.y + m_inv[2][2] * n.z,
@@ -392,15 +391,15 @@ impl Transform {
 
         // Handle differentials.
         if let Some(diff) = r.differentials {
-            let td = ray_differential(
+            let td = RayDifferential::new(
                 self.transform_point(&diff.rx_origin),
                 self.transform_point(&diff.ry_origin),
                 self.transform_vector(&diff.rx_direction),
                 self.transform_vector(&diff.ry_direction),
             );
-            ray_with_differentials(o, d, t_max, r.time, td, r.medium.clone())
+            Ray::new_with_differentials(o, d, t_max, r.time, td, r.medium.clone())
         } else {
-            ray(o, d, t_max, r.time, r.medium.clone())
+            Ray::new(o, d, t_max, r.time, r.medium.clone())
         }
     }
 
@@ -421,7 +420,7 @@ impl Transform {
 
         // Handle differentials.
         if let Some(diff) = r.differentials {
-            let td = ray_differential(
+            let td = RayDifferential::new(
                 self.transform_point(&diff.rx_origin),
                 self.transform_point(&diff.ry_origin),
                 self.transform_vector(&diff.rx_direction),
@@ -429,13 +428,13 @@ impl Transform {
             );
 
             (
-                ray_with_differentials(o, d, r.t_max, r.time, td, r.medium.clone()),
+                Ray::new_with_differentials(o, d, r.t_max, r.time, td, r.medium.clone()),
                 o_error,
                 d_error,
             )
         } else {
             (
-                ray(o, d, r.t_max, r.time, r.medium.clone()),
+                Ray::new(o, d, r.t_max, r.time, r.medium.clone()),
                 o_error,
                 d_error,
             )
@@ -466,14 +465,14 @@ impl Transform {
     ///
     /// * `b` - The bounding box.
     pub fn transform_bounds(&self, b: &Bounds3f) -> Bounds3f {
-        Bounds3::from(self.transform_point(&point3(b.p_min.x, b.p_min.y, b.p_min.z)))
-            .union(&self.transform_point(&point3(b.p_max.x, b.p_min.y, b.p_min.z)))
-            .union(&self.transform_point(&point3(b.p_min.x, b.p_max.y, b.p_min.z)))
-            .union(&self.transform_point(&point3(b.p_min.x, b.p_min.y, b.p_max.z)))
-            .union(&self.transform_point(&point3(b.p_min.x, b.p_max.y, b.p_max.z)))
-            .union(&self.transform_point(&point3(b.p_max.x, b.p_max.y, b.p_min.z)))
-            .union(&self.transform_point(&point3(b.p_max.x, b.p_min.y, b.p_max.z)))
-            .union(&self.transform_point(&point3(b.p_max.x, b.p_max.y, b.p_max.z)))
+        Bounds3::from(self.transform_point(&Point3::new(b.p_min.x, b.p_min.y, b.p_min.z)))
+            .union(&self.transform_point(&Point3::new(b.p_max.x, b.p_min.y, b.p_min.z)))
+            .union(&self.transform_point(&Point3::new(b.p_min.x, b.p_max.y, b.p_min.z)))
+            .union(&self.transform_point(&Point3::new(b.p_min.x, b.p_min.y, b.p_max.z)))
+            .union(&self.transform_point(&Point3::new(b.p_min.x, b.p_max.y, b.p_max.z)))
+            .union(&self.transform_point(&Point3::new(b.p_max.x, b.p_max.y, b.p_min.z)))
+            .union(&self.transform_point(&Point3::new(b.p_max.x, b.p_min.y, b.p_max.z)))
+            .union(&self.transform_point(&Point3::new(b.p_max.x, b.p_max.y, b.p_max.z)))
     }
 
     /// Applies transformation to a given surface interaction.
@@ -487,7 +486,7 @@ impl Transform {
         let (p, p_error) = self.transform_point_with_error(&si.hit.p);
 
         // Transform remaining members of SurfaceInteraction
-        let mut si = surface_interaction(
+        let mut si = SurfaceInteraction::new(
             p,
             p_error,
             si.uv,
@@ -505,7 +504,7 @@ impl Transform {
         si.hit.n = n;
 
         // Handle transformations for shading parameters..
-        si.shading = shading(
+        si.shading = Shading::new(
             self.transform_normal(&si.shading.n).normalize(),
             self.transform_vector(&si.shading.dpdu),
             self.transform_vector(&si.shading.dpdv),
@@ -533,7 +532,7 @@ impl From<Matrix4x4> for Transform {
     ///
     /// * `m` - A matrix representing a transformation.
     fn from(m: Matrix4x4) -> Self {
-        Transform {
+        Self {
             m,
             m_inv: m.inverse(),
         }
@@ -547,7 +546,7 @@ impl PartialOrd for Transform {
 }
 
 impl Ord for Transform {
-    fn cmp(&self, other: &Transform) -> Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         for i in 0..4 {
             for j in 0..4 {
                 if self.m[i][j] < other.m[i][j] {
@@ -577,8 +576,8 @@ impl Mul<Transform> for Transform {
     /// is the same as applying `self` then `rhs`.
     ///
     /// * `rhs` - The transformation to compose.
-    fn mul(self, rhs: Self) -> Self {
-        Transform {
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self::Output {
             m: self.m * rhs.m,
             m_inv: rhs.m_inv * self.m_inv,
         }

@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 use super::common::*;
-use super::{clamp, vector3, zero_vector3, Float, Transform, Vector3f, IDENTITY_MATRIX};
+use super::{clamp, Float, Transform, Vector3f, IDENTITY_MATRIX};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// A quaternion
@@ -15,17 +15,17 @@ pub struct Quaternion {
     pub w: Float,
 }
 
-/// Create a new quaternion.
-///
-/// * `v` - The `x`, `y`, `z` components represented as a vector.
-/// * `w` - The real component `w`.
-pub fn quaternion(v: Vector3f, w: Float) -> Quaternion {
-    Quaternion { v, w }
-}
-
 impl Quaternion {
+    /// Create a new quaternion.
+    ///
+    /// * `v` - The `x`, `y`, `z` components represented as a vector.
+    /// * `w` - The real component `w`.
+    pub fn new(v: Vector3f, w: Float) -> Self {
+        Self { v, w }
+    }
+
     /// Normlizes the quaternion by dividing each component by its length.
-    pub fn normalize(&self) -> Quaternion {
+    pub fn normalize(&self) -> Self {
         *self / self.length()
     }
 
@@ -46,7 +46,7 @@ impl Quaternion {
     ///
     /// * `t` - The interpolation parameter.
     /// * `q` - The other quaternion.
-    pub fn slerp(&self, t: Float, q: Quaternion) -> Quaternion {
+    pub fn slerp(&self, t: Float, q: Self) -> Self {
         let cos_theta = self.dot(&q);
         if cos_theta > 0.9995 {
             // Quaternions are nearly parallel. Use linear interpolation to
@@ -68,7 +68,7 @@ impl Default for Quaternion {
     /// Returns the default quaternion [0, 0, 0, 1].
     fn default() -> Self {
         Self {
-            v: zero_vector3(),
+            v: Vector3f::zero(),
             w: 1.0,
         }
     }
@@ -90,13 +90,13 @@ impl From<Transform> for Quaternion {
 
             s = 0.5 / s;
 
-            let v = vector3(
+            let v = Vector3f::new(
                 (m[2][1] - m[1][2]) * s,
                 (m[0][2] - m[2][0]) * s,
                 (m[1][0] - m[0][1]) * s,
             );
 
-            quaternion(v, w)
+            Self::new(v, w)
         } else {
             // Compute largest of x, y, or z, then remaining components
             let nxt = [1, 2, 0];
@@ -125,9 +125,9 @@ impl From<Transform> for Quaternion {
             q[j] = (m[j][i] + m[i][j]) * s;
             q[k] = (m[k][i] + m[i][k]) * s;
 
-            let v = vector3(q[0], q[1], q[2]);
+            let v = Vector3f::new(q[0], q[1], q[2]);
 
-            quaternion(v, w)
+            Self::new(v, w)
         }
     }
 }
@@ -173,7 +173,7 @@ impl Add<Quaternion> for Quaternion {
     ///
     /// * `other` - The quaternion to add.
     fn add(self, other: Self) -> Self::Output {
-        quaternion(self.v + other.v, self.w + other.w)
+        Self::Output::new(self.v + other.v, self.w + other.w)
     }
 }
 
@@ -182,7 +182,7 @@ impl AddAssign<Quaternion> for Quaternion {
     ///
     /// * `other` - The quaternion to add.
     fn add_assign(&mut self, other: Self) {
-        *self = quaternion(self.v + other.v, self.w + other.w)
+        *self = Self::new(self.v + other.v, self.w + other.w)
     }
 }
 
@@ -193,7 +193,7 @@ impl Sub<Quaternion> for Quaternion {
     ///
     /// * `other` - The quaternion to subtract.
     fn sub(self, other: Self) -> Self::Output {
-        quaternion(self.v - other.v, self.w - other.w)
+        Self::new(self.v - other.v, self.w - other.w)
     }
 }
 
@@ -202,7 +202,7 @@ impl SubAssign<Quaternion> for Quaternion {
     ///
     /// * `other` - The quaternion to subtract.
     fn sub_assign(&mut self, other: Self) {
-        *self = quaternion(self.v - other.v, self.w - other.w)
+        *self = Self::new(self.v - other.v, self.w - other.w)
     }
 }
 
@@ -213,7 +213,7 @@ impl Mul<Float> for Quaternion {
     ///
     /// * `f` - The scaling factor.
     fn mul(self, f: Float) -> Self::Output {
-        quaternion(f * self.v, f * self.w)
+        Self::Output::new(f * self.v, f * self.w)
     }
 }
 
@@ -224,7 +224,7 @@ impl Mul<Quaternion> for Float {
     ///
     /// * `q` - The quaternion to scale.
     fn mul(self, q: Quaternion) -> Self::Output {
-        quaternion(self * q.v, self * q.w)
+        Self::Output::new(self * q.v, self * q.w)
     }
 }
 
@@ -233,7 +233,7 @@ impl MulAssign<Float> for Quaternion {
     ///
     /// * `f` - The scaling factor.
     fn mul_assign(&mut self, f: Float) {
-        *self = quaternion(f * self.v, f * self.w)
+        *self = Self::new(f * self.v, f * self.w)
     }
 }
 
@@ -244,7 +244,7 @@ impl Div<Float> for Quaternion {
     ///
     /// * `f` - The scaling factor.
     fn div(self, f: Float) -> Self::Output {
-        quaternion(self.v / f, self.w / f)
+        Self::Output::new(self.v / f, self.w / f)
     }
 }
 
@@ -253,7 +253,7 @@ impl DivAssign<Float> for Quaternion {
     ///
     /// * `f` - The scaling factor.
     fn div_assign(&mut self, f: Float) {
-        *self = quaternion(self.v / f, self.w / f)
+        *self = Self::new(self.v / f, self.w / f)
     }
 }
 
@@ -262,7 +262,7 @@ impl Neg for Quaternion {
 
     /// Scales the components by -1.
     fn neg(self) -> Self::Output {
-        quaternion(-self.v, -self.w)
+        Self::Output::new(-self.v, -self.w)
     }
 }
 

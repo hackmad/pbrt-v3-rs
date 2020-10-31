@@ -2,8 +2,8 @@
 
 #![allow(dead_code)]
 use super::{
-    bounds3, clamp, intersection, normal3, point2, point3, shape_data, surface_interaction,
-    vector3, ArcTransform, Bounds3f, Float, Intersection, Ray, Shape, ShapeData, TWO_PI,
+    clamp, ArcTransform, Bounds3f, Float, Intersection, Normal3, Point2, Point3, Ray, Shape,
+    ShapeData, SurfaceInteraction, Vector3, TWO_PI,
 };
 use std::sync::Arc;
 
@@ -50,7 +50,7 @@ pub fn disk(
         radius,
         inner_radius,
         phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-        data: shape_data(
+        data: ShapeData::new(
             object_to_world.clone(),
             Some(world_to_object.clone()),
             reverse_orientation,
@@ -66,9 +66,9 @@ impl Shape for Disk {
 
     /// Returns a bounding box in the shapes object space.
     fn object_bound(&self) -> Bounds3f {
-        bounds3(
-            point3(-self.radius, -self.radius, self.height),
-            point3(self.radius, self.radius, self.height),
+        Bounds3f::new(
+            Point3::new(-self.radius, -self.radius, self.height),
+            Point3::new(self.radius, self.radius, self.height),
         )
     }
 
@@ -120,22 +120,22 @@ impl Shape for Disk {
         let u = phi / self.phi_max;
         let r_hit = dist2.sqrt();
         let v = (self.radius - r_hit) / (self.radius - self.inner_radius);
-        let dpdu = vector3(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
-        let dpdv = vector3(p_hit.x, p_hit.y, 0.0) * (self.inner_radius - self.radius) / r_hit;
-        let dndu = normal3(0.0, 0.0, 0.0);
-        let dndv = normal3(0.0, 0.0, 0.0);
+        let dpdu = Vector3::new(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
+        let dpdv = Vector3::new(p_hit.x, p_hit.y, 0.0) * (self.inner_radius - self.radius) / r_hit;
+        let dndu = Normal3::new(0.0, 0.0, 0.0);
+        let dndv = Normal3::new(0.0, 0.0, 0.0);
 
         // Refine disk intersection point
         p_hit.z = self.height;
 
         // Compute error bounds for disk intersection
-        let p_error = vector3(0.0, 0.0, 0.0);
+        let p_error = Vector3::new(0.0, 0.0, 0.0);
 
         // Initialize SurfaceInteraction from parametric information
-        let si = surface_interaction(
+        let si = SurfaceInteraction::new(
             p_hit,
             p_error,
-            point2(u, v),
+            Point2::new(u, v),
             -ray.d,
             dpdu,
             dpdv,
@@ -147,7 +147,7 @@ impl Shape for Disk {
 
         // Create hit.
         let isect = self.data.object_to_world.transform_surface_interaction(&si);
-        Some(intersection(t_shape_hit, isect))
+        Some(Intersection::new(t_shape_hit, isect))
     }
 
     /// Returns `true` if a ray-shape intersection succeeds; otherwise `false`.

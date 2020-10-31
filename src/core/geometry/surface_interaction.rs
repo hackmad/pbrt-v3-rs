@@ -2,8 +2,8 @@
 
 #![allow(dead_code)]
 use super::{
-    hit, ArcBSDF, ArcBSSRDF, ArcShape, FaceForward, Float, Hit, Interaction, Normal3, Normal3f,
-    Point2f, Point3f, Primitive, Vector3f,
+    ArcBSDF, ArcBSSRDF, ArcShape, FaceForward, Float, Hit, Interaction, Normal3, Normal3f, Point2f,
+    Point3f, Primitive, Vector3f,
 };
 
 /// SurfaceInteraction represents geometry of a particular point on a surface.
@@ -43,57 +43,57 @@ pub struct SurfaceInteraction<'a> {
     pub primitive: Option<&'a dyn Primitive>,
 }
 
-/// Create a new surface interaction.
-///
-/// `p`                - Point of interaction.
-/// `p_error`          - Floating point error for ray intersection points.
-/// `uv`               - The uv coordinates from surface parametrization.
-/// `wo`               - The negative ray direction (outgoing direction used
-///                      when computing lighting at points).
-/// `dpdu`             - Parametric partial derivative of the point ∂p/∂u.
-/// `dpdv`             - Parametric partial derivative of the point ∂p/∂v.
-/// `dndu`             - Differential change ∂n/∂v in surface normal as we move along u.
-/// `dndv`             - Differential change ∂n/∂v in surface normal as we move along v.
-/// `time`             - Time when interaction occurred.
-/// `shape`            - The shape.
-pub fn surface_interaction<'a>(
-    p: Point3f,
-    p_error: Vector3f,
-    uv: Point2f,
-    wo: Vector3f,
-    dpdu: Vector3f,
-    dpdv: Vector3f,
-    dndu: Normal3f,
-    dndv: Normal3f,
-    time: Float,
-    shape: Option<ArcShape>,
-) -> SurfaceInteraction<'a> {
-    // Calculate normal n from the partial derivatives.
-    let mut n = Normal3f::from(dpdu.cross(&dpdv).normalize());
+impl<'a> SurfaceInteraction<'a> {
+    /// Create a new surface interaction.
+    ///
+    /// `p`                - Point of interaction.
+    /// `p_error`          - Floating point error for ray intersection points.
+    /// `uv`               - The uv coordinates from surface parametrization.
+    /// `wo`               - The negative ray direction (outgoing direction used
+    ///                      when computing lighting at points).
+    /// `dpdu`             - Parametric partial derivative of the point ∂p/∂u.
+    /// `dpdv`             - Parametric partial derivative of the point ∂p/∂v.
+    /// `dndu`             - Differential change ∂n/∂v in surface normal as we move along u.
+    /// `dndv`             - Differential change ∂n/∂v in surface normal as we move along v.
+    /// `time`             - Time when interaction occurred.
+    /// `shape`            - The shape.
+    pub fn new(
+        p: Point3f,
+        p_error: Vector3f,
+        uv: Point2f,
+        wo: Vector3f,
+        dpdu: Vector3f,
+        dpdv: Vector3f,
+        dndu: Normal3f,
+        dndv: Normal3f,
+        time: Float,
+        shape: Option<ArcShape>,
+    ) -> Self {
+        // Calculate normal n from the partial derivatives.
+        let mut n = Normal3f::from(dpdu.cross(&dpdv).normalize());
 
-    // Adjust normal based on orientation and handedness
-    if let Some(s) = shape.clone() {
-        if s.get_data().reverse_orientation ^ s.get_data().transform_swaps_handedness {
-            n *= -1.0;
+        // Adjust normal based on orientation and handedness
+        if let Some(s) = shape.clone() {
+            if s.get_data().reverse_orientation ^ s.get_data().transform_swaps_handedness {
+                n *= -1.0;
+            }
+        }
+
+        Self {
+            hit: Hit::new(p, time, p_error, wo, n, None),
+            uv,
+            dpdu,
+            dpdv,
+            dndu,
+            dndv,
+            shape: shape.clone(),
+            shading: Shading::new(n, dpdu, dpdv, dndu, dndv),
+            bsdf: None,
+            bssrdf: None,
+            primitive: None,
         }
     }
 
-    SurfaceInteraction {
-        hit: hit(p, time, p_error, wo, n, None),
-        uv,
-        dpdu,
-        dpdv,
-        dndu,
-        dndv,
-        shape: shape.clone(),
-        shading: shading(n, dpdu, dpdv, dndu, dndv),
-        bsdf: None,
-        bssrdf: None,
-        primitive: None,
-    }
-}
-
-impl<'a> SurfaceInteraction<'a> {
     /// Returns updated shading geometry.
     ///
     /// * `dpdu` - Parametric partial derivative of the point ∂p/∂u.
@@ -124,7 +124,7 @@ impl<'a> SurfaceInteraction<'a> {
         }
 
         // Initialize shading partial derivative values
-        (hit_n, shading(shading_n, dpdu, dpdv, dndu, dndv))
+        (hit_n, Shading::new(shading_n, dpdu, dpdv, dndu, dndv))
     }
 }
 
@@ -149,24 +149,26 @@ pub struct Shading {
     pub dndv: Normal3f,
 }
 
-/// Create a new shading struct.
-/// * `n`    - Surface normal.
-/// * `dpdu` - Parametric partial derivative of the point ∂p/∂u.
-/// * `dpdv` - Parametric partial derivative of the point ∂p/∂v.
-/// * `dndu` - Differential change ∂n/∂v in surface normal as we move along u.
-/// * `dndv` - Differential change ∂n/∂v in surface normal as we move along v.
-pub fn shading(
-    n: Normal3f,
-    dpdu: Vector3f,
-    dpdv: Vector3f,
-    dndu: Normal3f,
-    dndv: Normal3f,
-) -> Shading {
-    Shading {
-        n,
-        dpdu,
-        dpdv,
-        dndu,
-        dndv,
+impl Shading {
+    /// Create a new shading struct.
+    /// * `n`    - Surface normal.
+    /// * `dpdu` - Parametric partial derivative of the point ∂p/∂u.
+    /// * `dpdv` - Parametric partial derivative of the point ∂p/∂v.
+    /// * `dndu` - Differential change ∂n/∂v in surface normal as we move along u.
+    /// * `dndv` - Differential change ∂n/∂v in surface normal as we move along v.
+    pub fn new(
+        n: Normal3f,
+        dpdu: Vector3f,
+        dpdv: Vector3f,
+        dndu: Normal3f,
+        dndv: Normal3f,
+    ) -> Self {
+        Self {
+            n,
+            dpdu,
+            dpdv,
+            dndu,
+            dndv,
+        }
     }
 }

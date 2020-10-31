@@ -2,9 +2,9 @@
 
 #![allow(dead_code)]
 use super::{
-    bounds3, clamp, efloat, gamma, intersection, max, min, point2, point3, quadratic, shape_data,
-    surface_interaction, vector3, ArcTransform, Bounds3f, Dot, EFloat, Float, Intersection,
-    Normal3, Ray, Shape, ShapeData, TWO_PI,
+    clamp, efloat, gamma, max, min, quadratic, ArcTransform, Bounds3f, Dot, EFloat, Float,
+    Intersection, Normal3, Point2, Point3, Ray, Shape, ShapeData, SurfaceInteraction, Vector3,
+    TWO_PI,
 };
 use std::sync::Arc;
 
@@ -53,7 +53,7 @@ pub fn cylinder(
         z_min: zmin,
         z_max: zmax,
         phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-        data: shape_data(
+        data: ShapeData::new(
             object_to_world.clone(),
             Some(world_to_object.clone()),
             reverse_orientation,
@@ -69,9 +69,9 @@ impl Shape for Cylinder {
 
     /// Returns a bounding box in the shapes object space.
     fn object_bound(&self) -> Bounds3f {
-        bounds3(
-            point3(-self.radius, -self.radius, self.z_min),
-            point3(self.radius, self.radius, self.z_max),
+        Bounds3f::new(
+            Point3::new(-self.radius, -self.radius, self.z_min),
+            Point3::new(self.radius, self.radius, self.z_max),
         )
     }
 
@@ -164,13 +164,13 @@ impl Shape for Cylinder {
             let v = (p_hit.z - self.z_min) / (self.z_max - self.z_min);
 
             // Compute cylinder dpdu and dpdv
-            let dpdu = vector3(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
-            let dpdv = vector3(0.0, 0.0, self.z_max - self.z_min);
+            let dpdu = Vector3::new(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
+            let dpdv = Vector3::new(0.0, 0.0, self.z_max - self.z_min);
 
             // Compute cylinder dndu and dndv
-            let d2p_duu = -self.phi_max * self.phi_max * vector3(p_hit.x, p_hit.y, 0.0);
-            let d2p_duv = vector3(0.0, 0.0, 0.0);
-            let d2p_dvv = vector3(0.0, 0.0, 0.0);
+            let d2p_duu = -self.phi_max * self.phi_max * Vector3::new(p_hit.x, p_hit.y, 0.0);
+            let d2p_duv = Vector3::new(0.0, 0.0, 0.0);
+            let d2p_dvv = Vector3::new(0.0, 0.0, 0.0);
 
             // Compute normal
             let n = dpdu.cross(&dpdv).normalize();
@@ -195,13 +195,13 @@ impl Shape for Cylinder {
             );
 
             // Compute error bounds for cylinder intersection
-            let p_error = gamma(3) * vector3(p_hit.x, p_hit.y, 0.0).abs();
+            let p_error = gamma(3) * Vector3::new(p_hit.x, p_hit.y, 0.0).abs();
 
             // Initialize SurfaceInteraction from parametric information
-            let si = surface_interaction(
+            let si = SurfaceInteraction::new(
                 p_hit,
                 p_error,
-                point2(u, v),
+                Point2::new(u, v),
                 -ray.d,
                 dpdu,
                 dpdv,
@@ -214,7 +214,7 @@ impl Shape for Cylinder {
             // Create hit.
             let isect = self.data.object_to_world.transform_surface_interaction(&si);
             let t_hit = Float::from(t_shape_hit);
-            Some(intersection(t_hit, isect))
+            Some(Intersection::new(t_hit, isect))
         } else {
             None
         }

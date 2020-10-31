@@ -2,9 +2,9 @@
 
 #![allow(dead_code)]
 use super::{
-    coordinate_system, empty_bounds3, gamma, intersection, point2, shape_data, surface_interaction,
-    vector3, ArcShape, ArcTexture, ArcTransform, Bounds3f, Float, Intersection, Normal3, Normal3f,
-    Point2f, Point3f, Ray, Shape, ShapeData, Union, Vector3, Vector3f,
+    coordinate_system, gamma, ArcShape, ArcTexture, ArcTransform, Bounds3f, Float, Intersection,
+    Normal3, Normal3f, Point2f, Point3f, Ray, Shape, ShapeData, SurfaceInteraction, Union, Vector3,
+    Vector3f,
 };
 use std::mem::size_of;
 use std::sync::Arc;
@@ -85,7 +85,7 @@ pub fn triangle_mesh(
         s: ts.collect(),
         uv,
         alpha_mask,
-        data: shape_data(object_to_world.clone(), None, reverse_orientation),
+        data: ShapeData::new(object_to_world.clone(), None, reverse_orientation),
     }
 }
 
@@ -121,7 +121,7 @@ pub fn triangle(
     Triangle {
         mesh: mesh.clone(),
         v: 3 * triangle_index,
-        data: shape_data(
+        data: ShapeData::new(
             object_to_world.clone(),
             Some(world_to_object.clone()),
             reverse_orientation,
@@ -140,7 +140,11 @@ impl Triangle {
                 self.mesh.uv[self.v + 2],
             ]
         } else {
-            [point2(0.0, 0.0), point2(1.0, 0.0), point2(1.0, 1.0)]
+            [
+                Point2f::new(0.0, 0.0),
+                Point2f::new(1.0, 0.0),
+                Point2f::new(1.0, 1.0),
+            ]
         }
     }
 }
@@ -156,7 +160,7 @@ impl Shape for Triangle {
         // We can unwrap safely because the factory methods guarantee world_to_object
         // is passed. If it is constructed without that, then tough luck!
         let world_to_object = self.data.world_to_object.clone().unwrap();
-        (0..3).fold(empty_bounds3::<Float>(), |b, i| {
+        (0..3).fold(Bounds3f::empty(), |b, i| {
             b.union(&world_to_object.transform_point(&self.mesh.p[self.v + i]))
         })
     }
@@ -166,9 +170,7 @@ impl Shape for Triangle {
     /// Default is to transform the object bounds with the object-to0world
     /// transformation. Override for tighter bounds implementation.
     fn world_bound(&self) -> Bounds3f {
-        (0..3).fold(empty_bounds3::<Float>(), |b, i| {
-            b.union(&self.mesh.p[self.v + i])
-        })
+        (0..3).fold(Bounds3f::empty(), |b, i| b.union(&self.mesh.p[self.v + i]))
     }
 
     /// Returns geometric details if a ray intersects the shape intersection.
@@ -263,12 +265,12 @@ impl Shape for Triangle {
         // Ensure that computed triangle is conservatively greater than zero.
 
         // Compute delta_z term for triangle `t` error bounds.
-        let max_z_t = vector3(p0t.z, p1t.z, p2t.z).abs().max_component();
+        let max_z_t = Vector3::new(p0t.z, p1t.z, p2t.z).abs().max_component();
         let delta_z = gamma(3) * max_z_t;
 
         // Compute delta_x and delta_y terms for triangle `t` error bounds.
-        let max_x_t = vector3(p0t.x, p1t.x, p2t.x).abs().max_component();
-        let max_y_t = vector3(p0t.y, p1t.y, p2t.y).abs().max_component();
+        let max_x_t = Vector3::new(p0t.x, p1t.x, p2t.x).abs().max_component();
+        let max_y_t = Vector3::new(p0t.y, p1t.y, p2t.y).abs().max_component();
         let delta_x = gamma(5) * (max_x_t + max_z_t);
         let delta_y = gamma(5) * (max_y_t + max_z_t);
 
@@ -276,7 +278,7 @@ impl Shape for Triangle {
         let delta_e = 2.0 * (gamma(2) * max_x_t * max_y_t + delta_y * max_x_t + delta_x * max_y_t);
 
         // Compute delta_t term for triangle `t` error bounds and check `t`.
-        let max_e = vector3(e0, e1, e2).abs().max_component();
+        let max_e = Vector3::new(e0, e1, e2).abs().max_component();
         let delta_t = 3.0
             * (gamma(3) * max_e * max_z_t + delta_e * max_z_t + delta_z * max_e)
             * inv_det.abs();
@@ -315,7 +317,7 @@ impl Shape for Triangle {
         let x_abs_sum = (b0 * p0.x).abs() + (b1 * p1.x).abs() + (b2 * p2.x).abs();
         let y_abs_sum = (b0 * p0.y).abs() + (b1 * p1.y).abs() + (b2 * p2.y).abs();
         let z_abs_sum = (b0 * p0.z).abs() + (b1 * p1.z).abs() + (b2 * p2.z).abs();
-        let p_error = gamma(7) * vector3(x_abs_sum, y_abs_sum, z_abs_sum);
+        let p_error = gamma(7) * Vector3::new(x_abs_sum, y_abs_sum, z_abs_sum);
 
         // Interpolate (u,v) parametric coordinates and hit point.
         let p_hit = b0 * p0 + b1 * p1 + b2 * p2;
@@ -323,7 +325,7 @@ impl Shape for Triangle {
 
         // Test intersection against alpha texture, if present.
         if test_alpha_texture && !self.mesh.alpha_mask.is_none() {
-            let isect_local = surface_interaction(
+            let isect_local = SurfaceInteraction::new(
                 p_hit,
                 Vector3f::default(),
                 uv_hit,
@@ -343,7 +345,7 @@ impl Shape for Triangle {
         }
 
         // Fill SurfaceInteraction from triangle hit.
-        let mut isect = surface_interaction(
+        let mut isect = SurfaceInteraction::new(
             p_hit,
             p_error,
             uv_hit,
@@ -448,7 +450,7 @@ impl Shape for Triangle {
             isect.shading = new_shading;
         }
 
-        Some(intersection(t, isect))
+        Some(Intersection::new(t, isect))
     }
 
     /// Returns `true` if a ray-shape intersection succeeds; otherwise `false`.
@@ -542,12 +544,12 @@ impl Shape for Triangle {
         // Ensure that computed triangle is conservatively greater than zero.
 
         // Compute delta_z term for triangle `t` error bounds.
-        let max_z_t = vector3(p0t.z, p1t.z, p2t.z).abs().max_component();
+        let max_z_t = Vector3::new(p0t.z, p1t.z, p2t.z).abs().max_component();
         let delta_z = gamma(3) * max_z_t;
 
         // Compute delta_x and delta_y terms for triangle `t` error bounds.
-        let max_x_t = vector3(p0t.x, p1t.x, p2t.x).abs().max_component();
-        let max_y_t = vector3(p0t.y, p1t.y, p2t.y).abs().max_component();
+        let max_x_t = Vector3::new(p0t.x, p1t.x, p2t.x).abs().max_component();
+        let max_y_t = Vector3::new(p0t.y, p1t.y, p2t.y).abs().max_component();
         let delta_x = gamma(5) * (max_x_t + max_z_t);
         let delta_y = gamma(5) * (max_y_t + max_z_t);
 
@@ -555,7 +557,7 @@ impl Shape for Triangle {
         let delta_e = 2.0 * (gamma(2) * max_x_t * max_y_t + delta_y * max_x_t + delta_x * max_y_t);
 
         // Compute delta_t term for triangle `t` error bounds and check `t`.
-        let max_e = vector3(e0, e1, e2).abs().max_component();
+        let max_e = Vector3::new(e0, e1, e2).abs().max_component();
         let delta_t = 3.0
             * (gamma(3) * max_e * max_z_t + delta_e * max_z_t + delta_z * max_e)
             * inv_det.abs();
@@ -597,7 +599,7 @@ impl Shape for Triangle {
             let p_hit = b0 * p0 + b1 * p1 + b2 * p2;
             let uv_hit = b0 * uv[0] + b1 * uv[1] + b2 * uv[2];
 
-            let isect_local = surface_interaction(
+            let isect_local = SurfaceInteraction::new(
                 p_hit,
                 Vector3f::default(),
                 uv_hit,

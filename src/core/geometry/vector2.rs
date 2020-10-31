@@ -24,20 +24,23 @@ pub type Vector2f = Vector2<Float>;
 /// 2-D vector containing `Int` values.
 pub type Vector2i = Vector2<Int>;
 
-/// Creates a new 2-D vector.
-///
-/// * `x` - X-coordinate.
-/// * `y` - Y-coordinate.
-pub fn vector2<T>(x: T, y: T) -> Vector2<T> {
-    Vector2 { x, y }
-}
-
-/// Creates a new 2-D zero vector.
-pub fn zero_vector2<T: Zero>() -> Vector2<T> {
-    vector2(T::zero(), T::zero())
-}
-
 impl<T: Num> Vector2<T> {
+    /// Creates a new 2-D vector.
+    ///
+    /// * `x` - X-coordinate.
+    /// * `y` - Y-coordinate.
+    pub fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+
+    /// Creates a new 2-D zero vector.
+    pub fn zero() -> Self
+    where
+        T: Zero,
+    {
+        Self::new(T::zero(), T::zero())
+    }
+
     /// Returns true if either coordinate is NaN.
     pub fn has_nans(&self) -> bool
     where
@@ -71,11 +74,11 @@ impl<T: Num> Vector2<T> {
     }
 
     /// Returns a new vector containing absolute values of the components.
-    pub fn abs(&self) -> Vector2<T>
+    pub fn abs(&self) -> Self
     where
         T: Neg<Output = T> + PartialOrd + Copy,
     {
-        vector2(abs(self.x), abs(self.y))
+        Self::new(abs(self.x), abs(self.y))
     }
 
     /// Returns the smallest coordinate value.
@@ -121,7 +124,7 @@ impl<T: Num> Vector2<T> {
     where
         T: PartialOrd + Copy,
     {
-        vector2(min(self.x, other.x), min(self.y, other.y))
+        Self::new(min(self.x, other.x), min(self.y, other.y))
     }
 
     /// Return the component-wise maximum coordinate values with another vector.
@@ -131,7 +134,7 @@ impl<T: Num> Vector2<T> {
     where
         T: PartialOrd + Copy,
     {
-        vector2(max(self.x, other.x), max(self.y, other.y))
+        Self::new(max(self.x, other.x), max(self.y, other.y))
     }
 
     /// Returns a new vector with permuted coordinates according to given axes.
@@ -142,7 +145,7 @@ impl<T: Num> Vector2<T> {
     where
         T: Copy,
     {
-        vector2(self[x], self[y])
+        Self::new(self[x], self[y])
     }
 }
 
@@ -158,13 +161,13 @@ impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Vector2<T>> for Vector2<T
 }
 
 impl<T: Num> Add for Vector2<T> {
-    type Output = Vector2<T>;
+    type Output = Self;
 
     /// Adds the given vector and returns the result.
     ///
     /// * `other` -  The vector to add.
     fn add(self, other: Self) -> Self::Output {
-        vector2(self.x + other.x, self.y + other.y)
+        Self::Output::new(self.x + other.x, self.y + other.y)
     }
 }
 
@@ -173,18 +176,18 @@ impl<T: Num + Copy> AddAssign for Vector2<T> {
     ///
     /// * `other` -  The vector to add.
     fn add_assign(&mut self, other: Self) {
-        *self = vector2(self.x + other.x, self.y + other.y);
+        *self = Self::new(self.x + other.x, self.y + other.y);
     }
 }
 
 impl<T: Num> Sub for Vector2<T> {
-    type Output = Vector2<T>;
+    type Output = Self;
 
     /// Subtracts the given vector and returns the result.
     ///
     /// * `other` -  The vector to subtract.
     fn sub(self, other: Self) -> Self::Output {
-        vector2(self.x - other.x, self.y - other.y)
+        Self::Output::new(self.x - other.x, self.y - other.y)
     }
 }
 
@@ -193,18 +196,18 @@ impl<T: Num + Copy> SubAssign for Vector2<T> {
     ///
     /// * `other` -  The vector to subtract.
     fn sub_assign(&mut self, other: Self) {
-        *self = vector2(self.x - other.x, self.y - other.y);
+        *self = Self::new(self.x - other.x, self.y - other.y);
     }
 }
 
 impl<T: Num + Copy> Mul<T> for Vector2<T> {
-    type Output = Vector2<T>;
+    type Output = Self;
 
     /// Scale the vector.
     ///
     /// * `f` -  The scaling factor.
     fn mul(self, f: T) -> Self::Output {
-        vector2(f * self.x, f * self.y)
+        Self::Output::new(f * self.x, f * self.y)
     }
 }
 
@@ -216,7 +219,7 @@ macro_rules! premul {
             ///
             /// * `v` -  The vector.
             fn mul(self, v: Vector2<$t>) -> Vector2<$t> {
-                vector2(self * v.x, self * v.y)
+                Vector2::<$t>::new(self * v.x, self * v.y)
             }
         }
     };
@@ -238,12 +241,12 @@ impl<T: Num + Copy> MulAssign<T> for Vector2<T> {
     ///
     /// * `f` -  The scaling factor.
     fn mul_assign(&mut self, f: T) {
-        *self = vector2(f * self.x, f * self.y)
+        *self = Self::new(f * self.x, f * self.y)
     }
 }
 
 impl<T: Num + Copy> Div<T> for Vector2<T> {
-    type Output = Vector2<T>;
+    type Output = Self;
 
     /// Scale the vector by 1/f.
     ///
@@ -252,7 +255,7 @@ impl<T: Num + Copy> Div<T> for Vector2<T> {
         debug_assert!(!f.is_zero());
 
         let inv = T::one() / f;
-        vector2(inv * self.x, inv * self.y)
+        Self::Output::new(inv * self.x, inv * self.y)
     }
 }
 
@@ -264,16 +267,16 @@ impl<T: Num + Copy> DivAssign<T> for Vector2<T> {
         debug_assert!(!f.is_zero());
 
         let inv = T::one() / f;
-        *self = vector2(inv * self.x, inv * self.y);
+        *self = Self::new(inv * self.x, inv * self.y);
     }
 }
 
 impl<T: Num + Neg<Output = T>> Neg for Vector2<T> {
-    type Output = Vector2<T>;
+    type Output = Self;
 
     /// Flip the vector's direction (scale by -1).
     fn neg(self) -> Self::Output {
-        vector2(-self.x, -self.y)
+        Self::Output::new(-self.x, -self.y)
     }
 }
 
@@ -330,7 +333,7 @@ impl<T> From<Point2<T>> for Vector2<T> {
     ///
     /// * `p` - 2-D point.
     fn from(p: Point2<T>) -> Self {
-        vector2(p.x, p.y)
+        Self { x: p.x, y: p.y }
     }
 }
 
@@ -347,55 +350,55 @@ mod tests {
 
     #[test]
     fn zero_vector() {
-        assert!(vector2(0, 0) == zero_vector2());
-        assert!(vector2(0.0, 0.0) == zero_vector2());
+        assert!(Vector2::new(0, 0) == Vector2::zero());
+        assert!(Vector2::new(0.0, 0.0) == Vector2::zero());
     }
 
     #[test]
     fn has_nans() {
-        assert!(!vector2(0.0, 0.0).has_nans());
-        assert!(vector2(f32::NAN, f32::NAN).has_nans());
-        assert!(vector2(f64::NAN, f64::NAN).has_nans());
+        assert!(!Vector2::new(0.0, 0.0).has_nans());
+        assert!(Vector2::new(f32::NAN, f32::NAN).has_nans());
+        assert!(Vector2::new(f64::NAN, f64::NAN).has_nans());
     }
 
     #[test]
     #[should_panic]
     fn normalize_zero_f64() {
-        zero_vector2::<f64>().normalize();
+        Vector2::<f64>::zero().normalize();
     }
 
     #[test]
     #[should_panic]
     fn normalize_zero_f32() {
-        zero_vector2::<f32>().normalize();
+        Vector2::<f32>::zero().normalize();
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn div_zero_i64() {
-        zero_vector2::<i64>() / 0;
+        Vector2::<i64>::zero() / 0;
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn div_zero_f64() {
-        vector2::<f64>(1.0, 1.0) / 0.0;
+        Vector2::<f64>::new(1.0, 1.0) / 0.0;
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn invalid_index() {
-        let z = zero_vector2::<i64>()[Axis::Z];
+        let z = Vector2::<i64>::zero()[Axis::Z];
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn invalid_index_mut() {
-        let mut v = zero_vector2::<i64>();
+        let mut v = Vector2::<i64>::zero();
         v[Axis::Z] = 1;
     }
 
@@ -428,21 +431,21 @@ mod tests {
         #[test]
         fn normalize_f32(v in vector2_f32()) {
             // Since we do 1.0 / l in implementation we have to do the
-            // same here. Doing vector2(x / l, y / l) will not work
+            // same here. Doing Vector2::new(x / l, y / l) will not work
             // for some of the floating point values due to precision
             // errors.
             let f = 1.0 / (v.x * v.x + v.y * v.y).sqrt();
-            prop_assert_eq!(v.normalize(), vector2(v.x * f, v.y * f));
+            prop_assert_eq!(v.normalize(), Vector2::new(v.x * f, v.y * f));
         }
 
         #[test]
         fn abs_i32(v in vector2_i32()) {
-            prop_assert_eq!(v.abs(), vector2(abs(v.x), abs(v.y)));
+            prop_assert_eq!(v.abs(), Vector2::new(abs(v.x), abs(v.y)));
         }
 
         #[test]
         fn abs_f32(v in vector2_f32()) {
-            prop_assert_eq!(v.abs(), vector2(abs(v.x), abs(v.y)));
+            prop_assert_eq!(v.abs(), Vector2::new(abs(v.x), abs(v.y)));
         }
 
         #[test]
@@ -473,12 +476,12 @@ mod tests {
 
         #[test]
         fn min_f32(v1 in vector2_f32(), v2 in vector2_f32()) {
-            prop_assert_eq!(v1.min(&v2), vector2(v1.x.min(v2.x), v1.y.min(v2.y)));
+            prop_assert_eq!(v1.min(&v2), Vector2::new(v1.x.min(v2.x), v1.y.min(v2.y)));
         }
 
         #[test]
         fn max_f32(v1 in vector2_f32(), v2 in vector2_f32()) {
-            prop_assert_eq!(v1.max(&v2), vector2(v1.x.max(v2.x), v1.y.max(v2.y)));
+            prop_assert_eq!(v1.max(&v2), Vector2::new(v1.x.max(v2.x), v1.y.max(v2.y)));
         }
 
         #[test]
@@ -490,62 +493,62 @@ mod tests {
 
         #[test]
         fn add_i32(v1 in vector2_i32(), v2 in vector2_i32()) {
-            prop_assert_eq!(v1 + v2, vector2(v1.x + v2.x, v1.y + v2.y));
+            prop_assert_eq!(v1 + v2, Vector2::new(v1.x + v2.x, v1.y + v2.y));
         }
 
         #[test]
         fn add_f32(v1 in vector2_f32(), v2 in vector2_f32()) {
-            prop_assert_eq!(v1 + v2, vector2(v1.x + v2.x, v1.y + v2.y));
+            prop_assert_eq!(v1 + v2, Vector2::new(v1.x + v2.x, v1.y + v2.y));
         }
 
         #[test]
         fn add_assign_i32(v1 in vector2_i32(), v2 in vector2_i32()) {
             let mut v = v1;
             v += v2;
-            prop_assert_eq!(v, vector2(v1.x + v2.x, v1.y + v2.y));
+            prop_assert_eq!(v, Vector2::new(v1.x + v2.x, v1.y + v2.y));
         }
 
         #[test]
         fn add_assign_f32(v1 in vector2_f32(), v2 in vector2_f32()) {
             let mut v = v1;
             v += v2;
-            prop_assert_eq!(v, vector2(v1.x + v2.x, v1.y + v2.y));
+            prop_assert_eq!(v, Vector2::new(v1.x + v2.x, v1.y + v2.y));
         }
 
         #[test]
         fn sub_i32(v1 in vector2_i32(), v2 in vector2_i32()) {
-            prop_assert_eq!(v1 - v2, vector2(v1.x - v2.x, v1.y - v2.y));
+            prop_assert_eq!(v1 - v2, Vector2::new(v1.x - v2.x, v1.y - v2.y));
         }
 
         #[test]
         fn sub_f32(v1 in vector2_f32(), v2 in vector2_f32()) {
-            prop_assert_eq!(v1 - v2, vector2(v1.x - v2.x, v1.y - v2.y));
+            prop_assert_eq!(v1 - v2, Vector2::new(v1.x - v2.x, v1.y - v2.y));
         }
 
         #[test]
         fn sub_assign_i32(v1 in vector2_i32(), v2 in vector2_i32()) {
             let mut v = v1;
             v -= v2;
-            prop_assert_eq!(v, vector2(v1.x - v2.x, v1.y - v2.y));
+            prop_assert_eq!(v, Vector2::new(v1.x - v2.x, v1.y - v2.y));
         }
 
         #[test]
         fn sub_assign_f32(v1 in vector2_f32(), v2 in vector2_f32()) {
             let mut v = v1;
             v -= v2;
-            prop_assert_eq!(v, vector2(v1.x - v2.x, v1.y - v2.y));
+            prop_assert_eq!(v, Vector2::new(v1.x - v2.x, v1.y - v2.y));
         }
 
         #[test]
         fn mul_i32(v in vector2_i32(), f in range_i32()) {
-            let expected = vector2(v.x * f, v.y * f);
+            let expected = Vector2::new(v.x * f, v.y * f);
             prop_assert_eq!(v * f, expected);
             prop_assert_eq!(f * v, expected);
         }
 
         #[test]
         fn mul_f32(v in vector2_f32(), f in range_f32()) {
-            let expected = vector2(v.x * f, v.y * f);
+            let expected = Vector2::new(v.x * f, v.y * f);
             prop_assert_eq!(v * f, expected);
             prop_assert_eq!(f * v, expected);
         }
@@ -554,14 +557,14 @@ mod tests {
         fn mul_assign_i32(v in vector2_i32(), f in range_i32()) {
             let mut v1 = v;
             v1 *= f;
-            prop_assert_eq!(v1, vector2(v.x * f, v.y * f));
+            prop_assert_eq!(v1, Vector2::new(v.x * f, v.y * f));
         }
 
         #[test]
         fn mul_assign_f32(v in vector2_f32(), f in range_f32()) {
             let mut v1 = v;
             v1 *= f;
-            prop_assert_eq!(v1, vector2(v.x * f, v.y * f));
+            prop_assert_eq!(v1, Vector2::new(v.x * f, v.y * f));
         }
 
         #[test]
@@ -570,13 +573,13 @@ mod tests {
             f in (-100..100i32).prop_filter("non-zero", |x| *x != 0)
         ) {
             let s = 1 / f;
-            prop_assert_eq!(v / f, vector2(v.x * s, v.y * s));
+            prop_assert_eq!(v / f, Vector2::new(v.x * s, v.y * s));
         }
 
         #[test]
         fn div_f32(v in vector2_f32(), f in non_zero_f32()) {
             let s = 1.0 / f;
-            prop_assert_eq!(v / f, vector2(v.x * s, v.y * s));
+            prop_assert_eq!(v / f, Vector2::new(v.x * s, v.y * s));
         }
 
         #[test]
@@ -585,7 +588,7 @@ mod tests {
             v1 /= f;
 
             let s = 1 / f;
-            prop_assert_eq!(v1, vector2(v.x * s, v.y * s));
+            prop_assert_eq!(v1, Vector2::new(v.x * s, v.y * s));
         }
 
         #[test]
@@ -594,18 +597,18 @@ mod tests {
             v1 /= f;
 
             let s = 1.0 / f;
-            prop_assert_eq!(v1, vector2(v.x * s, v.y * s));
+            prop_assert_eq!(v1, Vector2::new(v.x * s, v.y * s));
         }
 
         #[test]
         fn neg_i32(v in vector2_i32()) {
-            prop_assert_eq!(-v, vector2(-v.x, -v.y));
+            prop_assert_eq!(-v, Vector2::new(-v.x, -v.y));
             prop_assert_eq!(--v, v);
         }
 
         #[test]
         fn neg_f32(v in vector2_f32()) {
-            prop_assert_eq!(-v, vector2(-v.x, -v.y));
+            prop_assert_eq!(-v, Vector2::new(-v.x, -v.y));
             prop_assert_eq!(--v, v);
         }
 
@@ -623,7 +626,7 @@ mod tests {
 
         #[test]
         fn index_mut_i32(v in vector2_i32()) {
-            let mut v1 = vector2(-200, 200);
+            let mut v1 = Vector2::new(-200, 200);
             v1[Axis::X] = v.x;
             v1[Axis::Y] = v.y;
             prop_assert_eq!(v1, v);
@@ -631,7 +634,7 @@ mod tests {
 
         #[test]
         fn index_mut_f32(v in vector2_f32()) {
-            let mut v1 = vector2(-200.0, 200.0);
+            let mut v1 = Vector2::new(-200.0, 200.0);
             v1[Axis::X] = v.x;
             v1[Axis::Y] = v.y;
             prop_assert_eq!(v1, v);

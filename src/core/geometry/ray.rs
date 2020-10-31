@@ -28,51 +28,57 @@ pub struct Ray {
     pub medium: Option<ArcMedium>,
 }
 
-/// Returns a ray with no differentials.
-///
-/// * `o`      - Origin.
-/// * `d`      - Direction.
-/// * `t_max`  - Maximum extent of the ray.
-/// * `time`   - Time value.
-/// * `medium` - Medium containing origin `o`.
-pub fn ray(o: Point3f, d: Vector3f, t_max: Float, time: Float, medium: Option<ArcMedium>) -> Ray {
-    Ray {
-        o,
-        d,
-        t_max,
-        time,
-        differentials: None::<RayDifferential>,
-        medium,
-    }
-}
-
-/// Returns a ray with differential.
-///
-/// * `o`             - Origin.
-/// * `d`             - Direction.
-/// * `t_max`         - Maximum extent of the ray.
-/// * `time`          - Time value.
-/// * `differentials` - Auxilliary rays offset by one sample in x and y direction.
-/// * `medium` - Medium containing origin `o`.
-pub fn ray_with_differentials(
-    o: Point3f,
-    d: Vector3f,
-    t_max: Float,
-    time: Float,
-    differentials: RayDifferential,
-    medium: Option<ArcMedium>,
-) -> Ray {
-    Ray {
-        o,
-        d,
-        t_max,
-        time,
-        differentials: Some(differentials),
-        medium,
-    }
-}
-
 impl Ray {
+    /// Returns a ray with no differentials.
+    ///
+    /// * `o`      - Origin.
+    /// * `d`      - Direction.
+    /// * `t_max`  - Maximum extent of the ray.
+    /// * `time`   - Time value.
+    /// * `medium` - Medium containing origin `o`.
+    pub fn new(
+        o: Point3f,
+        d: Vector3f,
+        t_max: Float,
+        time: Float,
+        medium: Option<ArcMedium>,
+    ) -> Self {
+        Self {
+            o,
+            d,
+            t_max,
+            time,
+            differentials: None::<RayDifferential>,
+            medium,
+        }
+    }
+
+    /// Returns a ray with differential.
+    ///
+    /// * `o`             - Origin.
+    /// * `d`             - Direction.
+    /// * `t_max`         - Maximum extent of the ray.
+    /// * `time`          - Time value.
+    /// * `differentials` - Auxilliary rays offset by one sample in x and y direction.
+    /// * `medium` - Medium containing origin `o`.
+    pub fn new_with_differentials(
+        o: Point3f,
+        d: Vector3f,
+        t_max: Float,
+        time: Float,
+        differentials: RayDifferential,
+        medium: Option<ArcMedium>,
+    ) -> Self {
+        Self {
+            o,
+            d,
+            t_max,
+            time,
+            differentials: Some(differentials),
+            medium,
+        }
+    }
+
     /// Returns true if either coordinate is NaN.
     pub fn has_nans(&self) -> bool {
         self.o.has_nans() || self.d.has_nans() || self.t_max.is_nan()
@@ -98,6 +104,34 @@ impl Ray {
                 ry_direction: self.d + (d.ry_direction - self.d) * s,
             });
         }
+    }
+
+    /// Offset ray origin along the surface normal.
+    ///
+    /// `p`       - Intersection point.
+    /// `p_error` - Floating point error for intersection points.
+    /// `w`       - The direction.
+    /// `n`       - Surface normal at the point `p`.
+    pub fn offset_origin(p: &Point3f, p_error: &Vector3f, n: &Normal3f, w: &Vector3f) -> Point3f {
+        let d = n.abs().dot(p_error);
+
+        let mut offset = d * Vector3::from(*n);
+        if w.dot(n) < 0.0 {
+            offset = -offset;
+        }
+
+        let mut po = *p + offset;
+
+        // Round offset point po away from p.
+        for axis in 0..3 {
+            if offset[axis] > 0.0 {
+                po[axis] = next_float_up(po[axis]);
+            } else if offset[axis] < 0.0 {
+                po[axis] = next_float_down(po[axis]);
+            }
+        }
+
+        po
     }
 }
 
@@ -132,47 +166,21 @@ pub struct RayDifferential {
     pub ry_direction: Vector3f,
 }
 
-/// Returns a ray differential.
-///
-/// * `xo` - Origin for x-direction differential.
-/// * `xd` - Direction for x-direction differential.
-/// * `yo` - Origin for y-direction differential.
-/// * `yd` - Direction for y-direction differential.
-pub fn ray_differential(xo: Point3f, yo: Point3f, xd: Vector3f, yd: Vector3f) -> RayDifferential {
-    RayDifferential {
-        rx_origin: xo,
-        ry_origin: yo,
-        rx_direction: xd,
-        ry_direction: yd,
-    }
-}
-
-/// Offset ray origin along the surface normal.
-///
-/// `p`       - Intersection point.
-/// `p_error` - Floating point error for intersection points.
-/// `w`       - The direction.
-/// `n`       - Surface normal at the point `p`.
-pub fn offset_ray_origin(p: &Point3f, p_error: &Vector3f, n: &Normal3f, w: &Vector3f) -> Point3f {
-    let d = n.abs().dot(p_error);
-
-    let mut offset = d * Vector3::from(*n);
-    if w.dot(n) < 0.0 {
-        offset = -offset;
-    }
-
-    let mut po = *p + offset;
-
-    // Round offset point po away from p.
-    for axis in 0..3 {
-        if offset[axis] > 0.0 {
-            po[axis] = next_float_up(po[axis]);
-        } else if offset[axis] < 0.0 {
-            po[axis] = next_float_down(po[axis]);
+impl RayDifferential {
+    /// Returns a ray differential.
+    ///
+    /// * `xo` - Origin for x-direction differential.
+    /// * `xd` - Direction for x-direction differential.
+    /// * `yo` - Origin for y-direction differential.
+    /// * `yd` - Direction for y-direction differential.
+    pub fn new(xo: Point3f, yo: Point3f, xd: Vector3f, yd: Vector3f) -> Self {
+        Self {
+            rx_origin: xo,
+            ry_origin: yo,
+            rx_direction: xd,
+            ry_direction: yd,
         }
     }
-
-    po
 }
 
 // ----------------------------------------------------------------------------
@@ -182,40 +190,40 @@ pub fn offset_ray_origin(p: &Point3f, p_error: &Vector3f, n: &Normal3f, w: &Vect
 #[cfg(test)]
 #[macro_use]
 mod tests {
-    use super::super::{point3, vector3, Point3, Vector3, INFINITY};
+    use super::super::{Point3, Vector3, INFINITY};
     use super::*;
     use proptest::prelude::*;
 
     #[test]
     fn has_nans() {
-        let nan_point = point3(f32::NAN, f32::NAN, f32::NAN);
-        let nan_vector = vector3(f32::NAN, f32::NAN, f32::NAN);
+        let nan_point = Point3::new(f32::NAN, f32::NAN, f32::NAN);
+        let nan_vector = Vector3::new(f32::NAN, f32::NAN, f32::NAN);
         let nan_t_max = f32::NAN;
-        let point = point3(0.0, 0.0, 0.0);
-        let vector = vector3(1.0, 0.0, 0.0);
+        let point = Point3::new(0.0, 0.0, 0.0);
+        let vector = Vector3::new(1.0, 0.0, 0.0);
 
-        assert!(ray(nan_point, vector, 0.0, 0.0, None).has_nans());
-        assert!(ray(point, nan_vector, 0.0, 0.0, None).has_nans());
-        assert!(ray(point, vector, nan_t_max, 0.0, None).has_nans());
-        assert!(ray(nan_point, nan_vector, nan_t_max, 0.0, None).has_nans());
-        assert!(!ray(point, vector, 0.0, 0.0, None).has_nans());
+        assert!(Ray::new(nan_point, vector, 0.0, 0.0, None).has_nans());
+        assert!(Ray::new(point, nan_vector, 0.0, 0.0, None).has_nans());
+        assert!(Ray::new(point, vector, nan_t_max, 0.0, None).has_nans());
+        assert!(Ray::new(nan_point, nan_vector, nan_t_max, 0.0, None).has_nans());
+        assert!(!Ray::new(point, vector, 0.0, 0.0, None).has_nans());
     }
 
     #[test]
     fn at() {
-        let o = point3(0.0, 0.0, 0.0);
-        let d = vector3(1.0, 1.0, 1.0);
-        let r = ray(o, d, INFINITY, 0.0, None);
+        let o = Point3::new(0.0, 0.0, 0.0);
+        let d = Vector3::new(1.0, 1.0, 1.0);
+        let r = Ray::new(o, d, INFINITY, 0.0, None);
         assert!(r.at(0.0) == o);
         assert!(r.at(1.0) == Point3::from(d));
     }
 
     #[test]
     fn scale_differentials_none() {
-        let o = point3(0.0, 0.0, 0.0);
-        let d = vector3(1.0, 1.0, 1.0);
+        let o = Point3::new(0.0, 0.0, 0.0);
+        let d = Vector3::new(1.0, 1.0, 1.0);
 
-        let mut r = ray(o, d, INFINITY, 0.0, None);
+        let mut r = Ray::new(o, d, INFINITY, 0.0, None);
         assert!(r.differentials.is_none());
 
         r.scale_differentials(2.0);
@@ -224,16 +232,16 @@ mod tests {
 
     #[test]
     fn scale_differentials_some() {
-        let o = point3(0.0, 0.0, 0.0);
-        let d = vector3(1.0, 1.0, 1.0);
-        let xo = point3(1.0, 0.0, 0.0);
-        let yo = point3(0.0, 1.0, 0.0);
-        let xd = vector3(1.0, 0.0, 0.0);
-        let yd = vector3(0.0, 1.0, 0.0);
+        let o = Point3::new(0.0, 0.0, 0.0);
+        let d = Vector3::new(1.0, 1.0, 1.0);
+        let xo = Point3::new(1.0, 0.0, 0.0);
+        let yo = Point3::new(0.0, 1.0, 0.0);
+        let xd = Vector3::new(1.0, 0.0, 0.0);
+        let yd = Vector3::new(0.0, 1.0, 0.0);
 
-        let rd = ray_differential(xo, yo, xd, yd);
+        let rd = RayDifferential::new(xo, yo, xd, yd);
 
-        let mut r = ray_with_differentials(o, d, INFINITY, 0.0, rd, None);
+        let mut r = Ray::new_with_differentials(o, d, INFINITY, 0.0, rd, None);
         assert!(!r.differentials.is_none());
 
         r.scale_differentials(2.0);
@@ -268,7 +276,7 @@ mod tests {
     proptest! {
         #[test]
         fn at_f32(o in point3_f32(), d in vector3_f32(), t in range_f32()) {
-            let r = ray(o, d, INFINITY, 0.0, None);
+            let r = Ray::new(o, d, INFINITY, 0.0, None);
             prop_assert_eq!(r.at(t), o + t * d);
         }
     }

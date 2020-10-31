@@ -27,21 +27,24 @@ pub type Vector3f = Vector3<Float>;
 /// 3-D vector containing `Int` values.
 pub type Vector3i = Vector3<Int>;
 
-/// Creates a new 3-D vector.
-///
-/// * `x` - X-coordinate.
-/// * `y` - Y-coordinate.
-/// * `z` - Z-coordinate.
-pub fn vector3<T>(x: T, y: T, z: T) -> Vector3<T> {
-    Vector3 { x, y, z }
-}
-
-/// Creates a new 3-D zero vector.
-pub fn zero_vector3<T: Zero>() -> Vector3<T> {
-    vector3(T::zero(), T::zero(), T::zero())
-}
-
 impl<T: Num> Vector3<T> {
+    /// Creates a new 3-D vector.
+    ///
+    /// * `x` - X-coordinate.
+    /// * `y` - Y-coordinate.
+    /// * `z` - Z-coordinate.
+    pub fn new(x: T, y: T, z: T) -> Self {
+        Self { x, y, z }
+    }
+
+    /// Creates a new 3-D zero vector.
+    pub fn zero() -> Self
+    where
+        T: Zero,
+    {
+        Self::new(T::zero(), T::zero(), T::zero())
+    }
+
     /// Returns true if either coordinate is NaN.
     pub fn has_nans(&self) -> bool
     where
@@ -75,11 +78,11 @@ impl<T: Num> Vector3<T> {
     }
 
     /// Returns a new vector containing absolute values of the components.
-    pub fn abs(&self) -> Vector3<T>
+    pub fn abs(&self) -> Self
     where
         T: Neg<Output = T> + PartialOrd + Copy,
     {
-        vector3(abs(self.x), abs(self.y), abs(self.z))
+        Self::new(abs(self.x), abs(self.y), abs(self.z))
     }
 
     /// Returns the cross product with another vector.
@@ -89,7 +92,7 @@ impl<T: Num> Vector3<T> {
     where
         T: Copy,
     {
-        vector3(
+        Self::new(
             (self.y * other.z) - (self.z * other.y),
             (self.z * other.x) - (self.x * other.z),
             (self.x * other.y) - (self.y * other.x),
@@ -157,7 +160,7 @@ impl<T: Num> Vector3<T> {
     where
         T: PartialOrd + Copy,
     {
-        vector3(
+        Self::new(
             min(self.x, other.x),
             min(self.y, other.y),
             min(self.z, other.z),
@@ -171,7 +174,7 @@ impl<T: Num> Vector3<T> {
     where
         T: PartialOrd + Copy,
     {
-        vector3(
+        Self::new(
             max(self.x, other.x),
             max(self.y, other.y),
             max(self.z, other.z),
@@ -187,7 +190,7 @@ impl<T: Num> Vector3<T> {
     where
         T: Copy,
     {
-        vector3(self[x], self[y], self[z])
+        Self::new(self[x], self[y], self[z])
     }
 }
 
@@ -214,13 +217,13 @@ impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Normal3<T>> for Vector3<T
 }
 
 impl<T: Num> Add for Vector3<T> {
-    type Output = Vector3<T>;
+    type Output = Self;
 
     /// Adds the given vector and returns the result.
     ///
     /// * `other` -  The vector to add.
     fn add(self, other: Self) -> Self::Output {
-        vector3(self.x + other.x, self.y + other.y, self.z + other.z)
+        Self::Output::new(self.x + other.x, self.y + other.y, self.z + other.z)
     }
 }
 
@@ -229,18 +232,18 @@ impl<T: Num + Copy> AddAssign for Vector3<T> {
     ///
     /// * `other` -  The vector to add.
     fn add_assign(&mut self, other: Self) {
-        *self = vector3(self.x + other.x, self.y + other.y, self.z + other.z);
+        *self = Self::new(self.x + other.x, self.y + other.y, self.z + other.z);
     }
 }
 
 impl<T: Num> Sub for Vector3<T> {
-    type Output = Vector3<T>;
+    type Output = Self;
 
     /// Subtracts the given vector and returns the result.
     ///
     /// * `other` -  The vector to subtract.
     fn sub(self, other: Self) -> Self::Output {
-        vector3(self.x - other.x, self.y - other.y, self.z - other.z)
+        Self::Output::new(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 }
 
@@ -249,7 +252,7 @@ impl<T: Num + Copy> SubAssign for Vector3<T> {
     ///
     /// * `other` -  The vector to subtract.
     fn sub_assign(&mut self, other: Self) {
-        *self = vector3(self.x - other.x, self.y - other.y, self.z - other.z);
+        *self = Self::new(self.x - other.x, self.y - other.y, self.z - other.z);
     }
 }
 
@@ -260,7 +263,7 @@ impl<T: Num + Copy> Mul<T> for Vector3<T> {
     ///
     /// * `f` -  The scaling factor.
     fn mul(self, f: T) -> Self::Output {
-        vector3(f * self.x, f * self.y, f * self.z)
+        Self::Output::new(f * self.x, f * self.y, f * self.z)
     }
 }
 
@@ -272,7 +275,7 @@ macro_rules! premul {
             ///
             /// * `v` -  The vector.
             fn mul(self, v: Vector3<$t>) -> Vector3<$t> {
-                vector3(self * v.x, self * v.y, self * v.z)
+                Vector3::<$t>::new(self * v.x, self * v.y, self * v.z)
             }
         }
     };
@@ -294,12 +297,12 @@ impl<T: Num + Copy> MulAssign<T> for Vector3<T> {
     ///
     /// * `f` -  The scaling factor.
     fn mul_assign(&mut self, f: T) {
-        *self = vector3(f * self.x, f * self.y, f * self.z);
+        *self = Self::new(f * self.x, f * self.y, f * self.z);
     }
 }
 
 impl<T: Num + Copy> Div<T> for Vector3<T> {
-    type Output = Vector3<T>;
+    type Output = Self;
 
     /// Scale the vector by 1/f.
     ///
@@ -308,7 +311,7 @@ impl<T: Num + Copy> Div<T> for Vector3<T> {
         debug_assert!(!f.is_zero());
 
         let inv = T::one() / f;
-        vector3(inv * self.x, inv * self.y, inv * self.z)
+        Self::Output::new(inv * self.x, inv * self.y, inv * self.z)
     }
 }
 
@@ -320,7 +323,7 @@ impl<T: Num + Copy> DivAssign<T> for Vector3<T> {
         debug_assert!(!f.is_zero());
 
         let inv = T::one() / f;
-        *self = vector3(inv * self.x, inv * self.y, inv * self.z);
+        *self = Self::new(inv * self.x, inv * self.y, inv * self.z);
     }
 }
 
@@ -329,7 +332,7 @@ impl<T: Num + Neg<Output = T>> Neg for Vector3<T> {
 
     /// Flip the vector's direction (scale by -1).
     fn neg(self) -> Self::Output {
-        vector3(-self.x, -self.y, -self.z)
+        Self::Output::new(-self.x, -self.y, -self.z)
     }
 }
 
@@ -386,7 +389,11 @@ impl<T> From<Point3<T>> for Vector3<T> {
     ///
     /// * `p` -  3-D point.
     fn from(p: Point3<T>) -> Self {
-        vector3(p.x, p.y, p.z)
+        Self {
+            x: p.x,
+            y: p.y,
+            z: p.z,
+        }
     }
 }
 
@@ -395,7 +402,11 @@ impl<T> From<Normal3<T>> for Vector3<T> {
     ///
     /// * `n` -  3-D normal.
     fn from(n: Normal3<T>) -> Self {
-        vector3(n.x, n.y, n.z)
+        Self {
+            x: n.x,
+            y: n.y,
+            z: n.z,
+        }
     }
 }
 
@@ -412,48 +423,48 @@ mod tests {
 
     #[test]
     fn zero_vector() {
-        assert!(vector3(0, 0, 0) == zero_vector3());
-        assert!(vector3(0.0, 0.0, 0.0) == zero_vector3());
+        assert!(Vector3::new(0, 0, 0) == Vector3::zero());
+        assert!(Vector3::new(0.0, 0.0, 0.0) == Vector3::zero());
     }
 
     #[test]
     fn has_nans() {
-        assert!(!vector3(0.0, 0.0, 0.0).has_nans());
-        assert!(vector3(f32::NAN, f32::NAN, f32::NAN).has_nans());
-        assert!(vector3(f64::NAN, f64::NAN, f64::NAN).has_nans());
+        assert!(!Vector3::new(0.0, 0.0, 0.0).has_nans());
+        assert!(Vector3::new(f32::NAN, f32::NAN, f32::NAN).has_nans());
+        assert!(Vector3::new(f64::NAN, f64::NAN, f64::NAN).has_nans());
     }
 
     #[test]
     #[should_panic]
     fn normalize_zero_f64() {
-        zero_vector3::<f64>().normalize();
+        Vector3::<f64>::zero().normalize();
     }
 
     #[test]
     #[should_panic]
     fn normalize_zero_f32() {
-        zero_vector3::<f32>().normalize();
+        Vector3::<f32>::zero().normalize();
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn div_zero_i64() {
-        zero_vector3::<i64>() / 0;
+        Vector3::<i64>::zero() / 0;
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn div_zero_f64() {
-        vector3::<f64>(1.0, 1.0, 1.0) / 0.0;
+        Vector3::<f64>::new(1.0, 1.0, 1.0) / 0.0;
     }
 
     #[test]
     fn cross_axis_f32() {
-        let x_axis = vector3(1.0, 0.0, 0.0);
-        let y_axis = vector3(0.0, 1.0, 0.0);
-        let z_axis = vector3(0.0, 0.0, 1.0);
+        let x_axis = Vector3::new(1.0, 0.0, 0.0);
+        let y_axis = Vector3::new(0.0, 1.0, 0.0);
+        let z_axis = Vector3::new(0.0, 0.0, 1.0);
 
         assert!(x_axis.cross(&y_axis) == z_axis);
         assert!(y_axis.cross(&x_axis) == -z_axis);
@@ -500,21 +511,21 @@ mod tests {
         #[test]
         fn normalize_f32(v in vector3_f32()) {
             // Since we do 1.0 / l in implementation we have to do the
-            // same here. Doing vector3(x / l, y / l) will not work
+            // same here. Doing Vector3::new(x / l, y / l) will not work
             // for some of the floating point values due to precision
             // errors.
             let f = 1.0 / (v.x * v.x + v.y * v.y + v.z * v.z).sqrt();
-            prop_assert_eq!(v.normalize(), vector3(v.x * f, v.y * f, v.z * f));
+            prop_assert_eq!(v.normalize(), Vector3::new(v.x * f, v.y * f, v.z * f));
         }
 
         #[test]
         fn abs_i32(v in vector3_i32()) {
-            prop_assert_eq!(v.abs(), vector3(abs(v.x), abs(v.y), abs(v.z)));
+            prop_assert_eq!(v.abs(), Vector3::new(abs(v.x), abs(v.y), abs(v.z)));
         }
 
         #[test]
         fn abs_f32(v in vector3_f32()) {
-            prop_assert_eq!(v.abs(), vector3(abs(v.x), abs(v.y), abs(v.z)));
+            prop_assert_eq!(v.abs(), Vector3::new(abs(v.x), abs(v.y), abs(v.z)));
         }
 
         #[test]
@@ -541,7 +552,7 @@ mod tests {
 
         #[test]
         fn cross_zero_f32(v in vector3_f32()) {
-            let zero = zero_vector3::<f32>();
+            let zero = Vector3::<f32>::zero();
             prop_assert_eq!(zero.cross(&v), zero);
             prop_assert_eq!(v.cross(&zero), zero);
             prop_assert_eq!(v.cross(&v), zero);
@@ -575,12 +586,12 @@ mod tests {
 
         #[test]
         fn min_f32(v1 in vector3_f32(), v2 in vector3_f32()) {
-            prop_assert_eq!(v1.min(&v2), vector3(v1.x.min(v2.x), v1.y.min(v2.y), v1.z.min(v2.z)));
+            prop_assert_eq!(v1.min(&v2), Vector3::new(v1.x.min(v2.x), v1.y.min(v2.y), v1.z.min(v2.z)));
         }
 
         #[test]
         fn max_f32(v1 in vector3_f32(), v2 in vector3_f32()) {
-            prop_assert_eq!(v1.max(&v2), vector3(v1.x.max(v2.x), v1.y.max(v2.y), v1.z.max(v2.z)));
+            prop_assert_eq!(v1.max(&v2), Vector3::new(v1.x.max(v2.x), v1.y.max(v2.y), v1.z.max(v2.z)));
         }
 
         #[test]
@@ -598,62 +609,62 @@ mod tests {
 
         #[test]
         fn add_i32(v1 in vector3_i32(), v2 in vector3_i32()) {
-            prop_assert_eq!(v1 + v2, vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z));
+            prop_assert_eq!(v1 + v2, Vector3::new(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z));
         }
 
         #[test]
         fn add_f32(v1 in vector3_f32(), v2 in vector3_f32()) {
-            prop_assert_eq!(v1 + v2, vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z));
+            prop_assert_eq!(v1 + v2, Vector3::new(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z));
         }
 
         #[test]
         fn add_assign_i32(v1 in vector3_i32(), v2 in vector3_i32()) {
             let mut v = v1;
             v += v2;
-            prop_assert_eq!(v, vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z));
+            prop_assert_eq!(v, Vector3::new(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z));
         }
 
         #[test]
         fn add_assign_f32(v1 in vector3_f32(), v2 in vector3_f32()) {
             let mut v = v1;
             v += v2;
-            prop_assert_eq!(v, vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z));
+            prop_assert_eq!(v, Vector3::new(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z));
         }
 
         #[test]
         fn sub_i32(v1 in vector3_i32(), v2 in vector3_i32()) {
-            prop_assert_eq!(v1 - v2, vector3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z));
+            prop_assert_eq!(v1 - v2, Vector3::new(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z));
         }
 
         #[test]
         fn sub_f32(v1 in vector3_f32(), v2 in vector3_f32()) {
-            prop_assert_eq!(v1 - v2, vector3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z));
+            prop_assert_eq!(v1 - v2, Vector3::new(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z));
         }
 
         #[test]
         fn sub_assign_i32(v1 in vector3_i32(), v2 in vector3_i32()) {
             let mut v = v1;
             v -= v2;
-            prop_assert_eq!(v, vector3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z));
+            prop_assert_eq!(v, Vector3::new(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z));
         }
 
         #[test]
         fn sub_assign_f32(v1 in vector3_f32(), v2 in vector3_f32()) {
             let mut v = v1;
             v -= v2;
-            prop_assert_eq!(v, vector3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z));
+            prop_assert_eq!(v, Vector3::new(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z));
         }
 
         #[test]
         fn mul_i32(v in vector3_i32(), f in range_i32()) {
-            let expected = vector3(v.x * f, v.y * f, v.z * f);
+            let expected = Vector3::new(v.x * f, v.y * f, v.z * f);
             prop_assert_eq!(v * f, expected);
             prop_assert_eq!(f * v, expected);
         }
 
         #[test]
         fn mul_f32(v in vector3_f32(), f in range_f32()) {
-            let expected = vector3(v.x * f, v.y * f, v.z * f);
+            let expected = Vector3::new(v.x * f, v.y * f, v.z * f);
             prop_assert_eq!(v * f, expected);
             prop_assert_eq!(f * v, expected);
         }
@@ -662,14 +673,14 @@ mod tests {
         fn mul_assign_i32(v in vector3_i32(), f in range_i32()) {
             let mut v1 = v;
             v1 *= f;
-            prop_assert_eq!(v1, vector3(v.x * f, v.y * f, v.z * f));
+            prop_assert_eq!(v1, Vector3::new(v.x * f, v.y * f, v.z * f));
         }
 
         #[test]
         fn mul_assign_f32(v in vector3_f32(), f in range_f32()) {
             let mut v1 = v;
             v1 *= f;
-            prop_assert_eq!(v1, vector3(v.x * f, v.y * f, v.z * f));
+            prop_assert_eq!(v1, Vector3::new(v.x * f, v.y * f, v.z * f));
         }
 
         #[test]
@@ -678,13 +689,13 @@ mod tests {
             f in (-100..100i32).prop_filter("non-zero", |x| *x != 0)
         ) {
             let s = 1 / f;
-            prop_assert_eq!(v / f, vector3(v.x * s, v.y * s, v.z * s));
+            prop_assert_eq!(v / f, Vector3::new(v.x * s, v.y * s, v.z * s));
         }
 
         #[test]
         fn div_f32(v in vector3_f32(), f in non_zero_f32()) {
             let s = 1.0 / f;
-            prop_assert_eq!(v / f, vector3(v.x * s, v.y * s, v.z * s));
+            prop_assert_eq!(v / f, Vector3::new(v.x * s, v.y * s, v.z * s));
         }
 
         #[test]
@@ -693,7 +704,7 @@ mod tests {
             v1 /= f;
 
             let s = 1 / f;
-            prop_assert_eq!(v1, vector3(v.x * s, v.y * s, v.z * s));
+            prop_assert_eq!(v1, Vector3::new(v.x * s, v.y * s, v.z * s));
         }
 
         #[test]
@@ -702,18 +713,18 @@ mod tests {
             v1 /= f;
 
             let s = 1.0 / f;
-            prop_assert_eq!(v1, vector3(v.x * s, v.y * s, v.z * s));
+            prop_assert_eq!(v1, Vector3::new(v.x * s, v.y * s, v.z * s));
         }
 
         #[test]
         fn neg_i32(v in vector3_i32()) {
-            prop_assert_eq!(-v, vector3(-v.x, -v.y, -v.z));
+            prop_assert_eq!(-v, Vector3::new(-v.x, -v.y, -v.z));
             prop_assert_eq!(--v, v);
         }
 
         #[test]
         fn neg_f32(v in vector3_f32()) {
-            prop_assert_eq!(-v, vector3(-v.x, -v.y, -v.z));
+            prop_assert_eq!(-v, Vector3::new(-v.x, -v.y, -v.z));
             prop_assert_eq!(--v, v);
         }
 
@@ -731,7 +742,7 @@ mod tests {
 
         #[test]
         fn index_mut_i32(v in vector3_i32()) {
-            let mut v1 = vector3(-200, 200, -200);
+            let mut v1 = Vector3::new(-200, 200, -200);
             v1[Axis::X] = v.x;
             v1[Axis::Y] = v.y;
             v1[Axis::Z] = v.z;
@@ -740,7 +751,7 @@ mod tests {
 
         #[test]
         fn index_mut_f32(v in vector3_f32()) {
-            let mut v1 = vector3(-200.0, 200.0, -200.0);
+            let mut v1 = Vector3::new(-200.0, 200.0, -200.0);
             v1[Axis::X] = v.x;
             v1[Axis::Y] = v.y;
             v1[Axis::Z] = v.z;

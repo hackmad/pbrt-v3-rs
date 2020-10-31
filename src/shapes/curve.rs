@@ -2,9 +2,9 @@
 
 #![allow(dead_code)]
 use super::{
-    abs, bounds3, clamp, coordinate_system, intersection, lerp, log2, look_at, max, min, point2,
-    rotate_axis, shape_data, surface_interaction, vector3, ArcShape, ArcTransform, Bounds3f, Dot,
-    Float, Intersection, Normal3f, Point3f, Ray, Shape, ShapeData, Union, Vector3, Vector3f,
+    abs, clamp, coordinate_system, lerp, log2, max, min, ArcShape, ArcTransform, Bounds3f, Dot,
+    Float, Intersection, Normal3f, Point2f, Point3f, Ray, Shape, ShapeData, SurfaceInteraction,
+    Transform, Union, Vector3, Vector3f,
 };
 use std::sync::Arc;
 
@@ -56,7 +56,7 @@ pub fn curve(
     u_max: Float,
 ) -> Curve {
     Curve {
-        data: shape_data(
+        data: ShapeData::new(
             object_to_world.clone(),
             Some(world_to_object.clone()),
             reverse_orientation,
@@ -257,7 +257,7 @@ impl Curve {
             let t_hit = pc.z / ray_length;
 
             // Compute error bounds for curve intersection
-            let p_error = vector3(2.0 * hit_width, 2.0 * hit_width, 2.0 * hit_width);
+            let p_error = Vector3::new(2.0 * hit_width, 2.0 * hit_width, 2.0 * hit_width);
 
             // Compute dpdu and dpdv for curve intersection.
             let (_, dpdu) = eval_bezier(&self.common.cp_obj, u);
@@ -274,20 +274,20 @@ impl Curve {
                 // Compute curve dpdv for flat and cylinder curves
                 let dpdu_plane = ray_to_object.inverse().transform_vector(&dpdu);
                 let mut dpdv_plane =
-                    vector3(-dpdu_plane.y, dpdu_plane.x, 0.0).normalize() * hit_width;
+                    Vector3::new(-dpdu_plane.y, dpdu_plane.x, 0.0).normalize() * hit_width;
                 if self.common.curve_type == CurveType::Cylinder {
                     // Rotate dpdv_plane to give cylindrical appearance.
                     let theta = lerp(v, -90.0, 90.0);
-                    let rot = rotate_axis(-theta, &dpdu_plane);
+                    let rot = Transform::rotate_axis(-theta, &dpdu_plane);
                     dpdv_plane = rot.transform_vector(&dpdv_plane);
                 }
                 ray_to_object.transform_vector(&dpdv_plane)
             };
 
-            let si = surface_interaction(
+            let si = SurfaceInteraction::new(
                 ray.at(t_hit),
                 p_error,
-                point2(u, v),
+                Point2f::new(u, v),
                 -ray.d,
                 dpdu,
                 dpdv,
@@ -302,7 +302,7 @@ impl Curve {
                 .clone()
                 .transform_surface_interaction(&si);
 
-            Some(intersection(t_hit, isect))
+            Some(Intersection::new(t_hit, isect))
         } else {
             current_hit
         }
@@ -338,8 +338,8 @@ impl Shape for Curve {
             lerp(self.u_max, self.common.width[0], self.common.width[1]),
         ];
 
-        bounds3(cp_obj[0], cp_obj[1])
-            .union(&bounds3(cp_obj[2], cp_obj[3]))
+        Bounds3f::new(cp_obj[0], cp_obj[1])
+            .union(&Bounds3f::new(cp_obj[2], cp_obj[3]))
             .expand(max(width[0], width[1]) * 0.5)
     }
 
@@ -383,7 +383,7 @@ impl Shape for Curve {
             coordinate_system(&ray.d, &mut dx, &mut dy);
         }
 
-        let object_to_ray = look_at(&ray.o, &(ray.o + ray.d), &dx);
+        let object_to_ray = Transform::look_at(&ray.o, &(ray.o + ray.d), &dx);
         let cp = [
             object_to_ray.transform_point(&cp_obj[0]),
             object_to_ray.transform_point(&cp_obj[1]),

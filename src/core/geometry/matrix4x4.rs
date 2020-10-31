@@ -24,34 +24,33 @@ pub const IDENTITY_MATRIX: Matrix4x4 = Matrix4x4 {
     ],
 };
 
-/// Create a 4x4 matrix using the following order of the parameters:
-///
-/// * `t00`, `t01`, `t02`, `t03` - Row 1
-/// * `t10`, `t11`, `t12`, `t13` - Row 2
-/// * `t20`, `t21`, `t22`, `t23` - Row 3
-/// * `t30`, `t31`, `t32`, `t33` - Row 4
-#[rustfmt::skip]
-pub fn matrix4x4(
-    t00: Float, t01: Float, t02: Float, t03: Float,
-    t10: Float, t11: Float, t12: Float, t13: Float,
-    t20: Float, t21: Float, t22: Float, t23: Float,
-    t30: Float, t31: Float, t32: Float, t33: Float,
-) -> Matrix4x4 {
-    Matrix4x4 {
-        m: [
-            [t00, t01, t02, t03],
-            [t10, t11, t12, t13],
-            [t20, t21, t22, t23],
-            [t30, t31, t32, t33],
-        ],
-    }
-}
-
 #[rustfmt::skip]
 impl Matrix4x4 {
+    /// Create a 4x4 matrix using the following order of the parameters:
+    ///
+    /// * `t00`, `t01`, `t02`, `t03` - Row 1
+    /// * `t10`, `t11`, `t12`, `t13` - Row 2
+    /// * `t20`, `t21`, `t22`, `t23` - Row 3
+    /// * `t30`, `t31`, `t32`, `t33` - Row 4
+    pub fn new(
+        t00: Float, t01: Float, t02: Float, t03: Float,
+        t10: Float, t11: Float, t12: Float, t13: Float,
+        t20: Float, t21: Float, t22: Float, t23: Float,
+        t30: Float, t31: Float, t32: Float, t33: Float,
+    ) -> Self {
+        Self {
+            m: [
+                [t00, t01, t02, t03],
+                [t10, t11, t12, t13],
+                [t20, t21, t22, t23],
+                [t30, t31, t32, t33],
+            ],
+        }
+    }
+
     /// Returns the transpose of the matrix.
     pub fn transpose(&self) -> Matrix4x4 {
-        matrix4x4(
+        Self::new(
             self.m[0][0], self.m[1][0], self.m[2][0], self.m[3][0],
             self.m[0][1], self.m[1][1], self.m[2][1], self.m[3][1],
             self.m[0][2], self.m[1][2], self.m[2][2], self.m[3][2],
@@ -63,7 +62,7 @@ impl Matrix4x4 {
     /// elimination.
     ///
     /// The function will panic if the matrix is singular.
-    pub fn inverse(&self) -> Matrix4x4 {
+    pub fn inverse(&self) -> Self {
         let mut indxc = [0; 4];
         let mut indxr = [0; 4];
         let mut ipiv = [0; 4];
@@ -140,7 +139,7 @@ impl Matrix4x4 {
             }
         }
 
-        Matrix4x4 { m: minv }
+        Self { m: minv }
     }
 }
 
@@ -152,13 +151,13 @@ impl Default for Matrix4x4 {
 }
 
 impl Mul<Matrix4x4> for Matrix4x4 {
-    type Output = Matrix4x4;
+    type Output = Self;
 
     /// Post-multiply the given matrix.
     ///
     /// * `other` - The other matrix
     fn mul(self, other: Matrix4x4) -> Self::Output {
-        let mut m = Matrix4x4::default();
+        let mut m = Self::default();
 
         for i in 0..4 {
             for j in 0..4 {

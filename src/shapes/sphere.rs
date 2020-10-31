@@ -2,9 +2,9 @@
 
 #![allow(dead_code)]
 use super::{
-    bounds3, clamp, efloat, gamma, intersection, max, min, point2, point3, quadratic, shape_data,
-    surface_interaction, vector3, ArcTransform, Bounds3f, Dot, EFloat, Float, Intersection,
-    Normal3, Ray, Shape, ShapeData, Vector3, TWO_PI,
+    clamp, efloat, gamma, max, min, quadratic, ArcTransform, Bounds3f, Dot, EFloat, Float,
+    Intersection, Normal3, Point2, Point3, Ray, Shape, ShapeData, SurfaceInteraction, Vector3,
+    TWO_PI,
 };
 use std::sync::Arc;
 
@@ -61,7 +61,7 @@ pub fn sphere(
         theta_min: clamp(zmin / radius, -1.0, 1.0).acos(),
         theta_max: clamp(zmax / radius, -1.0, 1.0).acos(),
         phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-        data: shape_data(
+        data: ShapeData::new(
             object_to_world.clone(),
             Some(world_to_object.clone()),
             reverse_orientation,
@@ -77,9 +77,9 @@ impl Shape for Sphere {
 
     /// Returns a bounding box in the shapes object space.
     fn object_bound(&self) -> Bounds3f {
-        bounds3(
-            point3(-self.radius, -self.radius, self.z_min),
-            point3(self.radius, self.radius, self.z_max),
+        Bounds3f::new(
+            Point3::new(-self.radius, -self.radius, self.z_min),
+            Point3::new(self.radius, self.radius, self.z_max),
         )
     }
 
@@ -131,7 +131,7 @@ impl Shape for Sphere {
             let mut p_hit = ray.at(Float::from(t_shape_hit));
 
             // Refine sphere intersection point
-            p_hit *= self.radius / p_hit.distance(point3(0.0, 0.0, 0.0));
+            p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
 
             if p_hit.x == 0.0 && p_hit.y == 0.0 {
                 p_hit.x = 1e-5 * self.radius;
@@ -160,7 +160,7 @@ impl Shape for Sphere {
                 p_hit = ray.at(Float::from(t_shape_hit));
 
                 // Refine sphere intersection point
-                p_hit *= self.radius / p_hit.distance(point3(0.0, 0.0, 0.0));
+                p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
                 if p_hit.x == 0.0 && p_hit.y == 0.0 {
                     p_hit.x = 1e-5 * self.radius;
                 }
@@ -188,23 +188,23 @@ impl Shape for Sphere {
             let inv_z_radius = 1.0 / z_radius;
             let cos_phi = p_hit.x * inv_z_radius;
             let sin_phi = p_hit.y * inv_z_radius;
-            let dpdu = vector3(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
+            let dpdu = Vector3::new(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
             let dpdv = (self.theta_max - self.theta_min)
-                * vector3(
+                * Vector3::new(
                     p_hit.z * cos_phi,
                     p_hit.z * sin_phi,
                     -self.radius * theta.sin(),
                 );
 
             // Compute sphere dndu and dndv
-            let d2p_duu = -self.phi_max * self.phi_max * vector3(p_hit.x, p_hit.y, 0.0);
+            let d2p_duu = -self.phi_max * self.phi_max * Vector3::new(p_hit.x, p_hit.y, 0.0);
             let d2p_duv = (self.theta_max - self.theta_min)
                 * p_hit.z
                 * self.phi_max
-                * vector3(-sin_phi, cos_phi, 0.0);
+                * Vector3::new(-sin_phi, cos_phi, 0.0);
             let d2p_dvv = -(self.theta_max - self.theta_min)
                 * (self.theta_max - self.theta_min)
-                * vector3(p_hit.x, p_hit.y, p_hit.z);
+                * Vector3::new(p_hit.x, p_hit.y, p_hit.z);
 
             // Compute normal
             let n = dpdu.cross(&dpdv).normalize();
@@ -232,10 +232,10 @@ impl Shape for Sphere {
             let p_error = gamma(5) * Vector3::from(p_hit).abs();
 
             // Initialize SurfaceInteraction from parametric information
-            let si = surface_interaction(
+            let si = SurfaceInteraction::new(
                 p_hit,
                 p_error,
-                point2(u, v),
+                Point2::new(u, v),
                 -ray.d,
                 dpdu,
                 dpdv,
@@ -248,7 +248,7 @@ impl Shape for Sphere {
             // Create hit.
             let isect = self.data.object_to_world.transform_surface_interaction(&si);
             let t_hit = Float::from(t_shape_hit);
-            Some(intersection(t_hit, isect))
+            Some(Intersection::new(t_hit, isect))
         } else {
             None
         }
@@ -301,7 +301,7 @@ impl Shape for Sphere {
             let mut p_hit = ray.at(Float::from(t_shape_hit));
 
             // Refine sphere intersection point
-            p_hit *= self.radius / p_hit.distance(point3(0.0, 0.0, 0.0));
+            p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
 
             if p_hit.x == 0.0 && p_hit.y == 0.0 {
                 p_hit.x = 1e-5 * self.radius;
@@ -330,7 +330,7 @@ impl Shape for Sphere {
                 p_hit = ray.at(Float::from(t_shape_hit));
 
                 // Refine sphere intersection point
-                p_hit *= self.radius / p_hit.distance(point3(0.0, 0.0, 0.0));
+                p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
                 if p_hit.x == 0.0 && p_hit.y == 0.0 {
                     p_hit.x = 1e-5 * self.radius;
                 }

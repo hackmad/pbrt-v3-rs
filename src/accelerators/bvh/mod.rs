@@ -7,8 +7,8 @@ mod morton;
 mod sah;
 
 use super::{
-    float_to_bits, vector3, Aggregate, ArcAreaLight, ArcMaterial, ArcPrimitive, Axis, Bounds3f,
-    Float, Point3f, Primitive, Ray, SurfaceInteraction, TransportMode, Union, Vector3f,
+    float_to_bits, Aggregate, ArcAreaLight, ArcMaterial, ArcPrimitive, Axis, Bounds3f, Float,
+    Point3f, Primitive, Ray, SurfaceInteraction, TransportMode, Union, Vector3f,
 };
 use common::*;
 use hlbvh::*;
@@ -160,7 +160,7 @@ impl Primitive for BVHAccel {
     fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
         let mut si: Option<SurfaceInteraction> = None;
         if self.nodes.len() > 0 {
-            let inv_dir = vector3(1.0 / r.d.x, 1.0 / r.d.y, 1.0 / r.d.z);
+            let inv_dir = Vector3f::new(1.0 / r.d.x, 1.0 / r.d.y, 1.0 / r.d.z);
             let dir_is_neg = [
                 if inv_dir.x < 0.0 { 1_u8 } else { 0_u8 },
                 if inv_dir.y < 0.0 { 1_u8 } else { 0_u8 },
@@ -218,7 +218,7 @@ impl Primitive for BVHAccel {
     /// * `r`                  - The ray.
     fn intersect_p(&self, r: &Ray) -> bool {
         if self.nodes.len() > 0 {
-            let inv_dir = vector3(1.0 / r.d.x, 1.0 / r.d.y, 1.0 / r.d.z);
+            let inv_dir = Vector3f::new(1.0 / r.d.x, 1.0 / r.d.y, 1.0 / r.d.z);
             let dir_is_neg = [
                 if inv_dir.x < 0.0 { 1_u8 } else { 0_u8 },
                 if inv_dir.y < 0.0 { 1_u8 } else { 0_u8 },

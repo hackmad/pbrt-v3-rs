@@ -2,8 +2,8 @@
 
 #![allow(dead_code)]
 use super::{
-    gamma, lerp, max, min, point3, vector3, Axis, Float, Int, Intersect, Point3, Point3f, Ray,
-    Union, Vector3, Vector3f,
+    gamma, lerp, max, min, Axis, Float, Int, Intersect, Point3, Point3f, Ray, Union, Vector3,
+    Vector3f,
 };
 use num_traits::bounds::Bounded;
 use num_traits::{Num, Zero};
@@ -26,30 +26,6 @@ pub type Bounds3f = Bounds3<Float>;
 /// 3-D bounding box containing `Int` points.
 pub type Bounds3i = Bounds3<Int>;
 
-/// Creates a new 3-D bounding box from 2 points. The minimum and maximum bounds
-/// are used for each coordinate axis.
-///
-/// * `p1` - First point.
-/// * `p2` - Second point.
-pub fn bounds3<T: Num + PartialOrd + Copy>(p1: Point3<T>, p2: Point3<T>) -> Bounds3<T> {
-    Bounds3 {
-        p_min: point3(min(p1.x, p2.x), min(p1.y, p2.y), min(p1.z, p2.z)),
-        p_max: point3(max(p1.x, p2.x), max(p1.y, p2.y), max(p1.z, p2.z)),
-    }
-}
-
-/// Returns a 3-D bounding box where minimum and maximum bounds are maximum and
-/// minimum values respectively of the type's limits. This is so we can easily grow
-/// the bounding box from nothing iteratively.
-pub fn empty_bounds3<T: Num + Bounded + PartialOrd + Copy>() -> Bounds3<T> {
-    // Don't call bounds2<T>() because it'll create the largest bounding box
-    // by flipping p_min and p_max.
-    Bounds3 {
-        p_min: point3(T::max_value(), T::max_value(), T::max_value()),
-        p_max: point3(T::min_value(), T::min_value(), T::min_value()),
-    }
-}
-
 impl<T: Num + PartialOrd + Copy> From<Point3<T>> for Bounds3<T> {
     /// Use a 3-D point as minimum and maximum 3-D bounds.
     ///
@@ -60,6 +36,36 @@ impl<T: Num + PartialOrd + Copy> From<Point3<T>> for Bounds3<T> {
 }
 
 impl<T: Num + Copy> Bounds3<T> {
+    /// Creates a new 3-D bounding box from 2 points. The minimum and maximum bounds
+    /// are used for each coordinate axis.
+    ///
+    /// * `p1` - First point.
+    /// * `p2` - Second point.
+    pub fn new(p1: Point3<T>, p2: Point3<T>) -> Self
+    where
+        T: PartialOrd + Copy,
+    {
+        Self {
+            p_min: Point3::new(min(p1.x, p2.x), min(p1.y, p2.y), min(p1.z, p2.z)),
+            p_max: Point3::new(max(p1.x, p2.x), max(p1.y, p2.y), max(p1.z, p2.z)),
+        }
+    }
+
+    /// Returns a 3-D bounding box where minimum and maximum bounds are maximum and
+    /// minimum values respectively of the type's limits. This is so we can easily grow
+    /// the bounding box from nothing iteratively.
+    pub fn empty() -> Self
+    where
+        T: Bounded + PartialOrd + Copy,
+    {
+        // Don't call new() because it'll create the largest bounding box
+        // by flipping p_min and p_max.
+        Self {
+            p_min: Point3::new(T::max_value(), T::max_value(), T::max_value()),
+            p_max: Point3::new(T::min_value(), T::min_value(), T::min_value()),
+        }
+    }
+
     /// Returns true if the bounds describes an empty box where any the
     /// components of any p_max are less than p_max.
     pub fn is_empty(&self) -> bool
@@ -203,7 +209,7 @@ impl<T: Num + Copy> Bounds3<T> {
     where
         Float: Mul<T, Output = T>,
     {
-        point3(
+        Point3::new(
             lerp::<T>(t.x, self.p_min.x, self.p_max.x),
             lerp::<T>(t.y, self.p_min.y, self.p_max.y),
             lerp::<T>(t.z, self.p_min.z, self.p_max.z),
@@ -213,15 +219,15 @@ impl<T: Num + Copy> Bounds3<T> {
     /// Pad the bounding box by a constant factor in all dimensions.
     ///
     /// * `delta` - Padding amount.
-    pub fn expand(&self, delta: T) -> Bounds3<T>
+    pub fn expand(&self, delta: T) -> Self
     where
         T: PartialOrd,
     {
         // Don't call bounds2<T>() to prevent flipping p_min and p_max when
         // the input is empty box.
-        Bounds3 {
-            p_min: self.p_min - vector3(delta, delta, delta),
-            p_max: self.p_max + vector3(delta, delta, delta),
+        Self {
+            p_min: self.p_min - Vector3::new(delta, delta, delta),
+            p_max: self.p_max + Vector3::new(delta, delta, delta),
         }
     }
 
@@ -236,7 +242,7 @@ impl<T: Num + Copy> Bounds3<T> {
         let x = corner & 1;
         let y = if corner & 2 == 0 { 0 } else { 1 };
         let z = if corner & 4 == 0 { 0 } else { 1 };
-        point3(self[x].x, self[y].y, self[z].z)
+        Point3::new(self[x].x, self[y].y, self[z].z)
     }
 
     /// Returns the near and far ray parameters where it intersects the bounding
@@ -337,12 +343,12 @@ impl<T: Num + PartialOrd + Copy> Union<Point3<T>> for Bounds3<T> {
     /// * `other` - The point.
     fn union(&self, other: &Point3<T>) -> Self {
         Bounds3 {
-            p_min: point3(
+            p_min: Point3::new(
                 min(self.p_min.x, other.x),
                 min(self.p_min.y, other.y),
                 min(self.p_min.z, other.z),
             ),
-            p_max: point3(
+            p_max: Point3::new(
                 max(self.p_max.x, other.x),
                 max(self.p_max.y, other.y),
                 max(self.p_max.z, other.z),
@@ -357,12 +363,12 @@ impl<T: Num + PartialOrd + Copy> Union<Bounds3<T>> for Bounds3<T> {
     /// * `other` - The other bounding box.
     fn union(&self, other: &Bounds3<T>) -> Self {
         Bounds3 {
-            p_min: point3(
+            p_min: Point3::new(
                 min(self.p_min.x, other.p_min.x),
                 min(self.p_min.y, other.p_min.y),
                 min(self.p_min.z, other.p_min.z),
             ),
-            p_max: point3(
+            p_max: Point3::new(
                 max(self.p_max.x, other.p_max.x),
                 max(self.p_max.y, other.p_max.y),
                 max(self.p_max.z, other.p_max.z),
@@ -377,12 +383,12 @@ impl<T: Num + PartialOrd + Copy> Intersect<Bounds3<T>> for Bounds3<T> {
     /// * `other` - The other bounding box.
     fn intersect(&self, other: &Bounds3<T>) -> Self {
         Bounds3 {
-            p_min: point3(
+            p_min: Point3::new(
                 max(self.p_min.x, other.p_min.x),
                 max(self.p_min.y, other.p_min.y),
                 max(self.p_min.z, other.p_min.z),
             ),
-            p_max: point3(
+            p_max: Point3::new(
                 min(self.p_max.x, other.p_max.x),
                 min(self.p_max.y, other.p_max.y),
                 min(self.p_max.z, other.p_max.z),

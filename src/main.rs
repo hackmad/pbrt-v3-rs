@@ -11,7 +11,7 @@ mod shapes;
 use self::core::geometry::*;
 
 fn main() {
-    let mut v = zero_vector2();
+    let mut v = Vector2::<f32>::zero();
     v += Vector2f { x: 0.2, y: 0.1 };
     let p = Point2f { x: 0.5, y: 0.6 };
 

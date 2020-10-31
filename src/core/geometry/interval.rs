@@ -15,25 +15,18 @@ pub struct Interval {
     pub high: Float,
 }
 
-/// Create an interval with given bounds. The interval will sort the input.
-///
-/// * `v0` - A real number.
-/// * `v1` - A real number.
-pub fn interval(v0: Float, v1: Float) -> Interval {
-    Interval {
-        low: min(v0, v1),
-        high: max(v0, v1),
-    }
-}
-
-/// Create an interval on single point.
-///
-/// * `v` - A real number.
-pub fn interval_point(v: Float) -> Interval {
-    Interval { low: v, high: v }
-}
-
 impl Interval {
+    /// Create an interval with given bounds. The interval will sort the input.
+    ///
+    /// * `v0` - A real number.
+    /// * `v1` - A real number.
+    pub fn new(v0: Float, v1: Float) -> Self {
+        Self {
+            low: min(v0, v1),
+            high: max(v0, v1),
+        }
+    }
+
     /// Return the interval used for sine function assuming this interval fits
     /// inside [0, 2π].
     pub fn sin(&self) -> Interval {
@@ -61,7 +54,7 @@ impl Interval {
             sin_low = -1.0;
         }
 
-        interval(sin_low, sin_high)
+        Interval::new(sin_low, sin_high)
     }
 
     /// Return the interval used for cosine function assuming this interval fits
@@ -87,7 +80,7 @@ impl Interval {
             cos_low = -1.0;
         }
 
-        interval(cos_low, cos_high)
+        Interval::new(cos_low, cos_high)
     }
 
     /// Find the values of any zero crossings of the equation:
@@ -118,11 +111,11 @@ impl Interval {
         depth: usize,
     ) {
         // Evaluate motion derivative in interval form, return if no zeros
-        let range = interval_point(c1)
-            + (interval_point(c2) + interval_point(c3) * *self)
-                * (interval_point(2.0 * theta) * *self).cos()
-            + (interval_point(c4) + interval_point(c5) * *self)
-                * (interval_point(2.0 * theta) * *self).sin();
+        let range = Interval::from(c1)
+            + (Interval::from(c2) + Interval::from(c3) * *self)
+                * (Interval::from(2.0 * theta) * *self).cos()
+            + (Interval::from(c4) + Interval::from(c5) * *self)
+                * (Interval::from(2.0 * theta) * *self).sin();
 
         if range.low > 0.0 || range.high < 0.0 || range.low == range.high {
             return;
@@ -132,7 +125,7 @@ impl Interval {
             // Split self and check both resulting intervals
             let mid = (self.low + self.high) * 0.5;
 
-            interval(self.low, mid).find_zeros(
+            Interval::new(self.low, mid).find_zeros(
                 c1,
                 c2,
                 c3,
@@ -144,7 +137,7 @@ impl Interval {
                 depth - 1,
             );
 
-            interval(mid, self.high).find_zeros(
+            Interval::new(mid, self.high).find_zeros(
                 c1,
                 c2,
                 c3,
@@ -181,6 +174,15 @@ impl Interval {
     }
 }
 
+impl From<Float> for Interval {
+    /// Create an interval on single point.
+    ///
+    /// * `v` - A real number.
+    fn from(v: Float) -> Self {
+        Self { low: v, high: v }
+    }
+}
+
 impl Add for Interval {
     type Output = Self;
 
@@ -188,7 +190,7 @@ impl Add for Interval {
     ///
     /// * `i` -  The interval to add.
     fn add(self, i: Self) -> Self::Output {
-        interval(self.low + i.low, self.high + i.high)
+        Interval::new(self.low + i.low, self.high + i.high)
     }
 }
 
@@ -199,7 +201,7 @@ impl Sub for Interval {
     ///
     /// * `i` -  The interval to subtract.
     fn sub(self, i: Self) -> Self::Output {
-        interval(self.low - i.low, self.high - i.high)
+        Interval::new(self.low - i.low, self.high - i.high)
     }
 }
 
@@ -215,7 +217,7 @@ impl Mul for Interval {
         // values. Multiplying the various possibilities and taking the
         // overall minimum and maximum is easier than working through which ones
         // to use and multiplying these.
-        interval(
+        Self::new(
             min(
                 min(self.low * i.low, self.high * i.low),
                 min(self.low * i.high, self.high * i.high),

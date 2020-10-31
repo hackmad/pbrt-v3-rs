@@ -55,12 +55,14 @@ pub struct Intersection<'a> {
     pub isect: SurfaceInteraction<'a>,
 }
 
-/// Create a new intersection.
-///
-/// * `t`     - The parameter along the ray where intersection occurred.
-/// * `isect` - The surface interaction details.
-pub fn intersection<'a>(t: Float, isect: SurfaceInteraction<'a>) -> Intersection<'a> {
-    Intersection { t, isect }
+impl<'a> Intersection<'a> {
+    /// Create a new intersection.
+    ///
+    /// * `t`     - The parameter along the ray where intersection occurred.
+    /// * `isect` - The surface interaction details.
+    pub fn new(t: Float, isect: SurfaceInteraction<'a>) -> Self {
+        Self { t, isect }
+    }
 }
 
 /// Store common shape data.
@@ -81,21 +83,23 @@ pub struct ShapeData {
     pub transform_swaps_handedness: bool,
 }
 
-/// Create a new instance of shape data.
-///
-/// * `object_to_world`     - The object to world transfomation.
-/// * `world_to_object`     - The world to object transfomation.
-/// * `reverse_orientation` - Indicates whether their surface normal directions
-///                           should be reversed from the default
-pub fn shape_data(
-    object_to_world: ArcTransform,
-    world_to_object: Option<ArcTransform>,
-    reverse_orientation: bool,
-) -> ShapeData {
-    ShapeData {
-        object_to_world: object_to_world.clone(),
-        world_to_object: world_to_object.clone(),
-        reverse_orientation,
-        transform_swaps_handedness: object_to_world.swaps_handedness(),
+impl ShapeData {
+    /// Create a new instance of shape data.
+    ///
+    /// * `object_to_world`     - The object to world transfomation.
+    /// * `world_to_object`     - The world to object transfomation.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions
+    ///                           should be reversed from the default
+    pub fn new(
+        object_to_world: ArcTransform,
+        world_to_object: Option<ArcTransform>,
+        reverse_orientation: bool,
+    ) -> Self {
+        Self {
+            object_to_world: object_to_world.clone(),
+            world_to_object: world_to_object.clone(),
+            reverse_orientation,
+            transform_swaps_handedness: object_to_world.swaps_handedness(),
+        }
     }
 }

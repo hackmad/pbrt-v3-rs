@@ -2,9 +2,8 @@
 
 #![allow(dead_code)]
 use super::{
-    bounds3, clamp, efloat, intersection, point2, point3, quadratic, shape_data,
-    surface_interaction, vector3, ArcTransform, Bounds3f, Dot, EFloat, Float, Intersection,
-    Normal3, Ray, Shape, ShapeData, TWO_PI,
+    clamp, efloat, quadratic, ArcTransform, Bounds3f, Dot, EFloat, Float, Intersection, Normal3,
+    Point2, Point3, Ray, Shape, ShapeData, SurfaceInteraction, Vector3, TWO_PI,
 };
 use std::sync::Arc;
 
@@ -45,7 +44,7 @@ pub fn cone(
         radius,
         height,
         phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-        data: shape_data(
+        data: ShapeData::new(
             object_to_world.clone(),
             Some(world_to_object.clone()),
             reverse_orientation,
@@ -61,9 +60,9 @@ impl Shape for Cone {
 
     /// Returns a bounding box in the shapes object space.
     fn object_bound(&self) -> Bounds3f {
-        bounds3(
-            point3(-self.radius, -self.radius, 0.0),
-            point3(self.radius, self.radius, self.height),
+        Bounds3f::new(
+            Point3::new(-self.radius, -self.radius, 0.0),
+            Point3::new(self.radius, self.radius, self.height),
         )
     }
 
@@ -152,13 +151,13 @@ impl Shape for Cone {
             let v = p_hit.z / self.height;
 
             // Compute cone dpdu and dpdv
-            let dpdu = vector3(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
-            let dpdv = vector3(-p_hit.x / (1.0 - v), -p_hit.y / (1.0 - v), self.height);
+            let dpdu = Vector3::new(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
+            let dpdv = Vector3::new(-p_hit.x / (1.0 - v), -p_hit.y / (1.0 - v), self.height);
 
             // Compute cone dndu and dndv
-            let d2p_duu = -self.phi_max * self.phi_max * vector3(p_hit.x, p_hit.y, 0.0);
-            let d2p_duv = self.phi_max / (1.0 - v) * vector3(p_hit.y, -p_hit.x, 0.0);
-            let d2p_dvv = vector3(0.0, 0.0, 0.0);
+            let d2p_duu = -self.phi_max * self.phi_max * Vector3::new(p_hit.x, p_hit.y, 0.0);
+            let d2p_duv = self.phi_max / (1.0 - v) * Vector3::new(p_hit.y, -p_hit.x, 0.0);
+            let d2p_dvv = Vector3::new(0.0, 0.0, 0.0);
 
             // Compute normal
             let n = dpdu.cross(&dpdv).normalize();
@@ -187,17 +186,17 @@ impl Shape for Cone {
             let px = ox + t_shape_hit * dx;
             let py = oy + t_shape_hit * dy;
             let pz = oz + t_shape_hit * dz;
-            let p_error = vector3(
+            let p_error = Vector3::new(
                 px.get_absolute_error(),
                 py.get_absolute_error(),
                 pz.get_absolute_error(),
             );
 
             // Initialize SurfaceInteraction from parametric information
-            let si = surface_interaction(
+            let si = SurfaceInteraction::new(
                 p_hit,
                 p_error,
-                point2(u, v),
+                Point2::new(u, v),
                 -ray.d,
                 dpdu,
                 dpdv,
@@ -210,7 +209,7 @@ impl Shape for Cone {
             // Create hit.
             let isect = self.data.object_to_world.transform_surface_interaction(&si);
             let t_hit = Float::from(t_shape_hit);
-            Some(intersection(t_hit, isect))
+            Some(Intersection::new(t_hit, isect))
         } else {
             None
         }

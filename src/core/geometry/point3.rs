@@ -1,7 +1,7 @@
 //! 3-D Points
 
 #![allow(dead_code)]
-use super::{abs, max, min, vector3, Axis, Float, Int, Vector3};
+use super::{abs, max, min, Axis, Float, Int, Vector3};
 use num_traits::{Num, Zero};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
@@ -26,21 +26,24 @@ pub type Point3f = Point3<Float>;
 /// 3-D point containing `Int` values.
 pub type Point3i = Point3<Int>;
 
-/// Creates a new 3-D point.
-///
-/// * `x` - X-coordinate.
-/// * `y` - Y-coordinate.
-/// * `z` - Z-coordinate.
-pub fn point3<T>(x: T, y: T, z: T) -> Point3<T> {
-    Point3 { x, y, z }
-}
-
-/// Creates a new 3-D zero point.
-pub fn zero_point3<T: Zero>() -> Point3<T> {
-    point3(T::zero(), T::zero(), T::zero())
-}
-
 impl<T: Num> Point3<T> {
+    /// Creates a new 3-D point.
+    ///
+    /// * `x` - X-coordinate.
+    /// * `y` - Y-coordinate.
+    /// * `z` - Z-coordinate.
+    pub fn new(x: T, y: T, z: T) -> Self {
+        Self { x, y, z }
+    }
+
+    /// Creates a new 3-D zero point.
+    pub fn zero() -> Self
+    where
+        T: Zero,
+    {
+        Self::new(T::zero(), T::zero(), T::zero())
+    }
+
     /// Returns true if either coordinate is NaN.
     pub fn has_nans(&self) -> bool
     where
@@ -50,27 +53,27 @@ impl<T: Num> Point3<T> {
     }
 
     /// Returns a new point containing absolute values of the components.
-    pub fn abs(&self) -> Point3<T>
+    pub fn abs(&self) -> Self
     where
         T: Neg<Output = T> + PartialOrd + Copy,
     {
-        point3(abs(self.x), abs(self.y), abs(self.z))
+        Self::new(abs(self.x), abs(self.y), abs(self.z))
     }
 
     /// Returns a new point containing floor of values of the components.
-    pub fn floor(&self) -> Point3<T>
+    pub fn floor(&self) -> Self
     where
         T: num_traits::Float,
     {
-        point3(self.x.floor(), self.y.floor(), self.z.floor())
+        Self::new(self.x.floor(), self.y.floor(), self.z.floor())
     }
 
     /// Returns a new point containing ceil of values of the components.
-    pub fn ceil(&self) -> Point3<T>
+    pub fn ceil(&self) -> Self
     where
         T: num_traits::Float,
     {
-        point3(self.x.ceil(), self.y.ceil(), self.z.ceil())
+        Self::new(self.x.ceil(), self.y.ceil(), self.z.ceil())
     }
 
     /// Return the component-wise minimum coordinate values with another point.
@@ -80,7 +83,7 @@ impl<T: Num> Point3<T> {
     where
         T: PartialOrd + Copy,
     {
-        point3(
+        Self::new(
             min(self.x, other.x),
             min(self.y, other.y),
             min(self.z, other.z),
@@ -94,7 +97,7 @@ impl<T: Num> Point3<T> {
     where
         T: PartialOrd + Copy,
     {
-        point3(
+        Self::new(
             max(self.x, other.x),
             max(self.y, other.y),
             max(self.z, other.z),
@@ -110,7 +113,7 @@ impl<T: Num> Point3<T> {
     where
         T: Copy,
     {
-        point3(self[x], self[y], self[z])
+        Self::new(self[x], self[y], self[z])
     }
 
     /// Returns the distance to another point.
@@ -135,13 +138,13 @@ impl<T: Num> Point3<T> {
 }
 
 impl<T: Num> Add for Point3<T> {
-    type Output = Point3<T>;
+    type Output = Self;
 
     /// Adds the given point and returns the result.
     ///
     /// * `other` - The point to add.
     fn add(self, other: Self) -> Self::Output {
-        point3(self.x + other.x, self.y + other.y, self.z + other.z)
+        Self::Output::new(self.x + other.x, self.y + other.y, self.z + other.z)
     }
 }
 
@@ -150,18 +153,18 @@ impl<T: Num + Copy> AddAssign for Point3<T> {
     ///
     /// * `other` - The point to add.
     fn add_assign(&mut self, other: Self) {
-        *self = point3(self.x + other.x, self.y + other.y, self.z + other.z);
+        *self = Self::new(self.x + other.x, self.y + other.y, self.z + other.z);
     }
 }
 
 impl<T: Num> Add<Vector3<T>> for Point3<T> {
-    type Output = Point3<T>;
+    type Output = Self;
 
     /// Offsets the point by the given vector.
     ///
     /// * `other` - The vector to add.
     fn add(self, other: Vector3<T>) -> Self::Output {
-        point3(self.x + other.x, self.y + other.y, self.z + other.z)
+        Self::Output::new(self.x + other.x, self.y + other.y, self.z + other.z)
     }
 }
 
@@ -170,7 +173,7 @@ impl<T: Num + Copy> AddAssign<Vector3<T>> for Point3<T> {
     ///
     /// * `other` - The vector to add.
     fn add_assign(&mut self, other: Vector3<T>) {
-        *self = point3(self.x + other.x, self.y + other.y, self.z + other.z);
+        *self = Self::new(self.x + other.x, self.y + other.y, self.z + other.z);
     }
 }
 
@@ -181,18 +184,18 @@ impl<T: Num> Sub for Point3<T> {
     ///
     /// * `other` - The point to subtract.
     fn sub(self, other: Self) -> Self::Output {
-        vector3(self.x - other.x, self.y - other.y, self.z - other.z)
+        Vector3::new(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 }
 
 impl<T: Num> Sub<Vector3<T>> for Point3<T> {
-    type Output = Point3<T>;
+    type Output = Self;
 
     /// Subtracts the given vector and returns the result.
     ///
     /// * `other` - The point to subtract.
     fn sub(self, other: Vector3<T>) -> Self::Output {
-        point3(self.x - other.x, self.y - other.y, self.z - other.z)
+        Self::Output::new(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 }
 
@@ -201,18 +204,18 @@ impl<T: Num + Copy> SubAssign<Vector3<T>> for Point3<T> {
     ///
     /// * `other` - The vector to subtract.
     fn sub_assign(&mut self, other: Vector3<T>) {
-        *self = point3(self.x - other.x, self.y - other.y, self.z - other.z);
+        *self = Self::new(self.x - other.x, self.y - other.y, self.z - other.z);
     }
 }
 
 impl<T: Num + Copy> Mul<T> for Point3<T> {
-    type Output = Point3<T>;
+    type Output = Self;
 
     /// Scale the point.
     ///
     /// * `f` - The scaling factor.
     fn mul(self, f: T) -> Self::Output {
-        point3(f * self.x, f * self.y, f * self.z)
+        Self::Output::new(f * self.x, f * self.y, f * self.z)
     }
 }
 
@@ -224,7 +227,7 @@ macro_rules! premul {
             ///
             /// * `p` - The point.
             fn mul(self, p: Point3<$t>) -> Point3<$t> {
-                point3(self * p.x, self * p.y, self * p.z)
+                Point3::<$t>::new(self * p.x, self * p.y, self * p.z)
             }
         }
     };
@@ -246,12 +249,12 @@ impl<T: Num + Copy> MulAssign<T> for Point3<T> {
     ///
     /// * `f` - The scaling factor.
     fn mul_assign(&mut self, f: T) {
-        *self = point3(f * self.x, f * self.y, f * self.z);
+        *self = Self::new(f * self.x, f * self.y, f * self.z);
     }
 }
 
 impl<T: Num + Copy> Div<T> for Point3<T> {
-    type Output = Point3<T>;
+    type Output = Self;
 
     /// Scale the point by 1/f.
     ///
@@ -260,7 +263,7 @@ impl<T: Num + Copy> Div<T> for Point3<T> {
         debug_assert!(!f.is_zero());
 
         let inv = T::one() / f;
-        point3(inv * self.x, inv * self.y, inv * self.z)
+        Self::Output::new(inv * self.x, inv * self.y, inv * self.z)
     }
 }
 
@@ -272,16 +275,16 @@ impl<T: Num + Copy> DivAssign<T> for Point3<T> {
         debug_assert!(!f.is_zero());
 
         let inv = T::one() / f;
-        *self = point3(inv * self.x, inv * self.y, inv * self.z);
+        *self = Self::new(inv * self.x, inv * self.y, inv * self.z);
     }
 }
 
 impl<T: Num + Neg<Output = T>> Neg for Point3<T> {
-    type Output = Point3<T>;
+    type Output = Self;
 
     /// Flip the point's direction (scale by -1).
     fn neg(self) -> Self::Output {
-        point3(-self.x, -self.y, -self.z)
+        Self::Output::new(-self.x, -self.y, -self.z)
     }
 }
 
@@ -338,7 +341,11 @@ impl<T> From<Vector3<T>> for Point3<T> {
     ///
     /// * `v` - 3-D vector.
     fn from(v: Vector3<T>) -> Self {
-        point3(v.x, v.y, v.z)
+        Self {
+            x: v.x,
+            y: v.y,
+            z: v.z,
+        }
     }
 }
 
@@ -355,29 +362,29 @@ mod tests {
 
     #[test]
     fn zero_point() {
-        assert!(point3(0, 0, 0) == zero_point3());
-        assert!(point3(0.0, 0.0, 0.0) == zero_point3());
+        assert!(Point3::new(0, 0, 0) == Point3::zero());
+        assert!(Point3::new(0.0, 0.0, 0.0) == Point3::zero());
     }
 
     #[test]
     fn has_nans() {
-        assert!(!point3(0.0, 0.0, 0.0).has_nans());
-        assert!(point3(f32::NAN, f32::NAN, f32::NAN).has_nans());
-        assert!(point3(f64::NAN, f64::NAN, f64::NAN).has_nans());
+        assert!(!Point3::new(0.0, 0.0, 0.0).has_nans());
+        assert!(Point3::new(f32::NAN, f32::NAN, f32::NAN).has_nans());
+        assert!(Point3::new(f64::NAN, f64::NAN, f64::NAN).has_nans());
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn div_zero_i64() {
-        zero_point3::<i64>() / 0;
+        Point3::<i64>::zero() / 0;
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn div_zero_f64() {
-        point3::<f64>(1.0, 1.0, 1.0) / 0.0;
+        Point3::<f64>::new(1.0, 1.0, 1.0) / 0.0;
     }
 
     // Define some properties for tests.
@@ -427,27 +434,27 @@ mod tests {
 
         #[test]
         fn abs_i32(p in point3_i32()) {
-            prop_assert_eq!(p.abs(), point3(abs(p.x), abs(p.y), abs(p.z)));
+            prop_assert_eq!(p.abs(), Point3::new(abs(p.x), abs(p.y), abs(p.z)));
         }
 
         #[test]
         fn floor_f32(p in point3_f32()) {
-            prop_assert_eq!(p.floor(), point3(p.x.floor(), p.y.floor(), p.z.floor()));
+            prop_assert_eq!(p.floor(), Point3::new(p.x.floor(), p.y.floor(), p.z.floor()));
         }
 
         #[test]
         fn ceil_f32(p in point3_f32()) {
-            prop_assert_eq!(p.ceil(), point3(p.x.ceil(), p.y.ceil(), p.z.ceil()));
+            prop_assert_eq!(p.ceil(), Point3::new(p.x.ceil(), p.y.ceil(), p.z.ceil()));
         }
 
         #[test]
         fn min_f32(p1 in point3_f32(), p2 in point3_f32()) {
-            prop_assert_eq!(p1.min(&p2), point3(p1.x.min(p2.x), p1.y.min(p2.y), p1.z.min(p2.z)));
+            prop_assert_eq!(p1.min(&p2), Point3::new(p1.x.min(p2.x), p1.y.min(p2.y), p1.z.min(p2.z)));
         }
 
         #[test]
         fn max_f32(p1 in point3_f32(), p2 in point3_f32()) {
-            prop_assert_eq!(p1.max(&p2), point3(p1.x.max(p2.x), p1.y.max(p2.y), p1.z.max(p2.z)));
+            prop_assert_eq!(p1.max(&p2), Point3::new(p1.x.max(p2.x), p1.y.max(p2.y), p1.z.max(p2.z)));
         }
 
         #[test]
@@ -476,72 +483,72 @@ mod tests {
 
         #[test]
         fn add_point_i32(p1 in point3_i32(), p2 in point3_i32()) {
-            prop_assert_eq!(p1 + p2, point3(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z));
+            prop_assert_eq!(p1 + p2, Point3::new(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z));
         }
 
         #[test]
         fn add_point_f32(p1 in point3_f32(), p2 in point3_f32()) {
-            prop_assert_eq!(p1 + p2, point3(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z));
+            prop_assert_eq!(p1 + p2, Point3::new(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z));
         }
 
         #[test]
         fn add_vector_f32(p in point3_f32(), v in vector3_f32()) {
-            prop_assert_eq!(p + v, point3(p.x + v.x, p.y + v.y, p.z + v.z));
+            prop_assert_eq!(p + v, Point3::new(p.x + v.x, p.y + v.y, p.z + v.z));
         }
 
         #[test]
         fn add_assign_vector_i32(p in point3_i32(), v in vector3_i32()) {
             let mut p1 = p;
             p1 += v;
-            prop_assert_eq!(p1, point3(p.x + v.x, p.y + v.y, p.z + v.z));
+            prop_assert_eq!(p1, Point3::new(p.x + v.x, p.y + v.y, p.z + v.z));
         }
 
         #[test]
         fn add_assign_vector_f32(p in point3_f32(), v in vector3_f32()) {
             let mut p1 = p;
             p1 += v;
-            prop_assert_eq!(p1, point3(p.x + v.x, p.y + v.y, p.z + v.z));
+            prop_assert_eq!(p1, Point3::new(p.x + v.x, p.y + v.y, p.z + v.z));
         }
 
         #[test]
         fn sub_point_i32(p1 in point3_i32(), p2 in point3_i32()) {
-            prop_assert_eq!(p1 - p2, vector3(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z));
+            prop_assert_eq!(p1 - p2, Vector3::new(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z));
         }
 
         #[test]
         fn sub_point_f32(p1 in point3_f32(), p2 in point3_f32()) {
-            prop_assert_eq!(p1 - p2, vector3(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z));
+            prop_assert_eq!(p1 - p2, Vector3::new(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z));
         }
 
         #[test]
         fn sub_vector_f32(p in point3_f32(), v in vector3_f32()) {
-            prop_assert_eq!(p - v, point3(p.x - v.x, p.y - v.y, p.z - v.z));
+            prop_assert_eq!(p - v, Point3::new(p.x - v.x, p.y - v.y, p.z - v.z));
         }
 
         #[test]
         fn sub_assign_vector_i32(p in point3_i32(), v in vector3_i32()) {
             let mut p1 = p;
             p1 -= v;
-            prop_assert_eq!(p1, point3(p.x - v.x, p.y - v.y, p.z - v.z));
+            prop_assert_eq!(p1, Point3::new(p.x - v.x, p.y - v.y, p.z - v.z));
         }
 
         #[test]
         fn sub_assign_vector_f32(p in point3_f32(), v in vector3_f32()) {
             let mut p1 = p;
             p1 -= v;
-            prop_assert_eq!(p1, point3(p.x - v.x, p.y - v.y, p.z - v.z));
+            prop_assert_eq!(p1, Point3::new(p.x - v.x, p.y - v.y, p.z - v.z));
         }
 
         #[test]
         fn mul_i32(p in point3_i32(), f in range_i32()) {
-            let expected = point3(p.x * f, p.y * f, p.z * f);
+            let expected = Point3::new(p.x * f, p.y * f, p.z * f);
             prop_assert_eq!(p * f, expected);
             prop_assert_eq!(f * p, expected);
         }
 
         #[test]
         fn mul_f32(p in point3_f32(), f in range_f32()) {
-            let expected = point3(p.x * f, p.y * f, p.z * f);
+            let expected = Point3::new(p.x * f, p.y * f, p.z * f);
             prop_assert_eq!(p * f, expected);
             prop_assert_eq!(f * p, expected);
         }
@@ -550,14 +557,14 @@ mod tests {
         fn mul_assign_i32(p in point3_i32(), f in range_i32()) {
             let mut p1 = p;
             p1 *= f;
-            prop_assert_eq!(p1, point3(p.x * f, p.y * f, p.z * f));
+            prop_assert_eq!(p1, Point3::new(p.x * f, p.y * f, p.z * f));
         }
 
         #[test]
         fn mul_assign_f32(p in point3_f32(), f in range_f32()) {
             let mut p1 = p;
             p1 *= f;
-            prop_assert_eq!(p1, point3(p.x * f, p.y * f, p.z * f));
+            prop_assert_eq!(p1, Point3::new(p.x * f, p.y * f, p.z * f));
         }
 
         #[test]
@@ -566,13 +573,13 @@ mod tests {
             f in (-100..100i32).prop_filter("non-zero", |x| *x != 0)
         ) {
             let s = 1 / f;
-            prop_assert_eq!(p / f, point3(p.x * s, p.y * s, p.z * s));
+            prop_assert_eq!(p / f, Point3::new(p.x * s, p.y * s, p.z * s));
         }
 
         #[test]
         fn div_f32(p in point3_f32(), f in non_zero_f32()) {
             let s = 1.0 / f;
-            prop_assert_eq!(p / f, point3(p.x * s, p.y * s, p.z * s));
+            prop_assert_eq!(p / f, Point3::new(p.x * s, p.y * s, p.z * s));
         }
 
         #[test]
@@ -581,7 +588,7 @@ mod tests {
             p1 /= f;
 
             let s = 1 / f;
-            prop_assert_eq!(p1, point3(p.x * s, p.y * s, p.z * s));
+            prop_assert_eq!(p1, Point3::new(p.x * s, p.y * s, p.z * s));
         }
 
         #[test]
@@ -590,18 +597,18 @@ mod tests {
             p1 /= f;
 
             let s = 1.0 / f;
-            prop_assert_eq!(p1, point3(p.x * s, p.y * s, p.z * s));
+            prop_assert_eq!(p1, Point3::new(p.x * s, p.y * s, p.z * s));
         }
 
         #[test]
         fn neg_i32(p in point3_i32()) {
-            prop_assert_eq!(-p, point3(-p.x, -p.y, -p.z));
+            prop_assert_eq!(-p, Point3::new(-p.x, -p.y, -p.z));
             prop_assert_eq!(--p, p);
         }
 
         #[test]
         fn neg_f32(p in point3_f32()) {
-            prop_assert_eq!(-p, point3(-p.x, -p.y, -p.z));
+            prop_assert_eq!(-p, Point3::new(-p.x, -p.y, -p.z));
             prop_assert_eq!(--p, p);
         }
 
@@ -621,7 +628,7 @@ mod tests {
 
         #[test]
         fn index_mut_i32(p in point3_i32()) {
-            let mut p1 = point3(-200, 200, -200);
+            let mut p1 = Point3::new(-200, 200, -200);
             p1[Axis::X] = p.x;
             p1[Axis::Y] = p.y;
             p1[Axis::Z] = p.z;
@@ -630,7 +637,7 @@ mod tests {
 
         #[test]
         fn index_mut_f32(p in point3_f32()) {
-            let mut p1 = point3(-200.0, 200.0, -200.0);
+            let mut p1 = Point3::new(-200.0, 200.0, -200.0);
             p1[Axis::X] = p.x;
             p1[Axis::Y] = p.y;
             p1[Axis::Z] = p.z;

@@ -2,8 +2,8 @@
 
 #![allow(dead_code)]
 use super::{
-    offset_ray_origin, ray, zero_normal3, ArcMedium, Dot, Float, MediumInterface, Normal3f,
-    Point3f, Ray, Vector3f, INFINITY, SHADOW_EPSILON,
+    ArcMedium, Dot, Float, MediumInterface, Normal3f, Point3f, Ray, Vector3f, INFINITY,
+    SHADOW_EPSILON,
 };
 use std::sync::Arc;
 
@@ -39,38 +39,39 @@ pub struct Hit {
 /// Atomic reference counted `Hit`.
 type ArcHit = Arc<Hit>;
 
-/// Create a new hit.
-///
-/// `p`                - Point of interaction.
-/// `time`             - Time when interaction occurred.
-/// `p_error`          - Floating point error for ray intersection points.
-/// `wo`               - The negative ray direction (outgoing direction used
-///                      when computing lighting at points).
-/// `n`                - Surface normal at the point `p`.
-/// `medium_interface` - The medium interface used for scattering media.
-pub fn hit(
-    p: Point3f,
-    time: Float,
-    p_error: Vector3f,
-    wo: Vector3f,
-    n: Normal3f,
-    medium_interface: Option<MediumInterface>,
-) -> Hit {
-    Hit {
-        p,
-        time,
-        p_error,
-        wo,
-        n,
-        medium_interface,
-    }
-}
-
 impl Hit {
+    /// Create a new hit.
+    ///
+    /// `p`                - Point of interaction.
+    /// `time`             - Time when interaction occurred.
+    /// `p_error`          - Floating point error for ray intersection points.
+    /// `wo`               - The negative ray direction (outgoing direction used
+    ///                      when computing lighting at points).
+    /// `n`                - Surface normal at the point `p`.
+    /// `medium_interface` - The medium interface used for scattering media.
+    pub fn new(
+        p: Point3f,
+        time: Float,
+        p_error: Vector3f,
+        wo: Vector3f,
+        n: Normal3f,
+        medium_interface: Option<MediumInterface>,
+    ) -> Self {
+        Self {
+            p,
+            time,
+            p_error,
+            wo,
+            n,
+            medium_interface,
+        }
+    }
+
     /// Returns `true` if this is a surface interaction.
     pub fn is_surface_interaction(&self) -> bool {
-        self.n != zero_normal3()
+        self.n != Normal3f::zero()
     }
+
     /// Returns `true` if this is a medium interaction.
     pub fn is_medium_interaction(&self) -> bool {
         !self.is_surface_interaction()
@@ -80,8 +81,8 @@ impl Hit {
     ///
     /// * `d` - The new direction.
     pub fn spawn_ray(&self, d: &Vector3f) -> Ray {
-        let o = offset_ray_origin(&self.p, &self.p_error, &self.n, d);
-        ray(o, *d, INFINITY, self.time, self.get_medium_in_direction(d))
+        let o = Ray::offset_origin(&self.p, &self.p_error, &self.n, d);
+        Ray::new(o, *d, INFINITY, self.time, self.get_medium_in_direction(d))
     }
 
     /// Spawn's a new ray towards another point.
@@ -89,9 +90,9 @@ impl Hit {
     /// * `p` - The target point.
     pub fn spawn_ray_to(&self, p: &Point3f) -> Ray {
         let dir = *p - self.p;
-        let o = offset_ray_origin(&self.p, &self.p_error, &self.n, &dir);
+        let o = Ray::offset_origin(&self.p, &self.p_error, &self.n, &dir);
         let d = *p - o;
-        ray(
+        Ray::new(
             o,
             d,
             1.0 - SHADOW_EPSILON,

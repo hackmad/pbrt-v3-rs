@@ -24,21 +24,24 @@ pub struct Normal3<T> {
 /// 3-D normal containing `Float` values.
 pub type Normal3f = Normal3<Float>;
 
-/// Creates a new 3-D normal.
-///
-/// * `x` - X-coordinate.
-/// * `y` - Y-coordinate.
-/// * `z` - Z-coordinate.
-pub fn normal3<T>(x: T, y: T, z: T) -> Normal3<T> {
-    Normal3 { x, y, z }
-}
-
-/// Creates a new 3-D zero normal.
-pub fn zero_normal3<T: Zero>() -> Normal3<T> {
-    normal3(T::zero(), T::zero(), T::zero())
-}
-
 impl<T: Num> Normal3<T> {
+    /// Creates a new 3-D normal.
+    ///
+    /// * `x` - X-coordinate.
+    /// * `y` - Y-coordinate.
+    /// * `z` - Z-coordinate.
+    pub fn new(x: T, y: T, z: T) -> Self {
+        Self { x, y, z }
+    }
+
+    /// Creates a new 3-D zero normal.
+    pub fn zero() -> Self
+    where
+        T: Zero,
+    {
+        Self::new(T::zero(), T::zero(), T::zero())
+    }
+
     /// Returns true if either coordinate is NaN.
     pub fn has_nans(&self) -> bool
     where
@@ -72,11 +75,11 @@ impl<T: Num> Normal3<T> {
     }
 
     /// Returns a new normal containing absolute values of the components.
-    pub fn abs(&self) -> Normal3<T>
+    pub fn abs(&self) -> Self
     where
         T: Neg<Output = T> + PartialOrd + Copy,
     {
-        normal3(abs(self.x), abs(self.y), abs(self.z))
+        Self::new(abs(self.x), abs(self.y), abs(self.z))
     }
 }
 
@@ -86,7 +89,7 @@ impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Normal3<T>> for Normal3<T
     /// Returns the dot product with another normal.
     ///
     /// * `other` - The other normal.
-    fn dot(&self, other: &Normal3<T>) -> T {
+    fn dot(&self, other: &Self) -> T {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 }
@@ -107,13 +110,13 @@ impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Vector3<T>> for Normal3<T
 impl<T: Num + Neg<Output = T> + PartialOrd + Copy> FaceForward<T, Vector3<T>> for Normal3<T> {}
 
 impl<T: Num> Add for Normal3<T> {
-    type Output = Normal3<T>;
+    type Output = Self;
 
     /// Adds the given normal and returns the result.
     ///
     /// * `other` - The normal to add.
     fn add(self, other: Self) -> Self::Output {
-        normal3(self.x + other.x, self.y + other.y, self.z + other.z)
+        Self::new(self.x + other.x, self.y + other.y, self.z + other.z)
     }
 }
 
@@ -122,7 +125,7 @@ impl<T: Num + Copy> AddAssign for Normal3<T> {
     ///
     /// * `other` - The normal to add.
     fn add_assign(&mut self, other: Self) {
-        *self = normal3(self.x + other.x, self.y + other.y, self.z + other.z);
+        *self = Self::new(self.x + other.x, self.y + other.y, self.z + other.z);
     }
 }
 
@@ -133,7 +136,7 @@ impl<T: Num> Sub for Normal3<T> {
     ///
     /// * `other` - The normal to subtract.
     fn sub(self, other: Self) -> Self::Output {
-        normal3(self.x - other.x, self.y - other.y, self.z - other.z)
+        Self::new(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 }
 
@@ -142,18 +145,18 @@ impl<T: Num + Copy> SubAssign for Normal3<T> {
     ///
     /// * `other` - The normal to subtract.
     fn sub_assign(&mut self, other: Self) {
-        *self = normal3(self.x - other.x, self.y - other.y, self.z - other.z);
+        *self = Self::new(self.x - other.x, self.y - other.y, self.z - other.z);
     }
 }
 
 impl<T: Num + Copy> Mul<T> for Normal3<T> {
-    type Output = Normal3<T>;
+    type Output = Self;
 
     /// Scale the vector.
     ///
     /// * `f` - The scaling factor.
     fn mul(self, f: T) -> Self::Output {
-        normal3(f * self.x, f * self.y, f * self.z)
+        Self::new(f * self.x, f * self.y, f * self.z)
     }
 }
 
@@ -165,7 +168,7 @@ macro_rules! premul {
             ///
             /// * `n` - The normal.
             fn mul(self, n: Normal3<$t>) -> Normal3<$t> {
-                normal3(self * n.x, self * n.y, self * n.z)
+                Normal3::new(self * n.x, self * n.y, self * n.z)
             }
         }
     };
@@ -187,12 +190,12 @@ impl<T: Num + Copy> MulAssign<T> for Normal3<T> {
     ///
     /// * `f` - The scaling factor.
     fn mul_assign(&mut self, f: T) {
-        *self = normal3(f * self.x, f * self.y, f * self.z);
+        *self = Self::new(f * self.x, f * self.y, f * self.z);
     }
 }
 
 impl<T: Num + Copy> Div<T> for Normal3<T> {
-    type Output = Normal3<T>;
+    type Output = Self;
 
     /// Scale the vector by 1/f.
     ///
@@ -201,7 +204,7 @@ impl<T: Num + Copy> Div<T> for Normal3<T> {
         debug_assert!(!f.is_zero());
 
         let inv = T::one() / f;
-        normal3(inv * self.x, inv * self.y, inv * self.z)
+        Self::Output::new(inv * self.x, inv * self.y, inv * self.z)
     }
 }
 
@@ -213,16 +216,16 @@ impl<T: Num + Copy> DivAssign<T> for Normal3<T> {
         debug_assert!(!f.is_zero());
 
         let inv = T::one() / f;
-        *self = normal3(inv * self.x, inv * self.y, inv * self.z);
+        *self = Self::new(inv * self.x, inv * self.y, inv * self.z);
     }
 }
 
 impl<T: Num + Neg<Output = T>> Neg for Normal3<T> {
-    type Output = Normal3<T>;
+    type Output = Self;
 
     /// Flip the vector's direction (scale by -1).
     fn neg(self) -> Self::Output {
-        normal3(-self.x, -self.y, -self.z)
+        Self::new(-self.x, -self.y, -self.z)
     }
 }
 
@@ -279,7 +282,11 @@ impl<T> From<Vector3<T>> for Normal3<T> {
     ///
     /// * `v` - 3-D vector.
     fn from(v: Vector3<T>) -> Self {
-        normal3(v.x, v.y, v.z)
+        Self {
+            x: v.x,
+            y: v.y,
+            z: v.z,
+        }
     }
 }
 
@@ -295,41 +302,41 @@ mod tests {
 
     #[test]
     fn zero_vector() {
-        assert!(normal3(0, 0, 0) == zero_normal3());
-        assert!(normal3(0.0, 0.0, 0.0) == zero_normal3());
+        assert!(Normal3::new(0, 0, 0) == Normal3::zero());
+        assert!(Normal3::new(0.0, 0.0, 0.0) == Normal3::zero());
     }
 
     #[test]
     fn has_nans() {
-        assert!(!normal3(0.0, 0.0, 0.0).has_nans());
-        assert!(normal3(f32::NAN, f32::NAN, f32::NAN).has_nans());
-        assert!(normal3(f64::NAN, f64::NAN, f64::NAN).has_nans());
+        assert!(!Normal3::new(0.0, 0.0, 0.0).has_nans());
+        assert!(Normal3::new(f32::NAN, f32::NAN, f32::NAN).has_nans());
+        assert!(Normal3::new(f64::NAN, f64::NAN, f64::NAN).has_nans());
     }
 
     #[test]
     #[should_panic]
     fn normalize_zero_f64() {
-        zero_normal3::<f64>().normalize();
+        Normal3::<f64>::zero().normalize();
     }
 
     #[test]
     #[should_panic]
     fn normalize_zero_f32() {
-        zero_normal3::<f32>().normalize();
+        Normal3::<f32>::zero().normalize();
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn div_zero_i64() {
-        zero_normal3::<i64>() / 0;
+        Normal3::<i64>::zero() / 0;
     }
 
     #[test]
     #[should_panic]
     #[allow(unused)]
     fn div_zero_f64() {
-        normal3::<f64>(1.0, 1.0, 1.0) / 0.0;
+        Normal3::<f64>::new(1.0, 1.0, 1.0) / 0.0;
     }
 
     // Define some properties for tests.
@@ -367,11 +374,11 @@ mod tests {
         #[test]
         fn normalize_f32(n in normal3_f32()) {
             // Since we do 1.0 / l in implementation we have to do the
-            // same here. Doing normal3(x / l, y / l) will not work
+            // same here. Doing Normal3::new(x / l, y / l) will not work
             // for some of the floating point values due to precision
             // errors.
             let f = 1.0 / (n.x * n.x + n.y * n.y + n.z * n.z).sqrt();
-            prop_assert_eq!(n.normalize(), normal3(n.x * f, n.y * f, n.z * f));
+            prop_assert_eq!(n.normalize(), Normal3::new(n.x * f, n.y * f, n.z * f));
         }
 
         #[test]
@@ -386,62 +393,62 @@ mod tests {
 
         #[test]
         fn add_i32(n1 in normal3_i32(), n2 in normal3_i32()) {
-            prop_assert_eq!(n1 + n2, normal3(n1.x + n2.x, n1.y + n2.y, n1.z + n2.z));
+            prop_assert_eq!(n1 + n2, Normal3::new(n1.x + n2.x, n1.y + n2.y, n1.z + n2.z));
         }
 
         #[test]
         fn add_f32(n1 in normal3_f32(), n2 in normal3_f32()) {
-            prop_assert_eq!(n1 + n2, normal3(n1.x + n2.x, n1.y + n2.y, n1.z + n2.z));
+            prop_assert_eq!(n1 + n2, Normal3::new(n1.x + n2.x, n1.y + n2.y, n1.z + n2.z));
         }
 
         #[test]
         fn add_assign_i32(n1 in normal3_i32(), n2 in normal3_i32()) {
             let mut n = n1;
             n += n2;
-            prop_assert_eq!(n, normal3(n1.x + n2.x, n1.y + n2.y, n1.z + n2.z));
+            prop_assert_eq!(n, Normal3::new(n1.x + n2.x, n1.y + n2.y, n1.z + n2.z));
         }
 
         #[test]
         fn add_assign_f32(n1 in normal3_f32(), n2 in normal3_f32()) {
             let mut n = n1;
             n += n2;
-            prop_assert_eq!(n, normal3(n1.x + n2.x, n1.y + n2.y, n1.z + n2.z));
+            prop_assert_eq!(n, Normal3::new(n1.x + n2.x, n1.y + n2.y, n1.z + n2.z));
         }
 
         #[test]
         fn sub_i32(n1 in normal3_i32(), n2 in normal3_i32()) {
-            prop_assert_eq!(n1 - n2, normal3(n1.x - n2.x, n1.y - n2.y, n1.z - n2.z));
+            prop_assert_eq!(n1 - n2, Normal3::new(n1.x - n2.x, n1.y - n2.y, n1.z - n2.z));
         }
 
         #[test]
         fn sub_f32(n1 in normal3_f32(), n2 in normal3_f32()) {
-            prop_assert_eq!(n1 - n2, normal3(n1.x - n2.x, n1.y - n2.y, n1.z - n2.z));
+            prop_assert_eq!(n1 - n2, Normal3::new(n1.x - n2.x, n1.y - n2.y, n1.z - n2.z));
         }
 
         #[test]
         fn sub_assign_i32(n1 in normal3_i32(), n2 in normal3_i32()) {
             let mut n = n1;
             n -= n2;
-            prop_assert_eq!(n, normal3(n1.x - n2.x, n1.y - n2.y, n1.z - n2.z));
+            prop_assert_eq!(n, Normal3::new(n1.x - n2.x, n1.y - n2.y, n1.z - n2.z));
         }
 
         #[test]
         fn sub_assign_f32(n1 in normal3_f32(), n2 in normal3_f32()) {
             let mut n = n1;
             n -= n2;
-            prop_assert_eq!(n, normal3(n1.x - n2.x, n1.y - n2.y, n1.z - n2.z));
+            prop_assert_eq!(n, Normal3::new(n1.x - n2.x, n1.y - n2.y, n1.z - n2.z));
         }
 
         #[test]
         fn mul_i32(n in normal3_i32(), f in range_i32()) {
-            let expected = normal3(n.x * f, n.y * f, n.z * f);
+            let expected = Normal3::new(n.x * f, n.y * f, n.z * f);
             prop_assert_eq!(n * f, expected);
             prop_assert_eq!(f * n, expected);
         }
 
         #[test]
         fn mul_f32(n in normal3_f32(), f in range_f32()) {
-            let expected = normal3(n.x * f, n.y * f, n.z * f);
+            let expected = Normal3::new(n.x * f, n.y * f, n.z * f);
             prop_assert_eq!(n * f, expected);
             prop_assert_eq!(f * n, expected);
         }
@@ -450,14 +457,14 @@ mod tests {
         fn mul_assign_i32(n in normal3_i32(), f in range_i32()) {
             let mut n1 = n;
             n1 *= f;
-            prop_assert_eq!(n1, normal3(n.x * f, n.y * f, n.z * f));
+            prop_assert_eq!(n1, Normal3::new(n.x * f, n.y * f, n.z * f));
         }
 
         #[test]
         fn mul_assign_f32(n in normal3_f32(), f in range_f32()) {
             let mut n1 = n;
             n1 *= f;
-            prop_assert_eq!(n1, normal3(n.x * f, n.y * f, n.z * f));
+            prop_assert_eq!(n1, Normal3::new(n.x * f, n.y * f, n.z * f));
         }
 
         #[test]
@@ -466,13 +473,13 @@ mod tests {
             f in (-100..100i32).prop_filter("non-zero", |x| *x != 0)
         ) {
             let s = 1 / f;
-            prop_assert_eq!(n / f, normal3(n.x * s, n.y * s, n.z * s));
+            prop_assert_eq!(n / f, Normal3::new(n.x * s, n.y * s, n.z * s));
         }
 
         #[test]
         fn div_f32(n in normal3_f32(), f in non_zero_f32()) {
             let s = 1.0 / f;
-            prop_assert_eq!(n / f, normal3(n.x * s, n.y * s, n.z * s));
+            prop_assert_eq!(n / f, Normal3::new(n.x * s, n.y * s, n.z * s));
         }
 
         #[test]
@@ -481,7 +488,7 @@ mod tests {
             n1 /= f;
 
             let s = 1 / f;
-            prop_assert_eq!(n1, normal3(n.x * s, n.y * s, n.z * s));
+            prop_assert_eq!(n1, Normal3::new(n.x * s, n.y * s, n.z * s));
         }
 
         #[test]
@@ -490,18 +497,18 @@ mod tests {
             n1 /= f;
 
             let s = 1.0 / f;
-            prop_assert_eq!(n1, normal3(n.x * s, n.y * s, n.z * s));
+            prop_assert_eq!(n1, Normal3::new(n.x * s, n.y * s, n.z * s));
         }
 
         #[test]
         fn neg_i32(n in normal3_i32()) {
-            prop_assert_eq!(-n, normal3(-n.x, -n.y, -n.z));
+            prop_assert_eq!(-n, Normal3::new(-n.x, -n.y, -n.z));
             prop_assert_eq!(--n, n);
         }
 
         #[test]
         fn neg_f32(n in normal3_f32()) {
-            prop_assert_eq!(-n, normal3(-n.x, -n.y, -n.z));
+            prop_assert_eq!(-n, Normal3::new(-n.x, -n.y, -n.z));
             prop_assert_eq!(--n, n);
         }
 
@@ -519,7 +526,7 @@ mod tests {
 
         #[test]
         fn index_mut_i32(n in normal3_i32()) {
-            let mut n1 = normal3(-200, 200, -200);
+            let mut n1 = Normal3::new(-200, 200, -200);
             n1[Axis::X] = n.x;
             n1[Axis::Y] = n.y;
             n1[Axis::Z] = n.z;
@@ -528,7 +535,7 @@ mod tests {
 
         #[test]
         fn index_mut_f32(n in normal3_f32()) {
-            let mut n1 = normal3(-200.0, 200.0, -200.0);
+            let mut n1 = Normal3::new(-200.0, 200.0, -200.0);
             n1[Axis::X] = n.x;
             n1[Axis::Y] = n.y;
             n1[Axis::Z] = n.z;
