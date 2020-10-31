@@ -24,25 +24,27 @@ pub struct GeometricPrimitive {
     pub medium_interface: MediumInterface,
 }
 
-/// Create a new geometric primitive.
-///
-/// * `shape`            - The shape.
-/// * `material`         - The material.
-/// * `area_light`       - Optional area light that describes emmission
-///                        characterisitics if it emits light.
-/// * `medium_interface` - Information about the participating media on the
-///                        inside and outside the primitive.
-pub fn geometric_primitive(
-    shape: ArcShape,
-    material: ArcMaterial,
-    area_light: Option<ArcAreaLight>,
-    medium_interface: MediumInterface,
-) -> GeometricPrimitive {
-    GeometricPrimitive {
-        shape: shape.clone(),
-        material: Some(material.clone()),
-        area_light: area_light.clone(),
-        medium_interface: medium_interface.clone(),
+impl GeometricPrimitive {
+    /// Create a new geometric primitive.
+    ///
+    /// * `shape`            - The shape.
+    /// * `material`         - The material.
+    /// * `area_light`       - Optional area light that describes emmission
+    ///                        characterisitics if it emits light.
+    /// * `medium_interface` - Information about the participating media on the
+    ///                        inside and outside the primitive.
+    pub fn new(
+        shape: ArcShape,
+        material: ArcMaterial,
+        area_light: Option<ArcAreaLight>,
+        medium_interface: MediumInterface,
+    ) -> Self {
+        Self {
+            shape: shape.clone(),
+            material: Some(material.clone()),
+            area_light: area_light.clone(),
+            medium_interface: medium_interface.clone(),
+        }
     }
 }
 

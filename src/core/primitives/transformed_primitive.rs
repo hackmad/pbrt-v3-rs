@@ -17,17 +17,16 @@ pub struct TransformedPrimitive {
     pub primitive_to_world: AnimatedTransform,
 }
 
-/// Create a new transformed primitive.
-///
-/// * `primitive`          - The primitive.
-/// * `primitive_to_world` - The animated transform.
-pub fn transformed_primitive(
-    primitive: ArcPrimitive,
-    primitive_to_world: AnimatedTransform,
-) -> TransformedPrimitive {
-    TransformedPrimitive {
-        primitive: primitive.clone(),
-        primitive_to_world,
+impl TransformedPrimitive {
+    /// Create a new transformed primitive.
+    ///
+    /// * `primitive`          - The primitive.
+    /// * `primitive_to_world` - The animated transform.
+    pub fn new(primitive: ArcPrimitive, primitive_to_world: AnimatedTransform) -> Self {
+        Self {
+            primitive: primitive.clone(),
+            primitive_to_world,
+        }
     }
 }
 
