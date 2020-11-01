@@ -32,115 +32,118 @@ pub struct BVHAccel {
     pub nodes: Vec<LinearBVHNode>,
 }
 
-/// Create a new Bounding Volume Hierarchy Accelerator.
-///
-/// * `primitives`        - The primitives.
-/// * `max_prims_in_node` - Maximum number of primitives in a node.
-/// * `split_method`      - The splitting method.
-pub fn bvh_accel(
-    primitives: Vec<ArcPrimitive>,
-    max_prims_in_node: u8,
-    split_method: SplitMethod,
-) -> BVHAccel {
-    let n_primitives = primitives.len();
-    if n_primitives == 0 {
-        BVHAccel {
-            primitives,
-            max_prims_in_node,
-            split_method,
-            nodes: vec![],
-        }
-    } else {
-        // Build BVH from primitives.
-
-        // Initializes primitive_info array for primitives.
-        let mut primitive_info: Vec<BVHPrimitiveInfo> = primitives
-            .iter()
-            .enumerate()
-            .map(|(i, p)| bvh_primitive_info(i, p.world_bound()))
-            .collect();
-
-        // Build BVH tree for primitives using primitive_info.
-        let mut total_nodes = 0;
-        let ordered_prims = Arc::new(Mutex::new(Vec::<ArcPrimitive>::with_capacity(n_primitives)));
-
-        let root = match split_method {
-            SplitMethod::HLBVH => hlbvh_build(
-                &primitives,
+impl BVHAccel {
+    /// Create a new Bounding Volume Hierarchy Accelerator.
+    ///
+    /// * `primitives`        - The primitives.
+    /// * `max_prims_in_node` - Maximum number of primitives in a node.
+    /// * `split_method`      - The splitting method.
+    pub fn new(
+        primitives: Vec<ArcPrimitive>,
+        max_prims_in_node: u8,
+        split_method: SplitMethod,
+    ) -> Self {
+        let n_primitives = primitives.len();
+        if n_primitives == 0 {
+            Self {
+                primitives,
                 max_prims_in_node,
-                &mut primitive_info,
-                &mut total_nodes,
-                ordered_prims.clone(),
-            ),
-            _ => recursive_build(
-                &primitives,
                 split_method,
+                nodes: vec![],
+            }
+        } else {
+            // Build BVH from primitives.
+
+            // Initializes primitive_info array for primitives.
+            let mut primitive_info: Vec<BVHPrimitiveInfo> = primitives
+                .iter()
+                .enumerate()
+                .map(|(i, p)| BVHPrimitiveInfo::new(i, p.world_bound()))
+                .collect();
+
+            // Build BVH tree for primitives using primitive_info.
+            let mut total_nodes = 0;
+            let ordered_prims =
+                Arc::new(Mutex::new(Vec::<ArcPrimitive>::with_capacity(n_primitives)));
+
+            let root = match split_method {
+                SplitMethod::HLBVH => HLBVH::build(
+                    &primitives,
+                    max_prims_in_node,
+                    &mut primitive_info,
+                    &mut total_nodes,
+                    ordered_prims.clone(),
+                ),
+                _ => SAH::recursive_build(
+                    &primitives,
+                    split_method,
+                    max_prims_in_node,
+                    &mut primitive_info,
+                    0,
+                    n_primitives,
+                    &mut total_nodes,
+                    ordered_prims.clone(),
+                ),
+            };
+
+            // Compute representation of depth-first traversal of BVH tree.
+            let mut nodes = vec![LinearBVHNode::default(); total_nodes];
+            let mut offset = 0_u32;
+            Self::flatten_bvh_tree(root, &mut nodes, &mut offset);
+
+            debug_assert!(total_nodes == offset as usize);
+
+            let prims = ordered_prims.clone();
+            let prims2 = prims.lock().expect("unabled to lock ordered_prims");
+            BVHAccel {
+                primitives: prims2.to_vec(),
                 max_prims_in_node,
-                &mut primitive_info,
-                0,
-                n_primitives,
-                &mut total_nodes,
-                ordered_prims.clone(),
-            ),
-        };
-
-        // Compute representation of depth-first traversal of BVH tree.
-        let mut nodes = vec![LinearBVHNode::default(); total_nodes];
-        let mut offset = 0_u32;
-        flatten_bvh_tree(root, &mut nodes, &mut offset);
-
-        debug_assert!(total_nodes == offset as usize);
-
-        let prims = ordered_prims.clone();
-        let prims2 = prims.lock().expect("unabled to lock ordered_prims");
-        BVHAccel {
-            primitives: prims2.to_vec(),
-            max_prims_in_node,
-            split_method,
-            nodes,
+                split_method,
+                nodes,
+            }
         }
     }
-}
 
-/// Flatten the tree to the linear representation.
-///
-/// * `node`   - The node.
-/// * `offset` - Tracks current offset into `BVHAccel::nodes`.
-fn flatten_bvh_tree(
-    node: Arc<BVHBuildNode>,
-    nodes: &mut Vec<LinearBVHNode>,
-    offset: &mut u32,
-) -> u32 {
-    let my_offset = *offset;
-    *offset += 1;
+    /// Flatten the tree to the linear representation.
+    ///
+    /// * `node`   - The node.
+    /// * `offset` - Tracks current offset into `BVHAccel::nodes`.
+    fn flatten_bvh_tree(
+        node: Arc<BVHBuildNode>,
+        nodes: &mut Vec<LinearBVHNode>,
+        offset: &mut u32,
+    ) -> u32 {
+        let my_offset = *offset;
+        *offset += 1;
 
-    if node.n_primitives > 0 {
-        debug_assert!(!node.children[0].is_none() && !node.children[1].is_none());
-        debug_assert!(node.n_primitives < 65536);
+        if node.n_primitives > 0 {
+            debug_assert!(!node.children[0].is_none() && !node.children[1].is_none());
+            debug_assert!(node.n_primitives < 65536);
 
-        nodes[my_offset as usize] = create_linear_bvh_leaf_node(
-            node.bounds,
-            node.first_prim_offset as u32,
-            node.n_primitives as u16,
-        );
-    } else {
-        // Create interior flattened BVH nodes.
-        if let Some(child) = node.children[0].clone() {
-            // Ignore first child offset for interior node.
-            flatten_bvh_tree(child, nodes, offset);
-        }
-
-        if let Some(child) = node.children[1].clone() {
-            let second_child_offset = flatten_bvh_tree(child, nodes, offset);
-            nodes[my_offset as usize] = create_linear_bvh_interior_node(
+            nodes[my_offset as usize] = LinearBVHNode::new_leaf_node(
                 node.bounds,
-                second_child_offset as u32,
-                node.split_axis.into(),
+                node.first_prim_offset as u32,
+                node.n_primitives as u16,
             );
-        }
-    }
+        } else {
+            // Create interior flattened BVH nodes.
+            if let Some(child) = node.children[0].clone() {
+                // Ignore first child offset for interior node.
+                Self::flatten_bvh_tree(child, nodes, offset);
+            }
 
-    my_offset
+            if let Some(child) = node.children[1].clone() {
+                let second_child_offset = Self::flatten_bvh_tree(child, nodes, offset);
+                nodes[my_offset as usize] = LinearBVHNode::new_interior_node(
+                    node.bounds,
+                    second_child_offset as u32,
+                    node.split_axis.into(),
+                );
+            }
+        }
+
+        my_offset
+    }
 }
 
 /// Tag `BVHAccel` as an `Aggregate`.

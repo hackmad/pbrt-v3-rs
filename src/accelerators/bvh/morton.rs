@@ -14,14 +14,16 @@ pub struct MortonPrimitive {
     pub morton_code: u32,
 }
 
-/// Create a new `MortonPrimitive`.
-///
-/// * `primitive_index` - The index of the primitive in a `primitive_info` vector.
-/// * `morton_code`     - The Morton code.
-pub fn morton_primitive(primitive_index: usize, morton_code: u32) -> MortonPrimitive {
-    MortonPrimitive {
-        primitive_index,
-        morton_code,
+impl MortonPrimitive {
+    /// Create a new `MortonPrimitive`.
+    ///
+    /// * `primitive_index` - The index of the primitive in a `primitive_info` vector.
+    /// * `morton_code`     - The Morton code.
+    pub fn new(primitive_index: usize, morton_code: u32) -> Self {
+        Self {
+            primitive_index,
+            morton_code,
+        }
     }
 }
 

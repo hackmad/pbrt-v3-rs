@@ -49,15 +49,17 @@ pub struct BVHPrimitiveInfo {
     pub centroid: Point3f,
 }
 
-/// Create a `BVHPrimitiveInfo`.
-///
-/// * `primitive_number` - Index in the `BVHAccel::primitives`.
-/// * `bounds`           - The bounding box of primitive.
-pub fn bvh_primitive_info(primitive_number: usize, bounds: Bounds3f) -> BVHPrimitiveInfo {
-    BVHPrimitiveInfo {
-        primitive_number,
-        bounds,
-        centroid: 0.5 * (bounds.p_min + bounds.p_max),
+impl BVHPrimitiveInfo {
+    /// Create a `BVHPrimitiveInfo`.
+    ///
+    /// * `primitive_number` - Index in the `BVHAccel::primitives`.
+    /// * `bounds`           - The bounding box of primitive.
+    pub fn new(primitive_number: usize, bounds: Bounds3f) -> Self {
+        Self {
+            primitive_number,
+            bounds,
+            centroid: 0.5 * (bounds.p_min + bounds.p_max),
+        }
     }
 }
 
@@ -83,40 +85,42 @@ pub struct BVHBuildNode {
     pub n_primitives: usize,
 }
 
-/// Create a leaf BVH node.
-///
-/// * `first`  - Index of first primitive from `BVHAccel::primitives` stored at
-///              this node.
-/// * `n`      - Number of primitives stored from `BVHAccel::primitives` stored
-///              at this node` starting at `first` but not including `first` + `n`.
-/// * `bounds` - Bounding box.
-pub fn create_bvh_leaf_node(first: usize, n: usize, bounds: Bounds3f) -> Arc<BVHBuildNode> {
-    Arc::new(BVHBuildNode {
-        first_prim_offset: first,
-        n_primitives: n,
-        bounds,
-        children: [None, None],
-        split_axis: Axis::default(),
-    })
-}
+impl BVHBuildNode {
+    /// Create a leaf BVH node.
+    ///
+    /// * `first`  - Index of first primitive from `BVHAccel::primitives` stored at
+    ///              this node.
+    /// * `n`      - Number of primitives stored from `BVHAccel::primitives` stored
+    ///              at this node` starting at `first` but not including `first` + `n`.
+    /// * `bounds` - Bounding box.
+    pub fn new_leaf_node(first: usize, n: usize, bounds: Bounds3f) -> Arc<Self> {
+        Arc::new(Self {
+            first_prim_offset: first,
+            n_primitives: n,
+            bounds,
+            children: [None, None],
+            split_axis: Axis::default(),
+        })
+    }
 
-/// Allocates an interior BVH node.
-///
-/// * `axis` - Axis used for partitioning children.
-/// * `c0`   - First child.
-/// * `c1`   - Second child.
-pub fn create_bvh_interior_node(
-    axis: Axis,
-    c0: Arc<BVHBuildNode>,
-    c1: Arc<BVHBuildNode>,
-) -> Arc<BVHBuildNode> {
-    Arc::new(BVHBuildNode {
-        first_prim_offset: 0,
-        n_primitives: 0,
-        bounds: c0.bounds.union(&c1.bounds),
-        children: [Some(c0), Some(c1)],
-        split_axis: axis,
-    })
+    /// Allocates an interior BVH node.
+    ///
+    /// * `axis` - Axis used for partitioning children.
+    /// * `c0`   - First child.
+    /// * `c1`   - Second child.
+    pub fn new_interior_node(
+        axis: Axis,
+        c0: Arc<BVHBuildNode>,
+        c1: Arc<BVHBuildNode>,
+    ) -> Arc<Self> {
+        Arc::new(Self {
+            first_prim_offset: 0,
+            n_primitives: 0,
+            bounds: c0.bounds.union(&c1.bounds),
+            children: [Some(c0), Some(c1)],
+            split_axis: axis,
+        })
+    }
 }
 
 /// Stores information needed to traverse the BVH.
@@ -140,36 +144,34 @@ pub struct LinearBVHNode {
     pub pad: u8,
 }
 
-/// Creates a leaf linear bvh node.
-///
-/// * `bounds`      - Bounding box for the node.
-/// * `offset`      - Offset for primitives in the node.
-/// * `n_primitives - Number of primitives in the node.
-pub fn create_linear_bvh_leaf_node(
-    bounds: Bounds3f,
-    offset: u32,
-    n_primitives: u16,
-) -> LinearBVHNode {
-    LinearBVHNode {
-        bounds,
-        offset,
-        n_primitives,
-        axis: 0,
-        pad: 0,
+impl LinearBVHNode {
+    /// Creates a leaf linear bvh node.
+    ///
+    /// * `bounds`      - Bounding box for the node.
+    /// * `offset`      - Offset for primitives in the node.
+    /// * `n_primitives - Number of primitives in the node.
+    pub fn new_leaf_node(bounds: Bounds3f, offset: u32, n_primitives: u16) -> Self {
+        Self {
+            bounds,
+            offset,
+            n_primitives,
+            axis: 0,
+            pad: 0,
+        }
     }
-}
 
-/// Creates an interior linear bvh node.
-///
-/// * `bounds` - Bounding box for the node.
-/// * `offset` - Offset to the second child.
-/// * `axis`   - Axis used for partitioning.
-pub fn create_linear_bvh_interior_node(bounds: Bounds3f, offset: u32, axis: u8) -> LinearBVHNode {
-    LinearBVHNode {
-        bounds,
-        offset,
-        axis,
-        n_primitives: 0,
-        pad: 0,
+    /// Creates an interior linear bvh node.
+    ///
+    /// * `bounds` - Bounding box for the node.
+    /// * `offset` - Offset to the second child.
+    /// * `axis`   - Axis used for partitioning.
+    pub fn new_interior_node(bounds: Bounds3f, offset: u32, axis: u8) -> Self {
+        Self {
+            bounds,
+            offset,
+            axis,
+            n_primitives: 0,
+            pad: 0,
+        }
     }
 }
