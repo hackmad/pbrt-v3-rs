@@ -51,71 +51,73 @@ pub struct Hyperboloid {
     pub ch: Float,
 }
 
-/// Create a new hyperboloid centered on the z-axis defined as a revolution of
-/// a line segment.
-///
-/// * `object_to_world`     - The object to world transfomation.
-/// * `world_to_object`     - The world to object transfomation.
-/// * `reverse_orientation` - Indicates whether their surface normal directions
-///                           should be reversed from the default
-/// * `point1`              - First point defining line segment to revolve.
-/// * `point2`              - Second point defining line segment to revolve.
-/// * `phi_max`             - Maximum spherical coordinate for Φ.
-pub fn hyperboloid(
-    object_to_world: ArcTransform,
-    world_to_object: ArcTransform,
-    reverse_orientation: bool,
-    point1: Point3f,
-    point2: Point3f,
-    phi_max: Float,
-) -> Hyperboloid {
-    let mut p1 = point1;
-    let mut p2 = point2;
+impl Hyperboloid {
+    /// Create a new hyperboloid centered on the z-axis defined as a revolution of
+    /// a line segment.
+    ///
+    /// * `object_to_world`     - The object to world transfomation.
+    /// * `world_to_object`     - The world to object transfomation.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions
+    ///                           should be reversed from the default
+    /// * `point1`              - First point defining line segment to revolve.
+    /// * `point2`              - Second point defining line segment to revolve.
+    /// * `phi_max`             - Maximum spherical coordinate for Φ.
+    pub fn new(
+        object_to_world: ArcTransform,
+        world_to_object: ArcTransform,
+        reverse_orientation: bool,
+        point1: Point3f,
+        point2: Point3f,
+        phi_max: Float,
+    ) -> Self {
+        let mut p1 = point1;
+        let mut p2 = point2;
 
-    let radius1 = (p1.x * p1.x + p1.y * p1.y).sqrt();
-    let radius2 = (p2.x * p2.x + p2.y * p2.y).sqrt();
+        let radius1 = (p1.x * p1.x + p1.y * p1.y).sqrt();
+        let radius2 = (p2.x * p2.x + p2.y * p2.y).sqrt();
 
-    let r_max = max(radius1, radius2);
-    let z_min = min(p1.z, p2.z);
-    let z_max = max(p1.z, p2.z);
+        let r_max = max(radius1, radius2);
+        let z_min = min(p1.z, p2.z);
+        let z_max = max(p1.z, p2.z);
 
-    // Compute implicit function coefficients for hyperboloid
-    if p2.z == 0.0 {
-        swap(&mut p1, &mut p2);
-    }
-
-    let mut pp = p1;
-    let mut xy1: Float;
-    let mut xy2: Float;
-    let mut ah: Float;
-    let mut ch: Float;
-    loop {
-        pp += 2.0 * (p2 - p1);
-        xy1 = pp.x * pp.x + pp.y * pp.y;
-        xy2 = p2.x * p2.x + p2.y * p2.y;
-        ah = (1.0 / xy1 - (pp.z * pp.z) / (xy1 * p2.z * p2.z))
-            / (1.0 - (xy2 * pp.z * pp.z) / (xy1 * p2.z * p2.z));
-        ch = (ah * xy2 - 1.0) / (p2.z * p2.z);
-
-        if ah.is_finite() || ah != Float::NAN {
-            break;
+        // Compute implicit function coefficients for hyperboloid
+        if p2.z == 0.0 {
+            swap(&mut p1, &mut p2);
         }
-    }
 
-    Hyperboloid {
-        p1,
-        p2,
-        z_min,
-        z_max,
-        r_max,
-        ah,
-        ch,
-        phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-        data: ShapeData::new(
-            object_to_world.clone(),
-            Some(world_to_object.clone()),
-            reverse_orientation,
-        ),
+        let mut pp = p1;
+        let mut xy1: Float;
+        let mut xy2: Float;
+        let mut ah: Float;
+        let mut ch: Float;
+        loop {
+            pp += 2.0 * (p2 - p1);
+            xy1 = pp.x * pp.x + pp.y * pp.y;
+            xy2 = p2.x * p2.x + p2.y * p2.y;
+            ah = (1.0 / xy1 - (pp.z * pp.z) / (xy1 * p2.z * p2.z))
+                / (1.0 - (xy2 * pp.z * pp.z) / (xy1 * p2.z * p2.z));
+            ch = (ah * xy2 - 1.0) / (p2.z * p2.z);
+
+            if ah.is_finite() || ah != Float::NAN {
+                break;
+            }
+        }
+
+        Self {
+            p1,
+            p2,
+            z_min,
+            z_max,
+            r_max,
+            ah,
+            ch,
+            phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
+            data: ShapeData::new(
+                object_to_world.clone(),
+                Some(world_to_object.clone()),
+                reverse_orientation,
+            ),
+        }
     }
 }
 

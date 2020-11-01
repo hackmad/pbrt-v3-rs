@@ -23,32 +23,34 @@ pub struct Cone {
     pub phi_max: Float,
 }
 
-/// Create a new cone centered on the z-axis with base centered at [0, 0, 0].
-///
-/// * `object_to_world`     - The object to world transfomation.
-/// * `world_to_object`     - The world to object transfomation.
-/// * `reverse_orientation` - Indicates whether their surface normal directions
-///                           should be reversed from the default
-/// * `radius`              - Radius of cone.
-/// * `height`              - Height of cone.
-/// * `phi_max`             - Maximum spherical coordinate for Φ.
-pub fn cone(
-    object_to_world: ArcTransform,
-    world_to_object: ArcTransform,
-    reverse_orientation: bool,
-    radius: Float,
-    height: Float,
-    phi_max: Float,
-) -> Cone {
-    Cone {
-        radius,
-        height,
-        phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-        data: ShapeData::new(
-            object_to_world.clone(),
-            Some(world_to_object.clone()),
-            reverse_orientation,
-        ),
+impl Cone {
+    /// Create a new cone centered on the z-axis with base centered at [0, 0, 0].
+    ///
+    /// * `object_to_world`     - The object to world transfomation.
+    /// * `world_to_object`     - The world to object transfomation.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions
+    ///                           should be reversed from the default
+    /// * `radius`              - Radius of cone.
+    /// * `height`              - Height of cone.
+    /// * `phi_max`             - Maximum spherical coordinate for Φ.
+    pub fn new(
+        object_to_world: ArcTransform,
+        world_to_object: ArcTransform,
+        reverse_orientation: bool,
+        radius: Float,
+        height: Float,
+        phi_max: Float,
+    ) -> Self {
+        Self {
+            radius,
+            height,
+            phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
+            data: ShapeData::new(
+                object_to_world.clone(),
+                Some(world_to_object.clone()),
+                reverse_orientation,
+            ),
+        }
     }
 }
 

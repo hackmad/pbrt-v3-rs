@@ -32,39 +32,41 @@ pub struct Sphere {
     pub phi_max: Float,
 }
 
-/// Create a new sphere at origin [0, 0, 0].
-///
-/// * `object_to_world`     - The object to world transfomation.
-/// * `world_to_object`     - The world to object transfomation.
-/// * `reverse_orientation` - Indicates whether their surface normal directions
-///                           should be reversed from the default
-/// * `radius`              - Radius of sphere.
-/// * `z_min`               - Minimum z-value to truncate sphere.
-/// * `z_max`               - Maximum z-value to truncate sphere.
-/// * `phi_max`             - Maximum spherical coordinate for Φ.
-pub fn sphere(
-    object_to_world: ArcTransform,
-    world_to_object: ArcTransform,
-    reverse_orientation: bool,
-    radius: Float,
-    z_min: Float,
-    z_max: Float,
-    phi_max: Float,
-) -> Sphere {
-    let zmin = clamp(min(z_min, z_max), -radius, radius);
-    let zmax = clamp(max(z_min, z_max), -radius, radius);
-    Sphere {
-        radius,
-        z_min: zmin,
-        z_max: zmax,
-        theta_min: clamp(zmin / radius, -1.0, 1.0).acos(),
-        theta_max: clamp(zmax / radius, -1.0, 1.0).acos(),
-        phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-        data: ShapeData::new(
-            object_to_world.clone(),
-            Some(world_to_object.clone()),
-            reverse_orientation,
-        ),
+impl Sphere {
+    /// Create a new sphere at origin [0, 0, 0].
+    ///
+    /// * `object_to_world`     - The object to world transfomation.
+    /// * `world_to_object`     - The world to object transfomation.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions
+    ///                           should be reversed from the default
+    /// * `radius`              - Radius of sphere.
+    /// * `z_min`               - Minimum z-value to truncate sphere.
+    /// * `z_max`               - Maximum z-value to truncate sphere.
+    /// * `phi_max`             - Maximum spherical coordinate for Φ.
+    pub fn new(
+        object_to_world: ArcTransform,
+        world_to_object: ArcTransform,
+        reverse_orientation: bool,
+        radius: Float,
+        z_min: Float,
+        z_max: Float,
+        phi_max: Float,
+    ) -> Self {
+        let zmin = clamp(min(z_min, z_max), -radius, radius);
+        let zmax = clamp(max(z_min, z_max), -radius, radius);
+        Self {
+            radius,
+            z_min: zmin,
+            z_max: zmax,
+            theta_min: clamp(zmin / radius, -1.0, 1.0).acos(),
+            theta_max: clamp(zmax / radius, -1.0, 1.0).acos(),
+            phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
+            data: ShapeData::new(
+                object_to_world.clone(),
+                Some(world_to_object.clone()),
+                reverse_orientation,
+            ),
+        }
     }
 }
 

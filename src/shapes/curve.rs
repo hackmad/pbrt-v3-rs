@@ -30,7 +30,7 @@ pub struct Curve {
     pub data: ShapeData,
 
     /// Common curve parameters.
-    pub common: CurveCommon,
+    pub common: CurveData,
 
     /// Minimum u-parameter for the curve.
     pub u_min: Float,
@@ -39,79 +39,81 @@ pub struct Curve {
     pub u_max: Float,
 }
 
-/// Create a new curve.
-///
-/// * `object_to_world`     - The object to world transfomation.
-/// * `world_to_object`     - The world to object transfomation.
-/// * `reverse_orientation` - Indicates whether their surface normal directions
-///                           should be reversed from the default
-/// * `u_min`               - Minimum u-parameter for the curve.
-/// * `u_max`               - Maximum u-parameter for the curve.
-pub fn curve(
-    object_to_world: ArcTransform,
-    world_to_object: ArcTransform,
-    reverse_orientation: bool,
-    common: CurveCommon,
-    u_min: Float,
-    u_max: Float,
-) -> Curve {
-    Curve {
-        data: ShapeData::new(
-            object_to_world.clone(),
-            Some(world_to_object.clone()),
-            reverse_orientation,
-        ),
-        common,
-        u_min,
-        u_max,
-    }
-}
-
-/// Create curve segments.
-///
-/// * `object_to_world`     - The object to world transfomation.
-/// * `world_to_object`     - The world to object transfomation.
-/// * `reverse_orientation` - Indicates whether their surface normal directions
-///                           should be reversed from the default
-/// * `curve_type`          - Curve type.
-/// * `c`                   - Object space control points.
-/// * `width`               - The width of the curve at the start and end points.
-/// * `norm`                - Surface normal at the start and end points.
-/// * `split_depth`         - Split depth.
-pub fn create_curve(
-    object_to_world: ArcTransform,
-    world_to_object: ArcTransform,
-    reverse_orientation: bool,
-    curve_type: CurveType,
-    c: [Point3f; 4],
-    width: [Float; 2],
-    norm: [Normal3f; 2],
-    split_depth: i32,
-) -> Vec<ArcShape> {
-    let common = curve_common(curve_type, c, width, norm);
-
-    let num_segments = 1 << split_depth;
-    let mut segments = Vec::<ArcShape>::with_capacity(num_segments);
-
-    let f = 1.0 / num_segments as Float;
-    for i in 0..num_segments {
-        let u_min = i as Float * f;
-        let u_max = (i + 1) as Float * f;
-        let curve = curve(
-            object_to_world.clone(),
-            world_to_object.clone(),
-            reverse_orientation,
+impl Curve {
+    /// Create a new curve.
+    ///
+    /// * `object_to_world`     - The object to world transfomation.
+    /// * `world_to_object`     - The world to object transfomation.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions
+    ///                           should be reversed from the default
+    /// * `u_min`               - Minimum u-parameter for the curve.
+    /// * `u_max`               - Maximum u-parameter for the curve.
+    pub fn new(
+        object_to_world: ArcTransform,
+        world_to_object: ArcTransform,
+        reverse_orientation: bool,
+        common: CurveData,
+        u_min: Float,
+        u_max: Float,
+    ) -> Self {
+        Self {
+            data: ShapeData::new(
+                object_to_world.clone(),
+                Some(world_to_object.clone()),
+                reverse_orientation,
+            ),
             common,
             u_min,
             u_max,
-        );
-        segments.push(Arc::new(curve));
+        }
     }
-
-    segments
 }
 
 impl Curve {
+    /// Create curve segments.
+    ///
+    /// * `object_to_world`     - The object to world transfomation.
+    /// * `world_to_object`     - The world to object transfomation.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions
+    ///                           should be reversed from the default
+    /// * `curve_type`          - Curve type.
+    /// * `c`                   - Object space control points.
+    /// * `width`               - The width of the curve at the start and end points.
+    /// * `norm`                - Surface normal at the start and end points.
+    /// * `split_depth`         - Split depth.
+    pub fn create_segments(
+        object_to_world: ArcTransform,
+        world_to_object: ArcTransform,
+        reverse_orientation: bool,
+        curve_type: CurveType,
+        c: [Point3f; 4],
+        width: [Float; 2],
+        norm: [Normal3f; 2],
+        split_depth: i32,
+    ) -> Vec<ArcShape> {
+        let common = CurveData::new(curve_type, c, width, norm);
+
+        let num_segments = 1 << split_depth;
+        let mut segments = Vec::<ArcShape>::with_capacity(num_segments);
+
+        let f = 1.0 / num_segments as Float;
+        for i in 0..num_segments {
+            let u_min = i as Float * f;
+            let u_max = (i + 1) as Float * f;
+            let curve = Curve::new(
+                object_to_world.clone(),
+                world_to_object.clone(),
+                reverse_orientation,
+                common,
+                u_min,
+                u_max,
+            );
+            segments.push(Arc::new(curve));
+        }
+
+        segments
+    }
+
     /// Recursively split curve in 2 sections if there is an intersection to
     /// find the actual intersection.
     ///
@@ -466,7 +468,7 @@ impl Shape for Curve {
 
 /// Common curve parameters
 #[derive(Copy, Clone, Debug)]
-pub struct CurveCommon {
+pub struct CurveData {
     /// The curve type.
     pub curve_type: CurveType,
 
@@ -486,35 +488,37 @@ pub struct CurveCommon {
     pub inv_sin_normal_angle: Float,
 }
 
-/// Create common parameters for curve.
-///
-/// The curve type.
-/// * `curve_type` - Curve type.
-/// * `c`          - Object space control points.
-/// * `width`      - The width of the curve at the start and end points.
-/// * `norm`       - Surface normal at the start and end points.
-pub fn curve_common(
-    curve_type: CurveType,
-    c: [Point3f; 4],
-    width: [Float; 2],
-    norm: [Normal3f; 2],
-) -> CurveCommon {
-    let n = if norm.len() == 2 {
-        [norm[0].normalize(), norm[1].normalize()]
-    } else {
-        [Normal3f::default(), Normal3f::default()]
-    };
+impl CurveData {
+    /// Create common parameters for curve.
+    ///
+    /// The curve type.
+    /// * `curve_type` - Curve type.
+    /// * `c`          - Object space control points.
+    /// * `width`      - The width of the curve at the start and end points.
+    /// * `norm`       - Surface normal at the start and end points.
+    pub fn new(
+        curve_type: CurveType,
+        c: [Point3f; 4],
+        width: [Float; 2],
+        norm: [Normal3f; 2],
+    ) -> Self {
+        let n = if norm.len() == 2 {
+            [norm[0].normalize(), norm[1].normalize()]
+        } else {
+            [Normal3f::default(), Normal3f::default()]
+        };
 
-    let normal_angle = clamp(n[0].dot(&n[1]), 0.0, 1.0).acos();
-    let inv_sin_normal_angle = 1.0 / normal_angle;
+        let normal_angle = clamp(n[0].dot(&n[1]), 0.0, 1.0).acos();
+        let inv_sin_normal_angle = 1.0 / normal_angle;
 
-    CurveCommon {
-        curve_type,
-        cp_obj: c,
-        n,
-        width,
-        normal_angle,
-        inv_sin_normal_angle,
+        Self {
+            curve_type,
+            cp_obj: c,
+            n,
+            width,
+            normal_angle,
+            inv_sin_normal_angle,
+        }
     }
 }
 

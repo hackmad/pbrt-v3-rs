@@ -40,52 +40,114 @@ pub struct TriangleMesh {
     pub alpha_mask: Option<ArcTexture<Float>>,
 }
 
-/// Create a new triangle mesh.
-///
-/// * `object_to_world`     - The object to world transfomation.
-/// * `reverse_orientation` - Indicates whether their surface normal directions
-///                           should be reversed from the default
-/// * `vertex_indices`      - Vertex indices for triangles. For the ith triangle,
-///                           its three vertex positions are p[vertex_indices[3 * i]],
-/// * `p`                   - Vertex positions.
-///                           p[vertex_indices[3 * i + 1]], and
-///                           p[vertex_indices[3 * i + 2]]
-/// * `n`                   - Vertex normals.
-/// * `s`                   - Tangent vectors per vertex.
-/// * `uv`                  - Paramteric uv-coordinates.
-/// * `alpha_mask`          - Optional alpha mask texture, which can be used to
-///                           cut away parts of triangle surfaces
-pub fn triangle_mesh(
-    object_to_world: ArcTransform,
-    reverse_orientation: bool,
-    vertex_indices: Vec<usize>,
-    p: Vec<Point3f>,
-    n: Vec<Normal3f>,
-    s: Vec<Vector3f>,
-    uv: Vec<Point2f>,
-    alpha_mask: Option<ArcTexture<Float>>,
-) -> TriangleMesh {
-    let num_triangles = vertex_indices.len() % 3;
-    assert!(num_triangles == 0);
+impl TriangleMesh {
+    /// Create a new triangle mesh.
+    ///
+    /// * `object_to_world`     - The object to world transfomation.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions
+    ///                           should be reversed from the default
+    /// * `vertex_indices`      - Vertex indices for triangles. For the ith triangle,
+    ///                           its three vertex positions are p[vertex_indices[3 * i]],
+    /// * `p`                   - Vertex positions.
+    ///                           p[vertex_indices[3 * i + 1]], and
+    ///                           p[vertex_indices[3 * i + 2]]
+    /// * `n`                   - Vertex normals.
+    /// * `s`                   - Tangent vectors per vertex.
+    /// * `uv`                  - Paramteric uv-coordinates.
+    /// * `alpha_mask`          - Optional alpha mask texture, which can be used to
+    ///                           cut away parts of triangle surfaces
+    pub fn new(
+        object_to_world: ArcTransform,
+        reverse_orientation: bool,
+        vertex_indices: Vec<usize>,
+        p: Vec<Point3f>,
+        n: Vec<Normal3f>,
+        s: Vec<Vector3f>,
+        uv: Vec<Point2f>,
+        alpha_mask: Option<ArcTexture<Float>>,
+    ) -> Self {
+        let num_triangles = vertex_indices.len() % 3;
+        assert!(num_triangles == 0);
 
-    // Transform mesh vertices to world space.
-    let tp = p.iter().map(|v| object_to_world.transform_point(&v));
+        // Transform mesh vertices to world space.
+        let tp = p.iter().map(|v| object_to_world.transform_point(&v));
 
-    // Transform normals to world space.
-    let tn = n.iter().map(|v| object_to_world.transform_normal(&v));
+        // Transform normals to world space.
+        let tn = n.iter().map(|v| object_to_world.transform_normal(&v));
 
-    // Transform normals to world space.
-    let ts = s.iter().map(|v| object_to_world.transform_vector(&v));
+        // Transform normals to world space.
+        let ts = s.iter().map(|v| object_to_world.transform_vector(&v));
 
-    TriangleMesh {
-        num_triangles,
-        vertex_indices,
-        p: tp.collect(),
-        n: tn.collect(),
-        s: ts.collect(),
-        uv,
-        alpha_mask,
-        data: ShapeData::new(object_to_world.clone(), None, reverse_orientation),
+        Self {
+            num_triangles,
+            vertex_indices,
+            p: tp.collect(),
+            n: tn.collect(),
+            s: ts.collect(),
+            uv,
+            alpha_mask,
+            data: ShapeData::new(object_to_world.clone(), None, reverse_orientation),
+        }
+    }
+
+    /// Create a triangle mesh from vertex positions, normals, tangents, uv-coordinates
+    /// and alpha mask.
+    ///
+    /// Returns a list of triangle data referencing it. Useful for shapes that
+    /// convert to triangles.
+    ///
+    /// * `object_to_world`     - The object to world transfomation.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions
+    ///                           should be reversed from the default
+    /// * `vertex_indices`      - Vertex indices for triangles. For the ith triangle,
+    ///                           its three vertex positions are p[vertex_indices[3 * i]],
+    ///                           p[vertex_indices[3 * i + 1]], and
+    ///                           p[vertex_indices[3 * i + 2]]
+    /// * `p`                   - Vertex positions.
+    /// * `n`                   - Vertex normals.
+    /// * `s`                   - Tangent vectors per vertex.
+    /// * `uv`                  - Paramteric uv-coordinates.
+    /// * `alpha_mask`          - Optional alpha mask texture, which can be used to
+    ///                           cut away parts of triangle surfaces
+    pub fn create(
+        object_to_world: ArcTransform,
+        world_to_object: ArcTransform,
+        reverse_orientation: bool,
+        vertex_indices: Vec<usize>,
+        p: Vec<Point3f>,
+        n: Vec<Normal3f>,
+        s: Vec<Vector3f>,
+        uv: Vec<Point2f>,
+        alpha_mask: Option<ArcTexture<Float>>,
+    ) -> Vec<ArcShape> {
+        let num_triangles = vertex_indices.len() % 3;
+        assert!(num_triangles == 0);
+
+        let mesh = Self::new(
+            object_to_world.clone(),
+            reverse_orientation,
+            vertex_indices,
+            p,
+            n,
+            s,
+            uv,
+            alpha_mask,
+        );
+
+        let m = Arc::new(mesh);
+        let mut tris = Vec::<ArcShape>::with_capacity(num_triangles);
+        for i in 0..num_triangles {
+            let tri = Triangle::new(
+                object_to_world.clone(),
+                world_to_object.clone(),
+                reverse_orientation,
+                m.clone(),
+                i,
+            );
+            tris.push(Arc::new(tri));
+        }
+
+        tris
     }
 }
 
@@ -103,29 +165,31 @@ pub struct Triangle {
     pub v: usize,
 }
 
-/// Create a new triangle.
-///
-/// * `object_to_world`     - The object to world transfomation.
-/// * `world_to_object`     - The world to object transfomation.
-/// * `reverse_orientation` - Indicates whether their surface normal directions
-///                           should be reversed from the default
-/// * `mesh`                - The triangle mesh.
-/// * `triangle_index`      - The index of the triangle.
-pub fn triangle(
-    object_to_world: ArcTransform,
-    world_to_object: ArcTransform,
-    reverse_orientation: bool,
-    mesh: Arc<TriangleMesh>,
-    triangle_index: usize,
-) -> Triangle {
-    Triangle {
-        mesh: mesh.clone(),
-        v: 3 * triangle_index,
-        data: ShapeData::new(
-            object_to_world.clone(),
-            Some(world_to_object.clone()),
-            reverse_orientation,
-        ),
+impl Triangle {
+    /// Create a new triangle.
+    ///
+    /// * `object_to_world`     - The object to world transfomation.
+    /// * `world_to_object`     - The world to object transfomation.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions
+    ///                           should be reversed from the default
+    /// * `mesh`                - The triangle mesh.
+    /// * `triangle_index`      - The index of the triangle.
+    pub fn new(
+        object_to_world: ArcTransform,
+        world_to_object: ArcTransform,
+        reverse_orientation: bool,
+        mesh: Arc<TriangleMesh>,
+        triangle_index: usize,
+    ) -> Self {
+        Self {
+            mesh: mesh.clone(),
+            v: 3 * triangle_index,
+            data: ShapeData::new(
+                object_to_world.clone(),
+                Some(world_to_object.clone()),
+                reverse_orientation,
+            ),
+        }
     }
 }
 
@@ -628,61 +692,4 @@ impl Shape for Triangle {
         let p2 = self.mesh.p[self.v + 2];
         0.5 * (p1 - p0).cross(&(p2 - p0)).length()
     }
-}
-
-/// Create a triangle mesh and the return a list of triangle data referencing it.
-/// Useful for shapes that convert to triangles.
-///
-/// * `object_to_world`     - The object to world transfomation.
-/// * `reverse_orientation` - Indicates whether their surface normal directions
-///                           should be reversed from the default
-/// * `vertex_indices`      - Vertex indices for triangles. For the ith triangle,
-///                           its three vertex positions are p[vertex_indices[3 * i]],
-///                           p[vertex_indices[3 * i + 1]], and
-///                           p[vertex_indices[3 * i + 2]]
-/// * `p`                   - Vertex positions.
-/// * `n`                   - Vertex normals.
-/// * `s`                   - Tangent vectors per vertex.
-/// * `uv`                  - Paramteric uv-coordinates.
-/// * `alpha_mask`          - Optional alpha mask texture, which can be used to
-///                           cut away parts of triangle surfaces
-pub fn create_triangle_mesh(
-    object_to_world: ArcTransform,
-    world_to_object: ArcTransform,
-    reverse_orientation: bool,
-    vertex_indices: Vec<usize>,
-    p: Vec<Point3f>,
-    n: Vec<Normal3f>,
-    s: Vec<Vector3f>,
-    uv: Vec<Point2f>,
-    alpha_mask: Option<ArcTexture<Float>>,
-) -> Vec<ArcShape> {
-    let num_triangles = vertex_indices.len() % 3;
-    assert!(num_triangles == 0);
-
-    let mesh = triangle_mesh(
-        object_to_world.clone(),
-        reverse_orientation,
-        vertex_indices,
-        p,
-        n,
-        s,
-        uv,
-        alpha_mask,
-    );
-
-    let m = Arc::new(mesh);
-    let mut tris = Vec::<ArcShape>::with_capacity(num_triangles);
-    for i in 0..num_triangles {
-        let tri = triangle(
-            object_to_world.clone(),
-            world_to_object.clone(),
-            reverse_orientation,
-            m.clone(),
-            i,
-        );
-        tris.push(Arc::new(tri));
-    }
-
-    tris
 }

@@ -26,36 +26,38 @@ pub struct Paraboloid {
     pub phi_max: Float,
 }
 
-/// Create a new paraboloid centered on the z-axis and base at origin [0, 0, 0].
-///
-/// * `object_to_world`     - The object to world transfomation.
-/// * `world_to_object`     - The world to object transfomation.
-/// * `reverse_orientation` - Indicates whether their surface normal directions
-///                           should be reversed from the default
-/// * `radius`              - Radius of paraboloid.
-/// * `z_min`               - Minimum z-value to truncate paraboloid.
-/// * `z_max`               - Maximum z-value to truncate paraboloid.
-pub fn paraboloid(
-    object_to_world: ArcTransform,
-    world_to_object: ArcTransform,
-    reverse_orientation: bool,
-    radius: Float,
-    z_min: Float,
-    z_max: Float,
-    phi_max: Float,
-) -> Paraboloid {
-    let zmin = clamp(min(z_min, z_max), -radius, radius);
-    let zmax = clamp(max(z_min, z_max), -radius, radius);
-    Paraboloid {
-        radius,
-        z_min: zmin,
-        z_max: zmax,
-        phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-        data: ShapeData::new(
-            object_to_world.clone(),
-            Some(world_to_object.clone()),
-            reverse_orientation,
-        ),
+impl Paraboloid {
+    /// Create a new paraboloid centered on the z-axis and base at origin [0, 0, 0].
+    ///
+    /// * `object_to_world`     - The object to world transfomation.
+    /// * `world_to_object`     - The world to object transfomation.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions
+    ///                           should be reversed from the default
+    /// * `radius`              - Radius of paraboloid.
+    /// * `z_min`               - Minimum z-value to truncate paraboloid.
+    /// * `z_max`               - Maximum z-value to truncate paraboloid.
+    pub fn new(
+        object_to_world: ArcTransform,
+        world_to_object: ArcTransform,
+        reverse_orientation: bool,
+        radius: Float,
+        z_min: Float,
+        z_max: Float,
+        phi_max: Float,
+    ) -> Self {
+        let zmin = clamp(min(z_min, z_max), -radius, radius);
+        let zmax = clamp(max(z_min, z_max), -radius, radius);
+        Self {
+            radius,
+            z_min: zmin,
+            z_max: zmax,
+            phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
+            data: ShapeData::new(
+                object_to_world.clone(),
+                Some(world_to_object.clone()),
+                reverse_orientation,
+            ),
+        }
     }
 }
 

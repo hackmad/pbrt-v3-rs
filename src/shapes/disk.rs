@@ -26,35 +26,37 @@ pub struct Disk {
     pub phi_max: Float,
 }
 
-/// Create a new disk centered on the z-axis.
-///
-/// * `object_to_world`     - The object to world transfomation.
-/// * `world_to_object`     - The world to object transfomation.
-/// * `reverse_orientation` - Indicates whether their surface normal directions
-///                           should be reversed from the default
-/// * `height`              - Height where disk is located.
-/// * `radius`              - Radius of disk.
-/// * `inner_radius`        - Inner radius of disk to truncate center.
-/// * `phi_max`             - Maximum angle Φ to truncate disk.
-pub fn disk(
-    object_to_world: ArcTransform,
-    world_to_object: ArcTransform,
-    reverse_orientation: bool,
-    height: Float,
-    radius: Float,
-    inner_radius: Float,
-    phi_max: Float,
-) -> Disk {
-    Disk {
-        height,
-        radius,
-        inner_radius,
-        phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-        data: ShapeData::new(
-            object_to_world.clone(),
-            Some(world_to_object.clone()),
-            reverse_orientation,
-        ),
+impl Disk {
+    /// Create a new disk centered on the z-axis.
+    ///
+    /// * `object_to_world`     - The object to world transfomation.
+    /// * `world_to_object`     - The world to object transfomation.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions
+    ///                           should be reversed from the default
+    /// * `height`              - Height where disk is located.
+    /// * `radius`              - Radius of disk.
+    /// * `inner_radius`        - Inner radius of disk to truncate center.
+    /// * `phi_max`             - Maximum angle Φ to truncate disk.
+    pub fn new(
+        object_to_world: ArcTransform,
+        world_to_object: ArcTransform,
+        reverse_orientation: bool,
+        height: Float,
+        radius: Float,
+        inner_radius: Float,
+        phi_max: Float,
+    ) -> Self {
+        Self {
+            height,
+            radius,
+            inner_radius,
+            phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
+            data: ShapeData::new(
+                object_to_world.clone(),
+                Some(world_to_object.clone()),
+                reverse_orientation,
+            ),
+        }
     }
 }
 
