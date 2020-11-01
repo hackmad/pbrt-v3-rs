@@ -2,8 +2,8 @@
 
 #![allow(dead_code)]
 use super::{
-    medium_interface_same, ArcAreaLight, ArcMaterial, ArcShape, Bounds3f, Dot, MediumInterface,
-    Primitive, Ray, SurfaceInteraction, TransportMode,
+    ArcAreaLight, ArcMaterial, ArcShape, Bounds3f, Dot, MediumInterface, Primitive, Ray,
+    SurfaceInteraction, TransportMode,
 };
 
 /// GeometricPrimitive represents a single shape in a scene.
@@ -72,7 +72,7 @@ impl Primitive for GeometricPrimitive {
             it.isect.hit.medium_interface = if is_medium_transition {
                 Some(self.medium_interface.clone())
             } else if let Some(medium) = r.medium.clone() {
-                Some(medium_interface_same(medium))
+                Some(MediumInterface::from(medium))
             } else {
                 None
             };

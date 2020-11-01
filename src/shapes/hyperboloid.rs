@@ -2,8 +2,8 @@
 
 #![allow(dead_code)]
 use super::{
-    clamp, efloat, max, min, quadratic, ArcTransform, Bounds3f, Dot, Float, Intersection, Normal3,
-    Point2f, Point3, Point3f, Ray, Shape, ShapeData, SurfaceInteraction, Vector3, TWO_PI,
+    clamp, max, min, ArcTransform, Bounds3f, Dot, EFloat, Float, Intersection, Normal3, Point2f,
+    Point3, Point3f, Quadratic, Ray, Shape, ShapeData, SurfaceInteraction, Vector3, TWO_PI,
 };
 use std::mem::swap;
 use std::sync::Arc;
@@ -150,20 +150,20 @@ impl Shape for Hyperboloid {
         // Compute quadratic hyperboloid coefficients
 
         // Initialize EFloat ray coordinate values
-        let ox = efloat(ray.o.x, o_err.x);
-        let oy = efloat(ray.o.y, o_err.y);
-        let oz = efloat(ray.o.z, o_err.z);
+        let ox = EFloat::new(ray.o.x, o_err.x);
+        let oy = EFloat::new(ray.o.y, o_err.y);
+        let oz = EFloat::new(ray.o.z, o_err.z);
 
-        let dx = efloat(ray.d.x, d_err.x);
-        let dy = efloat(ray.d.y, d_err.y);
-        let dz = efloat(ray.d.z, d_err.z);
+        let dx = EFloat::new(ray.d.x, d_err.x);
+        let dy = EFloat::new(ray.d.y, d_err.y);
+        let dz = EFloat::new(ray.d.z, d_err.z);
 
         let a = self.ah * dx * dx + self.ah * dy * dy - self.ch * dz * dz;
         let b = 2.0 * (self.ah * dx * ox + self.ah * dy * oy - self.ch * dz * oz);
         let c = self.ah * ox * ox + self.ah * oy * oy - self.ch * oz * oz - 1.0;
 
         // Solve quadratic equation for t values
-        if let Some((t0, t1)) = quadratic(a, b, c) {
+        if let Some((t0, t1)) = Quadratic::solve(a, b, c) {
             // Check quadric shape t0 and t1 for nearest intersection
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return None;
@@ -306,20 +306,20 @@ impl Shape for Hyperboloid {
         // Compute quadratic hyperboloid coefficients
 
         // Initialize EFloat ray coordinate values
-        let ox = efloat(ray.o.x, o_err.x);
-        let oy = efloat(ray.o.y, o_err.y);
-        let oz = efloat(ray.o.z, o_err.z);
+        let ox = EFloat::new(ray.o.x, o_err.x);
+        let oy = EFloat::new(ray.o.y, o_err.y);
+        let oz = EFloat::new(ray.o.z, o_err.z);
 
-        let dx = efloat(ray.d.x, d_err.x);
-        let dy = efloat(ray.d.y, d_err.y);
-        let dz = efloat(ray.d.z, d_err.z);
+        let dx = EFloat::new(ray.d.x, d_err.x);
+        let dy = EFloat::new(ray.d.y, d_err.y);
+        let dz = EFloat::new(ray.d.z, d_err.z);
 
         let a = self.ah * dx * dx + self.ah * dy * dy - self.ch * dz * dz;
         let b = 2.0 * (self.ah * dx * ox + self.ah * dy * oy - self.ch * dz * oz);
         let c = self.ah * ox * ox + self.ah * oy * oy - self.ch * oz * oz - 1.0;
 
         // Solve quadratic equation for t values
-        if let Some((t0, t1)) = quadratic(a, b, c) {
+        if let Some((t0, t1)) = Quadratic::solve(a, b, c) {
             // Check quadric shape t0 and t1 for nearest intersection
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return false;

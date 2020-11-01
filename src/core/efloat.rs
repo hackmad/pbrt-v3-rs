@@ -21,76 +21,44 @@ pub struct EFloat {
     v_precise: f64,
 }
 
-/// Construct a new float with error bounds.
-///
-/// * `v`   - The 32-bit floating point value.
-/// * `err` - The error (default to 0.0).
-pub fn efloat(v: f32, err: f32) -> EFloat {
-    let mut r = EFloat::default();
+impl EFloat {
+    /// Construct a new float with error bounds.
+    ///
+    /// * `v`   - The 32-bit floating point value.
+    /// * `err` - The error (default to 0.0).
+    pub fn new(v: f32, err: f32) -> Self {
+        let mut r = Self::default();
 
-    if err == 0.0 {
-        r.low = v;
-        r.high = v;
-    } else {
-        // Compute conservative bounds by rounding the endpoints away from the
-        // middle. Note that this will be over-conservative in cases where v-err
-        // or v+err are exactly representable in floating-point, but it's
-        // probably not worth the trouble of checking this case.
-        r.low = next_float_down(r.v - err);
-        r.high = next_float_up(r.v + err);
-    };
-
-    r.v_precise = v as f64;
-
-    r.check();
-    r
-}
-
-/// Construct a new float with error bounds and 64-bit value.
-///
-/// * `v`   - The 32-bit floating point value.
-/// * `ld`  - The 64-bit floating point value.
-/// * `err` - The error (default to 0.0).
-pub fn efloat_precise(v: f32, ld: f64, err: f32) -> EFloat {
-    let mut r = efloat(v, err);
-    r.v_precise = ld;
-    r.check();
-    r
-}
-
-/// Solve the quadratic equation a * x ^ 2  + b * x + c = 0.
-///
-/// * `a` - Coefficient of x ^ 2 term.
-/// * `b` - Coefficient of x term.
-/// * `c` - Coefficient of constant term.
-pub fn quadratic(a: EFloat, b: EFloat, c: EFloat) -> Option<(EFloat, EFloat)> {
-    // Find quadratic discriminant
-    let discrim: f64 = b.v as f64 * b.v as f64 - 4.0f64 * a.v as f64 * c.v as f64;
-    if discrim < 0.0 {
-        None
-    } else {
-        let root_discrim = discrim.sqrt() as f32;
-        let ef_root_discrim = efloat(root_discrim, MACHINE_EPSILON * root_discrim);
-
-        // Compute quadratic _t_ values
-        let q = if b.v < 0.0 {
-            -0.5f32 * (b - ef_root_discrim)
+        if err == 0.0 {
+            r.low = v;
+            r.high = v;
         } else {
-            -0.5f32 * (b + ef_root_discrim)
+            // Compute conservative bounds by rounding the endpoints away from the
+            // middle. Note that this will be over-conservative in cases where v-err
+            // or v+err are exactly representable in floating-point, but it's
+            // probably not worth the trouble of checking this case.
+            r.low = next_float_down(r.v - err);
+            r.high = next_float_up(r.v + err);
         };
 
-        let t0 = q / a;
-        let t1 = c / q;
+        r.v_precise = v as f64;
 
-        if t0.v > t1.v {
-            Some((t1, t0))
-        } else {
-            Some((t0, t1))
-        }
+        r.check();
+        r
     }
-}
 
-impl EFloat {
+    /// Construct a new float with error bounds and 64-bit value.
+    ///
+    /// * `v`   - The 32-bit floating point value.
+    /// * `ld`  - The 64-bit floating point value.
+    /// * `err` - The error (default to 0.0).
+    pub fn precise(v: f32, ld: f64, err: f32) -> Self {
+        let mut r = Self::new(v, err);
+        r.v_precise = ld;
+        r.check();
+        r
+    }
+
     /// Asserts low < high, low < v_precise < high for finite non-NAN values.
     fn check(&self) {
         if self.low.is_finite()
@@ -133,8 +101,8 @@ impl EFloat {
     }
 
     /// Returns the square root.
-    pub fn sqrt(&self, ef: EFloat) -> EFloat {
-        let mut r = EFloat::default();
+    pub fn sqrt(&self, ef: Self) -> Self {
+        let mut r = Self::default();
 
         r.v = ef.v.sqrt();
         r.v_precise = ef.v_precise.sqrt();
@@ -147,13 +115,13 @@ impl EFloat {
     }
 
     /// Returns the absolute value.
-    pub fn abs(&self) -> EFloat {
+    pub fn abs(&self) -> Self {
         if self.low >= 0.0 {
             // The entire interval is greater than zero, so we're all set.
             *self
         } else if self.high <= 0.0 {
             // The entire interval is less than zero.
-            let mut r = EFloat::default();
+            let mut r = Self::default();
 
             r.v = -self.v;
             r.v_precise = -self.v_precise;
@@ -165,7 +133,7 @@ impl EFloat {
             r
         } else {
             // The interval straddles zero.
-            let mut r = EFloat::default();
+            let mut r = Self::default();
 
             r.v = self.v.abs();
             r.v_precise = self.v_precise.abs();
@@ -184,7 +152,7 @@ impl From<f32> for EFloat {
     ///
     /// * `v` - The 32-bit floating point value to convert.
     fn from(v: f32) -> Self {
-        efloat(v, 0.0)
+        Self::new(v, 0.0)
     }
 }
 
@@ -222,7 +190,7 @@ impl Add for EFloat {
     ///
     /// * `ef` - The value to add.
     fn add(self, ef: EFloat) -> Self::Output {
-        let mut r = EFloat::default();
+        let mut r = Self::Output::default();
 
         r.v = self.v + ef.v;
         r.v_precise = self.v_precise + ef.v_precise;
@@ -244,7 +212,7 @@ impl Add<f32> for EFloat {
     ///
     /// * `v` - The value to add.
     fn add(self, v: f32) -> Self::Output {
-        self + EFloat::from(v)
+        self + Self::Output::from(v)
     }
 }
 
@@ -255,7 +223,7 @@ impl Add<EFloat> for f32 {
     ///
     /// * `ef` - The value to add.
     fn add(self, ef: EFloat) -> Self::Output {
-        EFloat::from(self) + ef
+        Self::Output::from(self) + ef
     }
 }
 
@@ -266,7 +234,7 @@ impl Sub for EFloat {
     ///
     /// * `ef` - The value to subtract.
     fn sub(self, ef: EFloat) -> Self::Output {
-        let mut r = EFloat::default();
+        let mut r = Self::Output::default();
 
         r.v = self.v - ef.v;
         r.v_precise = self.v_precise - ef.v_precise;
@@ -286,7 +254,7 @@ impl Sub<f32> for EFloat {
     ///
     /// * `v` - The value to subtract.
     fn sub(self, v: f32) -> Self::Output {
-        self - EFloat::from(v)
+        self - Self::Output::from(v)
     }
 }
 
@@ -297,7 +265,7 @@ impl Sub<EFloat> for f32 {
     ///
     /// * `ef` - The value to subtract
     fn sub(self, ef: EFloat) -> Self::Output {
-        EFloat::from(self) - ef
+        Self::Output::from(self) - ef
     }
 }
 
@@ -308,7 +276,7 @@ impl Mul for EFloat {
     ///
     /// * `ef` - The value to multiply.
     fn mul(self, ef: EFloat) -> Self::Output {
-        let mut r = EFloat::default();
+        let mut r = Self::Output::default();
 
         r.v = self.v * ef.v;
         r.v_precise = self.v_precise * ef.v_precise;
@@ -335,7 +303,7 @@ impl Mul<f32> for EFloat {
     ///
     /// * `v` - The value to multiply.
     fn mul(self, v: f32) -> Self::Output {
-        self * EFloat::from(v)
+        self * Self::Output::from(v)
     }
 }
 
@@ -346,7 +314,7 @@ impl Mul<EFloat> for f32 {
     ///
     /// * `ef` - The value to multiply.
     fn mul(self, ef: EFloat) -> Self::Output {
-        EFloat::from(self) * ef
+        Self::Output::from(self) * ef
     }
 }
 
@@ -357,7 +325,7 @@ impl Div for EFloat {
     ///
     /// * `ef` - The value to divide by.
     fn div(self, ef: EFloat) -> Self::Output {
-        let mut r = EFloat::default();
+        let mut r = Self::Output::default();
 
         r.v = self.v / ef.v;
         r.v_precise = self.v_precise / ef.v_precise;
@@ -390,7 +358,7 @@ impl Div<f32> for EFloat {
     ///
     /// * `v` - The value to divide by.
     fn div(self, v: f32) -> Self::Output {
-        self / EFloat::from(v)
+        self / Self::Output::from(v)
     }
 }
 
@@ -401,7 +369,7 @@ impl Div<EFloat> for f32 {
     ///
     /// * `ef` - The value to divide by.
     fn div(self, ef: EFloat) -> Self::Output {
-        EFloat::from(self) / ef
+        Self::Output::from(self) / ef
     }
 }
 
@@ -410,7 +378,7 @@ impl Neg for EFloat {
 
     /// Return the negative value.
     fn neg(self) -> Self::Output {
-        let mut r = EFloat::default();
+        let mut r = Self::Output::default();
 
         r.v = -self.v;
         r.v_precise = -self.v_precise;
@@ -420,5 +388,42 @@ impl Neg for EFloat {
 
         r.check();
         r
+    }
+}
+
+/// Implements a quadratic equation solver.
+pub struct Quadratic {}
+
+impl Quadratic {
+    /// Solve the quadratic equation a * x ^ 2  + b * x + c = 0.
+    ///
+    /// * `a` - Coefficient of x ^ 2 term.
+    /// * `b` - Coefficient of x term.
+    /// * `c` - Coefficient of constant term.
+    pub fn solve(a: EFloat, b: EFloat, c: EFloat) -> Option<(EFloat, EFloat)> {
+        // Find quadratic discriminant
+        let discrim: f64 = b.v as f64 * b.v as f64 - 4.0f64 * a.v as f64 * c.v as f64;
+        if discrim < 0.0 {
+            None
+        } else {
+            let root_discrim = discrim.sqrt() as f32;
+            let ef_root_discrim = EFloat::new(root_discrim, MACHINE_EPSILON * root_discrim);
+
+            // Compute quadratic _t_ values
+            let q = if b.v < 0.0 {
+                -0.5f32 * (b - ef_root_discrim)
+            } else {
+                -0.5f32 * (b + ef_root_discrim)
+            };
+
+            let t0 = q / a;
+            let t1 = c / q;
+
+            if t0.v > t1.v {
+                Some((t1, t0))
+            } else {
+                Some((t0, t1))
+            }
+        }
     }
 }

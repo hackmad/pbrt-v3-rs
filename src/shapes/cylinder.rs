@@ -2,9 +2,8 @@
 
 #![allow(dead_code)]
 use super::{
-    clamp, efloat, gamma, max, min, quadratic, ArcTransform, Bounds3f, Dot, EFloat, Float,
-    Intersection, Normal3, Point2, Point3, Ray, Shape, ShapeData, SurfaceInteraction, Vector3,
-    TWO_PI,
+    clamp, gamma, max, min, ArcTransform, Bounds3f, Dot, EFloat, Float, Intersection, Normal3,
+    Point2, Point3, Quadratic, Ray, Shape, ShapeData, SurfaceInteraction, Vector3, TWO_PI,
 };
 use std::sync::Arc;
 
@@ -92,18 +91,18 @@ impl Shape for Cylinder {
         // Compute quadratic cylinder coefficients
 
         // Initialize EFloat ray coordinate values
-        let ox = efloat(ray.o.x, o_err.x);
-        let oy = efloat(ray.o.y, o_err.y);
+        let ox = EFloat::new(ray.o.x, o_err.x);
+        let oy = EFloat::new(ray.o.y, o_err.y);
 
-        let dx = efloat(ray.d.x, d_err.x);
-        let dy = efloat(ray.d.y, d_err.y);
+        let dx = EFloat::new(ray.d.x, d_err.x);
+        let dy = EFloat::new(ray.d.y, d_err.y);
 
         let a = dx * dx + dy * dy;
         let b = 2.0 * (dx * ox + dy * oy);
         let c = ox * ox + oy * oy - EFloat::from(self.radius) * EFloat::from(self.radius);
 
         // Solve quadratic equation for t values
-        if let Some((t0, t1)) = quadratic(a, b, c) {
+        if let Some((t0, t1)) = Quadratic::solve(a, b, c) {
             // Check quadric shape t0 and t1 for nearest intersection
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return None;
@@ -236,18 +235,18 @@ impl Shape for Cylinder {
         // Compute quadratic cylinder coefficients
 
         // Initialize EFloat ray coordinate values
-        let ox = efloat(ray.o.x, o_err.x);
-        let oy = efloat(ray.o.y, o_err.y);
+        let ox = EFloat::new(ray.o.x, o_err.x);
+        let oy = EFloat::new(ray.o.y, o_err.y);
 
-        let dx = efloat(ray.d.x, d_err.x);
-        let dy = efloat(ray.d.y, d_err.y);
+        let dx = EFloat::new(ray.d.x, d_err.x);
+        let dy = EFloat::new(ray.d.y, d_err.y);
 
         let a = dx * dx + dy * dy;
         let b = 2.0 * (dx * ox + dy * oy);
         let c = ox * ox + oy * oy - EFloat::from(self.radius) * EFloat::from(self.radius);
 
         // Solve quadratic equation for t values
-        if let Some((t0, t1)) = quadratic(a, b, c) {
+        if let Some((t0, t1)) = Quadratic::solve(a, b, c) {
             // Check quadric shape t0 and t1 for nearest intersection
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return false;
