@@ -2,8 +2,8 @@
 
 #![allow(dead_code)]
 use super::{
-    abs, clamp, coordinate_system, lerp, log2, max, min, ArcShape, ArcTransform, Bounds3f, Dot,
-    Float, Intersection, Normal3f, Point2f, Point3f, Ray, Shape, ShapeData, SurfaceInteraction,
+    abs, clamp, coordinate_system, lerp, max, min, ArcShape, ArcTransform, Bounds3f, Dot, Float,
+    Intersection, Log2, Normal3f, Point2f, Point3f, Ray, Shape, ShapeData, SurfaceInteraction,
     Transform, Union, Vector3, Vector3f,
 };
 use std::sync::Arc;
@@ -440,7 +440,7 @@ impl Shape for Curve {
         let eps = max(self.common.width[0], self.common.width[1]) * 0.05; // width / 20
 
         // Compute log base 4 by dividing log2 in half.
-        let r0 = log2(1.41421356237 * 6.0 * l0 / (8.0 * eps)) / 2;
+        let r0 = Log2::log2(1.41421356237 * 6.0 * l0 / (8.0 * eps)) / 2;
         let max_depth = clamp(r0, 0, 10);
 
         self.recursive_intersect(
