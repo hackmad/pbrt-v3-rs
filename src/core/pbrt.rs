@@ -65,6 +65,15 @@ impl Into<u8> for Axis {
         }
     }
 }
+impl Into<usize> for Axis {
+    fn into(self) -> usize {
+        match self {
+            Axis::X => 0_usize,
+            Axis::Y => 1_usize,
+            Axis::Z => 2_usize,
+        }
+    }
+}
 impl Add<usize> for Axis {
     type Output = Axis;
     fn add(self, i: usize) -> Self::Output {
