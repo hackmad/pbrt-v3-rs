@@ -106,6 +106,7 @@ mod ray;
 mod shape;
 mod surface_interaction;
 mod transform;
+mod util;
 mod vector2;
 mod vector3;
 
@@ -126,5 +127,6 @@ pub use ray::*;
 pub use shape::*;
 pub use surface_interaction::*;
 pub use transform::*;
+pub use util::*;
 pub use vector2::*;
 pub use vector3::*;

@@ -278,6 +278,16 @@ macro_rules! premul {
                 Vector3::<$t>::new(self * v.x, self * v.y, self * v.z)
             }
         }
+
+        impl Mul<&Vector3<$t>> for $t {
+            type Output = Vector3<$t>;
+            /// Scale the vector.
+            ///
+            /// * `v` -  The vector.
+            fn mul(self, v: &Vector3<$t>) -> Vector3<$t> {
+                Vector3::<$t>::new(self * v.x, self * v.y, self * v.z)
+            }
+        }
     };
 }
 

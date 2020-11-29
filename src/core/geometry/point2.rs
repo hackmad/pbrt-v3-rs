@@ -217,6 +217,16 @@ macro_rules! premul {
                 Point2::<$t>::new(self * p.x, self * p.y)
             }
         }
+
+        impl Mul<&Point2<$t>> for $t {
+            type Output = Point2<$t>;
+            /// Scale the vector.
+            ///
+            /// * `p` - The point.
+            fn mul(self, p: &Point2<$t>) -> Point2<$t> {
+                Point2::<$t>::new(self * p.x, self * p.y)
+            }
+        }
     };
 }
 

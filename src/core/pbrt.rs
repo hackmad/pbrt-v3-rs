@@ -271,6 +271,70 @@ where
     clamp(first - 1, 0, size - 2)
 }
 
+/// Return the cosine of an angle.
+///
+/// * `theta` - The angle in radians.
+#[inline]
+pub fn cos(theta: Float) -> Float {
+    theta.cos()
+}
+
+/// Return the sine of an angle.
+///
+/// * `theta` - The angle in radians.
+#[inline]
+pub fn sin(theta: Float) -> Float {
+    theta.sin()
+}
+
+/// Return the tangent of an angle.
+///
+/// * `theta` - The angle in radians.
+#[inline]
+pub fn tan(theta: Float) -> Float {
+    theta.tan()
+}
+
+/// Return the arccosine of an angle.
+///
+/// * `theta` - The angle in radians.
+#[inline]
+pub fn acos(theta: Float) -> Float {
+    theta.acos()
+}
+
+/// Return the arcsine of an angle.
+///
+/// * `theta` - The angle in radians.
+#[inline]
+pub fn asin(theta: Float) -> Float {
+    theta.asin()
+}
+
+/// Computes the arctangent of a number. Return value is in radians in the range
+/// [-π/2, π/2];
+///
+/// * `theta` - The angle in radians.
+#[inline]
+pub fn atan(theta: Float) -> Float {
+    theta.atan()
+}
+
+/// Computes the four quadrant arctangent of `y/x`.
+///
+/// Return values are in the following ranges based on `y` and `x`:
+/// * x = 0, y = 0 => 0
+/// * x >= 0       => arctan(y/x) -> [-π/2, π/2]
+/// * y >= 0       => arctan(y/x) + π -> (π/2, π]
+/// * y < 0        =>  arctan(y/x) - π -> (-π, -π/2)
+///
+/// * `y` - Proportion of y-coordinate.
+/// * `x` - Proportion of x-coordinate.
+#[inline]
+pub fn atan2(y: Float, x: Float) -> Float {
+    y.atan2(x)
+}
+
 /// Trait to support base-2 logarithm
 pub trait Log2<T: Num> {
     /// Returns log base 2 of a value in given type `T`.

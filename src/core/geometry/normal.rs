@@ -171,6 +171,16 @@ macro_rules! premul {
                 Normal3::new(self * n.x, self * n.y, self * n.z)
             }
         }
+
+        impl Mul<&Normal3<$t>> for $t {
+            type Output = Normal3<$t>;
+            /// Scale the normal.
+            ///
+            /// * `n` - The normal.
+            fn mul(self, n: &Normal3<$t>) -> Normal3<$t> {
+                Normal3::new(self * n.x, self * n.y, self * n.z)
+            }
+        }
     };
 }
 
