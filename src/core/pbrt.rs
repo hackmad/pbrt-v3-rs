@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 
 use num_traits::Num;
-use std::ops::{Add, Neg};
+use std::ops::{Add, Mul, Neg};
 
 /// Use 32-bit precision for floating point numbers.
 pub type Float = f32;
@@ -157,6 +157,20 @@ pub fn gamma(n: Int) -> Float {
     (n as Float * MACHINE_EPSILON) / (1.0 - n as Float * MACHINE_EPSILON)
 }
 
+/// Linearly interpolate between two points for parameters in [0, 1] and
+/// extrapolate for parameters outside that interval.
+///
+/// * `t` - Parameter.
+/// * `p0` - Point at t=0.
+/// * `p1` - Point at t=1.
+pub fn lerp<P>(t: Float, p0: P, p1: P) -> P
+where
+    Float: Mul<P, Output = P>,
+    P: Add<P, Output = P>,
+{
+    (1.0 - t) * p0 + t * p1
+}
+
 /// Convert a 32-bit floating point value to its constituent bits and
 /// return the representation as 32-bit unsigned integer.
 ///
@@ -226,6 +240,35 @@ pub fn next_float_down(v: Float) -> Float {
     }
 
     bits_to_float(ui)
+}
+
+/// Emulates the behavior of `upper_bound` but uses a function object to get
+/// values at various indices instead of requiring access to an actual array.
+/// It is used to bisect arrays that are procedurally generated such as those
+/// interpolated from point samples.
+///
+/// * `size` - Size of array.
+/// * `pred` - Function that returns a value at a given index.
+pub fn find_interval<Predicate>(size: usize, pred: Predicate) -> usize
+where
+    Predicate: Fn(usize) -> bool,
+{
+    let (mut first, mut len) = (0, size);
+
+    while len > 0 {
+        let half = len >> 1;
+        let middle = first + half;
+
+        // Bisect range based on value of `pred` at `middle`.
+        if pred(middle) {
+            first = middle + 1;
+            len -= half + 1;
+        } else {
+            len = half;
+        }
+    }
+
+    clamp(first - 1, 0, size - 2)
 }
 
 /// Trait to support base-2 logarithm

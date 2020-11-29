@@ -1,8 +1,8 @@
 //! Common
 
-use super::{abs, Float};
+use super::abs;
 use num_traits::{Num, Zero};
-use std::ops::{Add, Mul, Neg};
+use std::ops::Neg;
 
 /// Dot product trait.
 pub trait Dot<V> {
@@ -59,18 +59,4 @@ pub trait Intersect<T> {
     ///
     /// * `other` - The other object.
     fn intersect(&self, other: &T) -> Self;
-}
-
-/// Linearly interpolate between two points for parameters in [0, 1] and
-/// extrapolate for parameters outside that interval.
-///
-/// * `t` - Parameter.
-/// * `p0` - Point at t=0.
-/// * `p1` - Point at t=1.
-pub fn lerp<P>(t: Float, p0: P, p1: P) -> P
-where
-    Float: Mul<P, Output = P>,
-    P: Add<P, Output = P>,
-{
-    (1.0 - t) * p0 + t * p1
 }

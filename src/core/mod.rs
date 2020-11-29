@@ -11,4 +11,5 @@ pub mod pbrt;
 pub mod primitive;
 pub mod primitives;
 pub mod reflection;
+pub mod spectrum;
 pub mod texture;

@@ -1,6 +1,10 @@
 #![feature(iter_partition_in_place)] // Can be removed after Rust 1.49 release.
 
 extern crate float_cmp;
+
+#[macro_use]
+extern crate lazy_static;
+
 extern crate num_traits;
 extern crate typed_arena;
 
