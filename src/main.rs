@@ -1,6 +1,7 @@
 #![feature(iter_partition_in_place)] // Can be removed after Rust 1.49 release.
 
 extern crate float_cmp;
+extern crate hexf;
 
 #[macro_use]
 extern crate lazy_static;
@@ -9,7 +10,9 @@ extern crate num_traits;
 extern crate typed_arena;
 
 mod accelerators;
+mod cameras;
 mod core;
+mod lights;
 mod shapes;
 
 use self::core::geometry::*;
