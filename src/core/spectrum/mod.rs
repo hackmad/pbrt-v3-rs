@@ -14,3 +14,6 @@ pub use common::CoefficientSpectrum;
 pub use rgb::*;
 pub use rgb_spectrum::*;
 pub use sampled_spectrum::*;
+
+/// Default to using `RGBSpectrum` for rendering.
+pub type Spectrum = RGBSpectrum;
