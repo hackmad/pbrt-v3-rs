@@ -20,6 +20,9 @@ pub const PI: Float = std::f32::consts::PI;
 /// PI/2 (π/2)
 pub const PI_OVER_TWO: Float = PI * 0.5;
 
+/// PI/4 (π/4)
+pub const PI_OVER_FOUR: Float = PI * 0.25;
+
 /// 2*PI (2π)
 pub const TWO_PI: Float = PI * 2.0;
 
