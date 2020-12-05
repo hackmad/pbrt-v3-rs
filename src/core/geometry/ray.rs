@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use super::{
     next_float_down, next_float_up, ArcMedium, Dot, Float, Normal3f, Point3f, Vector3, Vector3f,
+    INFINITY,
 };
 use std::fmt::{Debug, Formatter, Result};
 
@@ -147,6 +148,20 @@ impl Debug for Ray {
             .field("time", &self.time)
             .field("differentials", &self.differentials)
             .finish()
+    }
+}
+
+impl Default for Ray {
+    /// Returns a default value for `Ray`.
+    fn default() -> Self {
+        Self {
+            o: Point3f::default(),
+            d: Vector3f::default(),
+            t_max: INFINITY,
+            time: 0.0,
+            differentials: None,
+            medium: None,
+        }
     }
 }
 
