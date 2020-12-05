@@ -2,8 +2,9 @@
 
 #![allow(dead_code)]
 use super::{
-    abs, gamma, Bounds3, Bounds3f, Dot, FaceForward, Float, Matrix4x4, Normal3f, Point3, Point3f,
-    Ray, RayDifferential, Shading, SurfaceInteraction, Union, Vector3, Vector3f, IDENTITY_MATRIX,
+    abs, gamma, tan, Bounds3, Bounds3f, Dot, FaceForward, Float, Matrix4x4, Normal3f, Point3,
+    Point3f, Ray, RayDifferential, Shading, SurfaceInteraction, Union, Vector3, Vector3f,
+    IDENTITY_MATRIX,
 };
 use std::cmp::{Eq, Ord, Ordering, PartialOrd};
 use std::ops::Mul;
@@ -36,9 +37,9 @@ impl Transform {
     #[rustfmt::skip]
     pub fn new(mat: [[Float; 4]; 4]) -> Self {
         let m = Matrix4x4::new(
-            mat[0][0], mat[0][1], mat[0][2], mat[0][3], 
+            mat[0][0], mat[0][1], mat[0][2], mat[0][3],
             mat[1][0], mat[1][1], mat[1][2], mat[1][3],
-            mat[2][0], mat[2][1], mat[2][2], mat[2][3], 
+            mat[2][0], mat[2][1], mat[2][2], mat[2][3],
             mat[3][0], mat[3][1], mat[3][2], mat[3][3],
         );
 
@@ -56,13 +57,13 @@ impl Transform {
         Self {
             m: Matrix4x4::new(
                    1.0, 0.0, 0.0, delta.x,
-                   0.0, 1.0, 0.0, delta.y, 
-                   0.0, 0.0, 1.0, delta.z, 
+                   0.0, 1.0, 0.0, delta.y,
+                   0.0, 0.0, 1.0, delta.z,
                    0.0, 0.0, 0.0, 1.0,
                ),
                m_inv: Matrix4x4::new(
-                   1.0, 0.0, 0.0, -delta.x, 
-                   0.0, 1.0, 0.0, -delta.y, 
+                   1.0, 0.0, 0.0, -delta.x,
+                   0.0, 1.0, 0.0, -delta.y,
                    0.0, 0.0, 1.0, -delta.z,
                    0.0, 0.0, 0.0,  1.0,
                ),
@@ -78,9 +79,9 @@ impl Transform {
     pub fn scale(x: Float, y: Float, z: Float) -> Self {
         Self {
             m: Matrix4x4::new(
-                   x,   0.0, 0.0, 0.0, 
-                   0.0, y,   0.0, 0.0, 
-                   0.0, 0.0, z,   0.0, 
+                   x,   0.0, 0.0, 0.0,
+                   0.0, y,   0.0, 0.0,
+                   0.0, 0.0, z,   0.0,
                    0.0, 0.0, 0.0, 1.0,
                ),
                m_inv: Matrix4x4::new(
@@ -101,9 +102,9 @@ impl Transform {
         let sin_theta = r.sin();
         let cos_theta = r.cos();
         let m = Matrix4x4::new(
-            1.0, 0.0,        0.0,       0.0, 
+            1.0, 0.0,        0.0,       0.0,
             0.0, cos_theta, -sin_theta, 0.0,
-            0.0, sin_theta,  cos_theta, 0.0, 
+            0.0, sin_theta,  cos_theta, 0.0,
             0.0, 0.0,        0.0,       1.0,
         );
         Self { m, m_inv: m.transpose() }
@@ -118,8 +119,8 @@ impl Transform {
         let sin_theta = r.sin();
         let cos_theta = r.cos();
         let m = Matrix4x4::new(
-            cos_theta, 0.0, sin_theta, 0.0, 
-            0.0,       1.0, 0.0,       0.0, 
+            cos_theta, 0.0, sin_theta, 0.0,
+            0.0,       1.0, 0.0,       0.0,
             -sin_theta, 0.0, cos_theta, 0.0,
             0.0,       0.0, 0.0,       1.0,
         );
@@ -135,9 +136,9 @@ impl Transform {
         let sin_theta = r.sin();
         let cos_theta = r.cos();
         let m = Matrix4x4::new(
-            cos_theta, -sin_theta, 0.0, 0.0, 
+            cos_theta, -sin_theta, 0.0, 0.0,
             sin_theta,  cos_theta, 0.0, 0.0,
-            0.0,        0.0,       1.0, 0.0, 
+            0.0,        0.0,       1.0, 0.0,
             0.0,        0.0,       0.0, 1.0,
         );
         Self { m, m_inv: m.transpose() }
@@ -199,6 +200,40 @@ impl Transform {
             m: camera_to_world.inverse(),
             m_inv: camera_to_world,
         }
+    }
+
+    /// Generate a transformation for orthographic projection that leaves the
+    /// x and y coordinates unchanged but maps z values at the near plane to
+    /// 0 and z values at the far plane to 1.
+    ///
+    /// * `z_near` - The near z-plane.
+    /// * `z_far`  - The far z-plane.
+    #[rustfmt::skip]
+    pub fn orthographic(z_near: Float, z_far: Float) -> Self {
+        Self::scale(1.0, 1.0, 1.0 / (z_far - z_near)) *
+            Self::translate(&Vector3f::new(0.0, 0.0,-z_near))
+    }
+
+    /// Generate a transformation for perspective projection where points in
+    /// the scene are projected onto a viewing plane perpendicular to the z-axis.
+    /// It maps z values at the near plane to 0 and z values at the far plane to 1.
+    ///
+    /// * `fov` - The field-of-view angle in degrees.
+    /// * `n`   - The near z-plane.
+    /// * `f`   - The far z-plane.
+    #[rustfmt::skip]
+    pub fn perspective(fov: Float, n: Float, f: Float) -> Self {
+        // Perform projective divide for perspective projection.
+        let persp = Matrix4x4::new(
+            1.0, 0.0, 0.0,          0.0,
+            0.0, 1.0, 0.0,          0.0,
+            0.0, 0.0, f / (f - n), -f * n / (f - n),
+            0.0, 0.0, 1.0,          0.0,
+        );
+
+        // Scale canonical perspective view to specified field of view
+        let inv_tan_ang = 1.0 / tan(fov.to_radians() / 2.0);
+        return Self::scale(inv_tan_ang, inv_tan_ang, 1.0) * Self::from(persp);
     }
 
     // Returns the inverse transformation.
