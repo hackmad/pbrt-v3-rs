@@ -13,7 +13,7 @@ use rayon::prelude::*;
 #[derive(Clone)]
 pub struct RealisticCamera {
     /// Common camera parameters.
-    pub camera_data: CameraData,
+    pub data: CameraData,
 
     /// If true, a modified version of weighting camera ray that only accounts
     /// for cos^4(θ) term is used.
@@ -61,7 +61,7 @@ impl RealisticCamera {
         film: Film,
         medium: ArcMedium,
     ) -> Self {
-        let camera_data = CameraData::new(
+        let data = CameraData::new(
             camera_to_world,
             shutter_open,
             shutter_close,
@@ -77,7 +77,7 @@ impl RealisticCamera {
         let n_samples = 64; // Number of samples for exit pupil bounds.
 
         let mut camera = Self {
-            camera_data,
+            data,
             simple_weighting,
             element_interfaces,
             exit_pupil_bounds: Vec::with_capacity(n_samples),
@@ -292,7 +292,7 @@ impl RealisticCamera {
         // Use a small fraction of the film's diagonal extent so that the rays
         // we use don't get blocked by the aperture stop. This works well unless
         // aperture stop is extremely small.
-        let x = 0.001 * self.camera_data.film.diagonal;
+        let x = 0.001 * self.data.film.diagonal;
 
         // Compute cardinal points for film side of lens system.
         let r_scene = Ray::new(
@@ -300,7 +300,7 @@ impl RealisticCamera {
             Vector3f::new(0.0, 0.0, -1.0),
             INFINITY,
             0.0,
-            Some(self.camera_data.medium.clone()),
+            Some(self.data.medium.clone()),
         );
         let (pz0, fz0) = if let Some(r_film) = self.trace_lenses_from_scene(&r_scene) {
             compute_cardinal_points(&r_scene, &r_film)
@@ -317,7 +317,7 @@ impl RealisticCamera {
             Vector3f::new(0.0, 0.0, 1.0),
             INFINITY,
             0.0,
-            Some(self.camera_data.medium.clone()),
+            Some(self.data.medium.clone()),
         );
         let (pz1, fz1) = if let Some(r_scene) = self.trace_lenses_from_film(&r_film) {
             compute_cardinal_points(&r_film, &r_scene)
@@ -404,7 +404,7 @@ impl RealisticCamera {
                         p_rear - p_film,
                         INFINITY,
                         0.0,
-                        Some(self.camera_data.medium.clone()),
+                        Some(self.data.medium.clone()),
                     ))
                     .is_none()
             {
@@ -435,7 +435,7 @@ impl RealisticCamera {
     fn sample_exit_pupil(&self, p_film: &Point2f, lens_sample: &Point2f) -> (Point3f, Float) {
         // Find exit pupil bound for sample distance from film center.
         let r_film = (p_film.x * p_film.x + p_film.y * p_film.y).sqrt();
-        let mut r_index = (r_film / (self.camera_data.film.diagonal / 2.0)
+        let mut r_index = (r_film / (self.data.film.diagonal / 2.0)
             * self.exit_pupil_bounds.len() as Float) as usize;
         r_index = min(self.exit_pupil_bounds.len() - 1, r_index);
         let pupil_bounds = self.exit_pupil_bounds[r_index];
@@ -476,10 +476,10 @@ impl Camera for RealisticCamera {
     fn generate_ray(&self, sample: &CameraSample) -> (Ray, Float) {
         // Find point on film, `p_film`, corresponding to `sample.p_film`.
         let s = Point2f::new(
-            sample.p_film.x / self.camera_data.film.full_resolution.x as Float,
-            sample.p_film.y / self.camera_data.film.full_resolution.y as Float,
+            sample.p_film.x / self.data.film.full_resolution.x as Float,
+            sample.p_film.y / self.data.film.full_resolution.y as Float,
         );
-        let p_film2 = self.camera_data.film.get_physical_extent().lerp(&s);
+        let p_film2 = self.data.film.get_physical_extent().lerp(&s);
         let p_film = Point3f::new(-p_film2.x, p_film2.y, 0.0);
 
         // Trace ray from `p_film` through lens system.
@@ -490,17 +490,13 @@ impl Camera for RealisticCamera {
             p_film,
             p_rear - p_film,
             INFINITY,
-            lerp(
-                sample.time,
-                self.camera_data.shutter_open,
-                self.camera_data.shutter_close,
-            ),
-            Some(self.camera_data.medium.clone()),
+            lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
+            Some(self.data.medium.clone()),
         );
 
         if let Some(ray) = self.trace_lenses_from_film(&r_film) {
             // Finish initialization of `RealisticCamera` ray.
-            let mut ray = self.camera_data.camera_to_world.transform_ray(&ray);
+            let mut ray = self.data.camera_to_world.transform_ray(&ray);
             ray.d = ray.d.normalize();
 
             // Return weighting for `RealisticCamera` ray.
@@ -509,7 +505,7 @@ impl Camera for RealisticCamera {
             let weight = if self.simple_weighting {
                 cos_4_theta * exit_pupil_bounds_area / self.exit_pupil_bounds[0].area()
             } else {
-                (self.camera_data.shutter_close - self.camera_data.shutter_open)
+                (self.data.shutter_close - self.data.shutter_open)
                     * (cos_4_theta * exit_pupil_bounds_area)
                     / (self.lens_rear_z() * self.lens_rear_z())
             };
