@@ -5,6 +5,7 @@ pub mod bssrdf;
 pub mod camera;
 pub mod efloat;
 pub mod film;
+pub mod filter;
 pub mod geometry;
 pub mod light;
 pub mod low_discrepency;

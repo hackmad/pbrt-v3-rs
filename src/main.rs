@@ -13,6 +13,7 @@ extern crate typed_arena;
 mod accelerators;
 mod cameras;
 mod core;
+mod filters;
 mod lights;
 mod samplers;
 mod shapes;
