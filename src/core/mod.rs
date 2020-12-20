@@ -18,5 +18,6 @@ pub mod rng;
 pub mod sampler;
 pub mod sampling;
 pub mod scene;
+pub mod sobol_matrices;
 pub mod spectrum;
 pub mod texture;

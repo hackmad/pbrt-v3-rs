@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use num_traits::Num;
+use num_traits::{Num, Zero};
 use std::ops::{Add, Mul, Neg};
 
 /// Use 32-bit precision for floating point numbers.
@@ -150,6 +150,23 @@ where
         max
     } else {
         x
+    }
+}
+
+/// Computes a mod b (the remainder of a divided by b). This version
+/// ensures that modulus of a negative number is zero or positive.
+///
+/// * `a` - Dividend.
+/// * `b` - Divisor.
+pub fn rem<T>(a: T, b: T) -> T
+where
+    T: Num + Zero + PartialOrd + Copy,
+{
+    let result = a - (a / b) * b;
+    if result < T::zero() {
+        result + b
+    } else {
+        result
     }
 }
 
@@ -338,7 +355,7 @@ pub fn atan2(y: Float, x: Float) -> Float {
     y.atan2(x)
 }
 
-/// Trait to support base-2 logarithm
+/// Trait to support base 2 logarithm
 pub trait Log2<T: Num> {
     /// Returns log base 2 of a value in given type `T`.
     fn log2(self) -> T;
@@ -383,6 +400,13 @@ impl Log2<i64> for i64 {
     /// Returns log base 2 of a value.
     fn log2(self) -> i64 {
         (self as u64).log2()
+    }
+}
+
+impl Log2<i64> for usize {
+    /// Returns log base 2 of a value.
+    fn log2(self) -> i64 {
+        63_i64 - self.leading_zeros() as i64
     }
 }
 

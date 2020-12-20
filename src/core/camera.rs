@@ -132,7 +132,7 @@ impl CameraSample {
     /// * `time`   - Time at which the ray should sample the scene. This should
     ///              be linearly interpolated between shutter open and close
     ///              time range.
-    fn new(p_film: Point2f, p_lens: Point2f, time: Float) -> Self {
+    pub fn new(p_film: Point2f, p_lens: Point2f, time: Float) -> Self {
         Self {
             p_film,
             p_lens,

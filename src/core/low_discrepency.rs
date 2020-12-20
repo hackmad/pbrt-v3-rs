@@ -1,8 +1,11 @@
 //! Low Discrepency Sequences.
 
 #![allow(dead_code)]
+
+use super::geometry::{Point2f, Point2i};
 use super::pbrt::{min, Float};
-use super::rng::ONE_MINUS_EPSILON;
+use super::rng::*;
+use super::sobol_matrices::*;
 use hexf::*;
 
 /// Size of the prime numbers list.
@@ -234,7 +237,7 @@ pub const PRIME_SUMS: [usize; PRIME_TABLE_SIZE] = [
 /// * Reverse the bits in each column (so we don't need to reverse the result 
 ///   after the matrix multiply.)
 #[rustfmt::skip]
-const C_MAX_MIN_DIST: [[u32; 32]; 17] = [
+pub const C_MAX_MIN_DIST: [[u32; 32]; 17] = [
     [
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
@@ -425,9 +428,9 @@ fn radical_inverse_specialized(base: u16, a: u64) -> Float {
 /// putting each digit through a permutation table for the given base.
 ///
 /// * `base` - The base is a prime number.
-/// * `perm` - Permutation table for each digit of base `base_index`.
 /// * `a`    - The integer value.
-fn scrambled_radical_inverse_specialized(base: u16, perm: &[u16], a: u64) -> Float {
+/// * `perm` - Permutation table for each digit of base `base_index`.
+fn scrambled_radical_inverse_specialized(base: u16, a: u64, perm: &[u16]) -> Float {
     let inv_base = 1.0 / base as Float;
     let base = base as u64;
     let mut reversed_digits = 0_u64;
@@ -469,13 +472,14 @@ pub fn radical_inverse(base_index: u16, a: u64) -> Float {
 /// each digit through a permutation table for the given base.
 ///
 /// * `base_index` - The base.
-/// * `perm`       - Permutation table for each digit of base `base_index`.
 /// * `a`          - The integer value.
-pub fn scrambled_radical_inverse(base_index: u16, perm: &[u16], a: u64) -> Float {
-    scrambled_radical_inverse_specialized(base_index_to_prime(base_index), perm, a)
+/// * `perm`       - Permutation table for each digit of base `base_index`.
+pub fn scrambled_radical_inverse(base_index: u16, a: u64, perm: &[u16]) -> Float {
+    scrambled_radical_inverse_specialized(base_index_to_prime(base_index), a, perm)
 }
 
-/// Maps the integer base index to a prime number used as the `base`.
+/// Maps the integer base index to a prime number that can be used as the `base`
+/// for the radical inverse functions.
 ///
 /// * `base_index` - A 16-bit integer in [0, 1023].
 fn base_index_to_prime(base_index: u16) -> u16 {
@@ -1504,6 +1508,400 @@ fn base_index_to_prime(base_index: u16) -> u16 {
         1021 => 8123,
         1022 => 8147,
         1023 => 8161,
-        _ => panic!("base_index {} >= 1024 not suppoerted"),
+        _ => panic!("base_index {} >= 1024 not suppoerted", base_index),
     }
+}
+
+/// Compute random permutation tables.
+///
+/// * `rng` - The random number generator.
+pub fn compute_radical_inverse_permutations(rng: &mut RNG) -> Vec<u16> {
+    // Allocate space for radical inverse permutations.
+    let perm_array_size = (0..PRIME_TABLE_SIZE).fold(0, |a, i| a + PRIMES[i]);
+    let mut perms = vec![0_u16; perm_array_size];
+
+    let mut p = &mut perms[..];
+    for i in 0..PRIME_TABLE_SIZE {
+        // Generate random permutation for i^th prime base.
+        for j in 0..PRIMES[i] {
+            p[j] = j as u16;
+        }
+
+        rng.shuffle(&mut p, PRIMES[i], 1);
+        p = &mut p[PRIMES[i]..];
+    }
+
+    perms
+}
+
+/// Computes the inverse of the radical inverse function.
+///
+/// * `base`     - The base is a prime number.
+/// * `inverse`  - The integer with reversed digits from `radical_inverse_specialized()`.
+/// * `n_digits` - The number of digits.
+pub fn inverse_radical_inverse(base: u16, inverse: u64, n_digits: u64) -> u64 {
+    let mut index = 0;
+    let mut inverse = inverse;
+    let base = base as u64;
+    for _i in 0..n_digits {
+        let digit = inverse % base;
+        inverse /= base;
+        index = index * base + digit;
+    }
+    index
+}
+
+/// Computes matrix-vector product C[di(a)]^T for some n-digit number
+/// `a` and nxn matrix C.
+///
+/// * `c` - An nxn generator matrix as a linear array of length n^2.
+/// * `a` - An n-digit number in some base.
+pub fn multiply_generator(c: &[u32], a: u32) -> u32 {
+    let mut v = 0_u32;
+
+    let mut i = 0;
+    let mut a = a;
+
+    loop {
+        if a == 0 {
+            break;
+        }
+
+        if a & 1 != 0 {
+            v ^= c[i];
+        }
+
+        i += 1;
+        a >>= 1;
+    }
+
+    v
+}
+
+/// Generate sample values for the (0,2)-sequence.
+///
+///
+/// * `c`        - An nxn generator matrix as a linear array of length n^2.
+/// * `a`        - An n-digit number in some base.
+/// * `scramble` - Encodes the scrambling as bits of `u32` integeger.
+///                Default this to 0.
+pub fn sample_generator_matrix(c: &[u32], a: u32, scramble: u32) -> Float {
+    min(
+        (multiply_generator(c, a) ^ scramble) as Float * hexf32!("0x1.0p-32") as Float,
+        ONE_MINUS_EPSILON,
+    )
+}
+
+/// Returns the n^th Gray code. Each value g(n) differs by just a single
+/// bit from the previous one g(n - 1).
+///
+/// * `n` - Gray code order.
+#[inline]
+pub fn gray_code_sample(n: u32) -> u32 {
+    (n >> 1) ^ n
+}
+
+/// Generates the 1D samples using a generator matrix.
+///
+/// * `c`        - A generator matrix.
+/// * `n`        - Number of samples to generate
+/// * `scramble` - Starting set of bits used for scrambling.
+pub fn gray_code_sample_1d(c: &[u32], n: usize, scramble: u32) -> Vec<Float> {
+    let mut v = scramble;
+    let mut p = vec![0.0; n];
+    for i in 0..n {
+        p[i] = min(
+            v as Float * hexf32!("0x1.0p-32") as Float, // 1 / (2^32)
+            ONE_MINUS_EPSILON,
+        );
+        v ^= c[(i + 1).trailing_zeros() as usize];
+    }
+    p
+}
+
+/// Generates the 2D samples using a generator matrices.
+///
+/// * `c`        - Generator matrices for the 2 dimensions.
+/// * `n`        - Number of samples to generate
+/// * `scramble` - Starting set of bits used for scrambling in each dimension.
+pub fn gray_code_sample_2d(c: &[[u32; 32]; 2], n: usize, scramble: &[u32; 2]) -> Vec<Point2f> {
+    let mut v = [scramble[0], scramble[1]];
+    let mut p = vec![Point2f::default(); n];
+    for i in 0..n {
+        let t = (i + 1).trailing_zeros() as usize;
+
+        for j in 0..2 {
+            p[i][j] = min(
+                v[j] as Float * hexf32!("0x1.0p-32") as Float,
+                ONE_MINUS_EPSILON,
+            );
+            v[j] ^= c[j][t];
+        }
+    }
+    p
+}
+
+/// Define VanDerCorput Generator Matrix.
+#[rustfmt::skip]
+const C_VANDER_CORPUT: [u32; 32] = [
+    0b10000000000000000000000000000000,
+    0b1000000000000000000000000000000,
+    0b100000000000000000000000000000,
+    0b10000000000000000000000000000,
+    0b1000000000000000000000000000,
+    0b100000000000000000000000000,
+    0b10000000000000000000000000,
+    0b1000000000000000000000000,
+    0b100000000000000000000000,
+    0b10000000000000000000000,
+    0b1000000000000000000000,
+    0b100000000000000000000,
+    0b10000000000000000000,
+    0b1000000000000000000,
+    0b100000000000000000,
+    0b10000000000000000,
+    0b1000000000000000,
+    0b100000000000000,
+    0b10000000000000,
+    0b1000000000000,
+    0b100000000000,
+    0b10000000000,
+    0b1000000000,
+    0b100000000,
+    0b10000000,
+    0b1000000,
+    0b100000,
+    0b10000,
+    0b1000,
+    0b100,
+    0b10,
+    0b1,
+];
+
+/// Generate a number of scrambled 1D sample values using the Gray code-based
+/// sampling and the VanDerCorput generator matrix.
+///
+/// * `n_samples_per_pixel_sample` - Number of samples to generate for every
+///                                  sample for a pixel.
+/// * `n_pixel_samples`            - Number of samples for a pixel.
+/// * `rng`                        - Random number generator.
+pub fn van_der_corput(
+    n_samples_per_pixel_sample: usize,
+    n_pixel_samples: usize,
+    rng: &mut RNG,
+) -> Vec<Float> {
+    let scramble: u32 = rng.uniform();
+    let total_samples = n_samples_per_pixel_sample * n_pixel_samples;
+
+    let mut samples = gray_code_sample_1d(&C_VANDER_CORPUT, total_samples, scramble);
+
+    // Randomly shuffle 1D sample points.
+    for i in 0..n_pixel_samples {
+        let start = i * n_samples_per_pixel_sample;
+        let end = start + n_samples_per_pixel_sample;
+        rng.shuffle(&mut samples[start..end], n_samples_per_pixel_sample, 1);
+    }
+
+    // Randomly shuffle last set of 1D sample points.
+    let start = n_pixel_samples;
+    let end = start + n_samples_per_pixel_sample;
+    rng.shuffle(&mut samples[start..end], n_samples_per_pixel_sample, 1);
+
+    samples
+}
+
+/// Define 2D Sobol Generator Matrices.
+#[rustfmt::skip]
+const C_SOBOL: [[u32; 32]; 2] = [
+    [
+        0x80000000, 0x40000000, 0x20000000, 0x10000000, 
+        0x8000000,  0x4000000,  0x2000000,  0x1000000,  
+        0x800000,   0x400000,   0x200000,   0x100000, 
+        0x80000,    0x40000,    0x20000,    0x10000,
+        0x8000,     0x4000,     0x2000,     0x1000,
+        0x800,      0x400,      0x200,      0x100, 
+        0x80,       0x40,       0x20,       0x10,
+        0x8,        0x4,        0x2,        0x1
+    ],
+    [
+        0x80000000, 0xc0000000, 0xa0000000, 0xf0000000, 
+        0x88000000, 0xcc000000, 0xaa000000, 0xff000000, 
+        0x80800000, 0xc0c00000, 0xa0a00000, 0xf0f00000,
+        0x88880000, 0xcccc0000, 0xaaaa0000, 0xffff0000, 
+        0x80008000, 0xc000c000, 0xa000a000, 0xf000f000, 
+        0x88008800, 0xcc00cc00, 0xaa00aa00, 0xff00ff00,
+        0x80808080, 0xc0c0c0c0, 0xa0a0a0a0, 0xf0f0f0f0,
+        0x88888888, 0xcccccccc, 0xaaaaaaaa, 0xffffffff
+    ]
+];
+
+/// Generate a number of scrambled 2D sample values using the Gray code-based
+/// sampling and the Sobol generator matrices.
+///
+/// * `n_samples_per_pixel_sample` - Number of samples to generate for every
+///                                  sample for a pixel.
+/// * `n_pixel_samples`            - Number of samples for a pixel.
+/// * `rng`                        - Random number generator.
+pub fn sobol_2d(
+    n_samples_per_pixel_sample: usize,
+    n_pixel_samples: usize,
+    rng: &mut RNG,
+) -> Vec<Point2f> {
+    let scramble: [u32; 2] = [rng.uniform(), rng.uniform()];
+
+    let mut samples = gray_code_sample_2d(
+        &C_SOBOL,
+        n_samples_per_pixel_sample * n_pixel_samples,
+        &scramble,
+    );
+
+    for i in 0..n_pixel_samples {
+        let start = i * n_samples_per_pixel_sample;
+        let end = start + n_samples_per_pixel_sample;
+        rng.shuffle(&mut samples[start..end], n_samples_per_pixel_sample, 1);
+    }
+
+    let start = n_pixel_samples;
+    let end = start + n_samples_per_pixel_sample;
+    rng.shuffle(&mut samples[start..end], n_samples_per_pixel_sample, 1);
+
+    samples
+}
+
+/// Returns the index of a pixel sample.
+///
+/// * `m`     - Resolution.
+/// * `frame` - Sample number.
+/// * `p`     - Pixel.
+pub fn sobol_interval_to_index(m: u32, frame: u64, p: &Point2i) -> u64 {
+    if m == 0 {
+        0
+    } else {
+        let m2 = m << 1;
+        let mut index = frame << m2;
+
+        let mut delta = 0;
+        let mut c = 0;
+        let mut frame = frame;
+
+        loop {
+            if frame == 0 {
+                break;
+            }
+
+            if (frame & 1) > 0 {
+                // Add flipped column m + c + 1.
+                delta ^= VD_C_SOBOL_MATRICES[m as usize - 1][c];
+            }
+
+            frame >>= 1;
+            c += 1;
+        }
+
+        // Flipped b
+        let mut b = (((p.x as u32) << m) as u64 | (p.y as u64)) ^ delta;
+
+        c = 0;
+        loop {
+            if b == 0 {
+                break;
+            }
+
+            if (b & 1) > 0 {
+                // Add column 2 * m - c.
+                index ^= VD_C_SOBOL_MATRICES_INV[m as usize - 1][c];
+            }
+
+            b >>= 1;
+            c += 1;
+        }
+
+        index
+    }
+}
+
+/// Returns the sample value for a given sample index and dimension.
+///
+/// * `a`         - Sample index.
+/// * `dimension` - Dimension.
+/// * `scramble`  - Encodes the scrambling as bits of `u32` integeger.
+pub fn sobol_sample(a: u64, dimension: u16, scramble: u64) -> Float {
+    // TODO: There is no way to use generics or traits to implement this
+    // function for both f32/f64. Maybe macros with compiler feature flags
+    // might be the way.
+    sobol_sample_f32(a, dimension, scramble)
+}
+
+/// Returns the sample value for a given sample index and dimension.
+///
+/// * `a`         - Sample index.
+/// * `dimension` - Dimension.
+/// * `scramble`  - Encodes the scrambling as bits of `u32` integeger.
+///                 Default to 0.
+fn sobol_sample_f32(a: u64, dimension: u16, scramble: u64) -> f32 {
+    assert!(
+        (dimension as usize) < NUM_SOBOL_DIMENSIONS,
+        "Integrator has consumed too many Sobol dimensions; you \
+        may want to use a Sampler without a dimension limit like \
+            (0, 2)-sequence"
+    );
+
+    let mut a = a;
+    let mut v = scramble as u32;
+
+    let mut i = (dimension as usize) * SOBOL_MATRIX_SIZE;
+    loop {
+        if a == 0 {
+            break;
+        }
+
+        if (a & 1) > 0 {
+            v ^= SOBOL_MATRICES_32[i];
+        }
+
+        a >>= 1;
+        i += 1;
+    }
+
+    min(
+        (v as f32) * (hexf32!("0x1.0p-32") as f32),
+        FLOAT_ONE_MINUS_EPSILON,
+    )
+}
+
+/// Returns the sample value for a given sample index and dimension.
+///
+/// * `a`         - Sample index.
+/// * `dimension` - Dimension.
+/// * `scramble`  - Encodes the scrambling as bits of `u32` integeger.
+///                 Default to 0.
+fn sobol_sample_f64(a: u64, dimension: u16, scramble: u64) -> f64 {
+    assert!(
+        (dimension as usize) < NUM_SOBOL_DIMENSIONS,
+        "Integrator has consumed too many Sobol dimensions; you \
+        may want to use a Sampler without a dimension limit like \
+            (0, 2)-sequence"
+    );
+
+    let mut a = a;
+    let mut result = scramble & !(-((1_usize << SOBOL_MATRIX_SIZE) as i64) as u64);
+
+    let mut i = (dimension as usize) * SOBOL_MATRIX_SIZE;
+    loop {
+        if a == 0 {
+            break;
+        }
+
+        if (a & 1) > 0 {
+            result ^= SOBOL_MATRICES_64[i];
+        }
+
+        a >>= 1;
+        i += 1;
+    }
+
+    min(
+        result as f64 * (1.0 / (1_usize << SOBOL_MATRIX_SIZE) as f64),
+        DOUBLE_ONE_MINUS_EPSILON,
+    )
 }
