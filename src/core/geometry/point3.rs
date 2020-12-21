@@ -359,6 +359,32 @@ impl<T> From<Vector3<T>> for Point3<T> {
     }
 }
 
+impl From<Point3i> for Point3f {
+    /// Convert a `Point3i` to `Point3f`.
+    ///
+    /// * `b` - The `Point3i` to convert.
+    fn from(p: Point3i) -> Self {
+        Self {
+            x: p.x as Float,
+            y: p.y as Float,
+            z: p.z as Float,
+        }
+    }
+}
+
+impl From<Point3f> for Point3i {
+    /// Convert a `Point3f` to `Point3i`.
+    ///
+    /// * `b` - The `Point3f` to convert.
+    fn from(p: Point3f) -> Self {
+        Self {
+            x: p.x as Int,
+            y: p.y as Int,
+            z: p.z as Int,
+        }
+    }
+}
+
 // ----------------------------------------------------------------------------
 // Tests
 // ----------------------------------------------------------------------------

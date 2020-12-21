@@ -35,6 +35,30 @@ impl<T: Num + PartialOrd + Copy> From<Point3<T>> for Bounds3<T> {
     }
 }
 
+impl From<Bounds3i> for Bounds3f {
+    /// Convert a `Bounds3i` to `Bounds3f`.
+    ///
+    /// * `b` - The `Bounds3i` to convert.
+    fn from(b: Bounds3i) -> Self {
+        Self {
+            p_min: b.p_min.into(),
+            p_max: b.p_max.into(),
+        }
+    }
+}
+
+impl From<Bounds3f> for Bounds3i {
+    /// Convert a `Bounds3f` to `Bounds3i`.
+    ///
+    /// * `b` - The `Bounds3f` to convert.
+    fn from(b: Bounds3f) -> Self {
+        Self {
+            p_min: b.p_min.into(),
+            p_max: b.p_max.into(),
+        }
+    }
+}
+
 impl<T: Num + Copy> Bounds3<T> {
     /// Creates a new 3-D bounding box from 2 points. The minimum and maximum bounds
     /// are used for each coordinate axis.

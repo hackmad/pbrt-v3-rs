@@ -351,6 +351,30 @@ impl<T> From<Point3<T>> for Point2<T> {
     }
 }
 
+impl From<Point2i> for Point2f {
+    /// Convert a `Point2i` to `Point2f`.
+    ///
+    /// * `b` - The `Point2i` to convert.
+    fn from(p: Point2i) -> Self {
+        Self {
+            x: p.x as Float,
+            y: p.y as Float,
+        }
+    }
+}
+
+impl From<Point2f> for Point2i {
+    /// Convert a `Point2f` to `Point2i`.
+    ///
+    /// * `b` - The `Point2f` to convert.
+    fn from(p: Point2f) -> Self {
+        Self {
+            x: p.x as Int,
+            y: p.y as Int,
+        }
+    }
+}
+
 // ----------------------------------------------------------------------------
 // Tests
 // ----------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-//! 2-D Axis Aligned Bounding Boxes.
+//! 2D Axis Aligned Bounding Boxes.
 
 #![allow(dead_code)]
 use super::{
@@ -8,7 +8,7 @@ use num_traits::bounds::Bounded;
 use num_traits::{Num, Zero};
 use std::ops::{DivAssign, Index, Mul};
 
-/// 2-D Axis Aligned Bounding Box.
+/// 2D Axis Aligned Bounding Box.
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Bounds2<T: Num> {
     /// Minimum bounds.
@@ -18,23 +18,47 @@ pub struct Bounds2<T: Num> {
     pub p_max: Point2<T>,
 }
 
-/// 2-D bounding box containing `Float` points.
+/// 2D bounding box containing `Float` points.
 pub type Bounds2f = Bounds2<Float>;
 
-/// 2-D bounding box containing `Int` points.
+/// 2D bounding box containing `Int` points.
 pub type Bounds2i = Bounds2<Int>;
 
 impl<T: Num + PartialOrd + Copy> From<Point2<T>> for Bounds2<T> {
-    /// Use a 2-D point as minimum and maximum 2-D bounds.
+    /// Use a 2D point as minimum and maximum 2D bounds.
     ///
-    /// * `p` - 2-D point.
+    /// * `p` - 2D point.
     fn from(p: Point2<T>) -> Self {
         Bounds2 { p_min: p, p_max: p }
     }
 }
 
+impl From<Bounds2i> for Bounds2f {
+    /// Convert a `Bounds2i` to `Bounds2f`.
+    ///
+    /// * `b` - The `Bounds2i` to convert.
+    fn from(b: Bounds2i) -> Self {
+        Self {
+            p_min: b.p_min.into(),
+            p_max: b.p_max.into(),
+        }
+    }
+}
+
+impl From<Bounds2f> for Bounds2i {
+    /// Convert a `Bounds2f` to `Bounds2i`.
+    ///
+    /// * `b` - The `Bounds2f` to convert.
+    fn from(b: Bounds2f) -> Self {
+        Self {
+            p_min: b.p_min.into(),
+            p_max: b.p_max.into(),
+        }
+    }
+}
+
 impl<T: Num + Copy> Bounds2<T> {
-    /// Creates a new 2-D bounding box from 2 points. The minimum and maximum bounds
+    /// Creates a new 2D bounding box from 2 points. The minimum and maximum bounds
     /// are used for each coordinate axis.
     ///
     /// * `p1` - First point.
@@ -49,7 +73,7 @@ impl<T: Num + Copy> Bounds2<T> {
         }
     }
 
-    /// Returns a 2-D bounding box where minimum and maximum bounds are maximum and
+    /// Returns a 2D bounding box where minimum and maximum bounds are maximum and
     /// minimum values respectively of the type's limits. This is so we can easily
     /// grow the boundng box from nothing iteratively.
     pub fn empty() -> Self
