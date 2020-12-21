@@ -43,7 +43,7 @@ pub struct HaltonSampler {
     sample_at_pixel_center: bool,
 
     /// Pixel for the current offset.
-    pixel_for_offset: Mutex<Point2i>,
+    pixel_for_offset: Arc<Mutex<Point2i>>,
 
     /// Sample index for the first Halton sample for `data.sampler.current_pixel`.
     offset_for_current_pixel: AtomicUsize,
@@ -103,7 +103,7 @@ impl HaltonSampler {
             data: SamplerData::new(samples_per_pixel),
             gdata: GlobalSamplerData::new(),
             sample_at_pixel_center: sample_at_center,
-            pixel_for_offset: Mutex::new(Point2i::new(Int::MAX, Int::MAX)),
+            pixel_for_offset: Arc::new(Mutex::new(Point2i::new(Int::MAX, Int::MAX))),
             offset_for_current_pixel: AtomicUsize::new(0),
             sample_bounds,
             radical_inverse_permutations,
@@ -134,7 +134,8 @@ impl HaltonSampler {
     ///
     /// * `sample_num` - The sample number.
     fn get_index_for_sample(&mut self, sample_num: usize) -> u64 {
-        let mut pixel_for_offset = self.pixel_for_offset.lock().unwrap();
+        let pixel = self.pixel_for_offset.clone();
+        let mut pixel_for_offset = pixel.lock().unwrap();
         let offset_for_current_pixel = self.offset_for_current_pixel.get_mut();
 
         if self.data.current_pixel != *pixel_for_offset {
