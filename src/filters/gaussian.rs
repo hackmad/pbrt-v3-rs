@@ -43,6 +43,11 @@ impl GaussianFilter {
 }
 
 impl Filter for GaussianFilter {
+    /// Return the filter parameters.
+    fn get_data(&self) -> &FilterData {
+        &self.data
+    }
+
     /// Returns value of the filter at a given point.
     ///
     /// * `p` - The position of the sample point relative to the center of the

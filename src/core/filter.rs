@@ -3,15 +3,22 @@
 #![allow(dead_code)]
 use super::geometry::*;
 use super::pbrt::*;
+use std::sync::Arc;
 
 /// Filter interface.
 pub trait Filter {
+    /// Return the filter parameters.
+    fn get_data(&self) -> &FilterData;
+
     /// Returns value of the filter at a given point.
     ///
     /// * `p` - The position of the sample point relative to the center of the
     ///         filter. The point should be within the filter's extent.
     fn evaluate(&self, p: &Point2f) -> Float;
 }
+
+/// Atomic reference counted `Filter`.
+pub type ArcFilter = Arc<dyn Filter + Send + Sync>;
 
 /// Data for filters centered at origin (0, 0).
 pub struct FilterData {
