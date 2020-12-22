@@ -7,6 +7,7 @@ use super::{
     Point3f, Quadratic, Ray, Transform, Union, Vector3f, INFINITY,
 };
 use rayon::prelude::*;
+use std::sync::Arc;
 
 /// Realistic camera implements a camera consisting of multiple lens
 /// elements.
@@ -58,14 +59,14 @@ impl RealisticCamera {
         focus_distance: Float,
         simple_weighting: bool,
         lens_data: Vec<Float>,
-        film: Film,
+        film: Arc<Film>,
         medium: ArcMedium,
     ) -> Self {
         let data = CameraData::new(
             camera_to_world,
             shutter_open,
             shutter_close,
-            film,
+            film.clone(),
             medium.clone(),
         );
 
@@ -89,11 +90,12 @@ impl RealisticCamera {
             camera.focus_thick_lens(focus_distance);
 
         // Compute exit pupil bounds at sampled points on the film.
+        let film_diagonal = film.clone().diagonal;
         camera.exit_pupil_bounds = (0..n_samples)
             .into_par_iter()
             .map(|i| {
-                let r0 = i as Float / n_samples as Float * film.diagonal / 2.0;
-                let r1 = (i + 1) as Float / n_samples as Float * film.diagonal / 2.0;
+                let r0 = i as Float / n_samples as Float * film_diagonal / 2.0;
+                let r1 = (i + 1) as Float / n_samples as Float * film_diagonal / 2.0;
                 camera.bound_exit_pupil(r0, r1)
             })
             .collect();

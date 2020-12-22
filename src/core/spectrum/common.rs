@@ -140,7 +140,7 @@ pub trait CoefficientSpectrum:
     ///
     /// * `rgb`           - RGB value.
     /// * `spectrum_type` - Indicates type of RGB value (ignored).
-    fn from_rgb(&mut self, rgb: &[Float; 3], _spectrum_type: SpectrumType);
+    fn from_rgb(&mut self, rgb: &[Float; 3], spectrum_type: SpectrumType);
 
     /// Convert the SPD to RGB cooefficients.
     fn to_rgb(&self) -> [Float; 3];

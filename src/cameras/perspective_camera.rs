@@ -6,6 +6,7 @@ use super::{
     CameraSample, Film, Float, PDFResult, Point3f, ProjectiveCameraData, Ray, RayDifferential,
     Transform, Vector3f, INFINITY,
 };
+use std::sync::Arc;
 
 /// Perspective camera.
 #[derive(Clone)]
@@ -47,14 +48,14 @@ impl PerspectiveCamera {
         lens_radius: Float,
         focal_distance: Float,
         fov: Float,
-        film: Film,
+        film: Arc<Film>,
         medium: ArcMedium,
     ) -> Self {
         let data = CameraData::new(
             camera_to_world,
             shutter_open,
             shutter_close,
-            film,
+            film.clone(),
             medium.clone(),
         );
         let proj_data = ProjectiveCameraData::new(

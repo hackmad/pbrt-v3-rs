@@ -5,6 +5,7 @@ use super::{
     cos, lerp, sin, AnimatedTransform, ArcMedium, Camera, CameraData, CameraSample, Film, Float,
     PDFResult, Point3f, Ray, Vector3f, INFINITY, PI, TWO_PI,
 };
+use std::sync::Arc;
 
 // Environment camera.
 #[derive(Clone)]
@@ -26,7 +27,7 @@ impl EnvironmentCamera {
         camera_to_world: AnimatedTransform,
         shutter_open: Float,
         shutter_close: Float,
-        film: Film,
+        film: Arc<Film>,
         medium: ArcMedium,
     ) -> Self {
         Self {
@@ -34,7 +35,7 @@ impl EnvironmentCamera {
                 camera_to_world,
                 shutter_open,
                 shutter_close,
-                film,
+                film.clone(),
                 medium.clone(),
             ),
         }

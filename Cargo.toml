@@ -10,9 +10,10 @@ sampled-spectrum = []
 [dependencies]
 clap = "3.0.0-beta.1"
 either = "1.6.0"
+exr = "1.0.0"
 float-cmp = "0.8.0"
 hexf = "0.1.0"
-image = "0.23.4"
+image = "0.23.12"
 lazy_static = "1.4.0"
 rand = "0.7.3"
 rand_pcg = "0.2.1"

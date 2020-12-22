@@ -3,8 +3,10 @@
 #[macro_use]
 extern crate lazy_static;
 
+extern crate exr;
 extern crate float_cmp;
 extern crate hexf;
+extern crate image;
 extern crate num_traits;
 extern crate rand;
 extern crate rand_pcg;

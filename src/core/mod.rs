@@ -7,6 +7,7 @@ pub mod efloat;
 pub mod film;
 pub mod filter;
 pub mod geometry;
+pub mod image_io;
 pub mod light;
 pub mod low_discrepency;
 pub mod material;

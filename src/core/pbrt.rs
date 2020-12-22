@@ -173,8 +173,33 @@ where
 /// Returns the error bound for adding n terms.
 ///
 /// * `n` - Number of terms
+#[inline]
 pub fn gamma(n: Int) -> Float {
     (n as Float * MACHINE_EPSILON) / (1.0 - n as Float * MACHINE_EPSILON)
+}
+
+/// Returns gamma corrected values for use in 8-bit images.
+///
+/// * `value` - Value to correct.
+#[inline]
+pub fn gamma_correct(value: Float) -> Float {
+    if value <= 0.0031308 {
+        12.92 * value
+    } else {
+        1.055 * value.powf(1.0 / 2.4) - 0.055
+    }
+}
+
+/// Returns inverse of a gamma corrected value.
+///
+/// * `value` - The value.
+#[inline]
+pub fn inv_gamma_correct(value: Float) -> Float {
+    if value <= 0.04045 {
+        value * 1.0 / 12.92
+    } else {
+        ((value + 0.055) * 1.0 / 1.055).powf(2.4)
+    }
 }
 
 /// Linearly interpolate between two points for parameters in [0, 1] and
