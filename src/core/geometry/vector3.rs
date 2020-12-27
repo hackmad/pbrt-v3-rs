@@ -216,6 +216,10 @@ impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Normal3<T>> for Vector3<T
     }
 }
 
+/// Implement FaceForward trait which allows pointing vectors in the same
+/// hemisphere as another normal/vector.
+impl<T: Num + Neg<Output = T> + PartialOrd + Copy> FaceForward<T, Vector3<T>> for Vector3<T> {}
+
 impl<T: Num> Add for Vector3<T> {
     type Output = Self;
 

@@ -17,6 +17,9 @@ pub const INFINITY: Float = Float::INFINITY;
 /// PI (π)
 pub const PI: Float = std::f32::consts::PI;
 
+/// 1/PI (1/π)
+pub const INV_PI: Float = 1.0 / PI;
+
 /// PI/2 (π/2)
 pub const PI_OVER_TWO: Float = PI * 0.5;
 
@@ -25,6 +28,15 @@ pub const PI_OVER_FOUR: Float = PI * 0.25;
 
 /// 2*PI (2π)
 pub const TWO_PI: Float = PI * 2.0;
+
+/// 1/2*PI (1/2π)
+pub const INV_TWO_PI: Float = 1.0 / TWO_PI;
+
+/// 4*PI (4π)
+pub const FOUR_PI: Float = PI * 4.0;
+
+/// 1/4*PI (1/4π)
+pub const INV_FOUR_PI: Float = 1.0 / FOUR_PI;
 
 /// Machine Epsilon
 pub const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
@@ -378,6 +390,72 @@ pub fn atan(theta: Float) -> Float {
 #[inline]
 pub fn atan2(y: Float, x: Float) -> Float {
     y.atan2(x)
+}
+
+/// Returns `v^5`.
+///
+/// * `v` - The value.
+#[inline]
+pub fn pow5<T: Mul<T, Output = T> + Copy>(v: T) -> T {
+    (v * v) * (v * v) * v
+}
+
+/// Returns the error function for a given floating point value.
+///
+/// * `x` - The floating point value.
+pub fn erf(x: Float) -> Float {
+    // constants
+    let a1 = 0.254829592;
+    let a2 = -0.284496736;
+    let a3 = 1.421413741;
+    let a4 = -1.453152027;
+    let a5 = 1.061405429;
+    let p = 0.3275911;
+
+    // Save the sign of x
+    let sign = if x < 0.0 { -1.0 } else { 1.0 };
+    let x = abs(x);
+
+    // A&S formula 7.1.26.
+    let t = 1.0 / (1.0 + p * x);
+    let y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * (-x * x).exp();
+
+    sign * y
+}
+
+/// Returns the inverse of the error function for a given floating point value.
+///
+/// * `x` - The floating point value.
+pub fn erf_inv(x: Float) -> Float {
+    let x = clamp(x, -0.99999, 0.99999);
+    let mut w = -((1.0 - x) * (1.0 + x)).ln();
+    if w < 5.0 {
+        w = w - 2.5;
+
+        let mut p = 2.81022636e-08;
+        p = 3.43273939e-07 + p * w;
+        p = -3.5233877e-06 + p * w;
+        p = -4.39150654e-06 + p * w;
+        p = 0.00021858087 + p * w;
+        p = -0.00125372503 + p * w;
+        p = -0.00417768164 + p * w;
+        p = 0.246640727 + p * w;
+        p = 1.50140941 + p * w;
+        p * x
+    } else {
+        w = w.sqrt() - 3.0;
+
+        let mut p = -0.000200214257;
+        p = 0.000100950558 + p * w;
+        p = 0.00134934322 + p * w;
+        p = -0.00367342844 + p * w;
+        p = 0.00573950773 + p * w;
+        p = -0.0076224613 + p * w;
+        p = 0.00943887047 + p * w;
+        p = 1.00167406 + p * w;
+        p = 2.83297682 + p * w;
+        p * x
+    }
 }
 
 /// Trait to support base 2 logarithm
