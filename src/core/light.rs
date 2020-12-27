@@ -1,10 +1,10 @@
 //! Light
 
 #![allow(dead_code)]
-use super::geometry::ArcInteraction;
-use super::sampler::ArcSampler;
-use super::scene::Scene;
-use super::spectrum::Spectrum;
+use crate::core::geometry::*;
+use crate::core::sampler::*;
+use crate::core::scene::*;
+use crate::core::spectrum::*;
 use std::sync::Arc;
 
 /// Light trait provides common behavior.

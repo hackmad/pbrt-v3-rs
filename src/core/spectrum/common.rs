@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use super::{find_interval, lerp, max, min, Float};
+use crate::core::pbrt::*;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };

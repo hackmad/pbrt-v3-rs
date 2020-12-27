@@ -1,7 +1,8 @@
 //! Fourier BSDF Table
 
 use super::bsdf_reader::*;
-use super::{catmull_rom_weights, Float};
+use crate::core::interpolation::*;
+use crate::core::pbrt::*;
 use std::str;
 
 #[derive(Clone, Debug)]

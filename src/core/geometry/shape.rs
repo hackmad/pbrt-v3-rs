@@ -1,7 +1,8 @@
 //! Shapes
 
 #![allow(dead_code)]
-use super::{ArcTransform, Bounds3f, Float, Ray, SurfaceInteraction};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use std::sync::Arc;
 
 /// Shape common functions

@@ -1,6 +1,6 @@
 //! Common
 
-use super::abs;
+use crate::core::pbrt::abs;
 use num_traits::{Num, Zero};
 use std::ops::Neg;
 

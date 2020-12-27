@@ -1,7 +1,5 @@
 //! Spectrum
 
-use super::pbrt::*;
-
 mod cie;
 mod common;
 mod rgb;

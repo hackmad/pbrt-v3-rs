@@ -3,10 +3,10 @@
 mod common;
 mod pixel_sampler;
 
-use super::camera::*;
-use super::geometry::*;
-use super::pbrt::*;
-use super::rng::*;
+use crate::core::camera::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::rng::*;
 use std::sync::Arc;
 
 // Re-export

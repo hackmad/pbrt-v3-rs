@@ -2,11 +2,9 @@
 
 #![allow(dead_code)]
 
-use super::{
-    abs, cos_theta, refract, same_hemisphere, ArcMicrofacetDistribution, BxDF, BxDFType, Dot,
-    Float, Fresnel, FresnelDielectric, Point2f, Spectrum, TransportMode, Vector3f, BSDF_GLOSSY,
-    BSDF_TRANSMISSION,
-};
+use super::*;
+use crate::core::material::*;
+use crate::core::microfacet::*;
 
 /// BTDF for modeling glossy transmissive surfaces using a microfacet distribution.
 #[derive(Clone)]

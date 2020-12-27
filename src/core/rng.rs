@@ -1,8 +1,7 @@
 //! Random Number Generator.
 
 #![allow(dead_code)]
-use super::pbrt::{min, Float};
-use hexf::*;
+use crate::core::pbrt::*;
 use rand::distributions::uniform::SampleUniform;
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::{Rng, SeedableRng};

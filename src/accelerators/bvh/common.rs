@@ -1,7 +1,8 @@
 //! BVH Common
 
 #![allow(dead_code)]
-use super::{Axis, Bounds3f, Point3f, Union};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use std::sync::Arc;
 
 /// Splitting method to use to subdivide primitives.

@@ -1,9 +1,9 @@
 //! Maximized Minimal Distance Sampler.
 
-use super::{
-    sample_generator_matrix, sobol_2d, van_der_corput, ArcSampler, Float, Log2, PixelSampler,
-    Point2f, Point2i, Sampler, SamplerData, C_MAX_MIN_DIST,
-};
+use crate::core::geometry::*;
+use crate::core::low_discrepency::*;
+use crate::core::pbrt::*;
+use crate::core::sampler::*;
 use std::sync::Arc;
 
 /// Implements a sampler that can generate (0, 2)-sequences but also maximizes

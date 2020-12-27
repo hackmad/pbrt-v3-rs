@@ -1,9 +1,9 @@
 //! Primitives
 
 #![allow(dead_code)]
-use super::geometry::{Bounds3f, Ray, SurfaceInteraction};
-use super::light::ArcAreaLight;
-use super::material::{ArcMaterial, TransportMode};
+use crate::core::geometry::*;
+use crate::core::light::*;
+use crate::core::material::*;
 use std::sync::Arc;
 
 /// Primitive trait provide common behavior.

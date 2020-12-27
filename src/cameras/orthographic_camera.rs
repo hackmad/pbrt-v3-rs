@@ -1,11 +1,12 @@
 //! Orthographic Camera
 
 #![allow(dead_code)]
-use super::{
-    concentric_sample_disk, lerp, AnimatedTransform, ArcMedium, Bounds2f, Camera, CameraData,
-    CameraSample, Film, Float, PDFResult, Point3f, ProjectiveCameraData, Ray, RayDifferential,
-    Transform, Vector3f, INFINITY,
-};
+use crate::core::camera::*;
+use crate::core::film::*;
+use crate::core::geometry::*;
+use crate::core::medium::*;
+use crate::core::pbrt::*;
+use crate::core::sampling::*;
 use std::sync::Arc;
 
 /// Orthographic camera.

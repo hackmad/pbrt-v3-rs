@@ -1,10 +1,11 @@
 //! Geometric Primitives
 
 #![allow(dead_code)]
-use super::{
-    ArcAreaLight, ArcMaterial, ArcShape, Bounds3f, Dot, MediumInterface, Primitive, Ray,
-    SurfaceInteraction, TransportMode,
-};
+use crate::core::geometry::*;
+use crate::core::light::*;
+use crate::core::material::*;
+use crate::core::medium::*;
+use crate::core::primitive::*;
 
 /// GeometricPrimitive represents a single shape in a scene.
 #[derive(Clone)]

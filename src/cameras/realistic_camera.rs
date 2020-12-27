@@ -1,11 +1,14 @@
 //! Realistic Camera
 
 #![allow(dead_code)]
-use super::{
-    lerp, max, min, radical_inverse, refract, AnimatedTransform, ArcMedium, Bounds2f, Camera,
-    CameraData, CameraSample, EFloat, FaceForward, Film, Float, Normal3f, PDFResult, Point2f,
-    Point3f, Quadratic, Ray, Transform, Union, Vector3f, INFINITY,
-};
+use crate::core::camera::*;
+use crate::core::efloat::*;
+use crate::core::film::*;
+use crate::core::geometry::*;
+use crate::core::low_discrepency::*;
+use crate::core::medium::*;
+use crate::core::pbrt::*;
+use crate::core::reflection::*;
 use rayon::prelude::*;
 use std::sync::Arc;
 

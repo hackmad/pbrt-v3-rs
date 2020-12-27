@@ -1,11 +1,8 @@
 //! Transformations
 
 #![allow(dead_code)]
-use super::{
-    abs, gamma, tan, Bounds3, Bounds3f, Dot, FaceForward, Float, Matrix4x4, Normal3f, Point3,
-    Point3f, Ray, RayDifferential, Shading, SurfaceInteraction, Union, Vector3, Vector3f,
-    IDENTITY_MATRIX,
-};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use std::cmp::{Eq, Ord, Ordering, PartialOrd};
 use std::ops::Mul;
 use std::sync::Arc;

@@ -1,11 +1,9 @@
 //! Triangles and triangle meshes
 
 #![allow(dead_code)]
-use super::{
-    coordinate_system, gamma, ArcShape, ArcTexture, ArcTransform, Bounds3f, Float, Intersection,
-    Normal3, Normal3f, Point2f, Point3f, Ray, Shape, ShapeData, SurfaceInteraction, Union, Vector3,
-    Vector3f,
-};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::texture::*;
 use std::mem::size_of;
 use std::sync::Arc;
 

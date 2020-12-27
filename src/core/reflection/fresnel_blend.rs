@@ -2,11 +2,9 @@
 
 #![allow(dead_code)]
 
-use super::{
-    abs_cos_theta, cosine_sample_hemisphere, max, min, pow5, reflect, same_hemisphere,
-    ArcMicrofacetDistribution, BxDF, BxDFType, Dot, Float, Point2f, Spectrum, Vector3f,
-    BSDF_GLOSSY, BSDF_REFLECTION, INV_PI, ONE_MINUS_EPSILON, PI,
-};
+use super::*;
+use crate::core::microfacet::*;
+use crate::core::rng::*;
 
 /// BRDF for modeling layered surfaces such as wood using Ashikhmin-Shirley model.
 #[derive(Clone)]

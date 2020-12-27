@@ -1,9 +1,8 @@
 //! Film tile
 
-use super::{
-    abs, max, min, Bounds2i, CoefficientSpectrum, Float, Int, Point2f, Point2i, Spectrum, Vector2f,
-    INFINITY,
-};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::spectrum::*;
 
 /// Stores contributions for the pixels in a region of the image.
 pub struct FilmTile<'a> {

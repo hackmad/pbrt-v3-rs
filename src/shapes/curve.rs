@@ -1,11 +1,8 @@
 //! Curves
 
 #![allow(dead_code)]
-use super::{
-    abs, clamp, coordinate_system, lerp, max, min, ArcShape, ArcTransform, Bounds3f, Dot, Float,
-    Intersection, Log2, Normal3f, Point2f, Point3f, Ray, Shape, ShapeData, SurfaceInteraction,
-    Transform, Union, Vector3, Vector3f,
-};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use std::sync::Arc;
 
 /// Curve types.

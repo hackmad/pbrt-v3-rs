@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use super::{ArcBxDF, BxDF, BxDFType, Float, Point2f, Spectrum, Vector3f};
+use super::*;
 
 /// BxDF scaling adapter scales a BxDF's contribution with a `Spectrum`.
 #[derive(Clone)]

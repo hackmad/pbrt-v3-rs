@@ -2,10 +2,8 @@
 
 #![allow(dead_code)]
 
-use super::{
-    abs_cos_theta, cos_theta, fr_dielectric, refract, BxDF, BxDFType, FaceForward, Float, Normal3f,
-    Point2f, Spectrum, TransportMode, Vector3f, BSDF_REFLECTION, BSDF_SPECULAR, BSDF_TRANSMISSION,
-};
+use super::*;
+use crate::core::material::*;
 
 /// BRDF for physically plausible specular reflection and transmission.
 #[derive(Clone)]

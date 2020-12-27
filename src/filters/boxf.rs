@@ -1,6 +1,9 @@
 //! Box Filter
 
-use super::{Filter, FilterData, Float, Point2f, Vector2f};
+#![allow(dead_code)]
+use crate::core::filter::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 
 /// Implements the box filter which equally weights all samples within a square
 /// region of the image.

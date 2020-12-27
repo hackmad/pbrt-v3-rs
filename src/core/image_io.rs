@@ -1,9 +1,9 @@
 //! Image I/O
 
 #![allow(dead_code)]
-use super::geometry::*;
-use super::pbrt::*;
-use super::spectrum::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::spectrum::*;
 use exr::prelude as exrs;
 use exr::prelude::*;
 use image::*;

@@ -1,10 +1,9 @@
 //! Loop Subdivision Surfaces.
 
 #![allow(dead_code)]
-use super::{
-    ArcShape, ArcTransform, Float, Normal3, Normal3f, Point3f, TriangleMesh, Vector3, Vector3f, PI,
-    TWO_PI,
-};
+use super::TriangleMesh;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use std::cmp::{Ordering, PartialOrd};
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};

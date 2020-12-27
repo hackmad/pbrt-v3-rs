@@ -1,14 +1,10 @@
 //! Reflection and surface scattering models
 
 #![allow(dead_code)]
-use super::geometry::*;
-use super::interpolation::*;
-use super::material::*;
-use super::microfacet::*;
-use super::pbrt::*;
-use super::rng::*;
-use super::sampling::*;
-use super::spectrum::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::sampling::*;
+use crate::core::spectrum::*;
 use std::sync::Arc;
 
 mod bsdf_reader;

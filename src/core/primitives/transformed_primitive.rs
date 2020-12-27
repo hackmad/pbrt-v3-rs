@@ -1,10 +1,11 @@
 //! Object Instancing and Animated Primitives.
 
 #![allow(dead_code)]
-use super::{
-    medium_interface_same, AnimatedTransform, ArcAreaLight, ArcMaterial, ArcShape, Bounds3f, Dot,
-    MediumInterface, Primitive, Ray, SurfaceInteraction, TransportMode,
-};
+use crate::core::geometry::*;
+use crate::core::light::*;
+use crate::core::material::*;
+use crate::core::medium::*;
+use crate::core::primitive::*;
 
 /// TransformedPrimitive stores an underlying primitive and animated transform
 /// and is used for object instancing and animated transformations.

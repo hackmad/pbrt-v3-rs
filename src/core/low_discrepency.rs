@@ -2,11 +2,10 @@
 
 #![allow(dead_code)]
 
-use super::geometry::{Point2f, Point2i};
-use super::pbrt::{min, Float};
-use super::rng::*;
-use super::sobol_matrices::*;
-use hexf::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::rng::*;
+use crate::core::sobol_matrices::*;
 
 /// Size of the prime numbers list.
 pub const PRIME_TABLE_SIZE: usize = 1000;

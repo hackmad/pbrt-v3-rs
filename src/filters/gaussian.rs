@@ -1,6 +1,9 @@
 //! Gaussian Filter
 
-use super::{max, Filter, FilterData, Float, Point2f, Vector2f};
+#![allow(dead_code)]
+use crate::core::filter::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 
 /// Implements the Gaussian filter which applies a bump that is centered at the
 /// pixel and radially symmetric around it.

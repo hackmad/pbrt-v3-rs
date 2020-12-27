@@ -1,10 +1,8 @@
 //! CIE XYZ Color.
 
 #![allow(dead_code)]
-use super::common::*;
-use super::{
-    lerp, Float, SampledSpectrum, SAMPLED_LAMBDA_END, SAMPLED_LAMBDA_START, SPECTRAL_SAMPLES,
-};
+use super::*;
+use crate::core::pbrt::*;
 
 /// Starting wavelength in nm for CIE colour space.
 pub const CIE_LAMBDA_START: usize = 360;

@@ -1,15 +1,16 @@
 //! Bounding Volume Hierarchy.
 
 #![allow(dead_code)]
+use crate::core::geometry::*;
+use crate::core::light::*;
+use crate::core::material::*;
+use crate::core::primitive::*;
+
 mod common;
 mod hlbvh;
 mod morton;
 mod sah;
 
-use super::{
-    float_to_bits, Aggregate, ArcAreaLight, ArcMaterial, ArcPrimitive, Axis, Bounds3f, Float,
-    Point3f, Primitive, Ray, SurfaceInteraction, TransportMode, Union, Vector3f,
-};
 use common::*;
 use hlbvh::*;
 use sah::*;

@@ -2,11 +2,8 @@
 
 #![allow(dead_code)]
 
-use super::{
-    abs_cos_theta, cos_theta, refract, BxDF, BxDFType, FaceForward, Float, Fresnel,
-    FresnelDielectric, Normal3f, Point2f, Spectrum, TransportMode, Vector3f, BSDF_SPECULAR,
-    BSDF_TRANSMISSION,
-};
+use super::*;
+use crate::core::material::*;
 
 /// BTDF for physically plausible specular transmission using Fresnel interface.
 #[derive(Copy, Clone)]

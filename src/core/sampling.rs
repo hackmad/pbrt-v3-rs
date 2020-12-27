@@ -1,9 +1,9 @@
 //! Sampling functions
 
 #![allow(dead_code)]
-use super::geometry::*;
-use super::pbrt::*;
-use super::rng::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::rng::*;
 
 /// Generate 1D samples.
 ///

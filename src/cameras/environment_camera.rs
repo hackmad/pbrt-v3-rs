@@ -1,10 +1,11 @@
 //! Environment Camera
 
 #![allow(dead_code)]
-use super::{
-    cos, lerp, sin, AnimatedTransform, ArcMedium, Camera, CameraData, CameraSample, Film, Float,
-    PDFResult, Point3f, Ray, Vector3f, INFINITY, PI, TWO_PI,
-};
+use crate::core::camera::*;
+use crate::core::film::*;
+use crate::core::geometry::*;
+use crate::core::medium::*;
+use crate::core::pbrt::*;
 use std::sync::Arc;
 
 // Environment camera.

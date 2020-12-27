@@ -1,6 +1,9 @@
 //! LanczosSinc Filter
 
-use super::{abs, sin, Filter, FilterData, Float, Point2f, Vector2f, PI};
+#![allow(dead_code)]
+use crate::core::filter::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 
 /// Implements a windowed sinc filter.
 pub struct LanczosSincFilter {

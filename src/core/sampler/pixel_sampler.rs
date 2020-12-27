@@ -1,6 +1,6 @@
 //! Pixel Sampler.
 
-use super::{ArcSampler, Float, Point2f, Sampler, SamplerData, UniformRandom, RNG};
+use super::*;
 use std::sync::Arc;
 
 /// Implementation for generating all sample values for all sample vectors of

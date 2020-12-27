@@ -1,11 +1,11 @@
 //! Film
 
 #![allow(dead_code)]
-use super::filter::*;
-use super::geometry::*;
-use super::image_io::*;
-use super::pbrt::*;
-use super::spectrum::*;
+use crate::core::filter::*;
+use crate::core::geometry::*;
+use crate::core::image_io::*;
+use crate::core::pbrt::*;
+use crate::core::spectrum::*;
 use std::sync::{Arc, RwLock};
 
 mod film_tile;

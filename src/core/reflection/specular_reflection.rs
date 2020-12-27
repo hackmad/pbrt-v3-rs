@@ -2,10 +2,7 @@
 
 #![allow(dead_code)]
 
-use super::{
-    abs_cos_theta, cos_theta, ArcFresnel, BxDF, BxDFType, Float, Point2f, Spectrum, Vector3f,
-    BSDF_REFLECTION, BSDF_SPECULAR,
-};
+use super::*;
 
 /// BRDF for physically plausible specular reflection using Fresnel interface.
 #[derive(Clone)]

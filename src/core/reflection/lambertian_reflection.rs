@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use super::{BxDF, BxDFType, Point2f, Spectrum, Vector3f, BSDF_DIFFUSE, BSDF_REFLECTION, INV_PI};
+use super::*;
 
 /// BRDF for the Lambertian model for perfect diffuse surfaces that scatters
 /// incident illumination equally in all directions.

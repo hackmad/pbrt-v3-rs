@@ -1,12 +1,9 @@
 //! Fourier BSDF Model
 
 #![allow(dead_code)]
-use super::{
-    abs, cos, cos_d_phi, cos_theta, fourier, max, sample_catmull_rom_2d, sample_fourier, sin,
-    sin_2_theta, BxDF, BxDFType, CoefficientSpectrum, Float, FourierBSDFTable, Point2f, Spectrum,
-    SpectrumType, TransportMode, Vector3f, BSDF_GLOSSY, BSDF_REFLECTION, BSDF_TRANSMISSION,
-    INFINITY, TWO_PI,
-};
+use super::*;
+use crate::core::interpolation::*;
+use crate::core::material::*;
 use std::sync::Arc;
 
 /// BSDF for modeling materials like metals with smooth or rough coatings and

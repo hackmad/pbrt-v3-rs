@@ -1,10 +1,9 @@
 //! Interactions
 
 #![allow(dead_code)]
-use super::{
-    ArcMedium, Dot, Float, MediumInterface, Normal3f, Point3f, Ray, Vector3f, INFINITY,
-    SHADOW_EPSILON,
-};
+use crate::core::geometry::*;
+use crate::core::medium::*;
+use crate::core::pbrt::*;
 use std::sync::Arc;
 
 /// Interaction trait provide common behavior.

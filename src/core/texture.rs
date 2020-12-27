@@ -1,7 +1,7 @@
 //! Textures
 
 #![allow(dead_code)]
-use super::geometry::SurfaceInteraction;
+use crate::core::geometry::*;
 use std::sync::Arc;
 
 /// Texture interface.

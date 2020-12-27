@@ -1,11 +1,8 @@
 //! Torrance-Sparrow Microfacet Reflection Model
 
 #![allow(dead_code)]
-
-use super::{
-    abs_cos_theta, reflect, same_hemisphere, ArcFresnel, ArcMicrofacetDistribution, BxDF, BxDFType,
-    Dot, FaceForward, Float, Point2f, Spectrum, Vector3f, BSDF_GLOSSY, BSDF_REFLECTION,
-};
+use super::*;
+use crate::core::microfacet::*;
 
 /// BRDF for modeling metallic surfaces using a microfacet distribution.
 #[derive(Clone)]

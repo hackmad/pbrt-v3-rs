@@ -2,7 +2,9 @@
 
 #![allow(dead_code)]
 use super::common::*;
-use super::{ArcPrimitive, Axis, Bounds3f, Float, Union};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::primitive::*;
 use order_stat::kth_by;
 use std::cmp::Ordering;
 use std::sync::{Arc, Mutex};

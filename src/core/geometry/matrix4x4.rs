@@ -1,7 +1,7 @@
 //! 4x4 Matrix
 
 #![allow(dead_code)]
-use super::{abs, Float};
+use crate::core::pbrt::*;
 use std::ops::{Index, Mul};
 
 /// A 4x4 vector containing Float values.

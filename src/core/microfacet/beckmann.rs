@@ -1,11 +1,10 @@
 //! Beckmann–Spizzichino Distribution
 
 #![allow(dead_code)]
-use super::{
-    abs, acos, cos, cos_2_phi, cos_2_theta, cos_phi, cos_theta, erf, erf_inv, max, sin, sin_2_phi,
-    sin_phi, tan_2_theta, tan_theta, Float, MicrofacetDistribution, Vector3f, PI, TWO_PI,
-    Point2f, atan, spherical_direction, same_hemisphere, tan
-};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::reflection::*;
+use super::MicrofacetDistribution;
 
 /// Implements the Beckmann–Spizzichino distribution which based on Gaussian 
 /// distribution of microfacet slopes.

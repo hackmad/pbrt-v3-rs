@@ -2,7 +2,8 @@
 
 #![allow(dead_code)]
 use super::common::*;
-use super::{clamp, Float, Transform, Vector3f, IDENTITY_MATRIX};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// A quaternion

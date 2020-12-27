@@ -2,7 +2,8 @@
 
 #![allow(dead_code)]
 use super::common::*;
-use super::{abs, Axis, Float, Vector3};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use num_traits::{Num, Zero};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,

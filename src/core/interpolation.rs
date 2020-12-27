@@ -1,7 +1,7 @@
 //! Interpolation Functions
 
 #![allow(dead_code)]
-use super::pbrt::*;
+use crate::core::pbrt::*;
 
 /// Interpolate the Catmull-Rom spline.
 ///

@@ -1,6 +1,9 @@
 //! Triangle Filter
 
-use super::{abs, max, Filter, FilterData, Float, Point2f, Vector2f};
+#![allow(dead_code)]
+use crate::core::filter::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 
 /// Implements the triangle filter in which the weight falls off linearly from
 /// the filter center over the square extent of the filter.

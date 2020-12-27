@@ -1,10 +1,11 @@
 //! Sobol Sampler.
 
-use super::{
-    clamp, max, sobol_interval_to_index, sobol_sample, ArcSampler, Bounds2i, Float,
-    GlobalSamplerData, Log2, Point2f, Point2i, Sampler, SamplerData, NUM_SOBOL_DIMENSIONS,
-    ONE_MINUS_EPSILON, RNG,
-};
+use crate::core::geometry::*;
+use crate::core::low_discrepency::*;
+use crate::core::pbrt::*;
+use crate::core::rng::*;
+use crate::core::sampler::*;
+use crate::core::sobol_matrices::*;
 use std::sync::Arc;
 
 /// Implements the Sobol Sampler.
@@ -24,9 +25,6 @@ pub struct SobolSampler {
 
     /// Log base 2 of `resolution`.
     log_2_resolution: i32,
-
-    /// The random number generator.
-    rng: RNG,
 }
 
 impl SobolSampler {
@@ -34,8 +32,7 @@ impl SobolSampler {
     ///
     /// * `samples_per_pixel` - Number of samples per pixel.
     /// * `sample_bounds`     - Sample bounds.
-    /// * `seed`              - Optional seed for random number generator.
-    fn new(samples_per_pixel: usize, sample_bounds: Bounds2i, seed: Option<u64>) -> Self {
+    fn new(samples_per_pixel: usize, sample_bounds: Bounds2i) -> Self {
         let resolution = max(sample_bounds.diagonal().x, sample_bounds.diagonal().y);
 
         Self {
@@ -44,10 +41,6 @@ impl SobolSampler {
             sample_bounds,
             resolution,
             log_2_resolution: resolution.log2(),
-            rng: match seed {
-                Some(s) => RNG::new(s),
-                None => RNG::default(),
-            },
         }
     }
 }
@@ -99,13 +92,9 @@ impl Sampler for SobolSampler {
     /// Generates a new instance of an initial `Sampler` for use by a rendering
     /// thread.
     ///
-    /// * `seed` - The seed for the random number generator (if any).
-    fn clone(&self, seed: u64) -> ArcSampler {
-        Arc::new(Self::new(
-            self.data.samples_per_pixel,
-            self.sample_bounds,
-            Some(seed),
-        ))
+    /// * `seed` - The seed for the random number generator (ignored).
+    fn clone(&self, _seed: u64) -> ArcSampler {
+        Arc::new(Self::new(self.data.samples_per_pixel, self.sample_bounds))
     }
 
     /// This should be called when the rendering algorithm is ready to start

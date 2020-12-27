@@ -1,11 +1,10 @@
 //! Trowbridge-Reitz Distribution
 
 #![allow(dead_code)]
-use super::{
-    abs, atan, cos, cos_2_phi, cos_2_theta, cos_phi, cos_theta, max, same_hemisphere,
-    sin, sin_2_phi, sin_phi, spherical_direction, tan, tan_2_theta, tan_theta, Float, 
-    MicrofacetDistribution, Point2f, Vector3f, PI, TWO_PI,
-};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::reflection::*;
+use super::MicrofacetDistribution;
 
 /// Implements the anisotropic variant of the Trowbridge-Reitz distribution.
 #[derive(Copy, Clone, Default)]

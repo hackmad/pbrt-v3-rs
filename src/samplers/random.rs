@@ -1,6 +1,9 @@
 //! Random Sampler.
 
-use super::{ArcSampler, Float, Point2f, Point2i, Sampler, SamplerData, UniformRandom, RNG};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::rng::*;
+use crate::core::sampler::*;
 use std::sync::Arc;
 
 /// Implements a sampler that uses a PRNG to generate uniformly random samples.

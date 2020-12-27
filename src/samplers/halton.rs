@@ -1,10 +1,10 @@
 //! Halton Sampler.
 
-use super::{
-    compute_radical_inverse_permutations, inverse_radical_inverse, min, radical_inverse, rem,
-    scrambled_radical_inverse, ArcSampler, Bounds2i, Float, GlobalSamplerData, Int, Point2,
-    Point2f, Point2i, Sampler, SamplerData, PRIME_SUMS, PRIME_TABLE_SIZE, RNG,
-};
+use crate::core::geometry::*;
+use crate::core::low_discrepency::*;
+use crate::core::pbrt::*;
+use crate::core::rng::*;
+use crate::core::sampler::*;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Mutex};
 
@@ -47,9 +47,6 @@ pub struct HaltonSampler {
 
     /// Sample index for the first Halton sample for `data.sampler.current_pixel`.
     offset_for_current_pixel: AtomicUsize,
-
-    /// The random number generator.
-    rng: RNG,
 }
 
 impl HaltonSampler {
@@ -111,7 +108,6 @@ impl HaltonSampler {
             base_exponents,
             sample_stride,
             mult_inverse,
-            rng,
         }
     }
 

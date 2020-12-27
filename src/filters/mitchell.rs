@@ -1,6 +1,9 @@
 //! Mitchell Filter
 
-use super::{abs, Filter, FilterData, Float, Point2f, Vector2f};
+#![allow(dead_code)]
+use crate::core::filter::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 
 /// Implements the Mitchell filter.
 pub struct MitchellFilter {

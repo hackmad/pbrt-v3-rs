@@ -1,10 +1,8 @@
 //! Sampled Spectrum.
 
 #![allow(dead_code)]
-use super::cie::*;
-use super::common::*;
-use super::rgb::*;
-use super::{clamp, lerp, Float};
+use super::*;
+use crate::core::pbrt::*;
 use std::convert::TryInto;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,

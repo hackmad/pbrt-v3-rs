@@ -1,10 +1,8 @@
 //! RGB.
 
 #![allow(dead_code)]
-use super::common::*;
-use super::{
-    lerp, Float, SampledSpectrum, SAMPLED_LAMBDA_END, SAMPLED_LAMBDA_START, SPECTRAL_SAMPLES,
-};
+use super::*;
+use crate::core::pbrt::*;
 use std::ops::Index;
 
 lazy_static! {

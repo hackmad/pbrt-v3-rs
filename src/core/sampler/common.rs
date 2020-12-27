@@ -1,7 +1,8 @@
 //! Common
 
 #![allow(dead_code)]
-use super::{Float, Point2f, Point2i};
+use super::*;
+
 /// Stores the sampler data and implements common functionality for all samplers.
 #[derive(Clone, Default)]
 pub struct SamplerData {

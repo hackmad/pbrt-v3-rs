@@ -1,10 +1,11 @@
 //! Surface Interactions
 
 #![allow(dead_code)]
-use super::{
-    ArcBSDF, ArcBSSRDF, ArcShape, FaceForward, Float, Hit, Interaction, Normal3, Normal3f, Point2f,
-    Point3f, Primitive, Vector3f,
-};
+use crate::core::bssrdf::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::primitive::*;
+use crate::core::reflection::*;
 
 /// SurfaceInteraction represents geometry of a particular point on a surface.
 #[derive(Clone)]

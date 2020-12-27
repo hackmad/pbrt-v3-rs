@@ -1,7 +1,7 @@
 //! KD Tree Common
 
 #![allow(dead_code)]
-use super::Float;
+use crate::core::pbrt::Float;
 
 /// Information about leaf and interior nodes.
 #[derive(Copy, Clone)]

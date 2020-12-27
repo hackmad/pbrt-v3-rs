@@ -1,10 +1,8 @@
 //! Animated Transformations
 
 #![allow(dead_code)]
-use super::{
-    abs, clamp, lerp, max, Bounds3, Bounds3f, Dot, Float, Interval, Matrix4x4, Point3f, Quaternion,
-    Ray, Transform, Union, Vector3f,
-};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 
 /// AnimatedTransform implements keyframe transformation interpolation.
 #[derive(Copy, Clone, Debug, Default)]

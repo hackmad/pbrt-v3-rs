@@ -2,7 +2,8 @@
 
 #![allow(dead_code)]
 use super::common::*;
-use super::{abs, max, min, Axis, Float, Int, Point2};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use num_traits::{Num, Zero};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
@@ -354,7 +355,6 @@ impl<T> From<Point2<T>> for Vector2<T> {
 #[cfg(test)]
 #[macro_use]
 mod tests {
-    use super::super::axis_2d_strategy;
     use super::*;
     use proptest::prelude::*;
 

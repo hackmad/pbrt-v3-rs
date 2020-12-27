@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use super::{abs, clamp, max, CoefficientSpectrum, Float, Spectrum};
+use super::*;
 use std::mem::swap;
 use std::sync::Arc;
 

@@ -1,9 +1,9 @@
 //! Microfacet Distribution Models
 
 #![allow(dead_code)]
-use super::geometry::*;
-use super::pbrt::*;
-use super::reflection::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::reflection::*;
 use std::sync::Arc;
 
 mod beckmann;

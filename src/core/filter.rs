@@ -1,8 +1,8 @@
 //! Filter
 
 #![allow(dead_code)]
-use super::geometry::*;
-use super::pbrt::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use std::sync::Arc;
 
 /// Filter interface.

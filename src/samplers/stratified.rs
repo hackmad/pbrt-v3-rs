@@ -1,9 +1,9 @@
 //! Stratified Sampler.
 
-use super::{
-    latin_hypercube, stratified_sample_1d, stratified_sample_2d, ArcSampler, Float, PixelSampler,
-    Point2f, Point2i, Sampler, SamplerData,
-};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::sampler::*;
+use crate::core::sampling::*;
 use std::sync::Arc;
 
 // Implements a stratified sampler that subdivides pixel areas into non-overlapping

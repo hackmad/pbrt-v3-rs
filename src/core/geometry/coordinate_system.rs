@@ -1,8 +1,8 @@
 //! 3-D Coordinate System
 
 #![allow(dead_code)]
-use super::abs;
-use super::vector3::Vector3;
+use crate::core::geometry::Vector3;
+use crate::core::pbrt::abs;
 use num_traits::Float;
 
 /// Create a new coordinate system from a single unit vector and return

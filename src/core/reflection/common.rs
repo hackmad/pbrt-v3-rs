@@ -1,7 +1,7 @@
 //! Common
 
 #![allow(dead_code)]
-use super::{abs, clamp, max, Dot, Float, Normal3f, Vector3f};
+use super::*;
 
 /// Returns the cosine of the angle θ measured from the given direction to the
 /// z-axis.

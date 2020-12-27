@@ -1,9 +1,8 @@
 //! 2D Axis Aligned Bounding Boxes.
 
 #![allow(dead_code)]
-use super::{
-    lerp, max, min, Axis, Float, Int, Intersect, Point2, Point2f, Point2i, Union, Vector2,
-};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use num_traits::bounds::Bounded;
 use num_traits::{Num, Zero};
 use std::ops::{DivAssign, Index, Mul};
@@ -357,9 +356,10 @@ impl Iterator for Bounds2iIterator {
 #[cfg(test)]
 #[macro_use]
 mod tests {
-    use super::super::abs;
-    use super::*;
+    use crate::core::geometry::*;
+    use crate::core::pbrt::*;
     use float_cmp::*;
+    use num_traits::Zero;
     use proptest::prelude::*;
 
     #[test]

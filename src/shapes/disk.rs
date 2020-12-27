@@ -1,10 +1,8 @@
 //! Disks
 
 #![allow(dead_code)]
-use super::{
-    clamp, ArcTransform, Bounds3f, Float, Intersection, Normal3, Point2, Point3, Ray, Shape,
-    ShapeData, SurfaceInteraction, Vector3, TWO_PI,
-};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use std::sync::Arc;
 
 /// A disk centered on the z-axis.

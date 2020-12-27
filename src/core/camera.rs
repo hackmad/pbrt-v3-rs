@@ -1,14 +1,12 @@
 //! Camera
 
 #![allow(dead_code)]
-use super::film::Film;
-use super::geometry::{
-    AnimatedTransform, ArcInteraction, Bounds2f, Point2f, Ray, RayDifferential, Transform, Vector3f,
-};
-use super::light::VisibilityTester;
-use super::medium::ArcMedium;
-use super::pbrt::Float;
-use super::spectrum::Spectrum;
+use crate::core::film::*;
+use crate::core::geometry::*;
+use crate::core::light::*;
+use crate::core::medium::*;
+use crate::core::pbrt::*;
+use crate::core::spectrum::*;
 use std::sync::Arc;
 
 /// Light trait provides common behavior.

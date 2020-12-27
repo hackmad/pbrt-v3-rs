@@ -1,7 +1,8 @@
 //! 3-D Points
 
 #![allow(dead_code)]
-use super::{abs, max, min, Axis, Float, Int, Vector3};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use num_traits::{Num, Zero};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
@@ -392,7 +393,6 @@ impl From<Point3f> for Point3i {
 #[cfg(test)]
 #[macro_use]
 mod tests {
-    use super::super::{axis_3d_strategy, lerp};
     use super::*;
     use proptest::prelude::*;
 

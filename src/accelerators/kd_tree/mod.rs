@@ -1,12 +1,13 @@
 //! KD Tree.
 
 #![allow(dead_code)]
-mod common;
+use crate::core::geometry::*;
+use crate::core::light::*;
+use crate::core::material::*;
+use crate::core::pbrt::*;
+use crate::core::primitive::*;
 
-use super::{
-    max, Aggregate, ArcAreaLight, ArcMaterial, ArcPrimitive, Bounds3f, Float, Log2, Primitive, Ray,
-    SurfaceInteraction, TransportMode, Union, Vector3f, INFINITY,
-};
+mod common;
 use common::*;
 
 /// KD Tree Accelerator.

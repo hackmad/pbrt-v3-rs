@@ -1,10 +1,9 @@
 //! Paraboloids
 
 #![allow(dead_code)]
-use super::{
-    clamp, max, min, ArcTransform, Bounds3f, Dot, EFloat, Float, Intersection, Normal3, Point2,
-    Point3, Quadratic, Ray, Shape, ShapeData, SurfaceInteraction, Vector3, TWO_PI,
-};
+use crate::core::efloat::*;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use std::sync::Arc;
 
 /// A paraboloid centered on the z-axis.

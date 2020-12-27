@@ -1,9 +1,9 @@
 //! (0, 2)-Sequence Sampler.
 
-use super::{
-    sobol_2d, van_der_corput, ArcSampler, Float, PixelSampler, Point2f, Point2i, Sampler,
-    SamplerData,
-};
+use crate::core::geometry::*;
+use crate::core::low_discrepency::*;
+use crate::core::pbrt::*;
+use crate::core::sampler::*;
 use std::sync::Arc;
 
 /// Implements a (0-2)-squence sampler.

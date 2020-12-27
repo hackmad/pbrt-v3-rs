@@ -1,7 +1,7 @@
 //! Interval of real numbers
 
 #![allow(dead_code)]
-use super::{max, min, Float, PI, PI_OVER_TWO};
+use crate::core::pbrt::*;
 use std::mem::swap;
 use std::ops::{Add, Mul, Sub};
 

@@ -1,7 +1,8 @@
 //! Utility functions.
 
 #![allow(dead_code)]
-use super::{atan2, clamp, cos, sin, Float, Vector3f, TWO_PI};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 
 /// Returns a direction (x, y, z) for spherical coordinates (θ, Ø).
 ///

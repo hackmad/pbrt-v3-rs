@@ -1,7 +1,8 @@
 //! Morton Codes
 
 #![allow(dead_code)]
-use super::{float_to_bits, Vector3f};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use std::cell::RefCell;
 
 /// Stores Morton codes (interleaved bits of coordinate values).

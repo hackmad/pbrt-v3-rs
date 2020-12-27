@@ -1,9 +1,9 @@
 //! Material
 
 #![allow(dead_code)]
-use super::geometry::SurfaceInteraction;
-use super::pbrt::Float;
-use super::texture::ArcTexture;
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::texture::*;
 use std::sync::Arc;
 
 // TransportMode enumeration.

@@ -1,10 +1,9 @@
 //! Rays
 
 #![allow(dead_code)]
-use super::{
-    next_float_down, next_float_up, ArcMedium, Dot, Float, Normal3f, Point3f, Vector3, Vector3f,
-    INFINITY,
-};
+use crate::core::geometry::*;
+use crate::core::medium::*;
+use crate::core::pbrt::*;
 use std::fmt::{Debug, Formatter, Result};
 
 /// A Ray
@@ -205,7 +204,6 @@ impl RayDifferential {
 #[cfg(test)]
 #[macro_use]
 mod tests {
-    use super::super::{Point3, Vector3, INFINITY};
     use super::*;
     use proptest::prelude::*;
 

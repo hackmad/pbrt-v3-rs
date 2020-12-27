@@ -2,7 +2,9 @@
 
 #![allow(dead_code)]
 use super::common::*;
-use super::{abs, max, min, Axis, Float, Int, Normal3, Point3};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
+
 use num_traits::{Num, Zero};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
@@ -431,7 +433,6 @@ impl<T> From<Normal3<T>> for Vector3<T> {
 #[cfg(test)]
 #[macro_use]
 mod tests {
-    use super::super::axis_3d_strategy;
     use super::*;
     use proptest::prelude::*;
 

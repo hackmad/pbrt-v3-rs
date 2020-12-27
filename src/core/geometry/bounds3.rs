@@ -1,10 +1,8 @@
 //! 3-D Axis Aligned Bounding Boxes.
 
 #![allow(dead_code)]
-use super::{
-    gamma, lerp, max, min, Axis, Float, Int, Intersect, Point3, Point3f, Ray, Union, Vector3,
-    Vector3f,
-};
+use crate::core::geometry::*;
+use crate::core::pbrt::*;
 use num_traits::bounds::Bounded;
 use num_traits::{Num, Zero};
 use std::mem::swap;
