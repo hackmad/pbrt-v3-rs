@@ -225,12 +225,14 @@ pub struct CameraData {
 }
 
 impl CameraData {
-    ///* `camera_to_world` - Animated transformation describing the camera's
-    ///                      motion in the scene.
-    ///* `shutter_open`    - Time when shutter is open.
-    ///* `shutter_close`   - Time when shutter is closed.
-    ///* `film`            - The film to capture the rendered image.
-    ///* `medium`          - Scattering medium the camera lies in.
+    /// Creates a new instance of `CameraData`.
+    ///
+    /// * `camera_to_world` - Animated transformation describing the camera's
+    ///                       motion in the scene.
+    /// * `shutter_open`    - Time when shutter is open.
+    /// * `shutter_close`   - Time when shutter is closed.
+    /// * `film`            - The film to capture the rendered image.
+    /// * `medium`          - Scattering medium the camera lies in.
     pub fn new(
         camera_to_world: AnimatedTransform,
         shutter_open: Float,
@@ -268,7 +270,7 @@ pub struct ProjectiveCameraData {
 }
 
 impl ProjectiveCameraData {
-    /// Create a new `ProjectiveCamera`.
+    /// Create a new instance of `ProjectiveCamera`.
     ///
     /// * `camera_data`      - Common camera parameters.
     /// * `camera_to_screen` - Transformation from camera space to screen space.
