@@ -5,6 +5,7 @@ use crate::core::interpolation::*;
 use crate::core::pbrt::*;
 use std::str;
 
+/// Stores the measured Fourier BSDF data.
 #[derive(Clone, Debug)]
 pub struct FourierBSDFTable {
     /// Relative index of refraction over the surface boundary between two media.

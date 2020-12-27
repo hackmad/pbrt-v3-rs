@@ -39,7 +39,51 @@ pub trait Material {
     ///
     /// * `d`  - Bump map.
     /// * `si` - Surface interaction.
-    fn bump(&self, d: ArcTexture<Float>, si: &mut SurfaceInteraction);
+    fn bump(&self, d: ArcTexture<Float>, si: &mut SurfaceInteraction) {
+        // Compute offset positions and evaluate displacement texture.
+        let mut si_eval: SurfaceInteraction = si.clone();
+
+        // Shift `si_eval` `du` in the `u` direction.
+        let mut du = 0.5 * (abs(si.dudx) + abs(si.dudy));
+
+        // The most common reason for du to be zero is for ray that start from
+        // light sources, where no differentials are available. In this case,
+        // we try to choose a small enough du so that we still get a decently
+        // accurate bump value.
+        if du == 0.0 {
+            du = 0.0005;
+        }
+        si_eval.hit.p = si.hit.p + du * si.shading.dpdu;
+        si_eval.uv = si.uv + Vector2f::new(du, 0.0);
+        si_eval.hit.n =
+            (Normal3f::from(si.shading.dpdu.cross(&si.shading.dpdv)) + du * si.dndu).normalize();
+        let u_displace = d.evaluate(&si_eval);
+
+        // Shift `si_eval` `dv` in the `v` direction.
+        let mut dv = 0.5 * (abs(si.dvdx) + abs(si.dvdy));
+        if dv == 0.0 {
+            dv = 0.0005;
+        }
+        si_eval.hit.p = si.hit.p + dv * si.shading.dpdv;
+        si_eval.uv = si.uv + Vector2f::new(0.0, dv);
+        si_eval.hit.n =
+            (Normal3f::from(si.shading.dpdu.cross(&si.shading.dpdv)) + dv * si.dndv).normalize();
+        let v_displace = d.evaluate(&si_eval);
+        let displace = d.evaluate(&si);
+
+        // Compute bump-mapped differential geometry.
+        let dpdu = si.shading.dpdu
+            + (u_displace - displace) / du * Vector3f::from(si.shading.n)
+            + displace * Vector3f::from(si.shading.dndu);
+        let dpdv = si.shading.dpdv
+            + (v_displace - displace) / dv * Vector3f::from(si.shading.n)
+            + displace * Vector3f::from(si.shading.dndv);
+
+        let (new_n, new_shading) =
+            si.update_shading_geometry(dpdu, dpdv, si.shading.dndu, si.shading.dndv, false);
+        si.shading = new_shading;
+        si.hit.n = new_n;
+    }
 }
 
 /// Atomic reference counted `Material`.

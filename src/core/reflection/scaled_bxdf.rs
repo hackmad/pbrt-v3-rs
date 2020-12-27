@@ -17,6 +17,20 @@ pub struct ScaledBxDF {
     scale: Spectrum,
 }
 
+impl ScaledBxDF {
+    /// Create a new instance of `ScaledBxDF`.
+    ///
+    /// * `bxdf`  - The BxDF to scale.
+    /// * `scale` - Scaling value.
+    pub fn new(bxdf: ArcBxDF, scale: Spectrum) -> Self {
+        Self {
+            bxdf_type: bxdf.get_type(),
+            bxdf: bxdf.clone(),
+            scale,
+        }
+    }
+}
+
 impl BxDF for ScaledBxDF {
     /// Returns the BxDF type.
     fn get_type(&self) -> BxDFType {

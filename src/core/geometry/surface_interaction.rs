@@ -28,6 +28,18 @@ pub struct SurfaceInteraction<'a> {
     /// Differential change ∂n/∂v in surface normal as we move along v.
     pub dndv: Normal3f,
 
+    /// Differential change ∂u/∂x in u as we move along x.
+    pub dudx: Float,
+
+    /// Differential change ∂u/∂y in u as we move along y.
+    pub dudy: Float,
+
+    /// Differential change ∂v/∂x in v as we move along x.
+    pub dvdx: Float,
+
+    /// Differential change ∂v/∂y in v as we move along y.
+    pub dvdy: Float,
+
     /// Shading geometry used for perturbed values.
     pub shading: Shading,
 
@@ -87,6 +99,10 @@ impl<'a> SurfaceInteraction<'a> {
             dpdv,
             dndu,
             dndv,
+            dudx: 0.0,
+            dudy: 0.0,
+            dvdx: 0.0,
+            dvdy: 0.0,
             shape: shape.clone(),
             shading: Shading::new(n, dpdu, dpdv, dndu, dndv),
             bsdf: None,
@@ -124,7 +140,7 @@ impl<'a> SurfaceInteraction<'a> {
             }
         }
 
-        // Initialize shading partial derivative values
+        // Initialize shading partial derivative values.
         (hit_n, Shading::new(shading_n, dpdu, dpdv, dndu, dndv))
     }
 }

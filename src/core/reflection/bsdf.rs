@@ -67,7 +67,7 @@ impl BSDF {
 
     /// Returns the number of `BxDF`s that match the given type.
     ///
-    /// * `bxdf_type` - The `BxdFType` to match.
+    /// * `bxdf_type` - The `BxdFType` to match (default to `BSDF_ALL`).
     pub fn num_components(&self, bxdf_type: BxDFType) -> usize {
         self.bxdfs.iter().filter(|b| b.matches(bxdf_type)).count()
     }

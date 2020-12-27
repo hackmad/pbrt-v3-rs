@@ -18,6 +18,7 @@ mod cameras;
 mod core;
 mod filters;
 mod lights;
+mod materials;
 mod samplers;
 mod shapes;
 
