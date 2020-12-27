@@ -1,10 +1,19 @@
 //! Medium
 
 #![allow(dead_code)]
+use crate::core::geometry::*;
+use crate::core::sampler::*;
+use crate::core::spectrum::*;
 use std::sync::Arc;
 
 /// Medium trait to handle volumetric scattering properties.
-pub trait Medium {}
+pub trait Medium {
+    /// Returns the beam transmittance along a given ray.
+    ///
+    /// * `ray`     - The ray.
+    /// * `sampler` - The sampler.
+    fn tr(&self, ray: &Ray, sampler: ArcSampler) -> Spectrum;
+}
 
 /// Atomic reference counted `Medium`.
 pub type ArcMedium = Arc<dyn Medium + Send + Sync>;

@@ -1,23 +1,9 @@
-//! Light
+//! Visibility Tester
 
-#![allow(dead_code)]
 use crate::core::geometry::*;
 use crate::core::sampler::*;
 use crate::core::scene::*;
 use crate::core::spectrum::*;
-use std::sync::Arc;
-
-/// Light trait provides common behavior.
-pub trait Light {}
-
-/// Atomic reference counted `Light`.
-pub type ArcLight = Arc<dyn Light + Send + Sync>;
-
-/// AreaLight trait provides common behavior for area lights.
-pub trait AreaLight: Light {}
-
-/// Atomic reference counted `AreaLight`.
-pub type ArcAreaLight = Arc<dyn AreaLight + Send + Sync>;
 
 /// VisibilityTester allows lights to return a radiance value under the
 /// assumption that the reference point and light source are mutually
