@@ -70,7 +70,7 @@ impl BxDF for SpecularTransmission {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, _u: &Point2f) -> (Spectrum, Float, Vector3f, BxDFType) {
+    fn sample_f(&self, wo: &Vector3f, _u: &Point2f) -> BxDFSample {
         // Figure out which $\eta$ is incident and which is transmitted.
         let entering = cos_theta(wo) > 0.0;
         let eta_i = if entering { self.eta_a } else { self.eta_b };
@@ -90,9 +90,9 @@ impl BxDF for SpecularTransmission {
                 ft *= (eta_i * eta_i) / (eta_t * eta_t);
             }
 
-            (ft / abs_cos_theta(&wi), pdf, wi, self.bxdf_type)
+            BxDFSample::new(ft / abs_cos_theta(&wi), pdf, wi, self.bxdf_type)
         } else {
-            (Spectrum::new(0.0), 0.0, Vector3f::default(), self.bxdf_type)
+            BxDFSample::from(self.bxdf_type)
         }
     }
 }

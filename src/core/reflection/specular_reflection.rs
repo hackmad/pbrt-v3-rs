@@ -52,11 +52,11 @@ impl BxDF for SpecularReflection {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, _u: &Point2f) -> (Spectrum, Float, Vector3f, BxDFType) {
+    fn sample_f(&self, wo: &Vector3f, _u: &Point2f) -> BxDFSample {
         // Compute perfect specular reflection direction.
         let wi = Vector3f::new(-wo.x, -wo.y, wo.z);
         let pdf = 1.0;
         let s = self.fresnel.evaluate(cos_theta(&wi)) * self.r / abs_cos_theta(&wi);
-        (s, pdf, wi, self.bxdf_type)
+        BxDFSample::new(s, pdf, wi, self.bxdf_type)
     }
 }

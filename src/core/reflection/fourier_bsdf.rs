@@ -1,4 +1,4 @@
-//! Fourier BSDF Model
+//! Fourier Basis BSDF Model
 
 #![allow(dead_code)]
 use super::*;
@@ -126,9 +126,7 @@ impl BxDF for FourierBSDF {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> (Spectrum, Float, Vector3f, BxDFType) {
-        //(Spectrum::new(0.0), 0.0, Vector3f::default(), self.bxdf_type)
-
+    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
         // Sample zenith angle component for _FourierBSDF_
         let mu_o = cos_theta(wo);
         let (mu_i, _, pdf_mu) = sample_catmull_rom_2d(
@@ -145,11 +143,11 @@ impl BxDF for FourierBSDF {
         // Determine offsets and weights for `(μi, μo)`.
         let (weights_i, offset_i) = match self.bsdf_table.get_weights_and_offset(mu_i) {
             Some((weights, offset)) => (weights, offset),
-            None => return (Spectrum::new(0.0), 0.0, Vector3f::default(), self.bxdf_type),
+            None => return BxDFSample::from(self.bxdf_type),
         };
         let (weights_o, offset_o) = match self.bsdf_table.get_weights_and_offset(mu_o) {
             Some((weights, offset)) => (weights, offset),
-            None => return (Spectrum::new(0.0), 0.0, Vector3f::default(), self.bxdf_type),
+            None => return BxDFSample::from(self.bxdf_type),
         };
 
         // Allocate storage to accumulate `ak` coefficients.
@@ -215,7 +213,7 @@ impl BxDF for FourierBSDF {
         }
 
         if self.bsdf_table.n_channels == 1 {
-            (Spectrum::new(y * scale), pdf, wi, self.bxdf_type)
+            BxDFSample::new(Spectrum::new(y * scale), pdf, wi, self.bxdf_type)
         } else {
             let rs = 1 * self.bsdf_table.m_max;
             let re = rs + m_max;
@@ -231,7 +229,7 @@ impl BxDF for FourierBSDF {
             let mut spectrum = Spectrum::new(0.0);
             spectrum.from_rgb(&rgb, SpectrumType::Reflectance);
 
-            (spectrum.clamp(0.0, INFINITY), pdf, wi, self.bxdf_type)
+            BxDFSample::new(spectrum.clamp(0.0, INFINITY), pdf, wi, self.bxdf_type)
         }
     }
 

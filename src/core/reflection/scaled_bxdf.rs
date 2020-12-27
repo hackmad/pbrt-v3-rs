@@ -37,9 +37,10 @@ impl BxDF for ScaledBxDF {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> (Spectrum, Float, Vector3f, BxDFType) {
-        let (sample, pdf, wi, bxdf_type) = self.bxdf.sample_f(wo, u);
-        (self.scale * sample, pdf, wi, bxdf_type)
+    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
+        let mut sample = self.bxdf.sample_f(wo, u);
+        sample.f = self.scale * sample.f;
+        sample
     }
 
     /// Evaluates the PDF for the sampling method.

@@ -81,7 +81,7 @@ impl BxDF for FresnelBlend {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> (Spectrum, Float, Vector3f, BxDFType) {
+    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
         let mut u = *u; // Make local copy.
 
         let wi = if u[0] < 0.5 {
@@ -101,12 +101,12 @@ impl BxDF for FresnelBlend {
             let wi = reflect(wo, &wh);
 
             if !same_hemisphere(wo, &wi) {
-                return (Spectrum::new(0.0), 0.0, wi, self.bxdf_type);
+                return BxDFSample::new(Spectrum::new(0.0), 0.0, wi, self.bxdf_type);
             }
             wi
         };
         let pdf = self.pdf(wo, &wi);
-        (self.f(wo, &wi), pdf, wi, self.bxdf_type)
+        BxDFSample::new(self.f(wo, &wi), pdf, wi, self.bxdf_type)
     }
 
     /// Evaluates the PDF for the sampling method. Default is based on the

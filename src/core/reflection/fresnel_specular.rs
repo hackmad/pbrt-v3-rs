@@ -72,7 +72,7 @@ impl BxDF for FresnelSpecular {
     ///
     /// * `wo`           - Outgoing direction.
     /// * `u`            - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> (Spectrum, Float, Vector3f, BxDFType) {
+    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
         let f = fr_dielectric(cos_theta(wo), self.eta_a, self.eta_b);
 
         if u[0] < f {
@@ -81,7 +81,7 @@ impl BxDF for FresnelSpecular {
             let wi = Vector3f::new(-wo.x, -wo.y, wo.z);
             let sampled_type = BxDFType::from(BSDF_SPECULAR | BSDF_REFLECTION);
             let pdf = f;
-            (f * self.r / abs_cos_theta(&wi), pdf, wi, sampled_type)
+            BxDFSample::new(f * self.r / abs_cos_theta(&wi), pdf, wi, sampled_type)
         } else {
             // Compute specular transmission for `FresnelSpecular`.
             // Figure out which `eta` is incident and which is transmitted.
@@ -104,9 +104,9 @@ impl BxDF for FresnelSpecular {
                 }
 
                 let pdf = 1.0 - f;
-                (ft / abs_cos_theta(&wi), pdf, wi, sampled_type)
+                BxDFSample::new(ft / abs_cos_theta(&wi), pdf, wi, sampled_type)
             } else {
-                (Spectrum::new(0.0), 0.0, Vector3f::default(), sampled_type)
+                BxDFSample::from(sampled_type)
             }
         }
     }

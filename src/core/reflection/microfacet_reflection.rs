@@ -78,23 +78,23 @@ impl BxDF for MicrofacetReflection {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> (Spectrum, Float, Vector3f, BxDFType) {
+    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
         // Sample microfacet orientation `wh` and reflected direction `wi`.
         if wo.z == 0.0 {
-            (Spectrum::new(0.0), 0.0, Vector3f::default(), self.bxdf_type)
+            BxDFSample::from(self.bxdf_type)
         } else {
             let wh = self.distribution.sample_wh(wo, u);
             if wo.dot(&wh) < 0.0 {
                 // Should be rare.
-                (Spectrum::new(0.0), 0.0, Vector3f::default(), self.bxdf_type)
+                BxDFSample::from(self.bxdf_type)
             } else {
                 let wi = reflect(wo, &wh);
                 if !same_hemisphere(wo, &wi) {
-                    (Spectrum::new(0.0), 0.0, wi, self.bxdf_type)
+                    BxDFSample::new(Spectrum::new(0.0), 0.0, wi, self.bxdf_type)
                 } else {
                     // Compute PDF of `wi` for microfacet reflection.
                     let pdf = self.distribution.pdf(wo, &wh) / (4.0 * wo.dot(&wh));
-                    (self.f(wo, &wi), pdf, wi, self.bxdf_type)
+                    BxDFSample::new(self.f(wo, &wi), pdf, wi, self.bxdf_type)
                 }
             }
         }

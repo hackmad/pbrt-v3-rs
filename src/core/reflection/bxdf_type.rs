@@ -1,6 +1,7 @@
 //! BxDF Type
 
 /// Types of BSDF models.
+pub const BSDF_NONE: u8 = 0b00000000;
 pub const BSDF_REFLECTION: u8 = 0b00000001;
 pub const BSDF_TRANSMISSION: u8 = 0b00000010;
 pub const BSDF_DIFFUSE: u8 = 0b00000100;
@@ -10,9 +11,18 @@ pub const BSDF_ALL: u8 = 0b00011111;
 
 /// Stores combinations of reflection models.
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct BxDFType {
     t: u8,
+}
+
+impl BxDFType {
+    /// Tests a single type flag and returns whether it is set or not.
+    ///
+    /// * `flag` - BxDFType flag.
+    pub fn matches(&self, flag: u8) -> bool {
+        self.t & flag > 0
+    }
 }
 
 impl PartialEq for BxDFType {

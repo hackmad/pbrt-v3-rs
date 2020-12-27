@@ -7,7 +7,9 @@ use crate::core::sampling::*;
 use crate::core::spectrum::*;
 use std::sync::Arc;
 
+mod bsdf;
 mod bsdf_reader;
+mod bxdf_sample;
 mod bxdf_type;
 mod common;
 mod fourier_bsdf;
@@ -24,6 +26,8 @@ mod specular_reflection;
 mod specular_transmission;
 
 // Re-export
+pub use bsdf::*;
+pub use bxdf_sample::*;
 pub use bxdf_type::*;
 pub use common::*;
 pub use fourier_bsdf::*;
@@ -39,7 +43,7 @@ pub use scaled_bxdf::*;
 pub use specular_reflection::*;
 pub use specular_transmission::*;
 
-/// BxDF interface.
+/// BxDF interface for BRDFs and BTDFs.
 pub trait BxDF {
     /// Returns the BxDF type.
     fn get_type(&self) -> BxDFType;
@@ -63,14 +67,14 @@ pub trait BxDF {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> (Spectrum, Float, Vector3f, BxDFType) {
+    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
         // Cosine-sample the hemisphere, flipping the direction if necessary.
         let mut wi = cosine_sample_hemisphere(u);
         if wo.z < 0.0 {
             wi.z *= -1.0;
         }
         let pdf = self.pdf(wo, &wi);
-        (self.f(wo, &wi), pdf, wi, self.get_type())
+        BxDFSample::new(self.f(wo, &wi), pdf, wi, self.get_type())
     }
 
     /// Evaluates the PDF for the sampling method. Default is based on the
@@ -91,9 +95,9 @@ pub trait BxDF {
         let mut r = Spectrum::new(0.0);
         for s in u {
             // Estimate one term of `rho_hd`.
-            let (f, pdf, wi, _sampled_type) = self.sample_f(wo, s);
-            if pdf > 0.0 {
-                r += f * abs_cos_theta(&wi) / pdf;
+            let sample = self.sample_f(wo, s);
+            if sample.pdf > 0.0 {
+                r += sample.f * abs_cos_theta(&sample.wi) / sample.pdf;
             }
         }
         r / u.len() as Float
@@ -111,9 +115,10 @@ pub trait BxDF {
             // Estimate one term of `rho_hh`.
             let wo = uniform_sample_hemisphere(s1);
             let pdfo = uniform_hemisphere_pdf();
-            let (f, pdfi, wi, _sampled_type) = self.sample_f(&wo, s2);
+            let sample = self.sample_f(&wo, s2);
+            let pdfi = sample.pdf;
             if pdfi > 0.0 {
-                r += f * abs_cos_theta(&wi) * abs_cos_theta(&wo) / (pdfo * pdfi);
+                r += sample.f * abs_cos_theta(&sample.wi) * abs_cos_theta(&wo) / (pdfo * pdfi);
             }
         }
         r / (PI * u1.len() as Float)
@@ -122,9 +127,3 @@ pub trait BxDF {
 
 /// Atomic reference counted `BxDF`.
 pub type ArcBxDF = Arc<dyn BxDF + Send + Sync>;
-
-/// BSDF model.
-pub struct BSDF {}
-
-/// Atomic reference counted `BSDF`.
-pub type ArcBSDF = Arc<BSDF>;
