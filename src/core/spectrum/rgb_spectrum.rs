@@ -4,7 +4,7 @@
 
 use super::cie::*;
 use super::common::*;
-use super::{Float, SampledSpectrum};
+use super::{clamp, Float, SampledSpectrum};
 use std::convert::TryInto;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
@@ -133,6 +133,36 @@ impl CoefficientSpectrum for RGBSpectrum {
     /// Convert the SPD to RGB cooefficients.
     fn to_rgb(&self) -> [Float; 3] {
         [self.c[0], self.c[1], self.c[2]]
+    }
+
+    /// Takes the square root of all sample values.
+    fn sqrt(&self) -> Self {
+        Self {
+            c: [self.c[0].sqrt(), self.c[1].sqrt(), self.c[2].sqrt()],
+        }
+    }
+
+    /// Raises the sample values to a given power.
+    ///
+    /// * `p` - The power.
+    fn pow(&self, p: Float) -> Self {
+        Self {
+            c: [self.c[0].powf(p), self.c[1].powf(p), self.c[2].powf(p)],
+        }
+    }
+
+    /// Clamps the sample values.
+    ///
+    /// * `low`  - Low value.
+    /// * `high` - High value.
+    fn clamp(&self, low: Float, high: Float) -> Self {
+        Self {
+            c: [
+                clamp(self.c[0], low, high),
+                clamp(self.c[1], low, high),
+                clamp(self.c[2], low, high),
+            ],
+        }
     }
 }
 

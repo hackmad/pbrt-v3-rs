@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use super::{clamp, find_interval, lerp, max, min, Float};
+use super::{find_interval, lerp, max, min, Float};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
@@ -87,36 +87,18 @@ pub trait CoefficientSpectrum:
     }
 
     /// Takes the square root of all sample values.
-    fn sqrt(&mut self) {
-        let samples = self.samples_mut();
-        let n = samples.len();
-        for i in 0..n {
-            samples[i] = samples[i].sqrt();
-        }
-    }
+    fn sqrt(&self) -> Self;
 
     /// Raises the sample values to a given power.
     ///
     /// * `p` - The power.
-    fn pow(&mut self, p: Float) {
-        let samples = self.samples_mut();
-        let n = samples.len();
-        for i in 0..n {
-            samples[i] = samples[i].powf(p);
-        }
-    }
+    fn pow(&self, p: Float) -> Self;
 
     /// Clamps the sample values.
     ///
-    /// * `low`  - Low value.
-    /// * `high` - High value.
-    fn clamp(&mut self, low: Float, high: Float) {
-        let samples = self.samples_mut();
-        let n = samples.len();
-        for i in 0..n {
-            samples[i] = clamp(samples[i], low, high);
-        }
-    }
+    /// * `low`  - Low value (use 0 as default).
+    /// * `high` - High value (use INFINITY as default).
+    fn clamp(&self, low: Float, high: Float) -> Self;
 
     /// Returns the maximum sample value.
     fn max_component_value(&self) -> Float {

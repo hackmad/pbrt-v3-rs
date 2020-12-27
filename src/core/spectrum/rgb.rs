@@ -8,6 +8,7 @@ use super::{
 use std::ops::Index;
 
 lazy_static! {
+    /// The static of SPD sample values to convert RGB to `SampledSpectrum`.
     pub static ref RGB_TO_SPECTRUM: RGB = RGB::new();
 }
 
