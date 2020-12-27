@@ -185,6 +185,25 @@ impl Index<usize> for Matrix4x4 {
     }
 }
 
+/// Solves a 2x2 linear system Ax = B.
+///
+/// * `a` - The 2x2 representing `x` coefficients.
+/// * `b` - The 1x2 representing constant terms.
+pub fn solve_linear_system_2x2(a: &[[Float; 2]; 2], b: &[Float; 2]) -> Option<(Float, Float)> {
+    let det = a[0][0] * a[1][1] - a[0][1] * a[1][0];
+    if abs(det) < 1e-10 {
+        None
+    } else {
+        let x0 = (a[1][1] * b[0] - a[0][1] * b[1]) / det;
+        let x1 = (a[0][0] * b[1] - a[1][0] * b[0]) / det;
+        if x0.is_nan() || x1.is_nan() {
+            None
+        } else {
+            Some((x0, x1))
+        }
+    }
+}
+
 // ----------------------------------------------------------------------------
 // Tests
 // ----------------------------------------------------------------------------

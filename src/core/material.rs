@@ -79,10 +79,7 @@ pub trait Material {
             + (v_displace - displace) / dv * Vector3f::from(si.shading.n)
             + displace * Vector3f::from(si.shading.dndv);
 
-        let (new_n, new_shading) =
-            si.update_shading_geometry(dpdu, dpdv, si.shading.dndu, si.shading.dndv, false);
-        si.shading = new_shading;
-        si.hit.n = new_n;
+        si.set_shading_geometry(dpdu, dpdv, si.shading.dndu, si.shading.dndv, false);
     }
 }
 

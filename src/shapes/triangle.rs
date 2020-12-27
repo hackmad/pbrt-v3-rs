@@ -507,9 +507,7 @@ impl Shape for Triangle {
                 ts = -ts;
             }
 
-            let (new_n, new_shading) = isect.update_shading_geometry(ss, ts, dndu, dndv, true);
-            isect.hit.n = new_n;
-            isect.shading = new_shading;
+            isect.set_shading_geometry(ss, ts, dndu, dndv, true);
         }
 
         Some(Intersection::new(t, isect))
