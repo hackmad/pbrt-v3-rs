@@ -219,18 +219,6 @@ impl CoefficientSpectrum for SampledSpectrum {
         }
         Self { c }
     }
-
-    /// Clamps the sample values.
-    ///
-    /// * `low`  - Low value.
-    /// * `high` - High value.
-    fn clamp(&self, low: Float, high: Float) -> Self {
-        let mut c = [0.0; SPECTRAL_SAMPLES];
-        for i in 0..SPECTRAL_SAMPLES {
-            c[i] = clamp(self.c[i], low, high);
-        }
-        Self { c }
-    }
 }
 
 impl Add for SampledSpectrum {
@@ -414,5 +402,24 @@ impl IndexMut<usize> for SampledSpectrum {
     /// * `i` - The index.
     fn index_mut(&mut self, i: usize) -> &mut Self::Output {
         &mut self.c[i]
+    }
+}
+
+impl Clamp<Float> for SampledSpectrum {
+    /// Clamps the sample values.
+    ///
+    /// * `low`  - Low value.
+    /// * `high` - High value.
+    fn clamp(&self, low: Float, high: Float) -> Self {
+        let mut c = [0.0; SPECTRAL_SAMPLES];
+        for i in 0..SPECTRAL_SAMPLES {
+            c[i] = clamp(self.c[i], low, high);
+        }
+        Self { c }
+    }
+
+    /// Clamps the values to [0.0, INFINITY].
+    fn clamp_default(&self) -> Self {
+        self.clamp(0.0, INFINITY)
     }
 }

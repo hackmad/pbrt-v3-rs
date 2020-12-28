@@ -54,8 +54,8 @@ impl Material for MixMaterial {
         allow_multiple_lobes: bool,
     ) {
         // Compute weights and original BxDFs for mix material.
-        let s1 = self.scale.evaluate(si).clamp(0.0, INFINITY);
-        let s2 = (Spectrum::new(1.0) - s1).clamp(0.0, INFINITY);
+        let s1 = self.scale.evaluate(si).clamp_default();
+        let s2 = (Spectrum::new(1.0) - s1).clamp_default();
         let mut si2 = si.clone();
 
         self.m1

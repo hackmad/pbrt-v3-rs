@@ -82,13 +82,13 @@ impl Material for PlasticMaterial {
         let mut bsdf = BSDF::new(&si.clone(), None);
 
         // Initialize diffuse component of plastic material.
-        let kd = self.kd.evaluate(si).clamp(0.0, INFINITY);
+        let kd = self.kd.evaluate(si).clamp_default();
         if !kd.is_black() {
             bsdf.add(Arc::new(LambertianReflection::new(kd)));
         }
 
         // Initialize specular component of plastic material.
-        let ks = self.ks.evaluate(si).clamp(0.0, INFINITY);
+        let ks = self.ks.evaluate(si).clamp_default();
         if !ks.is_black() {
             let fresnel = Arc::new(FresnelDielectric::new(1.5, 1.0));
 

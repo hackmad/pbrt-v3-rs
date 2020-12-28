@@ -117,7 +117,7 @@ impl BxDF for FourierBSDF {
             let mut spectrum = Spectrum::new(0.0);
             spectrum.from_rgb(&rgb, SpectrumType::Reflectance);
 
-            spectrum.clamp(0.0, INFINITY)
+            spectrum.clamp_default()
         }
     }
 
@@ -229,7 +229,7 @@ impl BxDF for FourierBSDF {
             let mut spectrum = Spectrum::new(0.0);
             spectrum.from_rgb(&rgb, SpectrumType::Reflectance);
 
-            BxDFSample::new(spectrum.clamp(0.0, INFINITY), pdf, wi, self.bxdf_type)
+            BxDFSample::new(spectrum.clamp_default(), pdf, wi, self.bxdf_type)
         }
     }
 

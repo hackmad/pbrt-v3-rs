@@ -149,20 +149,6 @@ impl CoefficientSpectrum for RGBSpectrum {
             c: [self.c[0].powf(p), self.c[1].powf(p), self.c[2].powf(p)],
         }
     }
-
-    /// Clamps the sample values.
-    ///
-    /// * `low`  - Low value.
-    /// * `high` - High value.
-    fn clamp(&self, low: Float, high: Float) -> Self {
-        Self {
-            c: [
-                clamp(self.c[0], low, high),
-                clamp(self.c[1], low, high),
-                clamp(self.c[2], low, high),
-            ],
-        }
-    }
 }
 
 impl From<SampledSpectrum> for RGBSpectrum {
@@ -355,5 +341,26 @@ impl IndexMut<usize> for RGBSpectrum {
     /// * `i` - The index.
     fn index_mut(&mut self, i: usize) -> &mut Self::Output {
         &mut self.c[i]
+    }
+}
+
+impl Clamp<Float> for RGBSpectrum {
+    /// Clamps the sample values.
+    ///
+    /// * `low`  - Low value.
+    /// * `high` - High value.
+    fn clamp(&self, low: Float, high: Float) -> Self {
+        Self {
+            c: [
+                clamp(self.c[0], low, high),
+                clamp(self.c[1], low, high),
+                clamp(self.c[2], low, high),
+            ],
+        }
+    }
+
+    /// Clamps the values to [0.0, INFINITY].
+    fn clamp_default(&self) -> Self {
+        self.clamp(0.0, INFINITY)
     }
 }

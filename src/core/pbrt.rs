@@ -513,6 +513,34 @@ impl Log2<i64> for usize {
     }
 }
 
+/// Interface for clamping values.
+pub trait Clamp<T: Copy> {
+    /// Clamps the values to given [low, high] interval.
+    ///
+    /// * `low`  - Low value.
+    /// * `high` - High value.
+    fn clamp(&self, low: T, high: T) -> Self;
+
+    /// Clamps the values to some default [low, high] interval determined by
+    /// `T`.
+    fn clamp_default(&self) -> Self;
+}
+
+impl Clamp<Float> for Float {
+    /// Clamps the values to given [low, high] interval.
+    ///
+    /// * `low`  - Low value.
+    /// * `high` - High value.
+    fn clamp(&self, low: Float, high: Float) -> Self {
+        clamp(*self, low, high)
+    }
+
+    /// Clamps the values to [0.0, INFINITY].
+    fn clamp_default(&self) -> Self {
+        clamp(*self, 0.0, INFINITY)
+    }
+}
+
 // ----------------------------------------------------------------------------
 // Tests
 // ----------------------------------------------------------------------------

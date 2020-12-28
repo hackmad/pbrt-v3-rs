@@ -65,7 +65,7 @@ impl Material for MatteMaterial {
         let mut bsdf = BSDF::new(&si.clone(), None);
 
         // Evaluate textures for `MatteMaterial` material and allocate BRDF
-        let r = self.kd.evaluate(si).clamp(0.0, INFINITY);
+        let r = self.kd.evaluate(si).clamp_default();
         let sig = clamp(self.sigma.evaluate(si), 0.0, 90.0);
         if !r.is_black() {
             if sig == 0.0 {

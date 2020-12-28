@@ -190,7 +190,7 @@ pub fn turbulence(
 ///
 /// * `x`   - Distance.
 /// * `tau` - Number of cycles the sinc function passes through before it is
-///           clamped to 0.
+///           clamped to 0. Use default of 2.0.
 pub fn lanczos(x: Float, tau: Float) -> Float {
     let mut x = abs(x);
     if x < 1e-5 {

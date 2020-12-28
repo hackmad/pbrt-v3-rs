@@ -59,6 +59,7 @@ pub trait CoefficientSpectrum:
     + Neg
     + Index<usize>
     + IndexMut<usize>
+    + Clamp<Float>
 {
     /// Returns the stored samples.
     fn samples(&self) -> &[Float];
@@ -93,12 +94,6 @@ pub trait CoefficientSpectrum:
     ///
     /// * `p` - The power.
     fn pow(&self, p: Float) -> Self;
-
-    /// Clamps the sample values.
-    ///
-    /// * `low`  - Low value (use 0 as default).
-    /// * `high` - High value (use INFINITY as default).
-    fn clamp(&self, low: Float, high: Float) -> Self;
 
     /// Returns the maximum sample value.
     fn max_component_value(&self) -> Float {
