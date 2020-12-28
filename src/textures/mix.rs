@@ -8,6 +8,7 @@ use std::ops::{Add, Mul};
 
 /// Implements a texture that linearly interpolates between two textures with a
 /// third texture.
+#[derive(Clone)]
 pub struct MixTexture<T> {
     /// First texture.
     tex1: ArcTexture<T>,
@@ -19,11 +20,7 @@ pub struct MixTexture<T> {
     amount: ArcTexture<Float>,
 }
 
-impl<T> MixTexture<T>
-where
-    T: Copy + Add<Output = T>,
-    Float: Mul<T, Output = T>,
-{
+impl<T> MixTexture<T> {
     /// Create a new `MixTexture<T>`.
     ///
     /// * `tex1`   - The first texture.
@@ -40,7 +37,7 @@ where
 
 impl<T> Texture<T> for MixTexture<T>
 where
-    T: Copy + Add<Output = T>,
+    T: Copy + Clone + Add<Output = T>,
     Float: Mul<T, Output = T>,
 {
     /// Evaluate the texture at surface interaction.

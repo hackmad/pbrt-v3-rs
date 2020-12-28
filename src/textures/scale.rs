@@ -6,6 +6,7 @@ use crate::core::texture::*;
 use std::ops::Mul;
 
 /// Implements a texture that returns the product of 2 textures.
+#[derive(Clone)]
 pub struct ScaleTexture<T> {
     /// First texture.
     tex1: ArcTexture<T>,
@@ -14,7 +15,7 @@ pub struct ScaleTexture<T> {
     tex2: ArcTexture<T>,
 }
 
-impl<T: Copy + Mul<Output = T>> ScaleTexture<T> {
+impl<T> ScaleTexture<T> {
     /// Create a new `ScaleTexture`.
     ///
     /// * `tex1` - The first texture.
@@ -27,7 +28,10 @@ impl<T: Copy + Mul<Output = T>> ScaleTexture<T> {
     }
 }
 
-impl<T: Copy + Mul<Output = T>> Texture<T> for ScaleTexture<T> {
+impl<T> Texture<T> for ScaleTexture<T>
+where
+    T: Copy + Mul<Output = T>,
+{
     /// Evaluate the texture at surface interaction.
     ///
     /// * `si` - Surface interaction.

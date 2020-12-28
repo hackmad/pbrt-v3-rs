@@ -15,7 +15,9 @@ pub trait Texture<T: Copy> {
 /// Atomic reference counted `Texture`.
 pub type ArcTexture<T> = Arc<dyn Texture<T> + Send + Sync>;
 
+mod common;
 mod mapping;
 
 // Re-export
+pub use common::*;
 pub use mapping::*;

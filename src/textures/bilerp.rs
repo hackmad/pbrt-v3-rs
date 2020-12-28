@@ -7,6 +7,7 @@ use crate::core::texture::*;
 use std::ops::{Add, Mul};
 
 /// Implements a texture that bilinearly interpolates among four constant values.
+#[derive(Clone)]
 pub struct BilerpTexture<T> {
     /// Value at (0, 0).
     v00: T,
@@ -24,10 +25,7 @@ pub struct BilerpTexture<T> {
     mapping: ArcTextureMapping2D,
 }
 
-impl<T> BilerpTexture<T>
-where
-    T: Copy + Add<Output = T> + Mul<Float, Output = T>,
-{
+impl<T: Copy> BilerpTexture<T> {
     /// Create a new `BilerpTexture<T>`.
     ///
     /// * `v00`     - Value at (0, 0).

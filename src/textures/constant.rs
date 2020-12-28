@@ -5,12 +5,13 @@ use crate::core::geometry::*;
 use crate::core::texture::*;
 
 /// Implements a texture that returns the same value everywhere.
+#[derive(Clone)]
 pub struct ConstantTexture<T> {
     /// The texture value.
     value: T,
 }
 
-impl<T: Copy> ConstantTexture<T> {
+impl<T> ConstantTexture<T> {
     /// Create a new `ConstantTexture<T>`.
     ///
     /// * `value` - The texture value.
@@ -19,7 +20,10 @@ impl<T: Copy> ConstantTexture<T> {
     }
 }
 
-impl<T: Copy> Texture<T> for ConstantTexture<T> {
+impl<T> Texture<T> for ConstantTexture<T>
+where
+    T: Copy,
+{
     /// Evaluate the texture at surface interaction.
     ///
     /// * `si` - Surface interaction.
