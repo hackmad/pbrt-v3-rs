@@ -5,7 +5,7 @@ use crate::core::geometry::*;
 use std::sync::Arc;
 
 /// Texture interface.
-pub trait Texture<T> {
+pub trait Texture<T: Copy> {
     /// Evaluate the texture at surface interaction.
     ///
     /// * `si` - Surface interaction.
@@ -14,3 +14,8 @@ pub trait Texture<T> {
 
 /// Atomic reference counted `Texture`.
 pub type ArcTexture<T> = Arc<dyn Texture<T> + Send + Sync>;
+
+mod mapping;
+
+// Re-export
+pub use mapping::*;

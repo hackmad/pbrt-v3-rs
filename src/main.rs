@@ -21,5 +21,6 @@ mod lights;
 mod materials;
 mod samplers;
 mod shapes;
+mod textures;
 
 fn main() {}
