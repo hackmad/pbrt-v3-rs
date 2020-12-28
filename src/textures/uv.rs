@@ -1,6 +1,6 @@
 //! UV Texture
 
-#[allow(dead_code)]
+#![allow(dead_code)]
 use crate::core::geometry::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;

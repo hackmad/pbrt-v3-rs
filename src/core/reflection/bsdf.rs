@@ -1,6 +1,6 @@
 //! BSDF
 
-#[allow(dead_code)]
+#![allow(dead_code)]
 use super::*;
 use crate::core::rng::*;
 

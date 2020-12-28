@@ -1,6 +1,6 @@
 //! Polka Dots
 
-#[allow(dead_code)]
+#![allow(dead_code)]
 use crate::core::geometry::*;
 use crate::core::texture::*;
 

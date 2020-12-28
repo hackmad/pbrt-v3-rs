@@ -1,6 +1,6 @@
 //! Marble Texture
 
-#[allow(dead_code)]
+#![allow(dead_code)]
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;

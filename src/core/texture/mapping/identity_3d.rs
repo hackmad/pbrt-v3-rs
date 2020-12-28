@@ -1,6 +1,6 @@
 //! 3D Identity Mapping
 
-#[allow(dead_code)]
+#![allow(dead_code)]
 use super::*;
 
 /// Implements 3D identity mapping by simply transforming the hit point and

@@ -1,6 +1,6 @@
 //! Matte Material
 
-#[allow(dead_code)]
+#![allow(dead_code)]
 use crate::core::geometry::*;
 use crate::core::material::*;
 use crate::core::pbrt::*;
