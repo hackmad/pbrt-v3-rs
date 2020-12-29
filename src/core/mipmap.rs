@@ -33,7 +33,7 @@ pub struct ResampleWeight {
 
 /// MIPMap texture filtering methods.
 #[derive(Copy, Clone)]
-pub enum MIPMapFiltering {
+pub enum FilteringMethod {
     /// Trilinear interpolation.
     Trilinear,
 
@@ -47,7 +47,7 @@ pub enum MIPMapFiltering {
 #[derive(Clone)]
 pub struct MIPMap<T> {
     /// MIP-Map method to use.
-    method: MIPMapFiltering,
+    filtering_method: FilteringMethod,
 
     /// Determines how to handle out-of-bounds texels.
     wrap_mode: ImageWrap,
@@ -74,16 +74,16 @@ where
         + DivAssign<Float>
         + Add<T, Output = T>
         + AddAssign
-        + Clamp<T>,
+        + Clamp<Float>,
 {
-    /// * `resolution` - Image resolution.
-    /// * `img`        - Image data.
-    /// * `method`     - MIP-Map method to use.
-    /// * `wrap_mode`  - Determines how to handle out-of-bounds texels.
+    /// * `resolution`       - Image resolution.
+    /// * `img`              - Image data.
+    /// * `filtering_method` - MIPMap filtering method to use.
+    /// * `wrap_mode`        - Determines how to handle out-of-bounds texels.
     pub fn new(
         resolution: &Point2<usize>,
-        img: Vec<T>,
-        method: MIPMapFiltering,
+        img: &[T],
+        filtering_method: FilteringMethod,
         wrap_mode: ImageWrap,
     ) -> Self {
         let mut resampled_image: Vec<T> = vec![];
@@ -167,7 +167,7 @@ where
             if resampled_image.len() > 0 {
                 &resampled_image
             } else {
-                &img
+                img
             },
         ));
 
@@ -198,7 +198,7 @@ where
         }
 
         Self {
-            method,
+            filtering_method,
             wrap_mode,
             resolution,
             pyramid,
@@ -227,15 +227,15 @@ where
     /// * `st`    - The sample point coordinates (s, t).
     /// * `width` - Filter width.
     pub fn lookup(&self, st: &Point2f, dst0: &Vector2f, dst1: &Vector2f) -> T {
-        match self.method {
-            MIPMapFiltering::Trilinear => {
+        match self.filtering_method {
+            FilteringMethod::Trilinear => {
                 let width = max(
                     max(abs(dst0[0]), abs(dst0[1])),
                     max(abs(dst1[0]), abs(dst1[1])),
                 );
                 self.lookup_triangle(st, width)
             }
-            MIPMapFiltering::Ewa { max_anisotropy } => {
+            FilteringMethod::Ewa { max_anisotropy } => {
                 self.lookup_ewa(st, &dst0, &dst1, max_anisotropy)
             }
         }

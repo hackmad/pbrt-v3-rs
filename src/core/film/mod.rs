@@ -334,6 +334,8 @@ impl Film {
         }
 
         // Write RGB image
-        write_image(&self.filename, &rgb, &self.cropped_pixel_bounds);
+        if let Err(err) = write_image(&self.filename, &rgb, &self.cropped_pixel_bounds) {
+            panic!("Error writing output image {}. {:}.", self.filename, err);
+        }
     }
 }

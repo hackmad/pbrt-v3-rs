@@ -9,31 +9,35 @@ use exr::prelude::*;
 use image::*;
 use std::ffi::OsStr;
 use std::path::Path;
+use std::result::Result;
 
 /// Stores RGB image data.
 pub struct RGBImage {
     /// The pixels.
-    pixels: Vec<RGBSpectrum>,
+    pub pixels: Vec<RGBSpectrum>,
 
     /// Image resolution.
-    resolution: Point2i,
+    pub resolution: Point2<usize>,
 }
 
 /// Read an image.
 ///
 /// * `path` - Input file path.
-pub fn read_image(path: &str) -> RGBImage {
+pub fn read_image(path: &str) -> Result<RGBImage, String> {
     match get_extension_from_filename(path) {
         Some(".exr") => read_exr(path),
         Some(_extension) => read_8_bit(path),
-        None => panic!("Can't determine file type from suffix of filename {}", path),
+        None => Err(format!(
+            "Can't determine file type from suffix of filename {}",
+            path
+        )),
     }
 }
 
 /// Read a single layer OpenEXR file.
 ///
 /// * `path` - Input file path.
-fn read_exr(path: &str) -> RGBImage {
+fn read_exr(path: &str) -> Result<RGBImage, String> {
     let reader = exrs::read()
         .no_deep_data()
         .largest_resolution_level()
@@ -43,11 +47,11 @@ fn read_exr(path: &str) -> RGBImage {
                 let height = layer_info.resolution.height();
                 RGBImage {
                     pixels: vec![RGBSpectrum::default(); width * height],
-                    resolution: Point2i::new(width as Int, height as Int),
+                    resolution: Point2::new(width, height),
                 }
             },
             |img: &mut RGBImage, position: exrs::Vec2<usize>, pixel: exrs::RgbaPixel| {
-                let offset = position.y() & (img.resolution.x as usize) + position.x();
+                let offset = position.y() * img.resolution.x + position.x();
                 img.pixels[offset] = RGBSpectrum::from(vec![
                     pixel.red.to_f32(),
                     pixel.green.to_f32(),
@@ -59,25 +63,26 @@ fn read_exr(path: &str) -> RGBImage {
         .all_attributes();
 
     // Return the `RGBImage`.
-    let image: Image<Layer<RgbaChannels<RGBImage>>> = reader
-        .from_file(path)
-        .expect(format!("Unable to read file {}", path).as_ref());
-    image.layer_data.channel_data.storage
+    match reader.from_file(path) {
+        Ok(image) => Ok(image.layer_data.channel_data.storage),
+        Err(err) => Err(format!("Unable to read file {}. {:}", path, err)),
+    }
 }
 
 /// Read an 8-bit image format.
 ///
 /// * `path` - Input file path.
-fn read_8_bit(path: &str) -> RGBImage {
+fn read_8_bit(path: &str) -> Result<RGBImage, String> {
     // Read image and convert to RGB.
-    let img: RgbImage = open(path)
-        .expect(format!("Unable to open {}", path).as_ref())
-        .into_rgb8();
+    let img: RgbImage = match open(path) {
+        Ok(i) => i.into_rgb8(),
+        Err(err) => return Err(format!("Unable to open {}. {:}.", path, err)),
+    };
 
     // Read metadata.
     let width = img.width() as usize;
     let height = img.height() as usize;
-    let resolution = Point2i::new(width as Int, height as Int);
+    let resolution = Point2::new(width, height);
 
     // Iterate over the coordinates and pixels of the image
     let pixels: Vec<RGBSpectrum> = img
@@ -92,7 +97,7 @@ fn read_8_bit(path: &str) -> RGBImage {
         .collect();
 
     // Return the `RGBImage`.
-    RGBImage { pixels, resolution }
+    Ok(RGBImage { pixels, resolution })
 }
 
 /// Write the output image to given path.
@@ -100,7 +105,7 @@ fn read_8_bit(path: &str) -> RGBImage {
 /// * `path`             - Output file path.
 /// * `rgb`              - Floating point RGB pixel data.
 /// * `output_bounds`    - The bounds for the image output.
-pub fn write_image(path: &str, rgb: &[Float], output_bounds: &Bounds2i) {
+pub fn write_image(path: &str, rgb: &[Float], output_bounds: &Bounds2i) -> Result<(), String> {
     let resolution = output_bounds.diagonal();
     let res_x = resolution.x as u32;
     let res_y = resolution.y as u32;
@@ -109,8 +114,11 @@ pub fn write_image(path: &str, rgb: &[Float], output_bounds: &Bounds2i) {
         Some(".exr") => write_exr(path, rgb, res_x, res_y),
         Some(".tga") => write_8_bit(path, rgb, res_x, res_y, ImageFormat::Tga),
         Some(".png") => write_8_bit(path, rgb, res_x, res_y, ImageFormat::Png),
-        Some(extension) => eprintln!("Extension {} is not supported", extension),
-        None => eprintln!("Can't determine file type from suffix of filename {}", path),
+        Some(extension) => Err(format!("Extension {} is not supported", extension)),
+        None => Err(format!(
+            "Can't determine file type from suffix of filename {}",
+            path
+        )),
     }
 }
 
@@ -127,18 +135,19 @@ fn get_extension_from_filename(path: &str) -> Option<&str> {
 /// * `rgb`         - Floating point RGB pixel data.
 /// * `res_x`       - X resolution.
 /// * `res_y`       - Y resolution.
-fn write_exr(path: &str, rgb: &[Float], res_x: u32, res_y: u32) {
+fn write_exr(path: &str, rgb: &[Float], res_x: u32, res_y: u32) -> Result<(), String> {
     println!("Writing image {} with resolution {}x{}", path, res_x, res_y);
-
-    write_rgb_f32_file(
+    match write_rgb_f32_file(
         String::from(path),
         (res_x as usize, res_y as usize),
         |x, y| {
             let offset = y * (res_x as usize) + x;
             (rgb[offset], rgb[offset + 1], rgb[offset + 2])
         },
-    )
-    .expect("Error saving output file");
+    ) {
+        Ok(()) => Ok(()),
+        Err(err) => Err(format!("Error saving output image {}. {:}.", path, err)),
+    }
 }
 
 /// Writes the image in an 8-bit image format.
@@ -148,7 +157,13 @@ fn write_exr(path: &str, rgb: &[Float], res_x: u32, res_y: u32) {
 /// * `res_x`        - X resolution.
 /// * `res_y`        - Y resolution.
 /// * `image_format` - Image format.
-fn write_8_bit(path: &str, rgb: &[Float], res_x: u32, res_y: u32, image_format: ImageFormat) {
+fn write_8_bit(
+    path: &str,
+    rgb: &[Float],
+    res_x: u32,
+    res_y: u32,
+    image_format: ImageFormat,
+) -> std::result::Result<(), String> {
     println!("Writing image {} with resolution {}x{}", path, res_x, res_y);
 
     // Allocate an image buffer.
@@ -164,9 +179,10 @@ fn write_8_bit(path: &str, rgb: &[Float], res_x: u32, res_y: u32, image_format: 
     }
 
     // Write the output file.
-    imgbuf
-        .save_with_format(String::from(path), image_format)
-        .expect("Error saving output file");
+    match imgbuf.save_with_format(String::from(path), image_format) {
+        Ok(()) => Ok(()),
+        Err(err) => Err(format!("Error saving output image {}. {:}.", path, err)),
+    }
 }
 
 /// Apply gamma correction to a RGB floating point pixel and return the

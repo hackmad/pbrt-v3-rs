@@ -13,6 +13,7 @@ lazy_static! {
     /// Caches BSDF table data by file path.
     static ref BSDF_TABLES: Mutex<HashMap<String, Arc<FourierBSDFTable>>> = Mutex::new(HashMap::new());
 }
+
 /// Implements materials using measured or synthetic BSDF data.
 pub struct FourierMaterial {
     /// Stores the measured Fourier BSDF data.
