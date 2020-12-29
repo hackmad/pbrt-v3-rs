@@ -1,24 +1,13 @@
 //! Image Texture
 
 #![allow(dead_code)]
-
-#[macro_use]
-mod cache;
-mod convert_in;
-mod tex_info;
-
 use crate::core::geometry::*;
 use crate::core::mipmap::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
-use convert_in::*;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
 use std::sync::Arc;
-
-// Re-export
-pub use cache::{MIPMapCache, MIPMapCacheProvider, MIPMapCacheResult};
-pub use tex_info::TexInfo;
 
 /// Stores an image texture with MIPMaps using texels of type `Tmemory`.
 #[derive(Clone)]

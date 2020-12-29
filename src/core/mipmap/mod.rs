@@ -1,6 +1,7 @@
 //! MIPMap
 
 #![allow(dead_code)]
+
 use crate::core::geometry::*;
 use crate::core::memory::*;
 use crate::core::pbrt::*;
@@ -8,6 +9,15 @@ use crate::core::texture::*;
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
 use std::sync::Arc;
+
+mod cache;
+mod convert_in;
+mod tex_info;
+
+// Re-export
+pub use cache::*;
+pub use convert_in::*;
+pub use tex_info::*;
 
 /// Size of the weights lookup table.
 const WEIGHT_LUT_SIZE: usize = 128;

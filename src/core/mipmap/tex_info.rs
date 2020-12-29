@@ -2,7 +2,6 @@
 
 #![allow(dead_code)]
 use crate::core::mipmap::*;
-use crate::core::pbrt::*;
 use ordered_float::OrderedFloat;
 use std::hash::{Hash, Hasher};
 

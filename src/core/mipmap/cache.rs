@@ -5,7 +5,6 @@ use super::convert_in::*;
 use super::tex_info::*;
 use crate::core::image_io::*;
 use crate::core::mipmap::*;
-use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use std::collections::HashMap;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
