@@ -7,8 +7,7 @@ use crate::core::spectrum::*;
 use exr::prelude as exrs;
 use exr::prelude::*;
 use image::*;
-use std::ffi::OsStr;
-use std::path::Path;
+use regex::Regex;
 use std::result::Result;
 
 /// Stores RGB image data.
@@ -28,7 +27,7 @@ pub fn read_image(path: &str) -> Result<RGBImage, String> {
         Some(".exr") => read_exr(path),
         Some(_extension) => read_8_bit(path),
         None => Err(format!(
-            "Can't determine file type from suffix of filename {}",
+            "Can't determine file type from suffix of filename {}.",
             path
         )),
     }
@@ -65,7 +64,7 @@ fn read_exr(path: &str) -> Result<RGBImage, String> {
     // Return the `RGBImage`.
     match reader.from_file(path) {
         Ok(image) => Ok(image.layer_data.channel_data.storage),
-        Err(err) => Err(format!("Unable to read file {}. {:}", path, err)),
+        Err(err) => Err(format!("{:}", err)),
     }
 }
 
@@ -76,7 +75,7 @@ fn read_8_bit(path: &str) -> Result<RGBImage, String> {
     // Read image and convert to RGB.
     let img: RgbImage = match open(path) {
         Ok(i) => i.into_rgb8(),
-        Err(err) => return Err(format!("Unable to open {}. {:}.", path, err)),
+        Err(err) => return Err(format!("{:}", err)),
     };
 
     // Read metadata.
@@ -122,11 +121,21 @@ pub fn write_image(path: &str, rgb: &[Float], output_bounds: &Bounds2i) -> Resul
     }
 }
 
+lazy_static! {
+    /// Regular expression for extracting the file extension. This will
+    /// match the last occurrence of a period followed by no periods or
+    /// slashes (could be tightened to exclude other illegal characters
+    /// but the code that reads files will bomb anyway).
+    static ref REGEX_FILE_EXT: Regex = Regex::new(r"(\.[^./\\]+)$").unwrap();
+}
+
 /// Retrieve the extension from a file path.
 ///
 /// * `path` - The file path.
 fn get_extension_from_filename(path: &str) -> Option<&str> {
-    Path::new(path).extension().and_then(OsStr::to_str)
+    REGEX_FILE_EXT
+        .captures(path)
+        .map(|c| c.get(1).map_or("", |m| m.as_str()))
 }
 
 /// Writes the image in OpenEXR format.

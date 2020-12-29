@@ -5,13 +5,15 @@ use crate::core::geometry::*;
 use crate::core::memory::*;
 use crate::core::pbrt::*;
 use crate::core::texture::*;
+use std::hash::Hash;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
+use std::sync::Arc;
 
 /// Size of the weights lookup table.
 const WEIGHT_LUT_SIZE: usize = 128;
 
 /// Enumeration for the image wrapping convention for out-of-bounds texels.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Hash, PartialEq)]
 pub enum ImageWrap {
     /// Repeat.
     Repeat,
@@ -32,14 +34,13 @@ pub struct ResampleWeight {
 }
 
 /// MIPMap texture filtering methods.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Hash)]
 pub enum FilteringMethod {
     /// Trilinear interpolation.
     Trilinear,
 
     /// Elliptically weighted average.
-    /// * `max_anisotropy` - Used to clamp the ellipse eccentricity (EWA).
-    Ewa { max_anisotropy: Float },
+    Ewa,
 }
 
 /// Implements methods for efficient texture filtering with spatially varying
@@ -61,7 +62,14 @@ pub struct MIPMap<T> {
 
     /// Precomputed lookup table of Gaussian filter function values.
     weight_lut: [Float; WEIGHT_LUT_SIZE],
+
+    /// Used to clamp the ellipse eccentricity (EWA).
+    /// Set to 0 if EWA is not being used.
+    max_anisotropy: Float,
 }
+
+/// Atomic reference counted `MIPMap`.
+pub type ArcMIPMap<T> = Arc<MIPMap<T>>;
 
 impl<T> MIPMap<T>
 where
@@ -80,11 +88,14 @@ where
     /// * `img`              - Image data.
     /// * `filtering_method` - MIPMap filtering method to use.
     /// * `wrap_mode`        - Determines how to handle out-of-bounds texels.
+    /// * `max_anisotropy`   - Used to clamp the ellipse eccentricity (EWA).
+    ///                        Set to 0 if EWA is not being used.
     pub fn new(
         resolution: &Point2<usize>,
         img: &[T],
         filtering_method: FilteringMethod,
         wrap_mode: ImageWrap,
+        max_anisotropy: Float,
     ) -> Self {
         let mut resampled_image: Vec<T> = vec![];
 
@@ -203,6 +214,7 @@ where
             resolution,
             pyramid,
             weight_lut,
+            max_anisotropy,
         }
     }
 
@@ -235,9 +247,7 @@ where
                 );
                 self.lookup_triangle(st, width)
             }
-            FilteringMethod::Ewa { max_anisotropy } => {
-                self.lookup_ewa(st, &dst0, &dst1, max_anisotropy)
-            }
+            FilteringMethod::Ewa => self.lookup_ewa(st, &dst0, &dst1),
         }
     }
 
@@ -270,14 +280,7 @@ where
     /// * `st`             - The sample point coordinates (s, t).
     /// * `dst0`           - Length of first elliptical axis.
     /// * `dst1`           - Length of second elliptical axis.
-    /// * `max_anisotropy` - Used to clamp the ellipse eccentricity (EWA).
-    fn lookup_ewa(
-        &self,
-        st: &Point2f,
-        dst0: &Vector2f,
-        dst1: &Vector2f,
-        max_anisotropy: Float,
-    ) -> T {
+    fn lookup_ewa(&self, st: &Point2f, dst0: &Vector2f, dst1: &Vector2f) -> T {
         // Compute ellipse minor and major axes.
         let (dst0, mut dst1) = if dst0.length_squared() < dst1.length_squared() {
             (*dst1, *dst0)
@@ -289,7 +292,7 @@ where
         let mut minor_length = dst1.length();
 
         // Clamp ellipse eccentricity if too large.
-        let adjusted_minor_length = minor_length * max_anisotropy;
+        let adjusted_minor_length = minor_length * self.max_anisotropy;
         if adjusted_minor_length < major_length && minor_length > 0.0 {
             let scale = major_length / adjusted_minor_length;
             dst1 *= scale;
