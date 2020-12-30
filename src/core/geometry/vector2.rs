@@ -5,6 +5,7 @@ use super::common::*;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use num_traits::{Num, Zero};
+use std::fmt;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
@@ -345,6 +346,13 @@ impl<T> From<Point2<T>> for Vector2<T> {
     /// * `p` - 2-D point.
     fn from(p: Point2<T>) -> Self {
         Self { x: p.x, y: p.y }
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for Vector2<T> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}, {}]", self.x, self.y)
     }
 }
 

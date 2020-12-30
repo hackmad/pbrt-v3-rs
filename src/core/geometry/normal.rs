@@ -5,6 +5,7 @@ use super::common::*;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use num_traits::{Num, Zero};
+use std::fmt;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
@@ -298,6 +299,15 @@ impl<T> From<Vector3<T>> for Normal3<T> {
             y: v.y,
             z: v.z,
         }
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for Normal3<T> {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<{}, {}, {}>", self.x, self.y, self.z)
     }
 }
 

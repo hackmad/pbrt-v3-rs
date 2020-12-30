@@ -5,10 +5,11 @@ use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use num_traits::bounds::Bounded;
 use num_traits::{Num, Zero};
+use std::fmt;
 use std::ops::{DivAssign, Index, Mul};
 
 /// 2D Axis Aligned Bounding Box.
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Default, PartialEq)]
 pub struct Bounds2<T: Num> {
     /// Minimum bounds.
     pub p_min: Point2<T>,
@@ -301,6 +302,27 @@ impl<T: Num + PartialOrd + Copy> Intersect<Bounds2<T>> for Bounds2<T> {
                 min(self.p_max.y, other.p_max.y),
             ),
         }
+    }
+}
+
+impl<T: Num + fmt::Debug> fmt::Debug for Bounds2<T> {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Bounds2")
+            .field("p_min", &self.p_min)
+            .field("p_max", &self.p_max)
+            .finish()
+    }
+}
+
+impl<T: Num + fmt::Display> fmt::Display for Bounds2<T> {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{{}, {}}}", self.p_min, self.p_max)
     }
 }
 

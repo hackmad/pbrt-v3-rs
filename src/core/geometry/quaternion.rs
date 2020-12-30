@@ -4,6 +4,7 @@
 use super::common::*;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
+use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// A quaternion
@@ -72,6 +73,15 @@ impl Default for Quaternion {
             v: Vector3f::zero(),
             w: 1.0,
         }
+    }
+}
+
+impl fmt::Display for Quaternion {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}, {}, {}, {}]", self.v.x, self.v.y, self.v.z, self.w)
     }
 }
 

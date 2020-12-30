@@ -3,8 +3,8 @@
 #![allow(dead_code)]
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
-
 use num_traits::{Num, Zero};
+use std::fmt;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
@@ -374,6 +374,15 @@ impl From<Point2f> for Point2i {
             x: p.x as Int,
             y: p.y as Int,
         }
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for Point2<T> {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
     }
 }
 

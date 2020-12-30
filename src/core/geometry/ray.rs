@@ -4,10 +4,10 @@
 use crate::core::geometry::*;
 use crate::core::medium::*;
 use crate::core::pbrt::*;
-use std::fmt::{Debug, Formatter, Result};
+use std::fmt;
 
 /// A Ray
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Ray {
     /// Origin.
     pub o: Point3f,
@@ -135,11 +135,11 @@ impl Ray {
     }
 }
 
-impl Debug for Ray {
-    /// Display the ray parameters.
+impl fmt::Debug for Ray {
+    /// Formats the value using the given formatter.
     ///
     /// * `f` - Formatter.
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Ray")
             .field("o", &self.o)
             .field("d", &self.d)
@@ -150,22 +150,25 @@ impl Debug for Ray {
     }
 }
 
-impl Default for Ray {
-    /// Returns a default value for `Ray`.
-    fn default() -> Self {
-        Self {
-            o: Point3f::default(),
-            d: Vector3f::default(),
-            t_max: INFINITY,
-            time: 0.0,
-            differentials: None,
-            medium: None,
-        }
+impl fmt::Display for Ray {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let rds = match self.differentials {
+            Some(rd) => format!("{}", rd),
+            None => String::from("no differentials"),
+        };
+        write!(
+            f,
+            "{{{}, {}, {}, {}, {}}}",
+            self.o, self.d, self.t_max, self.time, rds
+        )
     }
 }
 
 /// A ray differential is offset by one sample in the x and y direction of a ray.
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Default, PartialEq)]
 pub struct RayDifferential {
     /// Origin of ray offset in x-direction.
     pub rx_origin: Point3f,
@@ -194,6 +197,33 @@ impl RayDifferential {
             rx_direction: xd,
             ry_direction: yd,
         }
+    }
+}
+
+impl fmt::Debug for RayDifferential {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Ray")
+            .field("rx_origin", &self.rx_origin)
+            .field("ry_origin", &self.ry_origin)
+            .field("rx_direction", &self.rx_direction)
+            .field("ry_direction", &self.ry_direction)
+            .finish()
+    }
+}
+
+impl fmt::Display for RayDifferential {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{{{}, {}, {}, {}}}",
+            self.rx_origin, self.ry_origin, self.rx_direction, self.ry_direction
+        )
     }
 }
 

@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 use crate::core::pbrt::*;
+use std::fmt;
 use std::ops::{Index, Mul};
 
 /// A 4x4 vector containing Float values.
@@ -147,6 +148,34 @@ impl Default for Matrix4x4 {
     /// Returns the default as identity matrix.
     fn default() -> Self {
         IDENTITY_MATRIX
+    }
+}
+
+impl fmt::Display for Matrix4x4 {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "\n|{:.8}, {:.8}, {:.8}, {:.8}|",
+            self.m[0][0], self.m[0][1], self.m[0][2], self.m[0][3]
+        )?;
+        writeln!(
+            f,
+            "\n|{:.8}, {:.8}, {:.8}, {:.8}|",
+            self.m[1][0], self.m[1][1], self.m[1][2], self.m[1][3]
+        )?;
+        writeln!(
+            f,
+            "\n|{:.8}, {:.8}, {:.8}, {:.8}|",
+            self.m[2][0], self.m[2][1], self.m[2][2], self.m[2][3]
+        )?;
+        writeln!(
+            f,
+            "\n|{:.8}, {:.8}, {:.8}, {:.8}|",
+            self.m[3][0], self.m[3][1], self.m[3][2], self.m[3][3]
+        )
     }
 }
 

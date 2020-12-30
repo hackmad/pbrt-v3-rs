@@ -2,11 +2,12 @@
 
 #![allow(dead_code)]
 use crate::core::pbrt::*;
+use std::fmt;
 use std::mem::swap;
 use std::ops::{Add, Mul, Sub};
 
 /// Interval of real numbers used to give conservative bounds for functions.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Default)]
 pub struct Interval {
     // Low value.
     pub low: Float,
@@ -227,5 +228,24 @@ impl Mul for Interval {
                 max(self.low * i.high, self.high * i.high),
             ),
         )
+    }
+}
+
+impl fmt::Debug for Interval {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Interval")
+            .field("low", &self.low)
+            .field("high", &self.high)
+            .finish()
+    }
+}
+
+impl fmt::Display for Interval {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}, {}]", self.low, self.high)
     }
 }

@@ -4,6 +4,7 @@
 use super::common::*;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
+use std::fmt;
 
 use num_traits::{Num, Zero};
 use std::ops::{
@@ -423,6 +424,13 @@ impl<T> From<Normal3<T>> for Vector3<T> {
             y: n.y,
             z: n.z,
         }
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for Vector3<T> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}, {}, {}]", self.x, self.y, self.z)
     }
 }
 
