@@ -4,6 +4,7 @@
 use super::*;
 use crate::core::pbrt::*;
 use std::convert::TryInto;
+use std::fmt;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
@@ -114,9 +115,11 @@ impl CoefficientSpectrum for SampledSpectrum {
 
     /// Converts XYZ values to a full SPD.
     ///
-    /// * `spectrum_type` - Indicates type of RGB value.
-    fn from_xyz(&mut self, xyz: &[Float; 3], spectrum_type: SpectrumType) {
-        self.from_rgb(&xyz_to_rgb(xyz), spectrum_type)
+    /// * `xyz`           - XYZ colour value.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`,
+    ///                     defaults to `SpectrumType::Reflectance`.
+    fn from_xyz(xyz: &[Float; 3], spectrum_type: Option<SpectrumType>) -> Self {
+        Self::from_rgb(&xyz_to_rgb(xyz), spectrum_type)
     }
 
     /// Convert the SPD to XYZ cooefficients.
@@ -143,11 +146,13 @@ impl CoefficientSpectrum for SampledSpectrum {
 
     /// Converts RGB values to a full SPD.
     ///
-    /// * `rgb`           - RGB value.
-    /// * `spectrum_type` - Indicates type of RGB value (ignored).
+    /// * `rgb`           - RGB colour value.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`,
+    ///                     defaults to `SpectrumType::Reflectance`.
     #[rustfmt::skip]
-    fn from_rgb(&mut self, rgb: &[Float; 3], spectrum_type: SpectrumType) {
-        let mut r = SampledSpectrum::default();
+    fn from_rgb(rgb: &[Float; 3], spectrum_type: Option<SpectrumType>) -> Self {
+        let spectrum_type = spectrum_type.map_or(SpectrumType::Reflectance, |s| s);
+        let mut r = Self::default();
 
         // Convert spectrum to RGB.
         if rgb[0] <= rgb[1] && rgb[0] <= rgb[2] {
@@ -183,16 +188,9 @@ impl CoefficientSpectrum for SampledSpectrum {
         }
 
         match spectrum_type {
-            SpectrumType::Reflectance => {
-                r *= 0.94;
-            }
-
-            SpectrumType::Illuminant => {
-                r *= 0.86445;
-            }
+            SpectrumType::Reflectance => r * 0.94,
+            SpectrumType::Illuminant => r * 0.86445,
         }
-
-        *self = r;
     }
 
     /// Convert the SPD to RGB cooefficients.
@@ -421,5 +419,19 @@ impl Clamp<Float> for SampledSpectrum {
     /// Clamps the values to [0.0, INFINITY].
     fn clamp_default(&self) -> Self {
         self.clamp(0.0, INFINITY)
+    }
+}
+
+impl fmt::Display for SampledSpectrum {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[")?;
+        for (i, v) in self.c.iter().enumerate() {
+            write!(f, "{}", v)?;
+            if i < SPECTRAL_SAMPLES - 1 {
+                write!(f, ", ")?;
+            }
+        }
+        write!(f, "]")
     }
 }

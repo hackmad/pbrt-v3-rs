@@ -114,10 +114,7 @@ impl BxDF for FourierBSDF {
             let g = 1.39829 * y - 0.100913 * b - 0.297375 * r;
             let rgb = [r * scale, g * scale, b * scale];
 
-            let mut spectrum = Spectrum::new(0.0);
-            spectrum.from_rgb(&rgb, SpectrumType::Reflectance);
-
-            spectrum.clamp_default()
+            Spectrum::from_rgb(&rgb, None).clamp_default()
         }
     }
 
@@ -226,10 +223,8 @@ impl BxDF for FourierBSDF {
             let g = 1.39829 * y - 0.100913 * b - 0.297375 * r;
             let rgb = [r * scale, g * scale, b * scale];
 
-            let mut spectrum = Spectrum::new(0.0);
-            spectrum.from_rgb(&rgb, SpectrumType::Reflectance);
-
-            BxDFSample::new(spectrum.clamp_default(), pdf, wi, self.bxdf_type)
+            let spectrum = Spectrum::from_rgb(&rgb, None).clamp_default();
+            BxDFSample::new(spectrum, pdf, wi, self.bxdf_type)
         }
     }
 

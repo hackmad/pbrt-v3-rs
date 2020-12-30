@@ -5,6 +5,7 @@
 use super::*;
 use crate::core::pbrt::*;
 use std::convert::TryInto;
+use std::fmt;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
@@ -104,9 +105,11 @@ impl CoefficientSpectrum for RGBSpectrum {
 
     /// Converts XYZ values to a full SPD.
     ///
-    /// * `spectrum_type` - Indicates type of RGB value (ignored).
-    fn from_xyz(&mut self, xyz: &[Float; 3], _spectrum_type: SpectrumType) {
-        self.c = xyz_to_rgb(xyz);
+    /// * `xyz`           - XYZ colour value.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`,
+    ///                     defaults to `SpectrumType::Reflectance`.
+    fn from_xyz(xyz: &[Float; 3], _spectrum_type: Option<SpectrumType>) -> Self {
+        Self { c: xyz_to_rgb(xyz) }
     }
 
     /// Convert the SPD to XYZ cooefficients.
@@ -121,12 +124,13 @@ impl CoefficientSpectrum for RGBSpectrum {
 
     /// Converts RGB values to a full SPD.
     ///
-    /// * `rgb`           - RGB value.
-    /// * `spectrum_type` - Indicates type of RGB value (ignored).
-    fn from_rgb(&mut self, rgb: &[Float; 3], _spectrum_type: SpectrumType) {
-        self.c[0] = rgb[0];
-        self.c[1] = rgb[1];
-        self.c[2] = rgb[2];
+    /// * `rgb`           - RGB colour value.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`,
+    ///                     defaults to `SpectrumType::Reflectance`.
+    fn from_rgb(rgb: &[Float; 3], _spectrum_type: Option<SpectrumType>) -> Self {
+        Self {
+            c: [rgb[0], rgb[1], rgb[2]],
+        }
     }
 
     /// Convert the SPD to RGB cooefficients.
@@ -362,5 +366,12 @@ impl Clamp<Float> for RGBSpectrum {
     /// Clamps the values to [0.0, INFINITY].
     fn clamp_default(&self) -> Self {
         self.clamp(0.0, INFINITY)
+    }
+}
+
+impl fmt::Display for RGBSpectrum {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}, {}, {}]", self.c[0], self.c[1], self.c[2])
     }
 }

@@ -33,9 +33,6 @@ impl Texture<Spectrum> for UVTexture {
         let TextureMap2DResult { p: st, .. } = self.mapping.map(si);
 
         let rgb = [st[0] - st[0].floor(), st[1] - st[1].floor(), 0.0];
-
-        let mut s = Spectrum::default();
-        s.from_rgb(&rgb, SpectrumType::Reflectance);
-        s
+        Spectrum::from_rgb(&rgb, None)
     }
 }

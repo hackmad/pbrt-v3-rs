@@ -104,8 +104,10 @@ pub trait CoefficientSpectrum:
 
     /// Converts XYZ values to a full SPD.
     ///
-    /// * `spectrum_type` - Indicates type of RGB value.
-    fn from_xyz(&mut self, xyz: &[Float; 3], spectrum_type: SpectrumType);
+    /// * `xyz`           - XYZ colour value.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`,
+    ///                     defaults to `SpectrumType::Reflectance`.
+    fn from_xyz(xyz: &[Float; 3], spectrum_type: Option<SpectrumType>) -> Self;
 
     /// Convert the SPD to XYZ cooefficients.
     fn to_xyz(&self) -> [Float; 3];
@@ -115,9 +117,10 @@ pub trait CoefficientSpectrum:
 
     /// Converts RGB values to a full SPD.
     ///
-    /// * `rgb`           - RGB value.
-    /// * `spectrum_type` - Indicates type of RGB value (ignored).
-    fn from_rgb(&mut self, rgb: &[Float; 3], spectrum_type: SpectrumType);
+    /// * `rgb`           - RGB colour value.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`,
+    ///                     defaults to `SpectrumType::Reflectance`.
+    fn from_rgb(rgb: &[Float; 3], spectrum_type: Option<SpectrumType>) -> Self;
 
     /// Convert the SPD to RGB cooefficients.
     fn to_rgb(&self) -> [Float; 3];

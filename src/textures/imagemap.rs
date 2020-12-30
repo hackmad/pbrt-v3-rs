@@ -76,9 +76,7 @@ impl Texture<Spectrum> for ImageTexture<RGBSpectrum> {
 
         // Convert out to `Spectrum`.
         let rgb = mem.to_rgb();
-        let mut ret = Spectrum::default();
-        ret.from_rgb(&rgb, SpectrumType::Reflectance);
-        ret
+        Spectrum::from_rgb(&rgb, None)
     }
 }
 

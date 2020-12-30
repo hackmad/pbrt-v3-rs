@@ -74,15 +74,10 @@ impl Texture<Spectrum> for MarbleTexture {
         let first = min(1, (t * NSEGS as Float).floor() as usize);
         let t = t * NSEGS as Float - first as Float;
 
-        let mut c0 = Spectrum::default();
-        let mut c1 = Spectrum::default();
-        let mut c2 = Spectrum::default();
-        let mut c3 = Spectrum::default();
-
-        c0.from_rgb(&C[first], SpectrumType::Reflectance);
-        c1.from_rgb(&C[first + 1], SpectrumType::Reflectance);
-        c2.from_rgb(&C[first + 2], SpectrumType::Reflectance);
-        c3.from_rgb(&C[first + 3], SpectrumType::Reflectance);
+        let c0 = Spectrum::from_rgb(&C[first], None);
+        let c1 = Spectrum::from_rgb(&C[first + 1], None);
+        let c2 = Spectrum::from_rgb(&C[first + 2], None);
+        let c3 = Spectrum::from_rgb(&C[first + 3], None);
 
         // Bezier spline evaluated with de Castilejau's algorithm.
         let s0 = (1.0 - t) * c0 + t * c1;
