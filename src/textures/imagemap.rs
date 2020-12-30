@@ -7,7 +7,6 @@ use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
-use std::sync::Arc;
 
 /// Stores an image texture with MIPMaps using texels of type `Tmemory`.
 #[derive(Clone)]
@@ -28,7 +27,32 @@ where
     mapping: ArcTextureMapping2D,
 
     /// The mipmaps.
-    mipmap: Arc<MIPMap<Tmemory>>,
+    mipmap: ArcMIPMap<Tmemory>,
+}
+
+impl<Tmemory> ImageTexture<Tmemory>
+where
+    Tmemory: Copy
+        + Default
+        + Mul<Float, Output = Tmemory>
+        + MulAssign<Float>
+        + Div<Float, Output = Tmemory>
+        + DivAssign<Float>
+        + Add<Tmemory, Output = Tmemory>
+        + AddAssign
+        + Clamp<Float>,
+    Spectrum: ConvertIn<Tmemory>,
+{
+    /// Create a new `ImageTexture<Tmemory>`.
+    ///
+    /// * `mapping` - 2D mapping.
+    /// * `mipmaps` - The mipmaps.
+    pub fn new(mapping: ArcTextureMapping2D, mipmap: ArcMIPMap<Tmemory>) -> Self {
+        Self {
+            mapping,
+            mipmap: mipmap.clone(),
+        }
+    }
 }
 
 // Implement `Texture<Tresult>` for `ImageTexture<Tmemory>` where `Tresult` is
