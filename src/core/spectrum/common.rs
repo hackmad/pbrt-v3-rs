@@ -42,6 +42,30 @@ pub struct Sample {
     /// The sample value.
     pub value: Float,
 }
+impl Sample {
+    /// Create a new `Sample`.
+    ///
+    /// * `lambda` - The wavelength.
+    /// * `value`  - The sample value.
+    pub fn new(lambda: Float, value: Float) -> Self {
+        Self { lambda, value }
+    }
+
+    /// Loads spectrum samples read from a data file.
+    ///
+    /// * `value` - A list of (wavelength, value) pairs. If list does not
+    ///             contain even number of elements, the last one is ignored.
+    pub fn list(values: &[Float]) -> Vec<Self> {
+        let n = values.len();
+        if n % 2 > 0 {
+            eprintln!("Ignoring extra values in Sample::list().");
+        }
+        (0..n)
+            .step_by(2)
+            .map(|i| Sample::new(values[i], values[i + 1]))
+            .collect()
+    }
+}
 
 /// Interface and helper functions for SPDs.
 pub trait CoefficientSpectrum:
@@ -338,4 +362,45 @@ pub fn rgb_to_xyz(rgb: &[Float; 3]) -> [Float; 3] {
         0.212671 * rgb[0] + 0.715160 * rgb[1] + 0.072169 * rgb[2],
         0.019334 * rgb[0] + 0.119193 * rgb[1] + 0.950227 * rgb[2],
     ]
+}
+
+/// Returns the emitted radiance at a given temperature and wavelengths for a
+/// blackbody (perfect emitter).
+///
+/// * `lambda` - Wavelengths in nanometers.
+/// * `t`      - Temperature in Kelvin.
+pub fn blackbody(lambda: &[Float], t: Float) -> Vec<Float> {
+    if t <= 0.0 {
+        return vec![0.0; lambda.len()];
+    }
+
+    let c: Float = 299792458.0;
+    let h: Float = 6.62606957e-34;
+    let kb: Float = 1.3806488e-23;
+
+    lambda
+        .iter()
+        .map(|l| {
+            // Compute emitted radiance for blackbody at wavelength `lambda[i]`.
+            let l = l * 1e-9; // Convert nanometers -> meters.
+            let lambda5 = (l * l) * (l * l) * l;
+            let le = (2.0 * h * c * c) / (lambda5 * (((h * c) / (l * kb * t)).exp() - 1.0));
+            assert!(!le.is_nan());
+            le
+        })
+        .collect()
+}
+
+/// Returns the normalized emitted radiance at a given temperature and wavelengths
+/// for a blackbody (perfect emitter) based on maximum blackbody radiance.
+///
+/// * `lambda` - Wavelengths in nanometers.
+/// * `t`      - Temperature in Kelvin.
+pub fn blackbody_normalized(lambda: &[Float], t: Float) -> Vec<Float> {
+    let le = blackbody(lambda, t);
+
+    // Normalize `Le` values based on maximum blackbody radiance.
+    let lambda_max = 2.8977721e-3 / t * 1e9; // Convert to meters -> nanometers.
+    let max_l = blackbody(&[lambda_max], t);
+    le.iter().map(|v| v / max_l[0]).collect()
 }
