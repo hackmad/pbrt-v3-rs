@@ -80,6 +80,13 @@ impl CIE {
             })
             .collect()
     }
+
+    /// Returns the list of wavelengths for the samples.
+    pub fn lambda() -> Vec<Float> {
+        (0..CIE_SAMPLES)
+            .map(|i| (CIE_LAMBDA_START + i) as Float)
+            .collect()
+    }
 }
 
 // CIE X function values.
