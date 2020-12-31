@@ -4,6 +4,7 @@
 pub mod bssrdf;
 pub mod camera;
 pub mod efloat;
+pub mod fileutil;
 pub mod film;
 pub mod filter;
 pub mod geometry;
@@ -16,6 +17,7 @@ pub mod medium;
 pub mod memory;
 pub mod microfacet;
 pub mod mipmap;
+pub mod paramset;
 pub mod pbrt;
 pub mod primitive;
 pub mod primitives;
