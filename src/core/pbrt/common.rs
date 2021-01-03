@@ -1,7 +1,8 @@
-//! PBRT common stuff
+//! Common
 
 #![allow(dead_code)]
 
+use super::clamp::*;
 use num_traits::{Num, Zero};
 use std::ops::{Add, Mul, Neg};
 
@@ -44,63 +45,6 @@ pub const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
 /// Shadow Epsilon
 pub const SHADOW_EPSILON: Float = 0.0001;
 
-/// Axis enumeration
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Axis {
-    X = 0,
-    Y = 1,
-    Z = 2,
-}
-impl From<usize> for Axis {
-    fn from(i: usize) -> Self {
-        match i {
-            0 => Axis::X,
-            1 => Axis::Y,
-            2 => Axis::Z,
-            _ => panic!("invalid axis value"),
-        }
-    }
-}
-impl From<u8> for Axis {
-    fn from(i: u8) -> Self {
-        match i {
-            0 => Axis::X,
-            1 => Axis::Y,
-            2 => Axis::Z,
-            _ => panic!("invalid axis value"),
-        }
-    }
-}
-impl Into<u8> for Axis {
-    fn into(self) -> u8 {
-        match self {
-            Axis::X => 0_u8,
-            Axis::Y => 1_u8,
-            Axis::Z => 2_u8,
-        }
-    }
-}
-impl Into<usize> for Axis {
-    fn into(self) -> usize {
-        match self {
-            Axis::X => 0_usize,
-            Axis::Y => 1_usize,
-            Axis::Z => 2_usize,
-        }
-    }
-}
-impl Add<usize> for Axis {
-    type Output = Axis;
-    fn add(self, i: usize) -> Self::Output {
-        Axis::from((self as usize + i) % 3)
-    }
-}
-impl Default for Axis {
-    fn default() -> Self {
-        Axis::X
-    }
-}
-
 /// Returns the absolute value of a number.
 ///
 /// * `n` - The number.
@@ -142,26 +86,6 @@ where
         a
     } else {
         b
-    }
-}
-
-/// Clamps a value x to [min, max].
-///
-/// See https://github.com/rust-lang/rust/issues/44095
-///
-/// * `x` - The number to clamp.
-/// * `min` - Minimum value.
-/// * `max` - Maximum value.
-pub fn clamp<T>(x: T, min: T, max: T) -> T
-where
-    T: Num + PartialOrd + Copy,
-{
-    if x < min {
-        min
-    } else if x > max {
-        max
-    } else {
-        x
     }
 }
 
@@ -456,104 +380,4 @@ pub fn erf_inv(x: Float) -> Float {
         p = 2.83297682 + p * w;
         p * x
     }
-}
-
-/// Trait to support base 2 logarithm
-pub trait Log2<T: Num> {
-    /// Returns log base 2 of a value in given type `T`.
-    fn log2(self) -> T;
-}
-
-impl Log2<u32> for Float {
-    /// Returns log base 2 of a value.
-    fn log2(self) -> u32 {
-        if self < 1.0 {
-            0
-        } else {
-            let bits = float_to_bits(self);
-            let r = (bits >> 23) - 127;
-            let t = if bits & (1 << 22) == 0 { 0 } else { 1 };
-            r + t
-        }
-    }
-}
-
-impl Log2<i32> for u32 {
-    /// Returns log base 2 of a value.
-    fn log2(self) -> i32 {
-        31_i32 - self.leading_zeros() as i32
-    }
-}
-
-impl Log2<i32> for i32 {
-    /// Returns log base 2 of a value.
-    fn log2(self) -> i32 {
-        (self as u32).log2()
-    }
-}
-
-impl Log2<i64> for u64 {
-    /// Returns log base 2 of a value.
-    fn log2(self) -> i64 {
-        63_i64 - self.leading_zeros() as i64
-    }
-}
-
-impl Log2<i64> for i64 {
-    /// Returns log base 2 of a value.
-    fn log2(self) -> i64 {
-        (self as u64).log2()
-    }
-}
-
-impl Log2<i64> for usize {
-    /// Returns log base 2 of a value.
-    fn log2(self) -> i64 {
-        63_i64 - self.leading_zeros() as i64
-    }
-}
-
-/// Interface for clamping values.
-pub trait Clamp<T: Copy> {
-    /// Clamps the values to given [low, high] interval.
-    ///
-    /// * `low`  - Low value.
-    /// * `high` - High value.
-    fn clamp(&self, low: T, high: T) -> Self;
-
-    /// Clamps the values to some default [low, high] interval determined by
-    /// `T`.
-    fn clamp_default(&self) -> Self;
-}
-
-impl Clamp<Float> for Float {
-    /// Clamps the values to given [low, high] interval.
-    ///
-    /// * `low`  - Low value.
-    /// * `high` - High value.
-    fn clamp(&self, low: Float, high: Float) -> Self {
-        clamp(*self, low, high)
-    }
-
-    /// Clamps the values to [0.0, INFINITY].
-    fn clamp_default(&self) -> Self {
-        clamp(*self, 0.0, INFINITY)
-    }
-}
-
-// ----------------------------------------------------------------------------
-// Tests
-// ----------------------------------------------------------------------------
-
-#[cfg(test)]
-use proptest::prelude::*;
-
-#[cfg(test)]
-pub fn axis_2d_strategy() -> impl Strategy<Value = Axis> {
-    prop_oneof![Just(Axis::X), Just(Axis::Y)]
-}
-
-#[cfg(test)]
-pub fn axis_3d_strategy() -> impl Strategy<Value = Axis> {
-    prop_oneof![Just(Axis::X), Just(Axis::Y), Just(Axis::Z)]
 }

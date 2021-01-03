@@ -1,6 +1,7 @@
 //! Core
 
 // Re-export.
+pub mod app;
 pub mod bssrdf;
 pub mod camera;
 pub mod efloat;
