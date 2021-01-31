@@ -44,6 +44,16 @@ impl Default for RGBSpectrum {
     }
 }
 
+impl From<Float> for RGBSpectrum {
+    /// Create a new `RGBSpectrum` with a constant value across all
+    /// wavelengths.
+    ///
+    /// * `v` - Constant value.
+    fn from(v: Float) -> Self {
+        Self::new(v)
+    }
+}
+
 impl From<Vec<Float>> for RGBSpectrum {
     /// Create a new `RGBSpectrum` from sampled spectral values.
     ///

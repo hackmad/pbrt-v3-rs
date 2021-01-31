@@ -1,6 +1,7 @@
 //! Cones
 
 #![allow(dead_code)]
+use super::ShapeProps;
 use crate::core::efloat::*;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
@@ -28,7 +29,7 @@ impl Cone {
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
     /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
+    ///                           should be reversed from the default.
     /// * `radius`              - Radius of cone.
     /// * `height`              - Height of cone.
     /// * `phi_max`             - Maximum spherical coordinate for Φ.
@@ -307,5 +308,24 @@ impl Shape for Cone {
             * ((self.height * self.height) + (self.radius * self.radius)).sqrt()
             * self.phi_max
             / 2.0
+    }
+}
+
+impl From<&mut ShapeProps> for Cone {
+    /// Create a `Cone` from given parameter set, transformation and orientation.
+    ///
+    /// * `props` - Shape creation properties.
+    fn from(props: &mut ShapeProps) -> Self {
+        let radius = props.params.find_one_float("radius", 1.0);
+        let height = props.params.find_one_float("height", 1.0);
+        let phi_max = props.params.find_one_float("phimax", 360.0);
+        Self::new(
+            props.o2w.clone(),
+            props.w2o.clone(),
+            props.reverse_orientation,
+            height,
+            radius,
+            phi_max,
+        )
     }
 }

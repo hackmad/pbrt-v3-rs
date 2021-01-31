@@ -1,10 +1,12 @@
 //! FBm Texture
 
 #![allow(dead_code)]
+use super::TextureProps;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use crate::core::texture::*;
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 /// Implements FBm (Fractional Brownian motion) texture via a 3D mapping.
 #[derive(Clone)]
@@ -49,5 +51,20 @@ where
         // Get the (s, t) mapping for the intersection.
         let TextureMap3DResult { p, dpdx, dpdy } = self.mapping.map(si);
         fbm(&p, &dpdx, &dpdy, self.omega, self.octaves).into()
+    }
+}
+
+impl<T> From<&mut TextureProps> for FBmTexture<T> {
+    /// Create a `FBmTexture<T>` from given parameter set and
+    /// transformation from texture space to world space.
+    ///
+    /// * `props` - Texture creation properties.
+    fn from(props: &mut TextureProps) -> Self {
+        let map = Arc::new(IdentityMapping3D::new(props.tex2world));
+        Self::new(
+            map,
+            props.tp.find_float("roughness", 0.5),
+            props.tp.find_int("octaves", 8_i32) as usize,
+        )
     }
 }

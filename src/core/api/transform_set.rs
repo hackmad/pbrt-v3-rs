@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 use crate::core::geometry::Transform;
-use std::ops::Index;
+use std::ops::{Index, IndexMut};
 
 /// Number of transformations to store.
 pub const MAX_TRANSFORMS: usize = 2;
@@ -50,8 +50,17 @@ impl Index<usize> for TransformSet {
 
     /// Return the `Transform` at the given index.
     ///
-    /// * `index` -  The index.
+    /// * `index` - The index.
     fn index(&self, index: usize) -> &Self::Output {
         &self.t[index]
+    }
+}
+
+impl IndexMut<usize> for TransformSet {
+    /// Return mutable `Transform` at the given index.
+    ///
+    /// * `index` - The index.
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.t[index]
     }
 }

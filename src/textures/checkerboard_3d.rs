@@ -1,9 +1,12 @@
 //! 3D Checkerboard
 
 #![allow(dead_code)]
+use super::TextureProps;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
+use crate::core::spectrum::*;
 use crate::core::texture::*;
+use crate::textures::*;
 
 /// Implements a checkerboard texture via a 3D mapping.
 #[derive(Clone)]
@@ -50,3 +53,33 @@ where
         }
     }
 }
+
+macro_rules! from_params {
+    ($t: ty, $get_texture_or_else_func: ident) => {
+        impl From<&mut TextureProps> for CheckerboardTexture3D<$t> {
+            /// Create a `CheckerboardTexture3D<$t>` from given parameter set and
+            /// transformation from texture space to world space.
+            ///
+            /// * `props` - Texture creation properties.
+            fn from(props: &mut TextureProps) -> Self {
+                // Check texture dimensions.
+                let dim = props.tp.find_int("dimension", 3);
+                if dim != 3 {
+                    panic!("Cannot create CheckerboardTexture3D for dim = {}", dim);
+                }
+                // Get textures.
+                let tex1 = props
+                    .tp
+                    .$get_texture_or_else_func("tex1", Arc::new(ConstantTexture::new(1.0.into())));
+                let tex2 = props
+                    .tp
+                    .$get_texture_or_else_func("tex2", Arc::new(ConstantTexture::new(0.0.into())));
+                // Initialize 3D texture mapping `map` from `tex2world`.
+                let map = Arc::new(IdentityMapping3D::new(props.tex2world));
+                Self::new(tex1, tex2, map)
+            }
+        }
+    };
+}
+from_params!(Float, get_float_texture_or_else);
+from_params!(Spectrum, get_spectrum_texture_or_else);

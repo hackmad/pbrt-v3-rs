@@ -1,6 +1,7 @@
 //! Loop Subdivision Surfaces.
 
 #![allow(dead_code)]
+use super::ShapeProps;
 use super::TriangleMesh;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
@@ -657,6 +658,40 @@ impl LoopSubDiv {
             vec![],
             vec![],
             None,
+            None,
+            vec![],
+        )
+    }
+
+    /// Create a `LoopSubDiv` from given parameter set, transformation and orientation.
+    ///
+    /// NOTE: Because we return a set of shapes as `Vec<Arc<Shape>>` we cannot
+    /// implement this as `From` trait :(
+    ///
+    /// * `props` - Shape creation properties.
+    pub fn from_props(props: &mut ShapeProps) -> Vec<ArcShape> {
+        let n_levels = props.params.find_one_int("nlevels", 3) as usize;
+        let vertex_indices: Vec<usize> = props
+            .params
+            .find_int("indices")
+            .iter()
+            .map(|i| *i as usize)
+            .collect();
+        let p = props.params.find_point3f("P");
+        if vertex_indices.len() == 0 {
+            panic!("Vertex indices 'indices' not provided for LoopSubDiv shape.");
+        }
+        if p.len() == 0 {
+            panic!("Vertex positions 'P' not provided for LoopSubDiv shape.");
+        }
+
+        Self::subdivide(
+            props.o2w.clone(),
+            props.w2o.clone(),
+            props.reverse_orientation,
+            n_levels,
+            vertex_indices,
+            p,
         )
     }
 }

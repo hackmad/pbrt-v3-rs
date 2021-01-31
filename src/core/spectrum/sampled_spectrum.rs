@@ -52,6 +52,16 @@ impl Default for SampledSpectrum {
     }
 }
 
+impl From<Float> for SampledSpectrum {
+    /// Create a new `SampledSpectrum` with a constant value across all
+    /// wavelengths.
+    ///
+    /// * `v` - Constant value.
+    fn from(v: Float) -> Self {
+        Self::new(v)
+    }
+}
+
 impl From<Vec<Float>> for SampledSpectrum {
     /// Create a new `SampledSpectrum` from sampled spectral values.
     ///

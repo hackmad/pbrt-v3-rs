@@ -1,6 +1,7 @@
 //! Hyperboloids
 
 #![allow(dead_code)]
+use super::ShapeProps;
 use crate::core::efloat::*;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
@@ -406,5 +407,28 @@ impl Shape for Hyperboloid {
                         - self.p1.z * self.p1.z
                         + 2.0 * self.p1.z * self.p2.z
                         - self.p2.z * self.p2.z))
+    }
+}
+
+impl From<&mut ShapeProps> for Hyperboloid {
+    /// Create a `Hyperboloid` from given parameter set, transformation and orientation.
+    ///
+    /// * `props` - Shape creation properties.
+    fn from(props: &mut ShapeProps) -> Self {
+        let p1 = props
+            .params
+            .find_one_point3f("p1", Point3f::new(0.0, 0.0, 0.0));
+        let p2 = props
+            .params
+            .find_one_point3f("p2", Point3f::new(1.0, 1.0, 1.0));
+        let phi_max = props.params.find_one_float("phimax", 360.0);
+        Self::new(
+            props.o2w.clone(),
+            props.w2o.clone(),
+            props.reverse_orientation,
+            p1,
+            p2,
+            phi_max,
+        )
     }
 }

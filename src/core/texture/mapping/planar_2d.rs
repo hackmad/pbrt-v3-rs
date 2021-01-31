@@ -37,9 +37,9 @@ impl TextureMapping2D for PlanarMapping2D {
     /// * `si` - The surface interaction.
     fn map(&self, si: &SurfaceInteraction) -> TextureMap2DResult {
         let vec = Vector3f::from(si.hit.p);
-        let dstdx = Vector2f(si.dpdx.dot(&self.vs), si.dpdx.dot(&self.vt));
-        let dstdy = Vector2f(si.dpdy.dot(&self.vs), si.dpdy.dot(&self.vt));
-        let p = Point2f::from(self.ds + vec.dot(&self.vs), dt + vec.dot(&self.vt));
+        let dstdx = Vector2f::new(si.dpdx.dot(&self.vs), si.dpdx.dot(&self.vt));
+        let dstdy = Vector2f::new(si.dpdy.dot(&self.vs), si.dpdy.dot(&self.vt));
+        let p = Point2f::new(self.ds + vec.dot(&self.vs), self.dt + vec.dot(&self.vt));
 
         TextureMap2DResult::new(p, dstdx, dstdy)
     }

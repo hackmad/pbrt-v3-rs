@@ -1,10 +1,12 @@
 //! Windy Waves Texture
 
 #![allow(dead_code)]
+use super::TextureProps;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use crate::core::texture::*;
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 /// Implements windy waves texture via a 3D mapping.
 #[derive(Clone)]
@@ -41,5 +43,16 @@ where
         let wind_strength = fbm(&(0.1 * p), &(0.1 * dpdx), &(0.1 * dpdy), 0.5, 3);
         let wave_height = fbm(&p, &dpdx, &dpdy, 0.5, 6);
         (abs(wind_strength) * wave_height).into()
+    }
+}
+
+impl<T> From<&mut TextureProps> for WindyTexture<T> {
+    /// Create a `WindyTexture<T>` from given parameter set and
+    /// transformation from texture space to world space.
+    ///
+    /// * `props` - Texture creation properties.
+    fn from(props: &mut TextureProps) -> Self {
+        let map = Arc::new(IdentityMapping3D::new(props.tex2world));
+        Self::new(map)
     }
 }

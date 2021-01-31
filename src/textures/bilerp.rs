@@ -1,8 +1,10 @@
 //! Bilinear Interpolation Texture
 
 #![allow(dead_code)]
+use super::{get_texture_mapping, TextureProps};
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
+use crate::core::spectrum::*;
 use crate::core::texture::*;
 use std::ops::{Add, Mul};
 
@@ -65,3 +67,27 @@ where
         (self.v00 * s00) + (self.v01 * s01) + (self.v10 * s10) + (self.v11 * s11)
     }
 }
+
+macro_rules! from_params {
+    ($t: ty, $find_func: ident) => {
+        impl From<&mut TextureProps> for BilerpTexture<$t> {
+            /// Create a `BilerpTexture<$t>` from given parameter set and
+            /// transformation from texture space to world space.
+            ///
+            /// * `props` - Texture creation properties.
+            fn from(props: &mut TextureProps) -> Self {
+                // Initialize 2D texture mapping `map` from `tp`.
+                let map = get_texture_mapping(props);
+                Self::new(
+                    props.tp.$find_func("v00", 0.0.into()),
+                    props.tp.$find_func("v01", 1.0.into()),
+                    props.tp.$find_func("v10", 0.0.into()),
+                    props.tp.$find_func("v11", 1.0.into()),
+                    map,
+                )
+            }
+        }
+    };
+}
+from_params!(Float, find_float);
+from_params!(Spectrum, find_spectrum);

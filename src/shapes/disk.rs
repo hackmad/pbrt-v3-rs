@@ -1,6 +1,7 @@
 //! Disks
 
 #![allow(dead_code)]
+use super::ShapeProps;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use std::sync::Arc;
@@ -199,5 +200,26 @@ impl Shape for Disk {
     /// Returns the surface area of the shape in object space.
     fn area(&self) -> Float {
         self.phi_max * 0.5 * (self.radius * self.radius - self.inner_radius * self.inner_radius)
+    }
+}
+
+impl From<&mut ShapeProps> for Disk {
+    /// Create a `Disk` from given parameter set, transformation and orientation.
+    ///
+    /// * `props` - Shape creation properties.
+    fn from(props: &mut ShapeProps) -> Self {
+        let height = props.params.find_one_float("height", 0.0);
+        let radius = props.params.find_one_float("radius", 1.0);
+        let inner_radius = props.params.find_one_float("innerradius", 0.0);
+        let phi_max = props.params.find_one_float("phimax", 360.0);
+        Self::new(
+            props.o2w.clone(),
+            props.w2o.clone(),
+            props.reverse_orientation,
+            height,
+            radius,
+            inner_radius,
+            phi_max,
+        )
     }
 }

@@ -3,10 +3,12 @@
 #![allow(dead_code)]
 use crate::core::geometry::*;
 use crate::core::material::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::reflection::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
+use crate::textures::*;
 use std::sync::Arc;
 
 /// Combines two materials with varying weights.
@@ -81,5 +83,31 @@ impl Material for MixMaterial {
         }
 
         si.bsdf = Some(Arc::new(bsdf));
+    }
+}
+
+/// Stores properties for mix material creation.
+#[derive(Clone)]
+pub struct MixMaterialProps {
+    /// Texture parameter set.
+    pub tp: TextureParams,
+
+    /// First material.
+    pub mat1: ArcMaterial,
+
+    /// Second material.
+    pub mat2: ArcMaterial,
+}
+
+impl From<&MixMaterialProps> for MixMaterial {
+    /// Create a mix material from given parameter set and materials.
+    ///
+    /// * `props` - Mix material creation properties.
+    fn from(props: &MixMaterialProps) -> Self {
+        let scale = props.tp.get_spectrum_texture_or_else(
+            "amount",
+            Arc::new(ConstantTexture::new(Spectrum::new(0.5))),
+        );
+        Self::new(props.mat1.clone(), props.mat2.clone(), scale)
     }
 }

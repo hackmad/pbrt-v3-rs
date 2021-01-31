@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use crate::core::geometry::*;
 use crate::core::material::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::reflection::*;
 use crate::core::texture::*;
@@ -86,5 +87,16 @@ impl Material for FourierMaterial {
         }
 
         si.bsdf = Some(Arc::new(bsdf));
+    }
+}
+
+impl From<&mut TextureParams> for FourierMaterial {
+    /// Create a Fourier material from given parameter set.
+    ///
+    /// * `tp` - Texture parameter set.
+    fn from(tp: &mut TextureParams) -> Self {
+        let bump_map = tp.get_float_texture("bumpmap");
+        let path = tp.find_filename("bsdfffile", String::from(""));
+        Self::new(&path, bump_map)
     }
 }

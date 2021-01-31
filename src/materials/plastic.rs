@@ -4,10 +4,12 @@
 use crate::core::geometry::*;
 use crate::core::material::*;
 use crate::core::microfacet::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::reflection::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
+use crate::textures::*;
 use std::sync::Arc;
 
 /// Implements plastic material.
@@ -103,5 +105,26 @@ impl Material for PlasticMaterial {
         }
 
         si.bsdf = Some(Arc::new(bsdf));
+    }
+}
+
+impl From<&mut TextureParams> for PlasticMaterial {
+    /// Create a plastic material from given parameter set.
+    ///
+    /// * `tp` - Texture parameter set.
+    fn from(tp: &mut TextureParams) -> Self {
+        let kd = tp.get_spectrum_texture_or_else(
+            "Kd",
+            Arc::new(ConstantTexture::new(Spectrum::new(0.25))),
+        );
+        let ks = tp.get_spectrum_texture_or_else(
+            "Ks",
+            Arc::new(ConstantTexture::new(Spectrum::new(0.25))),
+        );
+        let roughness =
+            tp.get_float_texture_or_else("roughness", Arc::new(ConstantTexture::new(0.1)));
+        let bump_map = tp.get_float_texture("bumpmap");
+        let remap_roughness = tp.find_bool("remaproughness", true);
+        Self::new(kd, ks, roughness, remap_roughness, bump_map)
     }
 }

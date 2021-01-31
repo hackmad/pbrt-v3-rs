@@ -4,6 +4,7 @@
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use std::cmp::{Eq, Ord, Ordering, PartialOrd};
+use std::hash::{Hash, Hasher};
 use std::ops::Mul;
 use std::sync::Arc;
 
@@ -613,5 +614,13 @@ impl Mul<Transform> for Transform {
             m: self.m * rhs.m,
             m_inv: rhs.m_inv * self.m_inv,
         }
+    }
+}
+
+impl Hash for Transform {
+    /// Feeds this value into the given `Hasher`.
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.m.hash(state);
+        self.m_inv.hash(state);
     }
 }

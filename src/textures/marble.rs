@@ -1,10 +1,12 @@
 //! Marble Texture
 
 #![allow(dead_code)]
+use super::TextureProps;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
+use std::sync::Arc;
 
 /// Implements marble texture via a 3D mapping.
 #[derive(Clone)]
@@ -89,6 +91,23 @@ impl Texture<Spectrum> for MarbleTexture {
 
         // Extra scale of 1.5 to increase variation among colors.
         1.5 * ((1.0 - t) * s0 + t * s1)
+    }
+}
+
+impl From<&mut TextureProps> for MarbleTexture {
+    /// Create a `MarbleTexture<T>` from given parameter set and
+    /// transformation from texture space to world space.
+    ///
+    /// * `props` - Texture creation properties.
+    fn from(props: &mut TextureProps) -> Self {
+        let map = Arc::new(IdentityMapping3D::new(props.tex2world));
+        Self::new(
+            map,
+            props.tp.find_float("roughness", 0.5),
+            props.tp.find_int("octaves", 8_i32) as usize,
+            props.tp.find_float("scale", 1.0),
+            props.tp.find_float("variation", 0.2),
+        )
     }
 }
 

@@ -1,6 +1,7 @@
 //! Cylinders
 
 #![allow(dead_code)]
+use super::ShapeProps;
 use crate::core::efloat::*;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
@@ -312,5 +313,26 @@ impl Shape for Cylinder {
     /// Returns the surface area of the shape in object space.
     fn area(&self) -> Float {
         (self.z_max - self.z_min) * self.radius * self.phi_max
+    }
+}
+
+impl From<&mut ShapeProps> for Cylinder {
+    /// Create a `Cylinder` from given parameter set, transformation and orientation.
+    ///
+    /// * `props` - Shape creation properties.
+    fn from(props: &mut ShapeProps) -> Self {
+        let radius = props.params.find_one_float("radius", 1.0);
+        let z_min = props.params.find_one_float("zmin", -1.0);
+        let z_max = props.params.find_one_float("zmax", 1.0);
+        let phi_max = props.params.find_one_float("phimax", 360.0);
+        Self::new(
+            props.o2w.clone(),
+            props.w2o.clone(),
+            props.reverse_orientation,
+            radius,
+            z_min,
+            z_max,
+            phi_max,
+        )
     }
 }

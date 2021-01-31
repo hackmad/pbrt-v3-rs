@@ -74,11 +74,13 @@ pub type ArcTextureMapping3D = Arc<dyn TextureMapping3D + Send + Sync>;
 
 mod cylinderical_2d;
 mod identity_3d;
+mod planar_2d;
 mod spherical_2d;
 mod uv_2d;
 
 // Re-export
 pub use cylinderical_2d::*;
 pub use identity_3d::*;
+pub use planar_2d::*;
 pub use spherical_2d::*;
 pub use uv_2d::*;

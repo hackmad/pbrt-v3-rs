@@ -1,6 +1,7 @@
 //! Paraboloids
 
 #![allow(dead_code)]
+use super::ShapeProps;
 use crate::core::efloat::*;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
@@ -321,5 +322,26 @@ impl Shape for Paraboloid {
         let k = 4.0 * self.z_max / radius2;
         (radius2 * radius2 * self.phi_max / (12.0 * self.z_max * self.z_max))
             * ((k * self.z_max + 1.0).powf(1.5) - (k * self.z_min + 1.0).powf(1.5))
+    }
+}
+
+impl From<&mut ShapeProps> for Paraboloid {
+    /// Create a `Paraboloid` from given parameter set, transformation and orientation.
+    ///
+    /// * `props` - Shape creation properties.
+    fn from(props: &mut ShapeProps) -> Self {
+        let radius = props.params.find_one_float("radius", 1.0);
+        let z_min = props.params.find_one_float("zmin", 0.0);
+        let z_max = props.params.find_one_float("zmax", 1.0);
+        let phi_max = props.params.find_one_float("phimax", 360.0);
+        Self::new(
+            props.o2w.clone(),
+            props.w2o.clone(),
+            props.reverse_orientation,
+            radius,
+            z_min,
+            z_max,
+            phi_max,
+        )
     }
 }

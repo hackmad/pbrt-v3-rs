@@ -3,10 +3,12 @@
 #![allow(dead_code)]
 use crate::core::geometry::*;
 use crate::core::material::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::reflection::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
+use crate::textures::*;
 use std::sync::Arc;
 
 /// Implements purely diffuse surfaces.
@@ -76,5 +78,18 @@ impl Material for MatteMaterial {
         }
 
         si.bsdf = Some(Arc::new(bsdf));
+    }
+}
+
+impl From<&TextureParams> for MatteMaterial {
+    /// Create a matte material from given parameter set.
+    ///
+    /// * `tp` - Texture parameter set.
+    fn from(tp: &TextureParams) -> Self {
+        let kd = tp
+            .get_spectrum_texture_or_else("Kd", Arc::new(ConstantTexture::new(Spectrum::new(0.5))));
+        let sigma = tp.get_float_texture_or_else("sigma", Arc::new(ConstantTexture::new(0.0)));
+        let bump_map = tp.get_float_texture("bumpmap");
+        Self::new(kd, sigma, bump_map)
     }
 }

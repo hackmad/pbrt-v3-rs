@@ -38,9 +38,9 @@ pub struct ParamSet {
 /// parameter set item.
 macro_rules! paramset_add {
     ($func: ident, $t: ty, $paramset: ident) => {
-        pub fn $func(&mut self, name: String, values: &[$t]) {
-            self.$paramset
-                .insert(name, ParamSetItem::new(values.to_vec()));
+        pub fn $func(&mut self, name: &str, values: &[$t]) {
+            let n = String::from(name);
+            self.$paramset.insert(n, ParamSetItem::new(values.to_vec()));
         }
     };
 }
@@ -49,8 +49,9 @@ macro_rules! paramset_add {
 /// parameter set item.
 macro_rules! paramset_erase {
     ($func: ident, $paramset: ident) => {
-        pub fn $func(&mut self, name: &String) -> bool {
-            self.$paramset.remove(name).is_some()
+        pub fn $func(&mut self, name: &str) -> bool {
+            let n = String::from(name);
+            self.$paramset.remove(&n).is_some()
         }
     };
 }
@@ -59,8 +60,9 @@ macro_rules! paramset_erase {
 /// parameter set item that is stored as a single item.
 macro_rules! paramset_find_one {
     ($func: ident, $t: ty, $paramset: ident) => {
-        pub fn $func(&mut self, name: &String, default: $t) -> $t {
-            match self.$paramset.get_mut(name) {
+        pub fn $func(&mut self, name: &str, default: $t) -> $t {
+            let n = String::from(name);
+            match self.$paramset.get_mut(&n) {
                 Some(param) => {
                     if param.values.len() == 1 {
                         param.looked_up = true;
@@ -80,7 +82,8 @@ macro_rules! paramset_find_one {
 macro_rules! paramset_find {
     ($func: ident, $t: ty, $paramset: ident) => {
         pub fn $func(&mut self, name: &str) -> Vec<$t> {
-            match self.$paramset.get_mut(name) {
+            let n = String::from(name);
+            match self.$paramset.get_mut(&n) {
                 Some(param) => {
                     param.looked_up = true;
                     param.values.clone()
@@ -214,12 +217,12 @@ impl ParamSet {
     ///
     /// * `name`   - Parameter name.
     /// * `values` - RGB values in a linear slice.
-    pub fn add_rgb_spectrum(&mut self, name: String, values: &[Float]) {
+    pub fn add_rgb_spectrum(&mut self, name: &str, values: &[Float]) {
         let n = values.len();
         assert!(n % 3 == 0, "RGB spectrum values % 3 != 0");
 
         self.spectra.insert(
-            name,
+            String::from(name),
             ParamSetItem::new(
                 (0..n)
                     .step_by(3)
@@ -233,12 +236,12 @@ impl ParamSet {
     ///
     /// * `name`   - Parameter name.
     /// * `values` - XYZ values in a linear slice.
-    pub fn add_xyz_spectrum(&mut self, name: String, values: &[Float]) {
+    pub fn add_xyz_spectrum(&mut self, name: &str, values: &[Float]) {
         let n = values.len();
         assert!(n % 3 == 0, "XYZ spectrum values % 3 != 0");
 
         self.spectra.insert(
-            name,
+            String::from(name),
             ParamSetItem::new(
                 (0..n)
                     .step_by(3)
@@ -252,7 +255,7 @@ impl ParamSet {
     ///
     /// * `name`   - Parameter name.
     /// * `values` - List of (temperature (Kelvin), scale) values in a linear array.
-    pub fn add_blackbody_spectrum(&mut self, name: String, values: &[Float]) {
+    pub fn add_blackbody_spectrum(&mut self, name: &str, values: &[Float]) {
         let n = values.len();
         assert!(n % 2 == 0, "Blackbody spectrum values % 2 != 0");
 
@@ -271,24 +274,26 @@ impl ParamSet {
             })
             .collect();
 
-        self.spectra.insert(name, ParamSetItem::new(spectra));
+        self.spectra
+            .insert(String::from(name), ParamSetItem::new(spectra));
     }
 
     /// Add/replace a sampled spectrum.
     ///
     /// * `name`   - Parameter name.
     /// * `values` - List of (wavelength, sample) values in a linear array.
-    pub fn add_sampled_spectrum(&mut self, name: String, values: &[Float]) {
+    pub fn add_sampled_spectrum(&mut self, name: &str, values: &[Float]) {
         let samples = Sample::list(values);
         let spectra = vec![Spectrum::from(&samples)];
-        self.spectra.insert(name, ParamSetItem::new(spectra));
+        self.spectra
+            .insert(String::from(name), ParamSetItem::new(spectra));
     }
 
     /// Add/replace a spectra from files.
     ///
     /// * `name`  - Parameter name.
     /// * `paths` - List of paths to the data files.
-    pub fn add_sampled_spectrum_files(&mut self, name: String, paths: &[String]) {
+    pub fn add_sampled_spectrum_files(&mut self, name: &str, paths: &[String]) {
         let mut spectra: Vec<Spectrum> = vec![];
 
         for path in paths {
@@ -322,14 +327,15 @@ impl ParamSet {
             }
         }
 
-        self.spectra.insert(name, ParamSetItem::new(spectra));
+        self.spectra
+            .insert(String::from(name), ParamSetItem::new(spectra));
     }
 
     /// Finds a filename and returns the absolute path to the file.
     ///
     /// * `name`    - Parameter name.
     /// * `default` - Default file to use.
-    pub fn find_one_filename(&mut self, name: &String, default: String) -> String {
+    pub fn find_one_filename(&mut self, name: &str, default: String) -> String {
         let filename = self.find_one_string(name, String::from(""));
         if filename.len() == 0 {
             default

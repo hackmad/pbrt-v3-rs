@@ -3,7 +3,10 @@
 #![allow(dead_code)]
 use crate::core::pbrt::*;
 use std::fmt;
+use std::hash::{Hash, Hasher};
+use std::mem::size_of;
 use std::ops::{Index, Mul};
+use std::slice;
 
 /// A 4x4 vector containing Float values.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -211,6 +214,19 @@ impl Index<usize> for Matrix4x4 {
     fn index(&self, row: usize) -> &Self::Output {
         assert!(row < 4, "matrix row not in [0, 3]");
         &self.m[row]
+    }
+}
+
+impl Eq for Matrix4x4 {}
+
+impl Hash for Matrix4x4 {
+    /// Feeds this value into the given `Hasher`.
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let size = size_of::<Self>();
+        let ptr: *const Self = self;
+        let byte_ptr: *const u8 = ptr as *const _;
+        let byte_slice: &[u8] = unsafe { slice::from_raw_parts(byte_ptr, size) };
+        byte_slice.hash(state);
     }
 }
 

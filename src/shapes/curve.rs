@@ -1,6 +1,7 @@
 //! Curves
 
 #![allow(dead_code)]
+use super::ShapeProps;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use std::sync::Arc;
@@ -64,9 +65,7 @@ impl Curve {
             u_max,
         }
     }
-}
 
-impl Curve {
     /// Create curve segments.
     ///
     /// * `object_to_world`     - The object to world transfomation.
@@ -85,7 +84,7 @@ impl Curve {
         curve_type: CurveType,
         c: [Point3f; 4],
         width: [Float; 2],
-        norm: [Normal3f; 2],
+        norm: Option<&[Normal3f]>,
         split_depth: i32,
     ) -> Vec<ArcShape> {
         let common = CurveData::new(curve_type, c, width, norm);
@@ -109,6 +108,194 @@ impl Curve {
         }
 
         segments
+    }
+
+    /// Create `Curve`s from given parameter set, transformation and orientation.
+    ///
+    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot
+    /// implement this as `From` trait :(
+    ///
+    /// * `props` - Shape creation properties.
+    pub fn from_props(props: &mut ShapeProps) -> Vec<ArcShape> {
+        let width = props.params.find_one_float("width", 1.0);
+        let width0 = props.params.find_one_float("width0", width);
+        let width1 = props.params.find_one_float("width1", width);
+
+        let degree = props.params.find_one_int("degree", 3_i32) as usize;
+        if degree != 2 && degree != 3 {
+            panic!(
+                "Invalid degree {}: only degree 2 and 3 curves are supported.",
+                degree
+            );
+        }
+
+        let basis = props
+            .params
+            .find_one_string("basis", String::from("bezier"));
+        if basis != "bezier" && basis != "bspline" {
+            panic!(
+                "Invalid basis '{}': only ''bezier' and 'bspline' are supported.",
+                basis
+            );
+        }
+
+        let cp = props.params.find_point3f("P");
+        let ncp = cp.len();
+        let n_segments: usize;
+        if basis == "bezier" {
+            // After the first segment, which uses degree+1 control points,
+            // subsequent segments reuse the last control point of the previous
+            // one and then use degree more control points.
+            if ((ncp - 1 - degree) % degree) != 0 {
+                panic!(
+                    "Invalid number of control points {}: for the degree {} 
+                    Bezier basis {} + n * {} are required, for n >= 0.",
+                    ncp,
+                    degree,
+                    degree + 1,
+                    degree
+                );
+            }
+            n_segments = (ncp - 1) / degree;
+        } else {
+            if ncp < degree + 1 {
+                panic!(
+                    "Invalid number of control points {}: for the degree {} 
+                      b-spline basis, must have >= {}.",
+                    ncp,
+                    degree,
+                    degree + 1
+                );
+            }
+            n_segments = ncp - degree;
+        }
+
+        let ctype = props.params.find_one_string("type", String::from("flat"));
+        let curve_type = match &ctype[..] {
+            "flat" => CurveType::Flat,
+            "ribbon" => CurveType::Ribbon,
+            "cylinder" => CurveType::Cylinder,
+            t => {
+                eprintln!("Unknown curve type '{}'.  Using 'cylinder'.", t);
+                CurveType::Cylinder
+            }
+        };
+
+        let mut n = props.params.find_normal3f("N");
+        let nnorm = n.len();
+        if nnorm > 0 {
+            if curve_type != CurveType::Ribbon {
+                eprintln!("Curve normals are only used with 'ribbon' type curves.");
+                n = vec![];
+            } else if nnorm != n_segments + 1 {
+                panic!(
+                    "Invalid number of normals {}: must provide {} normals for ribbon 
+                    curves with {} segments.",
+                    nnorm,
+                    n_segments + 1,
+                    n_segments
+                );
+            }
+        } else if curve_type == CurveType::Ribbon {
+            panic!("Must provide normals 'N' at curve endpoints with ribbon curves.");
+        }
+
+        let split_depth = props.params.find_one_float("splitdepth", 3.0) as i32;
+        let sd = props.params.find_one_int("splitdepth", split_depth);
+
+        let mut curves: Vec<ArcShape> = vec![];
+        // Pointer to the first control point for the current segment. This is
+        // updated after each loop iteration depending on the current basis.
+        let mut cp_base = &cp[0..];
+        for seg in 0..n_segments {
+            let mut seg_cp_bezier = [Point3f::default(); 4];
+
+            // First, compute the cubic Bezier control points for the current
+            // segment and store them in segCpBezier. (It is admittedly
+            // wasteful storage-wise to turn b-splines into Bezier segments and
+            // wasteful computationally to turn quadratic curves into cubics,
+            // but yolo.)
+            if basis == "bezier" {
+                if degree == 2 {
+                    // Elevate to degree 3.
+                    seg_cp_bezier[0] = cp_base[0];
+                    seg_cp_bezier[1] = lerp(2.0 / 3.0, cp_base[0], cp_base[1]);
+                    seg_cp_bezier[2] = lerp(1.0 / 3.0, cp_base[1], cp_base[2]);
+                    seg_cp_bezier[3] = cp_base[2];
+                } else {
+                    // Allset.
+                    for i in 0..4 {
+                        seg_cp_bezier[i] = cp_base[i];
+                    }
+                }
+                cp_base = &cp_base[degree..];
+            } else {
+                // Uniform b-spline.
+                if degree == 2 {
+                    // First compute equivalent Bezier control points via some
+                    // blossiming.  We have three control points and a uniform
+                    // knot vector; we'll label the points p01, p12, and p23.
+                    // We want the Bezier control points of the equivalent
+                    // curve, which are p11, p12, and p22.
+                    let p01 = cp_base[0];
+                    let p12 = cp_base[1];
+                    let p23 = cp_base[2];
+
+                    // We already have p12.
+                    let p11 = lerp(0.5, p01, p12);
+                    let p22 = lerp(0.5, p12, p23);
+
+                    // Now elevate to degree 3.
+                    seg_cp_bezier[0] = p11;
+                    seg_cp_bezier[1] = lerp(2.0 / 3.0, p11, p12);
+                    seg_cp_bezier[2] = lerp(1.0 / 3.0, p12, p22);
+                    seg_cp_bezier[3] = p22;
+                } else {
+                    // Otherwise we will blossom from p012, p123, p234, and p345
+                    // to the Bezier control points p222, p223, p233, and p333.
+                    // https://people.eecs.berkeley.edu/~sequin/CS284/IMGS/cubicbsplinepoints.gif
+                    let p012 = cp_base[0];
+                    let p123 = cp_base[1];
+                    let p234 = cp_base[2];
+                    let p345 = cp_base[3];
+
+                    let p122 = lerp(2.0 / 3.0, p012, p123);
+                    let p223 = lerp(1.0 / 3.0, p123, p234);
+                    let p233 = lerp(2.0 / 3.0, p123, p234);
+                    let p334 = lerp(1.0 / 3.0, p234, p345);
+
+                    let p222 = lerp(0.5, p122, p223);
+                    let p333 = lerp(0.5, p233, p334);
+
+                    seg_cp_bezier[0] = p222;
+                    seg_cp_bezier[1] = p223;
+                    seg_cp_bezier[2] = p233;
+                    seg_cp_bezier[3] = p333;
+                }
+                cp_base = &cp_base[1..];
+            }
+
+            let width = [
+                lerp(seg as Float / n_segments as Float, width0, width1),
+                lerp((seg + 1) as Float / n_segments as Float, width0, width1),
+            ];
+            let c = Curve::create_segments(
+                props.o2w.clone(),
+                props.w2o.clone(),
+                props.reverse_orientation,
+                curve_type,
+                seg_cp_bezier,
+                width,
+                if n.len() > 0 {
+                    Some(&n[seg..seg + 2])
+                } else {
+                    None
+                },
+                sd,
+            );
+            curves.extend(c);
+        }
+        curves
     }
 
     /// Recursively split curve in 2 sections if there is an intersection to
@@ -497,12 +684,11 @@ impl CurveData {
         curve_type: CurveType,
         c: [Point3f; 4],
         width: [Float; 2],
-        norm: [Normal3f; 2],
+        norm: Option<&[Normal3f]>,
     ) -> Self {
-        let n = if norm.len() == 2 {
-            [norm[0].normalize(), norm[1].normalize()]
-        } else {
-            [Normal3f::default(), Normal3f::default()]
+        let n = match norm {
+            Some([n1, n2]) => [n1.normalize(), n2.normalize()],
+            _ => [Normal3f::default(), Normal3f::default()],
         };
 
         let normal_angle = clamp(n[0].dot(&n[1]), 0.0, 1.0).acos();

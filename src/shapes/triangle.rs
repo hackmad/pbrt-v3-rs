@@ -1,9 +1,12 @@
 //! Triangles and triangle meshes
 
 #![allow(dead_code)]
+use super::ShapeProps;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use crate::core::texture::*;
+use crate::textures::*;
+use std::collections::HashMap;
 use std::mem::size_of;
 use std::sync::Arc;
 
@@ -36,6 +39,12 @@ pub struct TriangleMesh {
     /// Optional alpha mask texture, which can be used to cut away parts of
     /// triangle surfaces
     pub alpha_mask: Option<ArcTexture<Float>>,
+
+    /// Optional shadow alpha mask texture.
+    pub shadow_alpha_mask: Option<ArcTexture<Float>>,
+
+    /// Face indices.
+    pub face_indices: Vec<usize>,
 }
 
 impl TriangleMesh {
@@ -54,6 +63,8 @@ impl TriangleMesh {
     /// * `uv`                  - Paramteric uv-coordinates.
     /// * `alpha_mask`          - Optional alpha mask texture, which can be used to
     ///                           cut away parts of triangle surfaces
+    /// * `shadow_alpha_mask`   - Optional shadow alpha mask texture.
+    /// * `face_indices`        - Face indices.
     pub fn new(
         object_to_world: ArcTransform,
         reverse_orientation: bool,
@@ -63,6 +74,8 @@ impl TriangleMesh {
         s: Vec<Vector3f>,
         uv: Vec<Point2f>,
         alpha_mask: Option<ArcTexture<Float>>,
+        shadow_alpha_mask: Option<ArcTexture<Float>>,
+        face_indices: Vec<usize>,
     ) -> Self {
         let num_triangles = vertex_indices.len() % 3;
         assert!(num_triangles == 0);
@@ -84,6 +97,8 @@ impl TriangleMesh {
             s: ts.collect(),
             uv,
             alpha_mask,
+            shadow_alpha_mask,
+            face_indices,
             data: ShapeData::new(object_to_world.clone(), None, reverse_orientation),
         }
     }
@@ -107,6 +122,8 @@ impl TriangleMesh {
     /// * `uv`                  - Paramteric uv-coordinates.
     /// * `alpha_mask`          - Optional alpha mask texture, which can be used to
     ///                           cut away parts of triangle surfaces
+    /// * `shadow_alpha_mask`   - Optional shadow alpha mask texture.
+    /// * `face_indices`        - Face indices.
     pub fn create(
         object_to_world: ArcTransform,
         world_to_object: ArcTransform,
@@ -117,6 +134,8 @@ impl TriangleMesh {
         s: Vec<Vector3f>,
         uv: Vec<Point2f>,
         alpha_mask: Option<ArcTexture<Float>>,
+        shadow_alpha_mask: Option<ArcTexture<Float>>,
+        face_indices: Vec<usize>,
     ) -> Vec<ArcShape> {
         let num_triangles = vertex_indices.len() % 3;
         assert!(num_triangles == 0);
@@ -130,6 +149,8 @@ impl TriangleMesh {
             s,
             uv,
             alpha_mask,
+            shadow_alpha_mask,
+            face_indices,
         );
 
         let m = Arc::new(mesh);
@@ -146,6 +167,168 @@ impl TriangleMesh {
         }
 
         tris
+    }
+
+    /// Create a triangle mesh from given parameter set, transformation and orientation.
+    ///
+    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot
+    /// implement this as `From` trait :(
+    ///
+    /// * `props`          - Shape creation properties.
+    /// * `float_textures` - Hash map of textures by name.
+    pub fn from_props(
+        props: &mut ShapeProps,
+        float_textures: &HashMap<String, ArcTexture<Float>>,
+    ) -> Vec<ArcShape> {
+        let vi: Vec<usize> = props
+            .params
+            .find_int("indices")
+            .iter()
+            .map(|i| *i as usize)
+            .collect();
+        let nvi = vi.len();
+
+        let p = props.params.find_point3f("P");
+        let npi = p.len();
+
+        let mut uvs = props.params.find_point2f("uv");
+        if uvs.len() == 0 {
+            uvs = props.params.find_point2f("st");
+        }
+        let mut nuvi = uvs.len();
+
+        let mut temp_uvs: Vec<Point2f> = vec![];
+        if uvs.len() == 0 {
+            let mut fuv = props.params.find_float("uv");
+            if fuv.len() == 0 {
+                fuv = props.params.find_float("st");
+            }
+            nuvi = fuv.len();
+            if nuvi > 0 {
+                nuvi /= 2;
+                for i in 0..nuvi {
+                    temp_uvs.push(Point2f::new(fuv[2 * i], fuv[2 * i + 1]));
+                }
+                uvs = temp_uvs;
+            }
+        }
+        if nuvi > 0 {
+            if nuvi < npi {
+                eprintln!(
+                    "Not enough of 'uv' for triangle mesh.  Expected {}, 
+                    found {}.  Discarding.",
+                    npi, nuvi
+                );
+                uvs = vec![];
+            } else if nuvi > npi {
+                eprintln!(
+                    "More 'uv' provided than will be used for triangle 
+                    mesh.  ({} expcted, {} found)",
+                    npi, nuvi
+                );
+            }
+        }
+
+        if nvi == 0 {
+            eprintln!("Vertex indices 'indices' not provided with triangle mesh shape");
+            return vec![];
+        }
+        if npi == 0 {
+            eprintln!("Vertex positions 'P' not provided with triangle mesh shape");
+            return vec![];
+        }
+
+        let mut s = props.params.find_vector3f("S");
+        let nsi = s.len();
+        if nsi > 0 && nsi != npi {
+            eprintln!("Number of 'S' for triangle mesh must match 'P'.");
+            s = vec![];
+        }
+
+        let mut n = props.params.find_normal3f("N");
+        let nni = n.len();
+        if nni > 0 && nni != npi {
+            eprintln!("Number of 'N' for triangle mesh must match 'P'.");
+            n = vec![];
+        }
+        for i in 0..nvi {
+            if vi[i] >= npi {
+                eprintln!(
+                    "trianglemesh has out of-bounds vertex index {} ({} 'P' 
+                    values were given",
+                    vi[i], npi
+                );
+                return vec![];
+            }
+        }
+
+        let mut face_indices: Vec<usize> = props
+            .params
+            .find_int("faceIndices")
+            .iter()
+            .map(|i| *i as usize)
+            .collect();
+        let nfi = face_indices.len();
+        if nfi > 0 && nfi != nvi / 3 {
+            eprintln!(
+                "Number of face indices, {}, doesn't match number of faces, {}",
+                nfi,
+                nvi / 3
+            );
+            face_indices = vec![];
+        }
+
+        let alpha_tex_name = props.params.find_one_texture("alpha", String::from(""));
+        let alpha_tex = if alpha_tex_name.len() > 0 {
+            if let Some(tex) = float_textures.get(&alpha_tex_name) {
+                tex.clone()
+            } else {
+                eprintln!(
+                    "Couldn't find float texture '{}' for 'alpha' parameter. 
+                    Using float 'alpha' parameterer instead.",
+                    alpha_tex_name
+                );
+                let alpha = props.params.find_one_float("alpha", 1.0);
+                Arc::new(ConstantTexture::new(alpha))
+            }
+        } else {
+            let alpha = props.params.find_one_float("alpha", 1.0);
+            Arc::new(ConstantTexture::new(alpha))
+        };
+
+        let shadow_alpha_tex_name = props
+            .params
+            .find_one_texture("shadowalpha", String::from(""));
+        let shadow_alpha_tex = if shadow_alpha_tex_name.len() > 0 {
+            if let Some(tex) = float_textures.get(&shadow_alpha_tex_name) {
+                tex.clone()
+            } else {
+                eprintln!(
+                    "Couldn't find float texture '{}' for 'shadowalpha' 
+                    parameter.  Using float 'shadowalpha' parameterer instead.",
+                    alpha_tex_name
+                );
+                let alpha = props.params.find_one_float("shadowalpha", 1.0);
+                Arc::new(ConstantTexture::new(alpha))
+            }
+        } else {
+            let alpha = props.params.find_one_float("shadowalpha", 1.0);
+            Arc::new(ConstantTexture::new(alpha))
+        };
+
+        Self::create(
+            props.o2w.clone(),
+            props.w2o.clone(),
+            props.reverse_orientation,
+            vi,
+            p,
+            n,
+            s,
+            uvs,
+            Some(alpha_tex),
+            Some(shadow_alpha_tex),
+            face_indices,
+        )
     }
 }
 

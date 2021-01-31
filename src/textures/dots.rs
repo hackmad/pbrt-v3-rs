@@ -1,8 +1,13 @@
 //! Polka Dots
 
 #![allow(dead_code)]
+use super::{get_texture_mapping, TextureProps};
 use crate::core::geometry::*;
+use crate::core::pbrt::*;
+use crate::core::spectrum::*;
 use crate::core::texture::*;
+use crate::textures::*;
+use std::sync::Arc;
 
 /// Implements a random polka dot texture via a 2D mapping.
 #[derive(Clone)]
@@ -68,3 +73,29 @@ where
         self.outside_dot.evaluate(si)
     }
 }
+
+macro_rules! from_params {
+    ($t: ty, $get_texture_or_else_func: ident) => {
+        impl From<&mut TextureProps> for DotsTexture<$t> {
+            /// Create a `DotsTexture<$t>` from given parameter set and
+            /// transformation from texture space to world space.
+            ///
+            /// * `props` - Texture creation properties.
+            fn from(props: &mut TextureProps) -> Self {
+                // Initialize 2D texture mapping `map` from `tp`.
+                let map = get_texture_mapping(props);
+                let inside = props.tp.$get_texture_or_else_func(
+                    "inside",
+                    Arc::new(ConstantTexture::new(1.0.into())),
+                );
+                let outside = props.tp.$get_texture_or_else_func(
+                    "outside",
+                    Arc::new(ConstantTexture::new(0.0.into())),
+                );
+                Self::new(inside, outside, map)
+            }
+        }
+    };
+}
+from_params!(Float, get_float_texture_or_else);
+from_params!(Spectrum, get_spectrum_texture_or_else);

@@ -1,4 +1,4 @@
-#![feature(iter_partition_in_place)] // Can be removed after Rust 1.49 release.
+#![feature(iter_partition_in_place)] // Can be removed once stable
 
 extern crate byteorder;
 extern crate clap;

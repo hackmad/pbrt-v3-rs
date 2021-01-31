@@ -1,6 +1,7 @@
 //! Core
 
 // Re-export.
+pub mod api;
 pub mod app;
 pub mod bssrdf;
 pub mod camera;
@@ -10,6 +11,7 @@ pub mod film;
 pub mod filter;
 pub mod geometry;
 pub mod image_io;
+pub mod integrator;
 pub mod interpolation;
 pub mod light;
 pub mod low_discrepency;

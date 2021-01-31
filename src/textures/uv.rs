@@ -1,6 +1,7 @@
 //! UV Texture
 
 #![allow(dead_code)]
+use super::{get_texture_mapping, TextureProps};
 use crate::core::geometry::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
@@ -34,5 +35,17 @@ impl Texture<Spectrum> for UVTexture {
 
         let rgb = [st[0] - st[0].floor(), st[1] - st[1].floor(), 0.0];
         Spectrum::from_rgb(&rgb, None)
+    }
+}
+
+impl From<&mut TextureProps> for UVTexture {
+    /// Create a `UVTexture` from given parameter set and
+    /// transformation from texture space to world space.
+    ///
+    /// * `props` - Texture creation properties.
+    fn from(props: &mut TextureProps) -> Self {
+        // Initialize 2D texture mapping `map` from `tp`.
+        let map = get_texture_mapping(props);
+        Self::new(map)
     }
 }
