@@ -81,11 +81,11 @@ impl Material for MatteMaterial {
     }
 }
 
-impl From<&TextureParams> for MatteMaterial {
+impl From<&mut TextureParams> for MatteMaterial {
     /// Create a matte material from given parameter set.
     ///
     /// * `tp` - Texture parameter set.
-    fn from(tp: &TextureParams) -> Self {
+    fn from(tp: &mut TextureParams) -> Self {
         let kd = tp
             .get_spectrum_texture_or_else("Kd", Arc::new(ConstantTexture::new(Spectrum::new(0.5))));
         let sigma = tp.get_float_texture_or_else("sigma", Arc::new(ConstantTexture::new(0.0)));

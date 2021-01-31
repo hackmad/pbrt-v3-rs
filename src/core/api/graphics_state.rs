@@ -12,10 +12,17 @@ use crate::materials::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+lazy_static! {
+    /// The global graphics state.
+    pub static ref GRAPHICS_STATE: GraphicsState = GraphicsState::default();
+}
+
 /// Map of floating point textures.
 type FloatTextureMap = HashMap<String, ArcTexture<Float>>;
+
 /// Map of spectrum textures.
 type SpectrumTextureMap = HashMap<String, ArcTexture<Spectrum>>;
+
 /// Map of named material instances.
 type NamedMaterialMap = HashMap<String, Arc<MaterialInstance>>;
 
@@ -63,7 +70,7 @@ impl GraphicsState {
     /// Returns a material for given shape parameters.
     ///
     /// * `geom_params` - Shape parameters.
-    pub fn get_material_for_shape(&self, geom_params: Arc<ParamSet>) -> ArcMaterial {
+    pub fn get_material_for_shape(&self, geom_params: Arc<ParamSet>) -> Option<ArcMaterial> {
         let current_material = self
             .current_material
             .as_ref()
@@ -73,15 +80,17 @@ impl GraphicsState {
             // Only create a unique material for the shape if the shape's
             // parameters are (apparently) going to provide values for some of
             // the material parameters.
-            let mp = TextureParams::new(
+            let mut mp = TextureParams::new(
                 geom_params.clone(),
                 current_material.params.clone(),
                 self.float_textures.clone(),
                 self.spectrum_textures.clone(),
             );
-            make_material(&current_material.name, &mp)
+            let mat = make_material(&current_material.name, &mut mp);
+            mp.report_unused();
+            mat
         } else {
-            current_material.material.clone()
+            Some(current_material.material.clone())
         }
     }
 
@@ -94,8 +103,8 @@ impl Default for GraphicsState {
     /// Initializes a new `GraphicsState`.
     fn default() -> Self {
         // Create a default material.
-        let tp = TextureParams::default();
-        let matte = Arc::new(MatteMaterial::from(&tp));
+        let mut mp = TextureParams::default();
+        let matte = Arc::new(MatteMaterial::from(&mut mp));
         let current_material = Arc::new(MaterialInstance::new(
             "matte",
             matte,
@@ -204,6 +213,46 @@ fn shape_may_set_material_parameters(ps: Arc<ParamSet>) -> bool {
     false
 }
 
-fn make_material(_name: &str, _mp: &TextureParams) -> ArcMaterial {
-    todo!()
+/// Creates the given type of material from parameter set.
+///
+/// * `name` - Name.
+/// * `mp`   - Parameter set.
+fn make_material(name: &str, mp: &mut TextureParams) -> Option<ArcMaterial> {
+    match name {
+        "matte" => Some(Arc::new(MatteMaterial::from(mp))),
+        "plastic" => Some(Arc::new(PlasticMaterial::from(mp))),
+        "fourier" => Some(Arc::new(FourierMaterial::from(mp))),
+        "mix" => {
+            let m1 = mp.find_string("namedmaterial1", String::from(""));
+            let m2 = mp.find_string("namedmaterial2", String::from(""));
+            let mat1 = match GRAPHICS_STATE.named_materials.get(&m1) {
+                None => {
+                    eprintln!("Named material '{}' undefined. Using 'matte'.", m1);
+                    make_material("matte", mp).unwrap()
+                }
+                Some(mat) => mat.material.clone(),
+            };
+            let mat2 = match GRAPHICS_STATE.named_materials.get(&m2) {
+                None => {
+                    eprintln!("Named material '{}' undefined. Using 'matte'.", m2);
+                    make_material("matte", mp).unwrap()
+                }
+                Some(mat) => mat.material.clone(),
+            };
+
+            Some(Arc::new(MixMaterial::from((mp, mat1, mat2))))
+        }
+        "" => {
+            eprintln!("Unable to create material with no name");
+            None
+        }
+        "none" => {
+            eprintln!("Unable to create material 'none'.");
+            None
+        }
+        _ => {
+            eprintln!("Material '{}' unknown. Using 'matte'.", name);
+            Some(Arc::new(MatteMaterial::from(mp)))
+        }
+    }
 }
