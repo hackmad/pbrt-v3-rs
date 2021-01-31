@@ -1,11 +1,13 @@
 //! Environment Camera
 
 #![allow(dead_code)]
+use super::CameraProps;
 use crate::core::camera::*;
 use crate::core::film::*;
 use crate::core::geometry::*;
 use crate::core::medium::*;
 use crate::core::pbrt::*;
+use std::mem::swap;
 use std::sync::Arc;
 
 // Environment camera.
@@ -72,5 +74,32 @@ impl Camera for EnvironmentCamera {
     /// * `ray` - The ray.
     fn pdf_we(&self, _ray: &Ray) -> PDFResult {
         panic!("NOT IMPLEMENTED");
+    }
+}
+
+impl From<&mut CameraProps> for EnvironmentCamera {
+    /// Create a `EnvironmentCamera` from `CameraProps`.
+    ///
+    /// * `props` - Camera creation properties.
+    fn from(props: &mut CameraProps) -> Self {
+        // Extract common camera parameters from `ParamSet`
+        let mut shutter_open = props.params.find_one_float("shutteropen", 0.0);
+        let mut shutter_close = props.params.find_one_float("shutterclose", 1.0);
+        if shutter_close < shutter_open {
+            eprintln!(
+                "Shutter close time [{}] < shutter open [{}]. 
+                Swapping them.",
+                shutter_close, shutter_open
+            );
+            swap(&mut shutter_close, &mut shutter_open);
+        }
+
+        Self::new(
+            props.cam2world,
+            shutter_open,
+            shutter_close,
+            props.film.clone(),
+            props.medium.clone(),
+        )
     }
 }

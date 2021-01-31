@@ -1,15 +1,18 @@
 //! Realistic Camera
 
 #![allow(dead_code)]
+use super::CameraProps;
 use crate::core::camera::*;
 use crate::core::efloat::*;
 use crate::core::film::*;
 use crate::core::geometry::*;
 use crate::core::low_discrepency::*;
 use crate::core::medium::*;
+use crate::core::paramset::read_float_file;
 use crate::core::pbrt::*;
 use crate::core::reflection::*;
 use rayon::prelude::*;
+use std::mem::swap;
 use std::sync::Arc;
 
 /// Realistic camera implements a camera consisting of multiple lens
@@ -469,6 +472,64 @@ impl RealisticCamera {
         );
 
         (p, sample_bounds_area)
+    }
+}
+
+impl From<&mut CameraProps> for RealisticCamera {
+    /// Create a `RealisticCamera` from `CameraProps`.
+    ///
+    /// * `props` - Camera creation properties.
+    fn from(props: &mut CameraProps) -> Self {
+        // Extract common camera parameters from `ParamSet`
+        let mut shutter_open = props.params.find_one_float("shutteropen", 0.0);
+        let mut shutter_close = props.params.find_one_float("shutterclose", 1.0);
+        if shutter_close < shutter_open {
+            eprintln!(
+                "Shutter close time [{}] < shutter open [{}]. 
+                Swapping them.",
+                shutter_close, shutter_open
+            );
+            swap(&mut shutter_close, &mut shutter_open);
+        }
+
+        // Realistic camera-specific parameters
+        let lens_file = props.params.find_one_filename("lensfile", String::from(""));
+        let aperture_diameter = props.params.find_one_float("aperturediameter", 1.0);
+        let focus_distance = props.params.find_one_float("focusdistance", 10.0);
+        let simple_weighting = props.params.find_one_bool("simpleweighting", true);
+        if lens_file.len() == 0 {
+            panic!("No lens description file supplied!");
+        }
+
+        // Load element data from lens description file
+        let lens_data = match read_float_file(&lens_file) {
+            Ok(data) => data,
+            Err(err) => panic!(
+                "Error reading lens specification file '{}'. {}.",
+                lens_file, err
+            ),
+        };
+
+        if lens_data.len() % 4 != 0 {
+            panic!(
+                "Excess values in lens specification file '{}'; 
+                must be multiple-of-four values, read {}.",
+                lens_file,
+                lens_data.len()
+            );
+        }
+
+        Self::new(
+            props.cam2world,
+            shutter_open,
+            shutter_close,
+            aperture_diameter,
+            focus_distance,
+            simple_weighting,
+            lens_data,
+            props.film.clone(),
+            props.medium.clone(),
+        )
     }
 }
 

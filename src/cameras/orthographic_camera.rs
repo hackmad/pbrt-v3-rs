@@ -1,12 +1,14 @@
 //! Orthographic Camera
 
 #![allow(dead_code)]
+use super::CameraProps;
 use crate::core::camera::*;
 use crate::core::film::*;
 use crate::core::geometry::*;
 use crate::core::medium::*;
 use crate::core::pbrt::*;
 use crate::core::sampling::*;
+use std::mem::swap;
 use std::sync::Arc;
 
 /// Orthographic camera.
@@ -187,5 +189,64 @@ impl Camera for OrthographicCamera {
     /// * `ray` - The ray.
     fn pdf_we(&self, _ray: &Ray) -> PDFResult {
         panic!("NOT IMPLEMENTED");
+    }
+}
+
+impl From<&mut CameraProps> for OrthographicCamera {
+    /// Create a `OrthographicCamera` from `CameraProps`.
+    ///
+    /// * `props` - Camera creation properties.
+    fn from(props: &mut CameraProps) -> Self {
+        // Extract common camera parameters from `ParamSet`
+        let mut shutter_open = props.params.find_one_float("shutteropen", 0.0);
+        let mut shutter_close = props.params.find_one_float("shutterclose", 1.0);
+        if shutter_close < shutter_open {
+            eprintln!(
+                "Shutter close time [{}] < shutter open [{}]. 
+                Swapping them.",
+                shutter_close, shutter_open
+            );
+            swap(&mut shutter_close, &mut shutter_open);
+        }
+
+        let lens_radius = props.params.find_one_float("lensradius", 0.0);
+        let focal_distance = props.params.find_one_float("focaldistance", 1e30);
+
+        let frame = props.params.find_one_float(
+            "frameaspectratio",
+            props.film.full_resolution.x as Float / props.film.full_resolution.y as Float,
+        );
+        let mut screen = if frame > 1.0 {
+            Bounds2::new(Point2::new(-frame, -1.0), Point2::new(1.0, frame))
+        } else {
+            Bounds2::new(
+                Point2::new(-1.0, -1.0 / frame),
+                Point2::new(1.0, 1.0 / frame),
+            )
+        };
+
+        let sw = props.params.find_float("screenwindow");
+        let swi = sw.len();
+        if swi > 0 {
+            if swi == 4 {
+                screen.p_min.x = sw[0];
+                screen.p_max.x = sw[1];
+                screen.p_min.y = sw[2];
+                screen.p_max.y = sw[3];
+            } else {
+                eprintln!("'screenwindow' should have four values");
+            }
+        }
+
+        Self::new(
+            props.cam2world,
+            screen,
+            shutter_open,
+            shutter_close,
+            lens_radius,
+            focal_distance,
+            props.film.clone(),
+            props.medium.clone(),
+        )
     }
 }
