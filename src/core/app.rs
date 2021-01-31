@@ -13,27 +13,27 @@ lazy_static! {
 #[derive(Clone, Debug)]
 pub struct Options {
     /// Number of threads to use for rendering.
-    n_threads: usize,
+    pub n_threads: usize,
 
     /// Automatically reduce a number of quality settings to render more quickly.
-    quick_render: bool,
+    pub quick_render: bool,
 
     /// Suppress all text output other than error messages.:
-    quiet: bool,
+    pub quiet: bool,
 
     /// Print a reformatted version of the input file(s) to the standard output
     /// instead of rendering an image.
-    cat: bool,
+    pub cat: bool,
 
     /// Print a reformatted version of the input file(s) to standard output and
     /// convert all triangle meshes to PLY files. Does not render an image.
-    to_ply: bool,
+    pub to_ply: bool,
 
     /// Path to the image file.
-    image_file: String,
+    pub image_file: String,
 
     /// The crop window x0, x1, y0, y1.
-    crop_window: [[Float; 2]; 2],
+    pub crop_window: [[Float; 2]; 2],
 }
 
 impl Options {

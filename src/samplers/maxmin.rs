@@ -1,5 +1,7 @@
 //! Maximized Minimal Distance Sampler.
 
+use super::SamplerProps;
+use crate::core::app::OPTIONS;
 use crate::core::geometry::*;
 use crate::core::low_discrepency::*;
 use crate::core::pbrt::*;
@@ -154,5 +156,21 @@ impl Sampler for MaxMinDistSampler {
     /// * `sample_num` - The sample number.
     fn set_sample_number(&mut self, sample_num: usize) -> bool {
         self.sampler.set_sample_number(sample_num)
+    }
+}
+
+impl From<&mut SamplerProps> for MaxMinDistSampler {
+    /// Create a `MaxMinDistSampler` from `SamplerProps`.
+    ///
+    /// * `props` - Sampler creation properties.
+    fn from(props: &mut SamplerProps) -> Self {
+        let mut samples_per_pixel = props.params.find_one_int("pixelsamples", 16) as usize;
+        if OPTIONS.quick_render {
+            samples_per_pixel = 1;
+        }
+
+        let sd = props.params.find_one_int("dimensions", 4) as usize;
+
+        Self::new(samples_per_pixel, sd, None)
     }
 }

@@ -1,5 +1,7 @@
 //! Halton Sampler.
 
+use super::SamplerProps;
+use crate::core::app::OPTIONS;
 use crate::core::geometry::*;
 use crate::core::low_discrepency::*;
 use crate::core::pbrt::*;
@@ -19,7 +21,7 @@ pub struct HaltonSampler {
     /// The global sampler data.
     gdata: GlobalSamplerData,
 
-    /// sample bounds.
+    /// Sample bounds.
     sample_bounds: Bounds2i,
 
     /// Stores precomputed radical inverse permutations.
@@ -122,9 +124,7 @@ impl HaltonSampler {
         );
         &self.radical_inverse_permutations[PRIME_SUMS[dim as usize]..]
     }
-}
 
-impl HaltonSampler {
     /// Performs the inverse mapping from the current pixel and given sample
     /// index to a global index into the overall set of sample vectors.
     ///
@@ -297,6 +297,27 @@ impl Sampler for HaltonSampler {
         self.gdata.dimension = 0;
         self.gdata.interval_sample_index = self.get_index_for_sample(sample_num);
         self.data.set_sample_number(sample_num)
+    }
+}
+
+impl From<&mut SamplerProps> for HaltonSampler {
+    /// Create a `HaltonSampler` from `SamplerProps`.
+    ///
+    /// * `props` - Sampler creation properties.
+    fn from(props: &mut SamplerProps) -> Self {
+        let mut samples_per_pixel = props.params.find_one_int("pixelsamples", 16) as usize;
+        if OPTIONS.quick_render {
+            samples_per_pixel = 1;
+        }
+
+        let sample_at_center = props.params.find_one_bool("samplepixelcenter", false);
+
+        Self::new(
+            samples_per_pixel,
+            props.sample_bounds,
+            sample_at_center,
+            None,
+        )
     }
 }
 

@@ -1,5 +1,6 @@
 //! Random Sampler.
 
+use super::SamplerProps;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use crate::core::rng::*;
@@ -78,5 +79,15 @@ impl Sampler for RandomSampler {
     /// sample vector.
     fn get_2d(&mut self) -> Point2f {
         Point2f::new(self.rng.uniform(), self.rng.uniform())
+    }
+}
+
+impl From<&mut SamplerProps> for RandomSampler {
+    /// Create a `RandomSampler` from `SamplerProps`.
+    ///
+    /// * `props` - Sampler creation properties.
+    fn from(props: &mut SamplerProps) -> Self {
+        let samples_per_pixel = props.params.find_one_int("pixelsamples", 4) as usize;
+        Self::new(samples_per_pixel, None)
     }
 }

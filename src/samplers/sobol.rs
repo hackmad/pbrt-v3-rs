@@ -1,5 +1,7 @@
 //! Sobol Sampler.
 
+use super::SamplerProps;
+use crate::core::app::OPTIONS;
 use crate::core::geometry::*;
 use crate::core::low_discrepency::*;
 use crate::core::pbrt::*;
@@ -199,5 +201,19 @@ impl Sampler for SobolSampler {
         self.gdata.dimension = 0;
         self.gdata.interval_sample_index = self.get_index_for_sample(sample_num);
         self.data.set_sample_number(sample_num)
+    }
+}
+
+impl From<&mut SamplerProps> for SobolSampler {
+    /// Create a `SobolSampler` from `SamplerProps`.
+    ///
+    /// * `props` - Sampler creation properties.
+    fn from(props: &mut SamplerProps) -> Self {
+        let mut samples_per_pixel = props.params.find_one_int("pixelsamples", 16) as usize;
+        if OPTIONS.quick_render {
+            samples_per_pixel = 1;
+        }
+
+        Self::new(samples_per_pixel, props.sample_bounds)
     }
 }
