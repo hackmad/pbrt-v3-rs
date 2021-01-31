@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use crate::core::filter::*;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 
 /// Implements the box filter which equally weights all samples within a square
@@ -36,5 +37,16 @@ impl Filter for BoxFilter {
     ///         filter. The point should be within the filter's extent.
     fn evaluate(&self, _p: &Point2f) -> Float {
         1.0
+    }
+}
+
+impl From<&mut ParamSet> for BoxFilter {
+    /// Create a `BoxFilter` from `ParamSet`.
+    ///
+    /// * `params` - Parameter set.
+    fn from(params: &mut ParamSet) -> Self {
+        let xw = params.find_one_float("xwidth", 0.5);
+        let yw = params.find_one_float("ywidth", 0.5);
+        Self::new(Vector2f::new(xw, yw))
     }
 }

@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use crate::core::filter::*;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 
 /// Implements the Gaussian filter which applies a bump that is centered at the
@@ -57,5 +58,17 @@ impl Filter for GaussianFilter {
     ///         filter. The point should be within the filter's extent.
     fn evaluate(&self, p: &Point2f) -> Float {
         self.gaussian(p.x, self.exp_x) * self.gaussian(p.y, self.exp_y)
+    }
+}
+
+impl From<&mut ParamSet> for GaussianFilter {
+    /// Create a `GaussianFilter` from `ParamSet`.
+    ///
+    /// * `params` - Parameter set.
+    fn from(params: &mut ParamSet) -> Self {
+        let xw = params.find_one_float("xwidth", 2.0);
+        let yw = params.find_one_float("ywidth", 2.0);
+        let alpha = params.find_one_float("alpha", 2.0);
+        Self::new(Vector2f::new(xw, yw), alpha)
     }
 }

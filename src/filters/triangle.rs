@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use crate::core::filter::*;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 
 /// Implements the triangle filter in which the weight falls off linearly from
@@ -36,5 +37,16 @@ impl Filter for TriangleFilter {
     ///         filter. The point should be within the filter's extent.
     fn evaluate(&self, p: &Point2f) -> Float {
         max(0.0, self.data.radius.x - abs(p.x)) * max(0.0, self.data.radius.y - abs(p.y))
+    }
+}
+
+impl From<&mut ParamSet> for TriangleFilter {
+    /// Create a `TriangleFilter` from `ParamSet`.
+    ///
+    /// * `params` - Parameter set.
+    fn from(params: &mut ParamSet) -> Self {
+        let xw = params.find_one_float("xwidth", 2.0);
+        let yw = params.find_one_float("ywidth", 2.0);
+        Self::new(Vector2f::new(xw, yw))
     }
 }

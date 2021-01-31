@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use crate::core::filter::*;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 
 /// Implements a windowed sinc filter.
@@ -56,6 +57,18 @@ impl Filter for LanczosSincFilter {
     ///         filter. The point should be within the filter's extent.
     fn evaluate(&self, p: &Point2f) -> Float {
         self.windowed_sinc(p.x, self.data.radius.x) * self.windowed_sinc(p.y, self.data.radius.y)
+    }
+}
+
+impl From<&mut ParamSet> for LanczosSincFilter {
+    /// Create a `LanczosSincFilter` from `ParamSet`.
+    ///
+    /// * `params` - Parameter set.
+    fn from(params: &mut ParamSet) -> Self {
+        let xw = params.find_one_float("xwidth", 4.0);
+        let yw = params.find_one_float("ywidth", 4.0);
+        let tau = params.find_one_float("tau", 3.0);
+        Self::new(Vector2f::new(xw, yw), tau)
     }
 }
 

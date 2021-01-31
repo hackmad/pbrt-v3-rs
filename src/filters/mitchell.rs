@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use crate::core::filter::*;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 
 /// Implements the Mitchell filter.
@@ -67,5 +68,18 @@ impl Filter for MitchellFilter {
     fn evaluate(&self, p: &Point2f) -> Float {
         self.mitchell_1d(p.x * self.data.inv_radius.x)
             * self.mitchell_1d(p.y * self.data.inv_radius.y)
+    }
+}
+
+impl From<&mut ParamSet> for MitchellFilter {
+    /// Create a `MitchellFilter` from `ParamSet`.
+    ///
+    /// * `params` - Parameter set.
+    fn from(params: &mut ParamSet) -> Self {
+        let xw = params.find_one_float("xwidth", 2.0);
+        let yw = params.find_one_float("ywidth", 2.0);
+        let b = params.find_one_float("B", 1.0 / 3.0);
+        let c = params.find_one_float("C", 1.0 / 3.0);
+        Self::new(Vector2f::new(xw, yw), b, c)
     }
 }
