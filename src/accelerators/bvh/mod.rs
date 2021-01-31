@@ -1,6 +1,7 @@
 //! Bounding Volume Hierarchy.
 
 #![allow(dead_code)]
+use super::AcceleratorProps;
 use crate::core::geometry::*;
 use crate::core::light::*;
 use crate::core::material::*;
@@ -325,5 +326,29 @@ impl Primitive for BVHAccel {
             "TransformedPrimitive::compute_scattering_functions() shouldn't be \
             called; should've gone to GeometricPrimitive."
         );
+    }
+}
+
+impl From<&mut AcceleratorProps> for BVHAccel {
+    /// Create a `BVHAccel` from `AcceleratorProps`.
+    ///
+    /// * `props` - Accelerator creation properties.
+    fn from(props: &mut AcceleratorProps) -> Self {
+        let split_method_name = props
+            .params
+            .find_one_string("splitmethod", String::from("sah"));
+        let split_method = match &split_method_name[..] {
+            "sah" => SplitMethod::SAH,
+            "hlbvh" => SplitMethod::HLBVH,
+            "middle" => SplitMethod::Middle,
+            "equal" => SplitMethod::EqualCounts,
+            sm => {
+                eprintln!("BVH split method '{}' unknown.  Using 'sah'.", sm);
+                SplitMethod::SAH
+            }
+        };
+
+        let max_prims_in_node = props.params.find_one_int("maxnodeprims", 4) as u8;
+        Self::new(props.prims.clone(), max_prims_in_node, split_method)
     }
 }
