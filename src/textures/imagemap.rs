@@ -1,9 +1,10 @@
 //! Image Texture
 
 #![allow(dead_code)]
-use super::{get_texture_mapping, TextureProps};
+use super::get_texture_mapping;
 use crate::core::geometry::*;
 use crate::core::mipmap::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
@@ -120,33 +121,34 @@ impl Texture<Float> for ImageTexture<Float> {
 
 macro_rules! from_params {
     ($t: ty) => {
-        impl From<&mut TextureProps> for ImageTexture<$t> {
+        impl From<(&mut TextureParams, &Transform)> for ImageTexture<$t> {
             /// Create a `ImageTexture<$t>` from given parameter set and
             /// transformation from texture space to world space.
             ///
-            /// * `props` - Texture creation properties.
-            fn from(props: &mut TextureProps) -> Self {
+            /// * `p` - Tuple containing texture parameters and texture space
+            ///         to world space transform.
+            fn from(p: (&mut TextureParams, &Transform)) -> Self {
+                let (tp, tex2world) = p;
+
                 // Initialize 2D texture mapping `map` from `tp`.
-                let map = get_texture_mapping(props);
+                let map = get_texture_mapping(tp, tex2world);
 
                 // Initialize `ImageTexture` parameters.
-                let max_anisotropy = props.tp.find_float("maxanisotropy", 8.0);
-                let filtering_method = if props.tp.find_bool("trilinear", false) {
+                let max_anisotropy = tp.find_float("maxanisotropy", 8.0);
+                let filtering_method = if tp.find_bool("trilinear", false) {
                     FilteringMethod::Trilinear
                 } else {
                     FilteringMethod::Ewa
                 };
-                let wrap = props.tp.find_string("wrap", String::from("repeat"));
+                let wrap = tp.find_string("wrap", String::from("repeat"));
                 let wrap_mode = match &wrap[..] {
                     "black" => ImageWrap::Black,
                     "clamp" => ImageWrap::Clamp,
                     _ => ImageWrap::Repeat,
                 };
-                let scale = props.tp.find_float("scale", 1.0);
-                let path = props.tp.find_filename("filename", String::from(""));
-                let gamma = props
-                    .tp
-                    .find_bool("gamma", path.ends_with(".tga") || path.ends_with(".png"));
+                let scale = tp.find_float("scale", 1.0);
+                let path = tp.find_filename("filename", String::from(""));
+                let gamma = tp.find_bool("gamma", path.ends_with(".tga") || path.ends_with(".png"));
                 Self::new(
                     map,
                     &path,

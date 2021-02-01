@@ -1,8 +1,9 @@
 //! Bilinear Interpolation Texture
 
 #![allow(dead_code)]
-use super::{get_texture_mapping, TextureProps};
+use super::get_texture_mapping;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
@@ -70,19 +71,22 @@ where
 
 macro_rules! from_params {
     ($t: ty, $find_func: ident) => {
-        impl From<&mut TextureProps> for BilerpTexture<$t> {
+        impl From<(&mut TextureParams, &Transform)> for BilerpTexture<$t> {
             /// Create a `BilerpTexture<$t>` from given parameter set and
             /// transformation from texture space to world space.
             ///
-            /// * `props` - Texture creation properties.
-            fn from(props: &mut TextureProps) -> Self {
+            /// * `p` - Tuple containing texture parameters and texture space
+            ///         to world space transform.
+            fn from(p: (&mut TextureParams, &Transform)) -> Self {
+                let (tp, tex2world) = p;
+
                 // Initialize 2D texture mapping `map` from `tp`.
-                let map = get_texture_mapping(props);
+                let map = get_texture_mapping(tp, tex2world);
                 Self::new(
-                    props.tp.$find_func("v00", 0.0.into()),
-                    props.tp.$find_func("v01", 1.0.into()),
-                    props.tp.$find_func("v10", 0.0.into()),
-                    props.tp.$find_func("v11", 1.0.into()),
+                    tp.$find_func("v00", 0.0.into()),
+                    tp.$find_func("v01", 1.0.into()),
+                    tp.$find_func("v10", 0.0.into()),
+                    tp.$find_func("v11", 1.0.into()),
                     map,
                 )
             }

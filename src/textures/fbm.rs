@@ -1,8 +1,8 @@
 //! FBm Texture
 
 #![allow(dead_code)]
-use super::TextureProps;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::texture::*;
 use std::marker::PhantomData;
@@ -54,17 +54,19 @@ where
     }
 }
 
-impl<T> From<&mut TextureProps> for FBmTexture<T> {
+impl<T> From<(&mut TextureParams, &Transform)> for FBmTexture<T> {
     /// Create a `FBmTexture<T>` from given parameter set and
     /// transformation from texture space to world space.
     ///
-    /// * `props` - Texture creation properties.
-    fn from(props: &mut TextureProps) -> Self {
-        let map = Arc::new(IdentityMapping3D::new(props.tex2world));
+    /// * `p` - Tuple containing texture parameters and texture space
+    ///         to world space transform.
+    fn from(p: (&mut TextureParams, &Transform)) -> Self {
+        let (tp, tex2world) = p;
+        let map = Arc::new(IdentityMapping3D::new(*tex2world));
         Self::new(
             map,
-            props.tp.find_float("roughness", 0.5),
-            props.tp.find_int("octaves", 8_i32) as usize,
+            tp.find_float("roughness", 0.5),
+            tp.find_int("octaves", 8_i32) as usize,
         )
     }
 }

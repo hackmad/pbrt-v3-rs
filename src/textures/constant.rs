@@ -1,8 +1,8 @@
 //! Constant Texture
 
 #![allow(dead_code)]
-use super::TextureProps;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
@@ -13,7 +13,6 @@ pub struct ConstantTexture<T> {
     /// The texture value.
     value: T,
 }
-
 impl<T> ConstantTexture<T> {
     /// Create a new `ConstantTexture<T>`.
     ///
@@ -37,13 +36,15 @@ where
 
 macro_rules! from_params {
     ($t: ty, $find_func: ident) => {
-        impl From<&mut TextureProps> for ConstantTexture<$t> {
+        impl From<(&mut TextureParams, &Transform)> for ConstantTexture<$t> {
             /// Create a `ConstantTexture<$t>` from given parameter set and
             /// transformation from texture space to world space.
             ///
-            /// * `props` - Texture creation properties.
-            fn from(props: &mut TextureProps) -> Self {
-                Self::new(props.tp.$find_func("value", 1.0.into()))
+            /// * `p` - Tuple containing texture parameters and texture space
+            ///         to world space transform.
+            fn from(p: (&mut TextureParams, &Transform)) -> Self {
+                let (tp, _tex2world) = p;
+                Self::new(tp.$find_func("value", 1.0.into()))
             }
         }
     };

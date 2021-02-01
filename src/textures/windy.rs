@@ -1,8 +1,8 @@
 //! Windy Waves Texture
 
 #![allow(dead_code)]
-use super::TextureProps;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::texture::*;
 use std::marker::PhantomData;
@@ -46,13 +46,15 @@ where
     }
 }
 
-impl<T> From<&mut TextureProps> for WindyTexture<T> {
+impl<T> From<(&mut TextureParams, &Transform)> for WindyTexture<T> {
     /// Create a `WindyTexture<T>` from given parameter set and
     /// transformation from texture space to world space.
     ///
-    /// * `props` - Texture creation properties.
-    fn from(props: &mut TextureProps) -> Self {
-        let map = Arc::new(IdentityMapping3D::new(props.tex2world));
+    /// * `p` - Tuple containing texture parameters and texture space
+    ///         to world space transform.
+    fn from(p: (&mut TextureParams, &Transform)) -> Self {
+        let (_tp, tex2world) = p;
+        let map = Arc::new(IdentityMapping3D::new(*tex2world));
         Self::new(map)
     }
 }

@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 use super::MaterialInstance;
+use crate::core::geometry::*;
 use crate::core::material::*;
 use crate::core::medium::*;
 use crate::core::paramset::*;
@@ -9,6 +10,7 @@ use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
 use crate::materials::*;
+use crate::textures::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -253,6 +255,90 @@ fn make_material(name: &str, mp: &mut TextureParams) -> Option<ArcMaterial> {
         _ => {
             eprintln!("Material '{}' unknown. Using 'matte'.", name);
             Some(Arc::new(MatteMaterial::from(mp)))
+        }
+    }
+}
+
+/// Creates a float texture.
+///
+/// * `name`      - Name.
+/// * `tex2world` - Texture space to world space transform.
+/// * `tp`        - Parameter set.
+fn make_float_texture(
+    name: &str,
+    tex2world: &Transform,
+    tp: &mut TextureParams,
+) -> Option<ArcTexture<Float>> {
+    match name {
+        "bilerp" => Some(Arc::new(BilerpTexture::<Float>::from((tp, tex2world)))),
+        "checkerboard" => {
+            let dim = tp.find_int("dimension", 2);
+            if dim == 2 {
+                Some(Arc::new(CheckerboardTexture2D::<Float>::from((
+                    tp, tex2world,
+                ))))
+            } else if dim == 3 {
+                Some(Arc::new(CheckerboardTexture3D::<Float>::from((
+                    tp, tex2world,
+                ))))
+            } else {
+                eprintln!("{} dimensional checkerboard texture not supported", dim);
+                None
+            }
+        }
+        "constant" => Some(Arc::new(ConstantTexture::<Float>::from((tp, tex2world)))),
+        "dots" => Some(Arc::new(DotsTexture::<Float>::from((tp, tex2world)))),
+        "fbm" => Some(Arc::new(FBmTexture::<Float>::from((tp, tex2world)))),
+        "imagemap" => Some(Arc::new(ImageTexture::<Float>::from((tp, tex2world)))),
+        "mix" => Some(Arc::new(MixTexture::<Float>::from((tp, tex2world)))),
+        "scale" => Some(Arc::new(ScaleTexture::<Float>::from((tp, tex2world)))),
+        "windy" => Some(Arc::new(WindyTexture::<Float>::from((tp, tex2world)))),
+        _ => {
+            eprintln!("Float texture '{}' unknown.", name);
+            None
+        }
+    }
+}
+
+/// Creates a spectrum texture.
+///
+/// * `name`      - Name.
+/// * `tex2world` - Texture space to world space transform.
+/// * `tp`        - Parameter set.
+fn make_spectrum_texture(
+    name: &str,
+    tex2world: &Transform,
+    tp: &mut TextureParams,
+) -> Option<ArcTexture<Spectrum>> {
+    match name {
+        "bilerp" => Some(Arc::new(BilerpTexture::<Spectrum>::from((tp, tex2world)))),
+        "checkerboard" => {
+            let dim = tp.find_int("dimension", 2);
+            if dim == 2 {
+                Some(Arc::new(CheckerboardTexture2D::<Spectrum>::from((
+                    tp, tex2world,
+                ))))
+            } else if dim == 3 {
+                Some(Arc::new(CheckerboardTexture3D::<Spectrum>::from((
+                    tp, tex2world,
+                ))))
+            } else {
+                eprintln!("{} dimensional checkerboard texture not supported", dim);
+                None
+            }
+        }
+        "constant" => Some(Arc::new(ConstantTexture::<Spectrum>::from((tp, tex2world)))),
+        "dots" => Some(Arc::new(DotsTexture::<Spectrum>::from((tp, tex2world)))),
+        "fbm" => Some(Arc::new(FBmTexture::<Spectrum>::from((tp, tex2world)))),
+        "imagemap" => Some(Arc::new(ImageTexture::<Spectrum>::from((tp, tex2world)))),
+        "marble" => Some(Arc::new(MarbleTexture::from((tp, tex2world)))),
+        "mix" => Some(Arc::new(MixTexture::<Spectrum>::from((tp, tex2world)))),
+        "scale" => Some(Arc::new(ScaleTexture::<Spectrum>::from((tp, tex2world)))),
+        "uv" => Some(Arc::new(UVTexture::from((tp, tex2world)))),
+        "windy" => Some(Arc::new(WindyTexture::<Spectrum>::from((tp, tex2world)))),
+        _ => {
+            eprintln!("Spectrum texture '{}' unknown.", name);
+            None
         }
     }
 }

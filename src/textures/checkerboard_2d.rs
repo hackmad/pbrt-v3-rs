@@ -1,8 +1,9 @@
 //! 2D Checkerboard
 
 #![allow(dead_code)]
-use super::{get_texture_mapping, TextureProps};
+use super::get_texture_mapping;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
@@ -115,33 +116,36 @@ where
 
 macro_rules! from_params {
     ($t: ty, $get_texture_or_else_func: ident) => {
-        impl From<&mut TextureProps> for CheckerboardTexture2D<$t> {
+        impl From<(&mut TextureParams, &Transform)> for CheckerboardTexture2D<$t> {
             /// Create a `CheckerboardTexture2D<$t>` from given parameter set and
             /// transformation from texture space to world space.
             ///
-            /// * `props` - Texture creation properties.
-            fn from(props: &mut TextureProps) -> Self {
+            /// * `p` - Tuple containing texture parameters and texture space
+            ///         to world space transform.
+            fn from(p: (&mut TextureParams, &Transform)) -> Self {
+                let (tp, tex2world) = p;
+
                 // Check texture dimensions.
-                let dim = props.tp.find_int("dimension", 2);
+                let dim = tp.find_int("dimension", 2);
                 if dim != 2 {
                     panic!("Cannot create CheckerboardTexture2D for dim = {}", dim);
                 }
 
                 // Get textures.
-                let tex1 = props.tp.$get_texture_or_else_func(
+                let tex1 = tp.$get_texture_or_else_func(
                     "tex1",
                     Arc::new(ConstantTexture::new(1.0.into())),
                 );
-                let tex2 = props.tp.$get_texture_or_else_func(
+                let tex2 = tp.$get_texture_or_else_func(
                     "tex2",
                     Arc::new(ConstantTexture::new(0.0.into())),
                 );
 
                 // Initialize 2D texture mapping `map` from `tp`.
-                let map = get_texture_mapping(props);
+                let map = get_texture_mapping(tp, tex2world);
 
                 // Compute `aa_method` for `CheckerboardTexture2D`.
-                let aa = props.tp.find_string("aamode", String::from("closedform"));
+                let aa = tp.find_string("aamode", String::from("closedform"));
                 let aa_method = match &aa[..] {
                     "none" => AAMethod::None,
                     "closedform" => AAMethod::ClosedForm,

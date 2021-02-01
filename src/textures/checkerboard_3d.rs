@@ -1,8 +1,8 @@
 //! 3D Checkerboard
 
 #![allow(dead_code)]
-use super::TextureProps;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
@@ -56,26 +56,27 @@ where
 
 macro_rules! from_params {
     ($t: ty, $get_texture_or_else_func: ident) => {
-        impl From<&mut TextureProps> for CheckerboardTexture3D<$t> {
+        impl From<(&mut TextureParams, &Transform)> for CheckerboardTexture3D<$t> {
             /// Create a `CheckerboardTexture3D<$t>` from given parameter set and
             /// transformation from texture space to world space.
             ///
-            /// * `props` - Texture creation properties.
-            fn from(props: &mut TextureProps) -> Self {
+            /// * `p` - Tuple containing texture parameters and texture space
+            ///         to world space transform.
+            fn from(p: (&mut TextureParams, &Transform)) -> Self {
+                let (tp, tex2world) = p;
+
                 // Check texture dimensions.
-                let dim = props.tp.find_int("dimension", 3);
+                let dim = tp.find_int("dimension", 3);
                 if dim != 3 {
                     panic!("Cannot create CheckerboardTexture3D for dim = {}", dim);
                 }
                 // Get textures.
-                let tex1 = props
-                    .tp
+                let tex1 = tp
                     .$get_texture_or_else_func("tex1", Arc::new(ConstantTexture::new(1.0.into())));
-                let tex2 = props
-                    .tp
+                let tex2 = tp
                     .$get_texture_or_else_func("tex2", Arc::new(ConstantTexture::new(0.0.into())));
                 // Initialize 3D texture mapping `map` from `tex2world`.
-                let map = Arc::new(IdentityMapping3D::new(props.tex2world));
+                let map = Arc::new(IdentityMapping3D::new(*tex2world));
                 Self::new(tex1, tex2, map)
             }
         }

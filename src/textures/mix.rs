@@ -1,8 +1,8 @@
 //! Mix Texture
 
 #![allow(dead_code)]
-use super::TextureProps;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
@@ -57,21 +57,21 @@ where
 
 macro_rules! from_params {
     ($t: ty, $get_texture_or_else_func: ident) => {
-        impl From<&mut TextureProps> for MixTexture<$t> {
+        impl From<(&mut TextureParams, &Transform)> for MixTexture<$t> {
             /// Create a `MixTexture<$t>` from given parameter set and
             /// transformation from texture space to world space.
             ///
-            /// * `props` - Texture creation properties.
-            fn from(props: &mut TextureProps) -> Self {
-                let tex1 = props
-                    .tp
+            /// * `p` - Tuple containing texture parameters and texture space
+            ///         to world space transform.
+            fn from(p: (&mut TextureParams, &Transform)) -> Self {
+                let (tp, _tex2world) = p;
+
+                let tex1 = tp
                     .$get_texture_or_else_func("tex1", Arc::new(ConstantTexture::new(0.0.into())));
-                let tex2 = props
-                    .tp
+                let tex2 = tp
                     .$get_texture_or_else_func("tex2", Arc::new(ConstantTexture::new(1.0.into())));
-                let amt = props
-                    .tp
-                    .get_float_texture_or_else("amount", Arc::new(ConstantTexture::new(0.5)));
+                let amt =
+                    tp.get_float_texture_or_else("amount", Arc::new(ConstantTexture::new(0.5)));
                 Self::new(tex1, tex2, amt)
             }
         }

@@ -1,8 +1,9 @@
 //! Polka Dots
 
 #![allow(dead_code)]
-use super::{get_texture_mapping, TextureProps};
+use super::get_texture_mapping;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
@@ -76,19 +77,22 @@ where
 
 macro_rules! from_params {
     ($t: ty, $get_texture_or_else_func: ident) => {
-        impl From<&mut TextureProps> for DotsTexture<$t> {
+        impl From<(&mut TextureParams, &Transform)> for DotsTexture<$t> {
             /// Create a `DotsTexture<$t>` from given parameter set and
             /// transformation from texture space to world space.
             ///
-            /// * `props` - Texture creation properties.
-            fn from(props: &mut TextureProps) -> Self {
+            /// * `p` - Tuple containing texture parameters and texture space
+            ///         to world space transform.
+            fn from(p: (&mut TextureParams, &Transform)) -> Self {
+                let (tp, tex2world) = p;
+
                 // Initialize 2D texture mapping `map` from `tp`.
-                let map = get_texture_mapping(props);
-                let inside = props.tp.$get_texture_or_else_func(
+                let map = get_texture_mapping(tp, tex2world);
+                let inside = tp.$get_texture_or_else_func(
                     "inside",
                     Arc::new(ConstantTexture::new(1.0.into())),
                 );
-                let outside = props.tp.$get_texture_or_else_func(
+                let outside = tp.$get_texture_or_else_func(
                     "outside",
                     Arc::new(ConstantTexture::new(0.0.into())),
                 );
