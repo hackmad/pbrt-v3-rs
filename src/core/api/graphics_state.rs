@@ -1,22 +1,35 @@
 //! Graphics State
 
 #![allow(dead_code)]
-use super::MaterialInstance;
+use super::{MaterialInstance, TransformCache, TransformSet, MAX_TRANSFORMS};
+use crate::accelerators::*;
+use crate::cameras::*;
+use crate::core::camera::*;
+use crate::core::film::*;
+use crate::core::filter::*;
 use crate::core::geometry::*;
 use crate::core::material::*;
 use crate::core::medium::*;
 use crate::core::paramset::*;
 use crate::core::pbrt::*;
+use crate::core::primitive::*;
+use crate::core::sampler::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
+use crate::filters::*;
 use crate::materials::*;
+use crate::samplers::*;
 use crate::textures::*;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::result::Result;
+use std::sync::{Arc, Mutex};
 
 lazy_static! {
-    /// The global graphics state.
+    /// The graphics state.
     pub static ref GRAPHICS_STATE: GraphicsState = GraphicsState::default();
+
+    /// The transform cache.
+    pub static ref TRANSFORM_CACHE: Mutex<TransformCache> = Mutex::new(TransformCache::default());
 }
 
 /// Map of floating point textures.
@@ -72,7 +85,10 @@ impl GraphicsState {
     /// Returns a material for given shape parameters.
     ///
     /// * `geom_params` - Shape parameters.
-    pub fn get_material_for_shape(&self, geom_params: Arc<ParamSet>) -> Option<ArcMaterial> {
+    pub fn get_material_for_shape(
+        &self,
+        geom_params: Arc<ParamSet>,
+    ) -> Result<ArcMaterial, String> {
         let current_material = self
             .current_material
             .as_ref()
@@ -88,11 +104,12 @@ impl GraphicsState {
                 self.float_textures.clone(),
                 self.spectrum_textures.clone(),
             );
+
             let mat = make_material(&current_material.name, &mut mp);
             mp.report_unused();
             mat
         } else {
-            Some(current_material.material.clone())
+            Ok(current_material.material.clone())
         }
     }
 
@@ -219,42 +236,37 @@ fn shape_may_set_material_parameters(ps: Arc<ParamSet>) -> bool {
 ///
 /// * `name` - Name.
 /// * `mp`   - Parameter set.
-fn make_material(name: &str, mp: &mut TextureParams) -> Option<ArcMaterial> {
+fn make_material(name: &str, mp: &mut TextureParams) -> Result<ArcMaterial, String> {
     match name {
-        "matte" => Some(Arc::new(MatteMaterial::from(mp))),
-        "plastic" => Some(Arc::new(PlasticMaterial::from(mp))),
-        "fourier" => Some(Arc::new(FourierMaterial::from(mp))),
+        "matte" => Ok(Arc::new(MatteMaterial::from(mp))),
+        "plastic" => Ok(Arc::new(PlasticMaterial::from(mp))),
+        "fourier" => Ok(Arc::new(FourierMaterial::from(mp))),
         "mix" => {
             let m1 = mp.find_string("namedmaterial1", String::from(""));
-            let m2 = mp.find_string("namedmaterial2", String::from(""));
             let mat1 = match GRAPHICS_STATE.named_materials.get(&m1) {
+                Some(mat) => mat.material.clone(),
                 None => {
                     eprintln!("Named material '{}' undefined. Using 'matte'.", m1);
                     make_material("matte", mp).unwrap()
                 }
-                Some(mat) => mat.material.clone(),
             };
+
+            let m2 = mp.find_string("namedmaterial2", String::from(""));
             let mat2 = match GRAPHICS_STATE.named_materials.get(&m2) {
+                Some(mat) => mat.material.clone(),
                 None => {
                     eprintln!("Named material '{}' undefined. Using 'matte'.", m2);
                     make_material("matte", mp).unwrap()
                 }
-                Some(mat) => mat.material.clone(),
             };
 
-            Some(Arc::new(MixMaterial::from((mp, mat1, mat2))))
+            Ok(Arc::new(MixMaterial::from((mp, mat1, mat2))))
         }
-        "" => {
-            eprintln!("Unable to create material with no name");
-            None
-        }
-        "none" => {
-            eprintln!("Unable to create material 'none'.");
-            None
-        }
+        "" => Err(format!("Unable to create material with no name")),
+        "none" => Err(String::from("Unable to create material 'none'.")),
         _ => {
             eprintln!("Material '{}' unknown. Using 'matte'.", name);
-            Some(Arc::new(MatteMaterial::from(mp)))
+            Ok(Arc::new(MatteMaterial::from(mp)))
         }
     }
 }
@@ -268,35 +280,31 @@ fn make_float_texture(
     name: &str,
     tex2world: &Transform,
     tp: &mut TextureParams,
-) -> Option<ArcTexture<Float>> {
+) -> Result<ArcTexture<Float>, String> {
+    let p = (tp, tex2world);
     match name {
-        "bilerp" => Some(Arc::new(BilerpTexture::<Float>::from((tp, tex2world)))),
+        "bilerp" => Ok(Arc::new(BilerpTexture::<Float>::from(p))),
         "checkerboard" => {
-            let dim = tp.find_int("dimension", 2);
+            let dim = p.0.find_int("dimension", 2);
             if dim == 2 {
-                Some(Arc::new(CheckerboardTexture2D::<Float>::from((
-                    tp, tex2world,
-                ))))
+                Ok(Arc::new(CheckerboardTexture2D::<Float>::from(p)))
             } else if dim == 3 {
-                Some(Arc::new(CheckerboardTexture3D::<Float>::from((
-                    tp, tex2world,
-                ))))
+                Ok(Arc::new(CheckerboardTexture3D::<Float>::from(p)))
             } else {
-                eprintln!("{} dimensional checkerboard texture not supported", dim);
-                None
+                Err(format!(
+                    "{} dimensional checkerboard texture not supported",
+                    dim
+                ))
             }
         }
-        "constant" => Some(Arc::new(ConstantTexture::<Float>::from((tp, tex2world)))),
-        "dots" => Some(Arc::new(DotsTexture::<Float>::from((tp, tex2world)))),
-        "fbm" => Some(Arc::new(FBmTexture::<Float>::from((tp, tex2world)))),
-        "imagemap" => Some(Arc::new(ImageTexture::<Float>::from((tp, tex2world)))),
-        "mix" => Some(Arc::new(MixTexture::<Float>::from((tp, tex2world)))),
-        "scale" => Some(Arc::new(ScaleTexture::<Float>::from((tp, tex2world)))),
-        "windy" => Some(Arc::new(WindyTexture::<Float>::from((tp, tex2world)))),
-        _ => {
-            eprintln!("Float texture '{}' unknown.", name);
-            None
-        }
+        "constant" => Ok(Arc::new(ConstantTexture::<Float>::from(p))),
+        "dots" => Ok(Arc::new(DotsTexture::<Float>::from(p))),
+        "fbm" => Ok(Arc::new(FBmTexture::<Float>::from(p))),
+        "imagemap" => Ok(Arc::new(ImageTexture::<Float>::from(p))),
+        "mix" => Ok(Arc::new(MixTexture::<Float>::from(p))),
+        "scale" => Ok(Arc::new(ScaleTexture::<Float>::from(p))),
+        "windy" => Ok(Arc::new(WindyTexture::<Float>::from(p))),
+        _ => Err(format!("Float texture '{}' unknown.", name)),
     }
 }
 
@@ -309,36 +317,149 @@ fn make_spectrum_texture(
     name: &str,
     tex2world: &Transform,
     tp: &mut TextureParams,
-) -> Option<ArcTexture<Spectrum>> {
+) -> Result<ArcTexture<Spectrum>, String> {
+    let p = (tp, tex2world);
     match name {
-        "bilerp" => Some(Arc::new(BilerpTexture::<Spectrum>::from((tp, tex2world)))),
+        "bilerp" => Ok(Arc::new(BilerpTexture::<Spectrum>::from(p))),
         "checkerboard" => {
-            let dim = tp.find_int("dimension", 2);
+            let dim = p.0.find_int("dimension", 2);
             if dim == 2 {
-                Some(Arc::new(CheckerboardTexture2D::<Spectrum>::from((
-                    tp, tex2world,
-                ))))
+                Ok(Arc::new(CheckerboardTexture2D::<Spectrum>::from(p)))
             } else if dim == 3 {
-                Some(Arc::new(CheckerboardTexture3D::<Spectrum>::from((
-                    tp, tex2world,
-                ))))
+                Ok(Arc::new(CheckerboardTexture3D::<Spectrum>::from(p)))
             } else {
-                eprintln!("{} dimensional checkerboard texture not supported", dim);
-                None
+                Err(format!(
+                    "{} dimensional checkerboard texture not supported",
+                    dim
+                ))
             }
         }
-        "constant" => Some(Arc::new(ConstantTexture::<Spectrum>::from((tp, tex2world)))),
-        "dots" => Some(Arc::new(DotsTexture::<Spectrum>::from((tp, tex2world)))),
-        "fbm" => Some(Arc::new(FBmTexture::<Spectrum>::from((tp, tex2world)))),
-        "imagemap" => Some(Arc::new(ImageTexture::<Spectrum>::from((tp, tex2world)))),
-        "marble" => Some(Arc::new(MarbleTexture::from((tp, tex2world)))),
-        "mix" => Some(Arc::new(MixTexture::<Spectrum>::from((tp, tex2world)))),
-        "scale" => Some(Arc::new(ScaleTexture::<Spectrum>::from((tp, tex2world)))),
-        "uv" => Some(Arc::new(UVTexture::from((tp, tex2world)))),
-        "windy" => Some(Arc::new(WindyTexture::<Spectrum>::from((tp, tex2world)))),
-        _ => {
-            eprintln!("Spectrum texture '{}' unknown.", name);
-            None
-        }
+        "constant" => Ok(Arc::new(ConstantTexture::<Spectrum>::from(p))),
+        "dots" => Ok(Arc::new(DotsTexture::<Spectrum>::from(p))),
+        "fbm" => Ok(Arc::new(FBmTexture::<Spectrum>::from(p))),
+        "imagemap" => Ok(Arc::new(ImageTexture::<Spectrum>::from(p))),
+        "marble" => Ok(Arc::new(MarbleTexture::from(p))),
+        "mix" => Ok(Arc::new(MixTexture::<Spectrum>::from(p))),
+        "scale" => Ok(Arc::new(ScaleTexture::<Spectrum>::from(p))),
+        "uv" => Ok(Arc::new(UVTexture::from(p))),
+        "windy" => Ok(Arc::new(WindyTexture::<Spectrum>::from(p))),
+        _ => Err(format!("Spectrum texture '{}' unknown.", name)),
+    }
+}
+
+/// Creates an accelerator.
+///
+/// * `name`     - Name.
+/// * `prims`    - Primitives.
+/// * `paramset` - Parameter set.
+fn make_accelerator(
+    name: &str,
+    prims: Vec<ArcPrimitive>,
+    paramset: &mut ParamSet,
+) -> Result<ArcPrimitive, String> {
+    let p = (paramset, prims);
+    match name {
+        "bvh" => Ok(Arc::new(BVHAccel::from(p))),
+        "kdtree" => Ok(Arc::new(KDTreeAccel::from(p))),
+        _ => Err(format!("Accelerator '{}' unknown.", name)),
+    }
+}
+
+/// Creates a camera.
+///
+/// * `name`            - Name.
+/// * `paramset`        - Parameter set.
+/// * `cam2world_set`   - Transform set for camera space to world space
+///                       transformations.
+/// * `transform_start` - Start time.
+/// * `transform_end`   - End time.
+/// * `film`            - The film.
+fn make_camera(
+    name: &str,
+    paramset: &mut ParamSet,
+    cam2world_set: &TransformSet,
+    transform_start: Float,
+    transform_end: Float,
+    film: Arc<Film>,
+) -> Result<ArcCamera, String> {
+    let medium_interface = GRAPHICS_STATE.create_medium_interface();
+
+    assert!(
+        MAX_TRANSFORMS == 2,
+        "TransformCache assumes only two transforms"
+    );
+
+    let mut transform_cache = TRANSFORM_CACHE.lock().unwrap();
+
+    let cam2world_start = transform_cache.lookup(cam2world_set[0].clone());
+    let cam2world_end = transform_cache.lookup(cam2world_set[1].clone());
+
+    let animated_cam2world = AnimatedTransform::new(
+        cam2world_start,
+        cam2world_end,
+        transform_start,
+        transform_end,
+    );
+
+    let p = (
+        paramset,
+        &animated_cam2world,
+        film,
+        medium_interface.outside,
+    );
+
+    match name {
+        "environment" => Ok(Arc::new(EnvironmentCamera::from(p))),
+        "orthographic" => Ok(Arc::new(OrthographicCamera::from(p))),
+        "perspective" => Ok(Arc::new(PerspectiveCamera::from(p))),
+        "realistic" => Ok(Arc::new(RealisticCamera::from(p))),
+        _ => Err(format!("Camera '{}' unknown.", name)),
+    }
+}
+
+/// Creates a sampler.
+///
+/// * `name`     - Name.
+/// * `paramset` - Parameter set.
+/// * `film`     - The film.
+fn make_sampler(
+    name: &str,
+    paramset: &mut ParamSet,
+    film: Arc<Film>,
+) -> Result<ArcSampler, String> {
+    let p = (paramset, film.clone().get_sample_bounds());
+
+    match name {
+        "02sequence" => Ok(Arc::new(ZeroTwoSequenceSampler::from(p))),
+        "lowdiscrepency" => Ok(Arc::new(ZeroTwoSequenceSampler::from(p))),
+        "halton" => Ok(Arc::new(HaltonSampler::from(p))),
+        "maxmindist" => Ok(Arc::new(HaltonSampler::from(p))),
+        "random" => Ok(Arc::new(RandomSampler::from(p))),
+        "sobol" => Ok(Arc::new(SobolSampler::from(p))),
+        "stratified" => Ok(Arc::new(StratifiedSampler::from(p))),
+        _ => Err(format!("Sampler '{}' unknown.", name)),
+    }
+}
+
+/// Creates a filter.
+///
+/// * `name`     - Name.
+/// * `paramset` - Parameter set.
+fn make_filter(name: &str, paramset: &mut ParamSet) -> Result<ArcFilter, String> {
+    match name {
+        "box" => Ok(Arc::new(BoxFilter::from(paramset))),
+        "gaussian" => Ok(Arc::new(GaussianFilter::from(paramset))),
+        "mitchell" => Ok(Arc::new(MitchellFilter::from(paramset))),
+        "sinc" => Ok(Arc::new(LanczosSincFilter::from(paramset))),
+        "triangle" => Ok(Arc::new(TriangleFilter::from(paramset))),
+        _ => Err(format!("Sampler '{}' unknown.", name)),
+    }
+}
+
+/// Creates a film.
+fn make_film(name: &str, paramset: &mut ParamSet, filter: ArcFilter) -> Result<Arc<Film>, String> {
+    match name {
+        "image" => Ok(Arc::new(Film::from((paramset, filter)))),
+        _ => Err(format!("Film '{}' unknown.", name)),
     }
 }

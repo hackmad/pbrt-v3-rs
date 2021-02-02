@@ -1,9 +1,11 @@
 //! Film
 
 #![allow(dead_code)]
+use crate::core::app::OPTIONS;
 use crate::core::filter::*;
 use crate::core::geometry::*;
 use crate::core::image_io::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
 use std::sync::{Arc, RwLock};
@@ -337,5 +339,74 @@ impl Film {
         if let Err(err) = write_image(&self.filename, &rgb, &self.cropped_pixel_bounds) {
             panic!("Error writing output image {}. {:}.", self.filename, err);
         }
+    }
+}
+
+impl From<(&mut ParamSet, ArcFilter)> for Film {
+    /// Create a `BVHAccel` from given parameter set and filter.
+    ///
+    /// * `p` - Tuple containing the parameter set and filter.
+    fn from(p: (&mut ParamSet, ArcFilter)) -> Self {
+        let (params, filter) = p;
+
+        let image_file = &OPTIONS.image_file[..];
+        let filename = if image_file.len() > 0 {
+            let params_filename = params.find_one_string("filename", String::from(""));
+            if params_filename.len() > 0 {
+                eprintln!(
+                    "Output filename supplied on command line, '{}' is overriding 
+                    filename provided in scene description file, '{}'.",
+                    OPTIONS.image_file, params_filename
+                );
+                params_filename
+            } else {
+                String::from(image_file)
+            }
+        } else {
+            params.find_one_string("filename", String::from("pbrt.exr"))
+        };
+
+        let mut xres = params.find_one_int("xresolution", 1280);
+        let mut yres = params.find_one_int("yresolution", 720);
+        if OPTIONS.quick_render {
+            xres = max(1, xres / 4);
+            yres = max(1, yres / 4);
+        }
+
+        let cr = params.find_float("cropwindow");
+        let cwi = cr.len();
+        let mut crop = Bounds2f::default();
+        if cwi == 4 {
+            crop.p_min.x = clamp(min(cr[0], cr[1]), 0.0, 1.0);
+            crop.p_max.x = clamp(max(cr[0], cr[1]), 0.0, 1.0);
+            crop.p_min.y = clamp(min(cr[2], cr[3]), 0.0, 1.0);
+            crop.p_max.y = clamp(max(cr[2], cr[3]), 0.0, 1.0);
+        } else if cwi > 0 {
+            panic!("{} values supplied for 'cropwindow'. Expected 4.", cwi);
+        } else {
+            crop = Bounds2f::new(
+                Point2f::new(
+                    clamp(OPTIONS.crop_window[0][0], 0.0, 1.0),
+                    clamp(OPTIONS.crop_window[1][0], 0.0, 1.0),
+                ),
+                Point2f::new(
+                    clamp(OPTIONS.crop_window[0][1], 0.0, 1.0),
+                    clamp(OPTIONS.crop_window[1][1], 0.0, 1.0),
+                ),
+            );
+        }
+
+        let scale = params.find_one_float("scale", 1.0);
+        let diagonal = params.find_one_float("diagonal", 35.0);
+        let max_sample_luminance = params.find_one_float("maxsampleluminance", INFINITY);
+        Self::new(
+            &Point2i::new(xres, yres),
+            &crop,
+            filter.clone(),
+            diagonal,
+            &filename,
+            Some(scale),
+            Some(max_sample_luminance),
+        )
     }
 }

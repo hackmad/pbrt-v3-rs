@@ -1,7 +1,7 @@
 //! Random Sampler.
 
-use super::SamplerProps;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::rng::*;
 use crate::core::sampler::*;
@@ -82,12 +82,13 @@ impl Sampler for RandomSampler {
     }
 }
 
-impl From<&mut SamplerProps> for RandomSampler {
-    /// Create a `RandomSampler` from `SamplerProps`.
+impl From<(&mut ParamSet, Bounds2i)> for RandomSampler {
+    /// Create a `RandomSampler` from given parameter set and sample bounds.
     ///
-    /// * `props` - Sampler creation properties.
-    fn from(props: &mut SamplerProps) -> Self {
-        let samples_per_pixel = props.params.find_one_int("pixelsamples", 4) as usize;
+    /// * `p` - A tuple containing parameter set and sample bounds.
+    fn from(p: (&mut ParamSet, Bounds2i)) -> Self {
+        let (params, _sample_bounds) = p;
+        let samples_per_pixel = params.find_one_int("pixelsamples", 4) as usize;
         Self::new(samples_per_pixel, None)
     }
 }

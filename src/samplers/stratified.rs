@@ -1,8 +1,8 @@
 //! Stratified Sampler.
 
-use super::SamplerProps;
 use crate::core::app::OPTIONS;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::sampler::*;
 use crate::core::sampling::*;
@@ -161,20 +161,22 @@ impl Sampler for StratifiedSampler {
     }
 }
 
-impl From<&mut SamplerProps> for StratifiedSampler {
-    /// Create a `StratifiedSampler` from `SamplerProps`.
+impl From<(&mut ParamSet, Bounds2i)> for StratifiedSampler {
+    /// Create a `StratifiedSampler` from given parameter set and sample bounds.
     ///
-    /// * `props` - Sampler creation properties.
-    fn from(props: &mut SamplerProps) -> Self {
-        let mut x_samples = props.params.find_one_int("xsamples", 4) as usize;
-        let mut y_samples = props.params.find_one_int("ysamples", 4) as usize;
+    /// * `p` - A tuple containing parameter set and sample bounds.
+    fn from(p: (&mut ParamSet, Bounds2i)) -> Self {
+        let (params, _sample_bounds) = p;
+
+        let mut x_samples = params.find_one_int("xsamples", 4) as usize;
+        let mut y_samples = params.find_one_int("ysamples", 4) as usize;
         if OPTIONS.quick_render {
             x_samples = 1;
             y_samples = 1;
         }
 
-        let jitter = props.params.find_one_bool("jitter", true);
-        let sd = props.params.find_one_int("dimensions", 4) as usize;
+        let jitter = params.find_one_bool("jitter", true);
+        let sd = params.find_one_int("dimensions", 4) as usize;
 
         Self::new(x_samples, y_samples, jitter, sd, None)
     }

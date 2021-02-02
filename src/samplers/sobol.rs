@@ -1,9 +1,9 @@
 //! Sobol Sampler.
 
-use super::SamplerProps;
 use crate::core::app::OPTIONS;
 use crate::core::geometry::*;
 use crate::core::low_discrepency::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::rng::*;
 use crate::core::sampler::*;
@@ -204,16 +204,18 @@ impl Sampler for SobolSampler {
     }
 }
 
-impl From<&mut SamplerProps> for SobolSampler {
-    /// Create a `SobolSampler` from `SamplerProps`.
+impl From<(&mut ParamSet, Bounds2i)> for SobolSampler {
+    /// Create a `SobolSampler` from given parameter set and sample bounds.
     ///
-    /// * `props` - Sampler creation properties.
-    fn from(props: &mut SamplerProps) -> Self {
-        let mut samples_per_pixel = props.params.find_one_int("pixelsamples", 16) as usize;
+    /// * `p` - A tuple containing parameter set and sample bounds.
+    fn from(p: (&mut ParamSet, Bounds2i)) -> Self {
+        let (params, sample_bounds) = p;
+
+        let mut samples_per_pixel = params.find_one_int("pixelsamples", 16) as usize;
         if OPTIONS.quick_render {
             samples_per_pixel = 1;
         }
 
-        Self::new(samples_per_pixel, props.sample_bounds)
+        Self::new(samples_per_pixel, sample_bounds)
     }
 }

@@ -14,12 +14,18 @@ pub struct TransformCache {
 impl TransformCache {
     /// Lookup a reference to a `Transform`. If it is cached, return a
     /// reference to it. Otherwise, insert it and return the cloned reference.
+    ///
+    /// * `t` - Reference to a transform to lookup.
     pub fn lookup(&mut self, t: ArcTransform) -> ArcTransform {
-        if !self.transforms.contains(&t) {
-            self.transforms.insert(t.clone());
+        match self.transforms.get(&t) {
+            Some(transform) => transform.clone(),
+            None => {
+                self.transforms.insert(t.clone());
+                t.clone()
+            }
         }
-        self.transforms.get(&t).unwrap().clone()
     }
+
     /// Clear the cached transformations.
     pub fn clear(&mut self) {
         self.transforms.clear();

@@ -1,11 +1,11 @@
 //! Environment Camera
 
 #![allow(dead_code)]
-use super::CameraProps;
 use crate::core::camera::*;
 use crate::core::film::*;
 use crate::core::geometry::*;
 use crate::core::medium::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use std::mem::swap;
 use std::sync::Arc;
@@ -77,14 +77,18 @@ impl Camera for EnvironmentCamera {
     }
 }
 
-impl From<&mut CameraProps> for EnvironmentCamera {
-    /// Create a `EnvironmentCamera` from `CameraProps`.
+impl From<(&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)> for EnvironmentCamera {
+    /// Create a `EnvironmentCamera` from given parameter set, animated transform,
+    /// film and medium.
     ///
-    /// * `props` - Camera creation properties.
-    fn from(props: &mut CameraProps) -> Self {
+    /// * `p` - A tuple containing  parameter set, animated transform, film and
+    ///         medium.
+    fn from(p: (&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)) -> Self {
+        let (params, cam2world, film, medium) = p;
+
         // Extract common camera parameters from `ParamSet`
-        let mut shutter_open = props.params.find_one_float("shutteropen", 0.0);
-        let mut shutter_close = props.params.find_one_float("shutterclose", 1.0);
+        let mut shutter_open = params.find_one_float("shutteropen", 0.0);
+        let mut shutter_close = params.find_one_float("shutterclose", 1.0);
         if shutter_close < shutter_open {
             eprintln!(
                 "Shutter close time [{}] < shutter open [{}]. 
@@ -95,11 +99,11 @@ impl From<&mut CameraProps> for EnvironmentCamera {
         }
 
         Self::new(
-            props.cam2world,
+            cam2world.clone(),
             shutter_open,
             shutter_close,
-            props.film.clone(),
-            props.medium.clone(),
+            film.clone(),
+            medium.clone(),
         )
     }
 }

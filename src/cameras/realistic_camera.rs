@@ -1,7 +1,6 @@
 //! Realistic Camera
 
 #![allow(dead_code)]
-use super::CameraProps;
 use crate::core::camera::*;
 use crate::core::efloat::*;
 use crate::core::film::*;
@@ -9,6 +8,7 @@ use crate::core::geometry::*;
 use crate::core::low_discrepency::*;
 use crate::core::medium::*;
 use crate::core::paramset::read_float_file;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::reflection::*;
 use rayon::prelude::*;
@@ -475,14 +475,18 @@ impl RealisticCamera {
     }
 }
 
-impl From<&mut CameraProps> for RealisticCamera {
-    /// Create a `RealisticCamera` from `CameraProps`.
+impl From<(&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)> for RealisticCamera {
+    /// Create a `RealisticCamera` from given parameter set, animated transform,
+    /// film and medium.
     ///
-    /// * `props` - Camera creation properties.
-    fn from(props: &mut CameraProps) -> Self {
+    /// * `p` - A tuple containing  parameter set, animated transform, film and
+    ///         medium.
+    fn from(p: (&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)) -> Self {
+        let (params, cam2world, film, medium) = p;
+
         // Extract common camera parameters from `ParamSet`
-        let mut shutter_open = props.params.find_one_float("shutteropen", 0.0);
-        let mut shutter_close = props.params.find_one_float("shutterclose", 1.0);
+        let mut shutter_open = params.find_one_float("shutteropen", 0.0);
+        let mut shutter_close = params.find_one_float("shutterclose", 1.0);
         if shutter_close < shutter_open {
             eprintln!(
                 "Shutter close time [{}] < shutter open [{}]. 
@@ -493,10 +497,10 @@ impl From<&mut CameraProps> for RealisticCamera {
         }
 
         // Realistic camera-specific parameters
-        let lens_file = props.params.find_one_filename("lensfile", String::from(""));
-        let aperture_diameter = props.params.find_one_float("aperturediameter", 1.0);
-        let focus_distance = props.params.find_one_float("focusdistance", 10.0);
-        let simple_weighting = props.params.find_one_bool("simpleweighting", true);
+        let lens_file = params.find_one_filename("lensfile", String::from(""));
+        let aperture_diameter = params.find_one_float("aperturediameter", 1.0);
+        let focus_distance = params.find_one_float("focusdistance", 10.0);
+        let simple_weighting = params.find_one_bool("simpleweighting", true);
         if lens_file.len() == 0 {
             panic!("No lens description file supplied!");
         }
@@ -520,15 +524,15 @@ impl From<&mut CameraProps> for RealisticCamera {
         }
 
         Self::new(
-            props.cam2world,
+            cam2world.clone(),
             shutter_open,
             shutter_close,
             aperture_diameter,
             focus_distance,
             simple_weighting,
             lens_data,
-            props.film.clone(),
-            props.medium.clone(),
+            film.clone(),
+            medium.clone(),
         )
     }
 }

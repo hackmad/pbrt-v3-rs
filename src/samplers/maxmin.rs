@@ -1,9 +1,9 @@
 //! Maximized Minimal Distance Sampler.
 
-use super::SamplerProps;
 use crate::core::app::OPTIONS;
 use crate::core::geometry::*;
 use crate::core::low_discrepency::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::sampler::*;
 use std::sync::Arc;
@@ -159,17 +159,19 @@ impl Sampler for MaxMinDistSampler {
     }
 }
 
-impl From<&mut SamplerProps> for MaxMinDistSampler {
-    /// Create a `MaxMinDistSampler` from `SamplerProps`.
+impl From<(&mut ParamSet, Bounds2i)> for MaxMinDistSampler {
+    /// Create a `MaxMinDistSampler` from given parameter set and sample bounds.
     ///
-    /// * `props` - Sampler creation properties.
-    fn from(props: &mut SamplerProps) -> Self {
-        let mut samples_per_pixel = props.params.find_one_int("pixelsamples", 16) as usize;
+    /// * `p` - A tuple containing parameter set and sample bounds.
+    fn from(p: (&mut ParamSet, Bounds2i)) -> Self {
+        let (params, _sample_bounds) = p;
+
+        let mut samples_per_pixel = params.find_one_int("pixelsamples", 16) as usize;
         if OPTIONS.quick_render {
             samples_per_pixel = 1;
         }
 
-        let sd = props.params.find_one_int("dimensions", 4) as usize;
+        let sd = params.find_one_int("dimensions", 4) as usize;
 
         Self::new(samples_per_pixel, sd, None)
     }

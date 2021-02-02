@@ -1,10 +1,10 @@
 //! Bounding Volume Hierarchy.
 
 #![allow(dead_code)]
-use super::AcceleratorProps;
 use crate::core::geometry::*;
 use crate::core::light::*;
 use crate::core::material::*;
+use crate::core::paramset::*;
 use crate::core::primitive::*;
 
 mod common;
@@ -329,14 +329,13 @@ impl Primitive for BVHAccel {
     }
 }
 
-impl From<&mut AcceleratorProps> for BVHAccel {
-    /// Create a `BVHAccel` from `AcceleratorProps`.
+impl From<(&mut ParamSet, Vec<ArcPrimitive>)> for BVHAccel {
+    /// Create a `BVHAccel` from given parameter set and primitives.
     ///
-    /// * `props` - Accelerator creation properties.
-    fn from(props: &mut AcceleratorProps) -> Self {
-        let split_method_name = props
-            .params
-            .find_one_string("splitmethod", String::from("sah"));
+    /// * `p` - Tuple containing the parameter set and primitives.
+    fn from(p: (&mut ParamSet, Vec<ArcPrimitive>)) -> Self {
+        let (params, prims) = p;
+        let split_method_name = params.find_one_string("splitmethod", String::from("sah"));
         let split_method = match &split_method_name[..] {
             "sah" => SplitMethod::SAH,
             "hlbvh" => SplitMethod::HLBVH,
@@ -348,7 +347,7 @@ impl From<&mut AcceleratorProps> for BVHAccel {
             }
         };
 
-        let max_prims_in_node = props.params.find_one_int("maxnodeprims", 4) as u8;
-        Self::new(props.prims.clone(), max_prims_in_node, split_method)
+        let max_prims_in_node = params.find_one_int("maxnodeprims", 4) as u8;
+        Self::new(prims.clone(), max_prims_in_node, split_method)
     }
 }

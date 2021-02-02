@@ -1,11 +1,11 @@
 //! Orthographic Camera
 
 #![allow(dead_code)]
-use super::CameraProps;
 use crate::core::camera::*;
 use crate::core::film::*;
 use crate::core::geometry::*;
 use crate::core::medium::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::sampling::*;
 use std::mem::swap;
@@ -192,14 +192,18 @@ impl Camera for OrthographicCamera {
     }
 }
 
-impl From<&mut CameraProps> for OrthographicCamera {
-    /// Create a `OrthographicCamera` from `CameraProps`.
+impl From<(&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)> for OrthographicCamera {
+    /// Create a `OrthographicCamera` from given parameter set, animated transform,
+    /// film and medium.
     ///
-    /// * `props` - Camera creation properties.
-    fn from(props: &mut CameraProps) -> Self {
+    /// * `p` - A tuple containing  parameter set, animated transform, film and
+    ///         medium.
+    fn from(p: (&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)) -> Self {
+        let (params, cam2world, film, medium) = p;
+
         // Extract common camera parameters from `ParamSet`
-        let mut shutter_open = props.params.find_one_float("shutteropen", 0.0);
-        let mut shutter_close = props.params.find_one_float("shutterclose", 1.0);
+        let mut shutter_open = params.find_one_float("shutteropen", 0.0);
+        let mut shutter_close = params.find_one_float("shutterclose", 1.0);
         if shutter_close < shutter_open {
             eprintln!(
                 "Shutter close time [{}] < shutter open [{}]. 
@@ -209,12 +213,12 @@ impl From<&mut CameraProps> for OrthographicCamera {
             swap(&mut shutter_close, &mut shutter_open);
         }
 
-        let lens_radius = props.params.find_one_float("lensradius", 0.0);
-        let focal_distance = props.params.find_one_float("focaldistance", 1e30);
+        let lens_radius = params.find_one_float("lensradius", 0.0);
+        let focal_distance = params.find_one_float("focaldistance", 1e30);
 
-        let frame = props.params.find_one_float(
+        let frame = params.find_one_float(
             "frameaspectratio",
-            props.film.full_resolution.x as Float / props.film.full_resolution.y as Float,
+            film.full_resolution.x as Float / film.full_resolution.y as Float,
         );
         let mut screen = if frame > 1.0 {
             Bounds2::new(Point2::new(-frame, -1.0), Point2::new(1.0, frame))
@@ -225,7 +229,7 @@ impl From<&mut CameraProps> for OrthographicCamera {
             )
         };
 
-        let sw = props.params.find_float("screenwindow");
+        let sw = params.find_float("screenwindow");
         let swi = sw.len();
         if swi > 0 {
             if swi == 4 {
@@ -239,14 +243,14 @@ impl From<&mut CameraProps> for OrthographicCamera {
         }
 
         Self::new(
-            props.cam2world,
+            cam2world.clone(),
             screen,
             shutter_open,
             shutter_close,
             lens_radius,
             focal_distance,
-            props.film.clone(),
-            props.medium.clone(),
+            film.clone(),
+            medium.clone(),
         )
     }
 }

@@ -1,10 +1,10 @@
 //! KD Tree.
 
 #![allow(dead_code)]
-use super::AcceleratorProps;
 use crate::core::geometry::*;
 use crate::core::light::*;
 use crate::core::material::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::primitive::*;
 
@@ -579,19 +579,20 @@ impl Primitive for KDTreeAccel {
     }
 }
 
-impl From<&mut AcceleratorProps> for KDTreeAccel {
-    /// Create a `KDTreeAccel ` from `AcceleratorProps`.
+impl From<(&mut ParamSet, Vec<ArcPrimitive>)> for KDTreeAccel {
+    /// Create a `KDTreeAccel ` from given parameter set and primitives.
     ///
-    /// * `props` - Accelerator creation properties.
-    fn from(props: &mut AcceleratorProps) -> Self {
-        let isect_cost = props.params.find_one_int("intersectcost", 80);
-        let trav_cost = props.params.find_one_int("traversalcost", 1);
-        let empty_bonus = props.params.find_one_float("emptybonus", 0.5);
-        let max_prims = props.params.find_one_int("maxprims", 1) as u32;
-        let max_depth = props.params.find_one_int("maxdepth", -1);
+    /// * `p` - Tuple containing the parameter set and primitives.
+    fn from(p: (&mut ParamSet, Vec<ArcPrimitive>)) -> Self {
+        let (params, prims) = p;
+        let isect_cost = params.find_one_int("intersectcost", 80);
+        let trav_cost = params.find_one_int("traversalcost", 1);
+        let empty_bonus = params.find_one_float("emptybonus", 0.5);
+        let max_prims = params.find_one_int("maxprims", 1) as u32;
+        let max_depth = params.find_one_int("maxdepth", -1);
 
         Self::new(
-            props.prims.clone(),
+            prims.clone(),
             isect_cost,
             trav_cost,
             empty_bonus,

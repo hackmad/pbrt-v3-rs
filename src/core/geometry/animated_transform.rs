@@ -3,15 +3,16 @@
 #![allow(dead_code)]
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
+use std::sync::Arc;
 
 /// AnimatedTransform implements keyframe transformation interpolation.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct AnimatedTransform {
     /// Transform representing starting point in animation.
-    pub start_transform: Transform,
+    pub start_transform: ArcTransform,
 
     /// Transform representing ending point in animation.
-    pub end_transform: Transform,
+    pub end_transform: ArcTransform,
 
     /// Start time.
     pub start_time: Float,
@@ -42,134 +43,83 @@ pub struct AnimatedTransform {
     c5: [DerivativeTerm; 3],
 }
 
-/// Decomposes a transformation matrix into its translation, rotation and
-/// scaling components.
-///
-/// The transformation decomposition is: M = TRS.
-///
-/// * `m`      - The matrix to decompose.
-/// * `t`      - The translation component.
-/// * `r_quat` - The rotation component.
-/// * `s`      - The scaling component.
-fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut Matrix4x4) {
-    // Extract translation T from transformation matrix
-    *t = Vector3f::new(m[0][3], m[1][3], m[2][3]);
-
-    // Compute new transformation matrix M without translation
-    let mut m1 = *m;
-    for i in 0..3 {
-        m1.m[i][3] = 0.0;
-        m1.m[3][i] = 0.0;
-    }
-    m1.m[3][3] = 1.0;
-
-    // Extract rotation R from transformation matrix
-    let mut r = m1;
-    let mut norm = 0.0;
-    let mut count = 0;
-    loop {
-        // Compute the next matrix R_next in series
-        let mut r_next = Matrix4x4::default();
-        let r_it = r.transpose().inverse();
-        for i in 0..4 {
-            for j in 0..4 {
-                r_next.m[i][j] = 0.5 * (r[i][j] + r_it[i][j]);
-            }
-        }
-
-        // Compute norm of difference between R and R_next
-        for i in 0..3 {
-            let n = abs(r[i][0] - r_next[i][0])
-                + abs(r[i][1] - r_next[i][1])
-                + abs(r[i][2] - r_next[i][2]);
-            norm = max(norm, n);
-        }
-
-        r = r_next;
-
-        count += 1;
-        if count >= 100 && norm <= 0.0001 {
-            break;
-        }
-    }
-    *r_quat = Quaternion::from(Transform::from(r));
-
-    // Compute scale S using rotation and original matrix
-    *s = r.inverse() * *m;
-}
-
 impl AnimatedTransform {
     /// Create an animated transformation.
     ///
     /// * `start_transform` - Transform representing starting point in animation.
-    /// * `end_transform`   - Transform representing ending point in animation.
-    /// * `start_time`      - Start time.
+    /// * `end_transform`   - transform representing ending point in animation.
+    /// * `start_time`      - start time.
     /// * `end_time`        - End time.
     pub fn new(
-        start_transform: Transform,
-        end_transform: Transform,
+        start_transform: ArcTransform,
+        end_transform: ArcTransform,
         start_time: Float,
         end_time: Float,
     ) -> Self {
-        let mut at = Self::default();
+        let start_transform = start_transform.clone();
+        let end_transform = end_transform.clone();
+        let actually_animated = start_transform != end_transform;
+        let mut t = [Vector3f::default(); 2];
+        let mut r = [Quaternion::default(); 2];
+        let mut s = [Matrix4x4::default(); 2];
+        let mut has_rotation = false;
+        let mut c1 = [DerivativeTerm::default(); 3];
+        let mut c2 = [DerivativeTerm::default(); 3];
+        let mut c3 = [DerivativeTerm::default(); 3];
+        let mut c4 = [DerivativeTerm::default(); 3];
+        let mut c5 = [DerivativeTerm::default(); 3];
 
-        at.start_transform = start_transform;
-        at.end_transform = end_transform;
-        at.start_time = start_time;
-        at.end_time = end_time;
-        at.actually_animated = start_transform != end_transform;
-
-        if at.actually_animated {
-            decompose(&start_transform.m, &mut at.t[0], &mut at.r[0], &mut at.s[0]);
-            decompose(&end_transform.m, &mut at.t[1], &mut at.r[1], &mut at.s[1]);
+        if actually_animated {
+            decompose(&start_transform.m, &mut t[0], &mut r[0], &mut s[0]);
+            decompose(&end_transform.m, &mut t[1], &mut r[1], &mut s[1]);
 
             // Flip R[1] if needed to select shortest path
-            if at.r[0].dot(&at.r[1]) < 0.0 {
-                at.r[1] = -at.r[1];
+            if r[0].dot(&r[1]) < 0.0 {
+                r[1] = -r[1];
             }
 
-            let cos_theta = at.r[0].dot(&at.r[1]);
-            at.has_rotation = cos_theta < 0.9995;
+            let cos_theta = r[0].dot(&r[1]);
+            has_rotation = cos_theta < 0.9995;
 
             // Compute terms of motion derivative function
-            if at.has_rotation {
+            if has_rotation {
                 let theta = clamp(cos_theta, -1.0, 1.0).acos();
-                let qperp = (at.r[1] - at.r[0] * cos_theta).normalize();
+                let qperp = (r[1] - r[0] * cos_theta).normalize();
 
-                let t0x = at.t[0].x;
-                let t0y = at.t[0].y;
-                let t0z = at.t[0].z;
-                let t1x = at.t[1].x;
-                let t1y = at.t[1].y;
-                let t1z = at.t[1].z;
-                let q1x = at.r[0].v.x;
-                let q1y = at.r[0].v.y;
-                let q1z = at.r[0].v.z;
-                let q1w = at.r[0].w;
+                let t0x = t[0].x;
+                let t0y = t[0].y;
+                let t0z = t[0].z;
+                let t1x = t[1].x;
+                let t1y = t[1].y;
+                let t1z = t[1].z;
+                let q1x = r[0].v.x;
+                let q1y = r[0].v.y;
+                let q1z = r[0].v.z;
+                let q1w = r[0].w;
                 let qperpx = qperp.v.x;
                 let qperpy = qperp.v.y;
                 let qperpz = qperp.v.z;
                 let qperpw = qperp.w;
-                let s000 = at.s[0].m[0][0];
-                let s001 = at.s[0].m[0][1];
-                let s002 = at.s[0].m[0][2];
-                let s010 = at.s[0].m[1][0];
-                let s011 = at.s[0].m[1][1];
-                let s012 = at.s[0].m[1][2];
-                let s020 = at.s[0].m[2][0];
-                let s021 = at.s[0].m[2][1];
-                let s022 = at.s[0].m[2][2];
-                let s100 = at.s[1].m[0][0];
-                let s101 = at.s[1].m[0][1];
-                let s102 = at.s[1].m[0][2];
-                let s110 = at.s[1].m[1][0];
-                let s111 = at.s[1].m[1][1];
-                let s112 = at.s[1].m[1][2];
-                let s120 = at.s[1].m[2][0];
-                let s121 = at.s[1].m[2][1];
-                let s122 = at.s[1].m[2][2];
+                let s000 = s[0].m[0][0];
+                let s001 = s[0].m[0][1];
+                let s002 = s[0].m[0][2];
+                let s010 = s[0].m[1][0];
+                let s011 = s[0].m[1][1];
+                let s012 = s[0].m[1][2];
+                let s020 = s[0].m[2][0];
+                let s021 = s[0].m[2][1];
+                let s022 = s[0].m[2][2];
+                let s100 = s[1].m[0][0];
+                let s101 = s[1].m[0][1];
+                let s102 = s[1].m[0][2];
+                let s110 = s[1].m[1][0];
+                let s111 = s[1].m[1][1];
+                let s112 = s[1].m[1][2];
+                let s120 = s[1].m[2][0];
+                let s121 = s[1].m[2][1];
+                let s122 = s[1].m[2][2];
 
-                at.c1[0] = derivative_term(
+                c1[0] = derivative_term(
                     -t0x + t1x,
                     (-1.0 + q1y * q1y + q1z * q1z + qperpy * qperpy + qperpz * qperpz) * s000
                         + q1w * q1z * s010
@@ -230,7 +180,7 @@ impl AnimatedTransform {
                         + q1x * (-(q1y * s012) - q1z * s022 + q1y * s112 + q1z * s122),
                 );
 
-                at.c2[0] = derivative_term(
+                c2[0] = derivative_term(
                     0.0,
                     -(qperpy * qperpy * s000) - qperpz * qperpz * s000 + qperpx * qperpy * s010
                         - qperpw * qperpz * s010
@@ -315,7 +265,7 @@ impl AnimatedTransform {
                                     * theta),
                 );
 
-                at.c3[0] = derivative_term(
+                c3[0] = derivative_term(
                     0.0,
                     -2.0 * (q1x * qperpy * s010 - q1w * qperpz * s010
                         + q1w * qperpy * s020
@@ -382,7 +332,7 @@ impl AnimatedTransform {
                         * theta,
                 );
 
-                at.c4[0] = derivative_term(
+                c4[0] = derivative_term(
                     0.0,
                     -(q1x * qperpy * s010) + q1w * qperpz * s010
                         - q1w * qperpy * s020
@@ -476,7 +426,7 @@ impl AnimatedTransform {
                                 - 2.0 * q1x * s022 * theta),
                 );
 
-                at.c5[0] = derivative_term(
+                c5[0] = derivative_term(
                     0.0,
                     2.0 * (qperpy * qperpy * s000 + qperpz * qperpz * s000
                         - qperpx * qperpy * s010
@@ -528,7 +478,7 @@ impl AnimatedTransform {
                         * theta,
                 );
 
-                at.c1[1] = derivative_term(
+                c1[1] = derivative_term(
                     -t0y + t1y,
                     -(qperpx * qperpy * s000) - qperpw * qperpz * s000 - s010
                         + q1z * q1z * s010
@@ -589,7 +539,7 @@ impl AnimatedTransform {
                         + qperpy * qperpz * s122,
                 );
 
-                at.c2[1] = derivative_term(
+                c2[1] = derivative_term(
                     0.0,
                     qperpx * qperpy * s000 + qperpw * qperpz * s000 + q1z * q1z * s010
                         - qperpx * qperpx * s010
@@ -677,7 +627,7 @@ impl AnimatedTransform {
                                 - 2.0 * qperpx * s022 * theta),
                 );
 
-                at.c3[1] = derivative_term(
+                c3[1] = derivative_term(
                     0.0,
                     2.0 * (-(q1x * qperpy * s000) - q1w * qperpz * s000
                         + 2.0 * q1x * qperpx * s010
@@ -726,7 +676,7 @@ impl AnimatedTransform {
                         * theta,
                 );
 
-                at.c4[1] = derivative_term(
+                c4[1] = derivative_term(
                     0.0,
                     -(q1x * qperpy * s000) - q1w * qperpz * s000
                         + 2.0 * q1x * qperpx * s010
@@ -811,7 +761,7 @@ impl AnimatedTransform {
                                 - 2.0 * q1y * s022 * theta),
                 );
 
-                at.c5[1] = derivative_term(
+                c5[1] = derivative_term(
                     0.0,
                     -2.0 * (qperpx * qperpy * s000 + qperpw * qperpz * s000 + q1z * q1z * s010
                         - qperpx * qperpx * s010
@@ -869,7 +819,7 @@ impl AnimatedTransform {
                         * theta,
                 );
 
-                at.c1[2] = derivative_term(
+                c1[2] = derivative_term(
                     -t0z + t1z,
                     qperpw * qperpy * s000
                         - qperpx * qperpz * s000
@@ -936,7 +886,7 @@ impl AnimatedTransform {
                         - qperpy * qperpy * s122,
                 );
 
-                at.c2[2] = derivative_term(
+                c2[2] = derivative_term(
                     0.0,
                     q1w * q1y * s000 - q1x * q1z * s000 - qperpw * qperpy * s000
                         + qperpx * qperpz * s000
@@ -1036,7 +986,7 @@ impl AnimatedTransform {
                         - 4.0 * q1y * qperpy * s022 * theta,
                 );
 
-                at.c3[2] = derivative_term(
+                c3[2] = derivative_term(
                     0.0,
                     -2.0 * (-(q1w * qperpy * s000)
                         + q1x * qperpz * s000
@@ -1088,7 +1038,7 @@ impl AnimatedTransform {
                         * theta,
                 );
 
-                at.c4[2] = derivative_term(
+                c4[2] = derivative_term(
                     0.0,
                     q1w * qperpy * s000
                         - q1x * qperpz * s000
@@ -1182,7 +1132,7 @@ impl AnimatedTransform {
                                 - 2.0 * q1z * s012 * theta),
                 );
 
-                at.c5[2] = derivative_term(
+                c5[2] = derivative_term(
                     0.0,
                     2.0 * (qperpw * qperpy * s000 - qperpx * qperpz * s000 + q1y * q1z * s010
                         - qperpw * qperpx * s010
@@ -1242,19 +1192,34 @@ impl AnimatedTransform {
             }
         }
 
-        at
+        Self {
+            start_transform,
+            end_transform,
+            start_time,
+            end_time,
+            actually_animated,
+            t,
+            r,
+            s,
+            has_rotation,
+            c1,
+            c2,
+            c3,
+            c4,
+            c5,
+        }
     }
 
     /// Returns the interpolated trnasformation matrix at the given time.
     ///
     /// * `time` - Time.
-    pub fn interpolate(&self, time: Float) -> Transform {
+    pub fn interpolate(&self, time: Float) -> ArcTransform {
         // Handle boundary conditions for matrix interpolation.
         if !self.actually_animated || time <= self.start_time {
-            return self.start_transform;
+            return self.start_transform.clone();
         }
         if time >= self.end_time {
-            return self.end_transform;
+            return self.end_transform.clone();
         }
 
         // Map time to range [0, 1].
@@ -1275,7 +1240,7 @@ impl AnimatedTransform {
         }
 
         // Compute interpolated matrix as product of interpolated components
-        Transform::translate(&trans) * Transform::from(rotate) * Transform::from(scale)
+        Arc::new(Transform::translate(&trans) * Transform::from(rotate) * Transform::from(scale))
     }
 
     /// Applies animated transformation to a given ray.
@@ -1283,9 +1248,9 @@ impl AnimatedTransform {
     /// * `r` - The ray.
     pub fn transform_ray(&self, r: &Ray) -> Ray {
         let t = if !self.actually_animated || r.time <= self.start_time {
-            self.start_transform
+            self.start_transform.clone()
         } else if r.time >= self.end_time {
-            self.end_transform
+            self.end_transform.clone()
         } else {
             self.interpolate(r.time)
         };
@@ -1298,9 +1263,9 @@ impl AnimatedTransform {
     /// * `p`    - The point.
     pub fn transform_point(&self, time: Float, p: &Point3f) -> Point3f {
         let t = if !self.actually_animated || time <= self.start_time {
-            self.start_transform
+            self.start_transform.clone()
         } else if time >= self.end_time {
-            self.end_transform
+            self.end_transform.clone()
         } else {
             self.interpolate(time)
         };
@@ -1313,9 +1278,9 @@ impl AnimatedTransform {
     /// * `v`    - The vector.
     pub fn transform_vector(&self, time: Float, v: &Vector3f) -> Vector3f {
         let t = if !self.actually_animated || time <= self.start_time {
-            self.start_transform
+            self.start_transform.clone()
         } else if time >= self.end_time {
-            self.end_transform
+            self.end_transform.clone()
         } else {
             self.interpolate(time)
         };
@@ -1384,6 +1349,62 @@ impl AnimatedTransform {
 
         bounds
     }
+}
+
+/// Decomposes a transformation matrix into its translation, rotation and
+/// scaling components.
+///
+/// The transformation decomposition is: M = TRS.
+///
+/// * `m`      - The matrix to decompose.
+/// * `t`      - The translation component.
+/// * `r_quat` - The rotation component.
+/// * `s`      - The scaling component.
+fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut Matrix4x4) {
+    // Extract translation T from transformation matrix
+    *t = Vector3f::new(m[0][3], m[1][3], m[2][3]);
+
+    // Compute new transformation matrix M without translation
+    let mut m1 = *m;
+    for i in 0..3 {
+        m1.m[i][3] = 0.0;
+        m1.m[3][i] = 0.0;
+    }
+    m1.m[3][3] = 1.0;
+
+    // Extract rotation R from transformation matrix
+    let mut r = m1;
+    let mut norm = 0.0;
+    let mut count = 0;
+    loop {
+        // Compute the next matrix R_next in series
+        let mut r_next = Matrix4x4::default();
+        let r_it = r.transpose().inverse();
+        for i in 0..4 {
+            for j in 0..4 {
+                r_next.m[i][j] = 0.5 * (r[i][j] + r_it[i][j]);
+            }
+        }
+
+        // Compute norm of difference between R and R_next
+        for i in 0..3 {
+            let n = abs(r[i][0] - r_next[i][0])
+                + abs(r[i][1] - r_next[i][1])
+                + abs(r[i][2] - r_next[i][2]);
+            norm = max(norm, n);
+        }
+
+        r = r_next;
+
+        count += 1;
+        if count >= 100 && norm <= 0.0001 {
+            break;
+        }
+    }
+    *r_quat = Quaternion::from(Transform::from(r));
+
+    // Compute scale S using rotation and original matrix
+    *s = r.inverse() * *m;
 }
 
 /// DerivativeTerm encapsulates the coefficients `ki` to bound the motion of a

@@ -1,8 +1,9 @@
 //! Transform Set
 
 #![allow(dead_code)]
-use crate::core::geometry::Transform;
+use crate::core::geometry::ArcTransform;
 use std::ops::{Index, IndexMut};
+use std::sync::Arc;
 
 /// Number of transformations to store.
 pub const MAX_TRANSFORMS: usize = 2;
@@ -17,10 +18,10 @@ pub const END_TRANSFORM_BITS: usize = 1 << 1;
 pub const ALL_TRANSFORM_BITS: usize = (1 << MAX_TRANSFORMS) - 1;
 
 /// Stores an array of transformations.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct TransformSet {
     /// The transformations.
-    t: [Transform; MAX_TRANSFORMS],
+    t: [ArcTransform; MAX_TRANSFORMS],
 }
 
 impl TransformSet {
@@ -28,7 +29,7 @@ impl TransformSet {
     pub fn inverse(&self) -> Self {
         let mut t_inv = Self::default();
         for i in 0..MAX_TRANSFORMS {
-            t_inv.t[i] = self.t[i].inverse();
+            t_inv.t[i] = Arc::new(self.t[i].inverse());
         }
         t_inv
     }
@@ -46,7 +47,7 @@ impl TransformSet {
 }
 
 impl Index<usize> for TransformSet {
-    type Output = Transform;
+    type Output = ArcTransform;
 
     /// Return the `Transform` at the given index.
     ///
