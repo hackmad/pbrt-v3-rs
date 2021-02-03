@@ -1,9 +1,9 @@
 //! Cylinders
 
 #![allow(dead_code)]
-use super::ShapeProps;
 use crate::core::efloat::*;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use std::sync::Arc;
 
@@ -316,19 +316,26 @@ impl Shape for Cylinder {
     }
 }
 
-impl From<&mut ShapeProps> for Cylinder {
-    /// Create a `Cylinder` from given parameter set, transformation and orientation.
+impl From<(&mut ParamSet, ArcTransform, ArcTransform, bool)> for Cylinder {
+    /// Create a `Cylinder` from given parameter set, object to world transform,
+    /// world to object transform and whether or not surface normal orientation
+    /// is reversed.
     ///
-    /// * `props` - Shape creation properties.
-    fn from(props: &mut ShapeProps) -> Self {
-        let radius = props.params.find_one_float("radius", 1.0);
-        let z_min = props.params.find_one_float("zmin", -1.0);
-        let z_max = props.params.find_one_float("zmax", 1.0);
-        let phi_max = props.params.find_one_float("phimax", 360.0);
+    /// * `p` - A tuple containing the parameter set, object to world transform,
+    ///         world to object transform and whether or not surface normal
+    ///         orientation is reversed.
+    fn from(p: (&mut ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
+        let (params, o2w, w2o, reverse_orientation) = p;
+
+        let radius = params.find_one_float("radius", 1.0);
+        let z_min = params.find_one_float("zmin", -1.0);
+        let z_max = params.find_one_float("zmax", 1.0);
+        let phi_max = params.find_one_float("phimax", 360.0);
+
         Self::new(
-            props.o2w.clone(),
-            props.w2o.clone(),
-            props.reverse_orientation,
+            o2w.clone(),
+            w2o.clone(),
+            reverse_orientation,
             radius,
             z_min,
             z_max,

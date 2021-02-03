@@ -1,8 +1,8 @@
 //! Curves
 
 #![allow(dead_code)]
-use super::ShapeProps;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use std::sync::Arc;
 
@@ -110,18 +110,24 @@ impl Curve {
         segments
     }
 
-    /// Create `Curve`s from given parameter set, transformation and orientation.
+    /// Create `Curve`s from given parameter set, object to world transform,
+    /// world to object transform and whether or not surface normal orientation
+    /// is reversed.
     ///
     /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot
     /// implement this as `From` trait :(
     ///
-    /// * `props` - Shape creation properties.
-    pub fn from_props(props: &mut ShapeProps) -> Vec<ArcShape> {
-        let width = props.params.find_one_float("width", 1.0);
-        let width0 = props.params.find_one_float("width0", width);
-        let width1 = props.params.find_one_float("width1", width);
+    /// * `p` - A tuple containing the parameter set, object to world transform,
+    ///         world to object transform and whether or not surface normal
+    ///         orientation is reversed.
+    pub fn from_props(p: (&mut ParamSet, ArcTransform, ArcTransform, bool)) -> Vec<ArcShape> {
+        let (params, o2w, w2o, reverse_orientation) = p;
 
-        let degree = props.params.find_one_int("degree", 3_i32) as usize;
+        let width = params.find_one_float("width", 1.0);
+        let width0 = params.find_one_float("width0", width);
+        let width1 = params.find_one_float("width1", width);
+
+        let degree = params.find_one_int("degree", 3_i32) as usize;
         if degree != 2 && degree != 3 {
             panic!(
                 "Invalid degree {}: only degree 2 and 3 curves are supported.",
@@ -129,9 +135,7 @@ impl Curve {
             );
         }
 
-        let basis = props
-            .params
-            .find_one_string("basis", String::from("bezier"));
+        let basis = params.find_one_string("basis", String::from("bezier"));
         if basis != "bezier" && basis != "bspline" {
             panic!(
                 "Invalid basis '{}': only ''bezier' and 'bspline' are supported.",
@@ -139,7 +143,7 @@ impl Curve {
             );
         }
 
-        let cp = props.params.find_point3f("P");
+        let cp = params.find_point3f("P");
         let ncp = cp.len();
         let n_segments: usize;
         if basis == "bezier" {
@@ -170,7 +174,7 @@ impl Curve {
             n_segments = ncp - degree;
         }
 
-        let ctype = props.params.find_one_string("type", String::from("flat"));
+        let ctype = params.find_one_string("type", String::from("flat"));
         let curve_type = match &ctype[..] {
             "flat" => CurveType::Flat,
             "ribbon" => CurveType::Ribbon,
@@ -181,7 +185,7 @@ impl Curve {
             }
         };
 
-        let mut n = props.params.find_normal3f("N");
+        let mut n = params.find_normal3f("N");
         let nnorm = n.len();
         if nnorm > 0 {
             if curve_type != CurveType::Ribbon {
@@ -200,8 +204,8 @@ impl Curve {
             panic!("Must provide normals 'N' at curve endpoints with ribbon curves.");
         }
 
-        let split_depth = props.params.find_one_float("splitdepth", 3.0) as i32;
-        let sd = props.params.find_one_int("splitdepth", split_depth);
+        let split_depth = params.find_one_float("splitdepth", 3.0) as i32;
+        let sd = params.find_one_int("splitdepth", split_depth);
 
         let mut curves: Vec<ArcShape> = vec![];
         // Pointer to the first control point for the current segment. This is
@@ -280,9 +284,9 @@ impl Curve {
                 lerp((seg + 1) as Float / n_segments as Float, width0, width1),
             ];
             let c = Curve::create_segments(
-                props.o2w.clone(),
-                props.w2o.clone(),
-                props.reverse_orientation,
+                o2w.clone(),
+                w2o.clone(),
+                reverse_orientation,
                 curve_type,
                 seg_cp_bezier,
                 width,

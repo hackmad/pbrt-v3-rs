@@ -4,6 +4,7 @@
 use super::{MaterialInstance, TransformCache, TransformSet, MAX_TRANSFORMS};
 use crate::accelerators::*;
 use crate::cameras::*;
+use crate::core::app::OPTIONS;
 use crate::core::camera::*;
 use crate::core::film::*;
 use crate::core::filter::*;
@@ -19,6 +20,7 @@ use crate::core::texture::*;
 use crate::filters::*;
 use crate::materials::*;
 use crate::samplers::*;
+use crate::shapes::*;
 use crate::textures::*;
 use std::collections::HashMap;
 use std::result::Result;
@@ -230,6 +232,46 @@ fn shape_may_set_material_parameters(ps: Arc<ParamSet>) -> bool {
     }
 
     false
+}
+
+/// Creates the given shape rom parameter set.
+///
+/// * `name`                - Name.
+/// * `object2world`        - Transformation from object space to world space.
+/// * `world2object`        - Transformation from world space to object space.
+/// * `reverse_orientation` - Indicates whether their surface normal directions.
+/// * `paramset`            - Parameter set.
+fn make_shape(
+    name: &str,
+    object2world: ArcTransform,
+    world2object: ArcTransform,
+    reverse_orientation: bool,
+    paramset: &mut ParamSet,
+) -> Result<Vec<ArcShape>, String> {
+    let p = (paramset, object2world, world2object, reverse_orientation);
+
+    match name {
+        "cone" => Ok(vec![Arc::new(Cone::from(p))]),
+        "curve" => Ok(Curve::from_props(p)),
+        "cylinder" => Ok(vec![Arc::new(Cylinder::from(p))]),
+        "disk" => Ok(vec![Arc::new(Disk::from(p))]),
+        "hyperboloid" => Ok(vec![Arc::new(Hyperboloid::from(p))]),
+        "loopsubdiv" => Ok(LoopSubDiv::from_props(p)),
+        "paraboloid" => Ok(vec![Arc::new(Paraboloid::from(p))]),
+        "sphere" => Ok(vec![Arc::new(Sphere::from(p))]),
+        "trianglemesh" => {
+            if OPTIONS.to_ply {
+                // TODO write PLY file for triangle mesh from paramset.
+                Ok(vec![])
+            } else {
+                Ok(TriangleMesh::from_props(
+                    p,
+                    GRAPHICS_STATE.float_textures.clone(),
+                ))
+            }
+        }
+        _ => Err(format!("Shape '{}' unknown. Using 'matte'.", name)),
+    }
 }
 
 /// Creates the given type of material from parameter set.

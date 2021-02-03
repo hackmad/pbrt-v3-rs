@@ -1,8 +1,8 @@
 //! Triangles and triangle meshes
 
 #![allow(dead_code)]
-use super::ShapeProps;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::texture::*;
 use crate::textures::*;
@@ -169,39 +169,44 @@ impl TriangleMesh {
         tris
     }
 
-    /// Create a triangle mesh from given parameter set, transformation and orientation.
+    /// Create a triangel mesh from given parameter set, object to world transform,
+    /// world to object transform and whether or not surface normal orientation
+    /// is reversed.
     ///
     /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot
     /// implement this as `From` trait :(
     ///
-    /// * `props`          - Shape creation properties.
-    /// * `float_textures` - Hash map of textures by name.
+    /// * `p`              - A tuple containing the parameter set, object to
+    ///                      world transform, world to object transform and
+    ///                      whether or not surface normal orientation is reversed.
+    /// * `float_textures` - Float textures.
     pub fn from_props(
-        props: &mut ShapeProps,
-        float_textures: &HashMap<String, ArcTexture<Float>>,
+        p: (&mut ParamSet, ArcTransform, ArcTransform, bool),
+        float_textures: Arc<HashMap<String, ArcTexture<Float>>>,
     ) -> Vec<ArcShape> {
-        let vi: Vec<usize> = props
-            .params
+        let (params, o2w, w2o, reverse_orientation) = p;
+
+        let vi: Vec<usize> = params
             .find_int("indices")
             .iter()
             .map(|i| *i as usize)
             .collect();
         let nvi = vi.len();
 
-        let p = props.params.find_point3f("P");
+        let p = params.find_point3f("P");
         let npi = p.len();
 
-        let mut uvs = props.params.find_point2f("uv");
+        let mut uvs = params.find_point2f("uv");
         if uvs.len() == 0 {
-            uvs = props.params.find_point2f("st");
+            uvs = params.find_point2f("st");
         }
         let mut nuvi = uvs.len();
 
         let mut temp_uvs: Vec<Point2f> = vec![];
         if uvs.len() == 0 {
-            let mut fuv = props.params.find_float("uv");
+            let mut fuv = params.find_float("uv");
             if fuv.len() == 0 {
-                fuv = props.params.find_float("st");
+                fuv = params.find_float("st");
             }
             nuvi = fuv.len();
             if nuvi > 0 {
@@ -238,14 +243,14 @@ impl TriangleMesh {
             return vec![];
         }
 
-        let mut s = props.params.find_vector3f("S");
+        let mut s = params.find_vector3f("S");
         let nsi = s.len();
         if nsi > 0 && nsi != npi {
             eprintln!("Number of 'S' for triangle mesh must match 'P'.");
             s = vec![];
         }
 
-        let mut n = props.params.find_normal3f("N");
+        let mut n = params.find_normal3f("N");
         let nni = n.len();
         if nni > 0 && nni != npi {
             eprintln!("Number of 'N' for triangle mesh must match 'P'.");
@@ -262,8 +267,7 @@ impl TriangleMesh {
             }
         }
 
-        let mut face_indices: Vec<usize> = props
-            .params
+        let mut face_indices: Vec<usize> = params
             .find_int("faceIndices")
             .iter()
             .map(|i| *i as usize)
@@ -278,7 +282,7 @@ impl TriangleMesh {
             face_indices = vec![];
         }
 
-        let alpha_tex_name = props.params.find_one_texture("alpha", String::from(""));
+        let alpha_tex_name = params.find_one_texture("alpha", String::from(""));
         let alpha_tex = if alpha_tex_name.len() > 0 {
             if let Some(tex) = float_textures.get(&alpha_tex_name) {
                 tex.clone()
@@ -288,17 +292,15 @@ impl TriangleMesh {
                     Using float 'alpha' parameterer instead.",
                     alpha_tex_name
                 );
-                let alpha = props.params.find_one_float("alpha", 1.0);
+                let alpha = params.find_one_float("alpha", 1.0);
                 Arc::new(ConstantTexture::new(alpha))
             }
         } else {
-            let alpha = props.params.find_one_float("alpha", 1.0);
+            let alpha = params.find_one_float("alpha", 1.0);
             Arc::new(ConstantTexture::new(alpha))
         };
 
-        let shadow_alpha_tex_name = props
-            .params
-            .find_one_texture("shadowalpha", String::from(""));
+        let shadow_alpha_tex_name = params.find_one_texture("shadowalpha", String::from(""));
         let shadow_alpha_tex = if shadow_alpha_tex_name.len() > 0 {
             if let Some(tex) = float_textures.get(&shadow_alpha_tex_name) {
                 tex.clone()
@@ -308,18 +310,18 @@ impl TriangleMesh {
                     parameter.  Using float 'shadowalpha' parameterer instead.",
                     alpha_tex_name
                 );
-                let alpha = props.params.find_one_float("shadowalpha", 1.0);
+                let alpha = params.find_one_float("shadowalpha", 1.0);
                 Arc::new(ConstantTexture::new(alpha))
             }
         } else {
-            let alpha = props.params.find_one_float("shadowalpha", 1.0);
+            let alpha = params.find_one_float("shadowalpha", 1.0);
             Arc::new(ConstantTexture::new(alpha))
         };
 
         Self::create(
-            props.o2w.clone(),
-            props.w2o.clone(),
-            props.reverse_orientation,
+            o2w.clone(),
+            w2o.clone(),
+            reverse_orientation,
             vi,
             p,
             n,

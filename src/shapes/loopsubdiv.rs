@@ -1,9 +1,9 @@
 //! Loop Subdivision Surfaces.
 
 #![allow(dead_code)]
-use super::ShapeProps;
 use super::TriangleMesh;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use std::cmp::{Ordering, PartialOrd};
 use std::collections::{HashMap, HashSet};
@@ -663,21 +663,26 @@ impl LoopSubDiv {
         )
     }
 
-    /// Create a `LoopSubDiv` from given parameter set, transformation and orientation.
+    /// Create `LoopSubDiv` from given parameter set, object to world transform,
+    /// world to object transform and whether or not surface normal orientation
+    /// is reversed.
     ///
-    /// NOTE: Because we return a set of shapes as `Vec<Arc<Shape>>` we cannot
+    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot
     /// implement this as `From` trait :(
     ///
-    /// * `props` - Shape creation properties.
-    pub fn from_props(props: &mut ShapeProps) -> Vec<ArcShape> {
-        let n_levels = props.params.find_one_int("nlevels", 3) as usize;
-        let vertex_indices: Vec<usize> = props
-            .params
+    /// * `p` - A tuple containing the parameter set, object to world transform,
+    ///         world to object transform and whether or not surface normal
+    ///         orientation is reversed.
+    pub fn from_props(p: (&mut ParamSet, ArcTransform, ArcTransform, bool)) -> Vec<ArcShape> {
+        let (params, o2w, w2o, reverse_orientation) = p;
+
+        let n_levels = params.find_one_int("nlevels", 3) as usize;
+        let vertex_indices: Vec<usize> = params
             .find_int("indices")
             .iter()
             .map(|i| *i as usize)
             .collect();
-        let p = props.params.find_point3f("P");
+        let p = params.find_point3f("P");
         if vertex_indices.len() == 0 {
             panic!("Vertex indices 'indices' not provided for LoopSubDiv shape.");
         }
@@ -686,9 +691,9 @@ impl LoopSubDiv {
         }
 
         Self::subdivide(
-            props.o2w.clone(),
-            props.w2o.clone(),
-            props.reverse_orientation,
+            o2w.clone(),
+            w2o.clone(),
+            reverse_orientation,
             n_levels,
             vertex_indices,
             p,

@@ -1,9 +1,9 @@
 //! Hyperboloids
 
 #![allow(dead_code)]
-use super::ShapeProps;
 use crate::core::efloat::*;
 use crate::core::geometry::*;
+use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use std::mem::swap;
 use std::sync::Arc;
@@ -410,22 +410,25 @@ impl Shape for Hyperboloid {
     }
 }
 
-impl From<&mut ShapeProps> for Hyperboloid {
-    /// Create a `Hyperboloid` from given parameter set, transformation and orientation.
+impl From<(&mut ParamSet, ArcTransform, ArcTransform, bool)> for Hyperboloid {
+    /// Create a `Hyperboloid` from given parameter set, object to world transform,
+    /// world to object transform and whether or not surface normal orientation
+    /// is reversed.
     ///
-    /// * `props` - Shape creation properties.
-    fn from(props: &mut ShapeProps) -> Self {
-        let p1 = props
-            .params
-            .find_one_point3f("p1", Point3f::new(0.0, 0.0, 0.0));
-        let p2 = props
-            .params
-            .find_one_point3f("p2", Point3f::new(1.0, 1.0, 1.0));
-        let phi_max = props.params.find_one_float("phimax", 360.0);
+    /// * `p` - A tuple containing the parameter set, object to world transform,
+    ///         world to object transform and whether or not surface normal
+    ///         orientation is reversed.
+    fn from(p: (&mut ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
+        let (params, o2w, w2o, reverse_orientation) = p;
+
+        let p1 = params.find_one_point3f("p1", Point3f::new(0.0, 0.0, 0.0));
+        let p2 = params.find_one_point3f("p2", Point3f::new(1.0, 1.0, 1.0));
+        let phi_max = params.find_one_float("phimax", 360.0);
+
         Self::new(
-            props.o2w.clone(),
-            props.w2o.clone(),
-            props.reverse_orientation,
+            o2w.clone(),
+            w2o.clone(),
+            reverse_orientation,
             p1,
             p2,
             phi_max,
