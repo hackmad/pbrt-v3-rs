@@ -219,14 +219,14 @@ impl TriangleMesh {
         }
         if nuvi > 0 {
             if nuvi < npi {
-                eprintln!(
+                error!(
                     "Not enough of 'uv' for triangle mesh.  Expected {}, 
                     found {}.  Discarding.",
                     npi, nuvi
                 );
                 uvs = vec![];
             } else if nuvi > npi {
-                eprintln!(
+                error!(
                     "More 'uv' provided than will be used for triangle 
                     mesh.  ({} expcted, {} found)",
                     npi, nuvi
@@ -235,31 +235,31 @@ impl TriangleMesh {
         }
 
         if nvi == 0 {
-            eprintln!("Vertex indices 'indices' not provided with triangle mesh shape");
+            error!("Vertex indices 'indices' not provided with triangle mesh shape");
             return vec![];
         }
         if npi == 0 {
-            eprintln!("Vertex positions 'P' not provided with triangle mesh shape");
+            error!("Vertex positions 'P' not provided with triangle mesh shape");
             return vec![];
         }
 
         let mut s = params.find_vector3f("S");
         let nsi = s.len();
         if nsi > 0 && nsi != npi {
-            eprintln!("Number of 'S' for triangle mesh must match 'P'.");
+            error!("Number of 'S' for triangle mesh must match 'P'.");
             s = vec![];
         }
 
         let mut n = params.find_normal3f("N");
         let nni = n.len();
         if nni > 0 && nni != npi {
-            eprintln!("Number of 'N' for triangle mesh must match 'P'.");
+            error!("Number of 'N' for triangle mesh must match 'P'.");
             n = vec![];
         }
         for i in 0..nvi {
             if vi[i] >= npi {
-                eprintln!(
-                    "trianglemesh has out of-bounds vertex index {} ({} 'P' 
+                error!(
+                    "trianglemesh has out-of-bounds vertex index {} ({} 'P' 
                     values were given",
                     vi[i], npi
                 );
@@ -274,7 +274,7 @@ impl TriangleMesh {
             .collect();
         let nfi = face_indices.len();
         if nfi > 0 && nfi != nvi / 3 {
-            eprintln!(
+            error!(
                 "Number of face indices, {}, doesn't match number of faces, {}",
                 nfi,
                 nvi / 3
@@ -287,7 +287,7 @@ impl TriangleMesh {
             if let Some(tex) = float_textures.get(&alpha_tex_name) {
                 tex.clone()
             } else {
-                eprintln!(
+                warn!(
                     "Couldn't find float texture '{}' for 'alpha' parameter. 
                     Using float 'alpha' parameterer instead.",
                     alpha_tex_name
@@ -305,7 +305,7 @@ impl TriangleMesh {
             if let Some(tex) = float_textures.get(&shadow_alpha_tex_name) {
                 tex.clone()
             } else {
-                eprintln!(
+                warn!(
                     "Couldn't find float texture '{}' for 'shadowalpha' 
                     parameter.  Using float 'shadowalpha' parameterer instead.",
                     alpha_tex_name

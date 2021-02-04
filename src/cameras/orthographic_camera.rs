@@ -205,7 +205,7 @@ impl From<(&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)> for Orthogr
         let mut shutter_open = params.find_one_float("shutteropen", 0.0);
         let mut shutter_close = params.find_one_float("shutterclose", 1.0);
         if shutter_close < shutter_open {
-            eprintln!(
+            warn!(
                 "Shutter close time [{}] < shutter open [{}]. 
                 Swapping them.",
                 shutter_close, shutter_open
@@ -238,7 +238,7 @@ impl From<(&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)> for Orthogr
                 screen.p_min.y = sw[2];
                 screen.p_max.y = sw[3];
             } else {
-                eprintln!("'screenwindow' should have four values");
+                error!("'screenwindow' should have four values");
             }
         }
 

@@ -2,6 +2,9 @@
 
 extern crate byteorder;
 extern crate clap;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 extern crate exr;
 extern crate float_cmp;
 #[macro_use]
@@ -27,5 +30,6 @@ mod shapes;
 mod textures;
 
 fn main() {
-    println!("{:?}", *crate::core::app::OPTIONS);
+    env_logger::init();
+    info!("Hello, World!");
 }

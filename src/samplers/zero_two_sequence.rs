@@ -23,7 +23,7 @@ impl ZeroTwoSequenceSampler {
     pub fn new(samples_per_pixel: usize, n_sampled_dimensions: usize, seed: Option<u64>) -> Self {
         let spp = if !samples_per_pixel.is_power_of_two() {
             let s = samples_per_pixel.next_power_of_two();
-            eprintln!(
+            warn!(
                 "Pixel samples being rounded up to power of 2 (from {} to {}).",
                 samples_per_pixel, s
             );

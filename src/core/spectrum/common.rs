@@ -58,7 +58,7 @@ impl Sample {
     pub fn list(values: &[Float]) -> Vec<Self> {
         let n = values.len();
         if n % 2 > 0 {
-            eprintln!("Ignoring extra values in Sample::list().");
+            warn!("Ignoring extra values in Sample::list().");
         }
         (0..n)
             .step_by(2)

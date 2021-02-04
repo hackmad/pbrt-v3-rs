@@ -90,7 +90,7 @@ impl From<(&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)> for Environ
         let mut shutter_open = params.find_one_float("shutteropen", 0.0);
         let mut shutter_close = params.find_one_float("shutterclose", 1.0);
         if shutter_close < shutter_open {
-            eprintln!(
+            warn!(
                 "Shutter close time [{}] < shutter open [{}]. 
                 Swapping them.",
                 shutter_close, shutter_open

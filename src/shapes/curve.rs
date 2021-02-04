@@ -180,7 +180,7 @@ impl Curve {
             "ribbon" => CurveType::Ribbon,
             "cylinder" => CurveType::Cylinder,
             t => {
-                eprintln!("Unknown curve type '{}'.  Using 'cylinder'.", t);
+                warn!("Unknown curve type '{}'.  Using 'cylinder'.", t);
                 CurveType::Cylinder
             }
         };
@@ -189,7 +189,7 @@ impl Curve {
         let nnorm = n.len();
         if nnorm > 0 {
             if curve_type != CurveType::Ribbon {
-                eprintln!("Curve normals are only used with 'ribbon' type curves.");
+                warn!("Curve normals are only used with 'ribbon' type curves.");
                 n = vec![];
             } else if nnorm != n_segments + 1 {
                 panic!(

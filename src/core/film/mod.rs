@@ -254,7 +254,7 @@ impl Film {
     /// * `v` - `Splat` contribution to add to the pixel.
     pub fn add_splat(&mut self, p: &Point2f, v: &Spectrum) {
         if v.has_nans() {
-            eprintln!(
+            warn!(
                 "Ignoring splatted spectrum with NaN values at ({}, {})",
                 p.x, p.y
             );
@@ -263,12 +263,12 @@ impl Film {
 
         let vy = v.y();
         if vy < 0.0 {
-            eprintln!(
+            warn!(
                 "Ignoring splatted spectrum with negative luminance {} at ({}, {})",
                 vy, p.x, p.y
             );
         } else if vy.is_infinite() {
-            eprintln!(
+            warn!(
                 "Ignoring splatted spectrum with infinite luminance at ({}, {})",
                 p.x, p.y
             );
@@ -298,7 +298,7 @@ impl Film {
     ///
     /// * `splat_scale` - Scale factor provided to `add_splat()`.
     pub fn write_image(&self, splat_scale: Float) {
-        println!("Converting image to RGB and computing final weighted pixel values");
+        info!("Converting image to RGB and computing final weighted pixel values");
 
         let mut pixels = self.pixels.write().unwrap();
 
@@ -353,7 +353,7 @@ impl From<(&mut ParamSet, ArcFilter)> for Film {
         let filename = if image_file.len() > 0 {
             let params_filename = params.find_one_string("filename", String::from(""));
             if params_filename.len() > 0 {
-                eprintln!(
+                warn!(
                     "Output filename supplied on command line, '{}' is overriding 
                     filename provided in scene description file, '{}'.",
                     OPTIONS.image_file, params_filename

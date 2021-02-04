@@ -107,7 +107,7 @@ impl RealisticCamera {
             .collect();
 
         if simple_weighting {
-            eprintln!(
+            error!(
                 "'simple_weighting' option with RealisticCamera no longer \
                 necessarily matches regular camera images. Further, pixel \
                 values will vary a bit depending on the aperture size. See \
@@ -424,7 +424,7 @@ impl RealisticCamera {
         // Return the entire element bounds if no rays made it through the
         // lens system.
         if n_exiting_rays == 0 {
-            eprintln!(
+            error!(
                 "Unable to find exit pupil in x = [{}, {}] on film.",
                 p_film_x0, p_film_x1
             );
@@ -488,7 +488,7 @@ impl From<(&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)> for Realist
         let mut shutter_open = params.find_one_float("shutteropen", 0.0);
         let mut shutter_close = params.find_one_float("shutterclose", 1.0);
         if shutter_close < shutter_open {
-            eprintln!(
+            warn!(
                 "Shutter close time [{}] < shutter open [{}]. 
                 Swapping them.",
                 shutter_close, shutter_open
@@ -658,7 +658,7 @@ impl LensElementInterface {
     fn from_lens_data(aperture_diameter: Float, lens_data: &[Float]) -> Self {
         let ad = if lens_data[0] == 0.0 {
             if aperture_diameter > lens_data[3] {
-                eprintln!(
+                warn!(
                     "WARN: Specified aperture_diameter {} > max possible {}. Clamping it to max.",
                     aperture_diameter, lens_data[3]
                 );

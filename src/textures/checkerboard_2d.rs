@@ -150,7 +150,7 @@ macro_rules! from_params {
                     "none" => AAMethod::None,
                     "closedform" => AAMethod::ClosedForm,
                     aam => {
-                        eprintln!("Antialiasing mode '{}' not understood by Checkerboard2DTexture; using 'closedform'", aam);
+                        warn!("Antialiasing mode '{}' not understood by Checkerboard2DTexture; using 'closedform'", aam);
                         AAMethod::ClosedForm
                     }
                 };

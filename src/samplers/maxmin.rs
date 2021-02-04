@@ -30,7 +30,7 @@ impl MaxMinDistSampler {
 
         let spp = if c_index >= max_c_index {
             let s = 1 << (max_c_index - 1);
-            eprintln!(
+            warn!(
                 "No more than {} samples per pixel are supported with \
                 MaxMinDistSampler. Rounding down.",
                 s
@@ -38,7 +38,7 @@ impl MaxMinDistSampler {
             s
         } else if !samples_per_pixel.is_power_of_two() {
             let s = samples_per_pixel.next_power_of_two();
-            eprintln!(
+            warn!(
                 "Non power-of-two {} sample count for MaxMinDistSampler. \
                 Rounded up to {}.",
                 samples_per_pixel, s

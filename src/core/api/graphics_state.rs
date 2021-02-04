@@ -288,7 +288,7 @@ fn make_material(name: &str, mp: &mut TextureParams) -> Result<ArcMaterial, Stri
             let mat1 = match GRAPHICS_STATE.named_materials.get(&m1) {
                 Some(mat) => mat.material.clone(),
                 None => {
-                    eprintln!("Named material '{}' undefined. Using 'matte'.", m1);
+                    warn!("Named material '{}' undefined. Using 'matte'.", m1);
                     make_material("matte", mp).unwrap()
                 }
             };
@@ -297,7 +297,7 @@ fn make_material(name: &str, mp: &mut TextureParams) -> Result<ArcMaterial, Stri
             let mat2 = match GRAPHICS_STATE.named_materials.get(&m2) {
                 Some(mat) => mat.material.clone(),
                 None => {
-                    eprintln!("Named material '{}' undefined. Using 'matte'.", m2);
+                    warn!("Named material '{}' undefined. Using 'matte'.", m2);
                     make_material("matte", mp).unwrap()
                 }
             };
@@ -307,7 +307,7 @@ fn make_material(name: &str, mp: &mut TextureParams) -> Result<ArcMaterial, Stri
         "" => Err(format!("Unable to create material with no name")),
         "none" => Err(String::from("Unable to create material 'none'.")),
         _ => {
-            eprintln!("Material '{}' unknown. Using 'matte'.", name);
+            warn!("Material '{}' unknown. Using 'matte'.", name);
             Ok(Arc::new(MatteMaterial::from(mp)))
         }
     }

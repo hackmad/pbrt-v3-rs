@@ -100,7 +100,7 @@ macro_rules! check_unused {
     ($params: expr, $set_name: literal) => {
         for (name, param) in $params.iter() {
             if !param.looked_up {
-                eprintln!("Parameter {:}/{:} not used.", $set_name, name);
+                warn!("Parameter {:}/{:} not used.", $set_name, name);
             }
         }
     };
@@ -309,7 +309,7 @@ impl ParamSet {
                             spectra.push(Spectrum::from(&samples));
                         }
                         Err(err) => {
-                            eprintln!(
+                            error!(
                                 "Error reading {}. Using black distribution.\n{}.",
                                 path, err
                             );
@@ -318,7 +318,7 @@ impl ParamSet {
                     }
                 }
                 Err(err) => {
-                    eprintln!(
+                    error!(
                         "Error reading {}. Using black distribution.\n{}.",
                         path, err
                     );

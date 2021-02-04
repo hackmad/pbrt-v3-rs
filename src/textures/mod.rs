@@ -55,7 +55,7 @@ fn get_texture_mapping(tp: &mut TextureParams, tex2world: &Transform) -> ArcText
             tp.find_float("vdelta", 0.0),
         )),
         mt => {
-            eprintln!("Error 2D texture mapping '{}' unknown", mt);
+            warn!("Error 2D texture mapping '{}' unknown", mt);
             Arc::new(UVMapping2D::default())
         }
     }

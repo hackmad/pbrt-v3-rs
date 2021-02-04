@@ -115,7 +115,7 @@ where
                 resolution[0].next_power_of_two(),
                 resolution[1].next_power_of_two(),
             );
-            eprintln!(
+            info!(
                 "Resampling MIPMap from {}x{} to {}x{}",
                 resolution[0], resolution[1], res_pow2[0], res_pow2[1],
             );

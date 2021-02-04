@@ -145,7 +145,7 @@ fn get_extension_from_filename(path: &str) -> Option<&str> {
 /// * `res_x`       - X resolution.
 /// * `res_y`       - Y resolution.
 fn write_exr(path: &str, rgb: &[Float], res_x: u32, res_y: u32) -> Result<(), String> {
-    println!("Writing image {} with resolution {}x{}", path, res_x, res_y);
+    info!("Writing image {} with resolution {}x{}", path, res_x, res_y);
     match write_rgb_f32_file(
         String::from(path),
         (res_x as usize, res_y as usize),
@@ -173,7 +173,7 @@ fn write_8_bit(
     res_y: u32,
     image_format: ImageFormat,
 ) -> std::result::Result<(), String> {
-    println!("Writing image {} with resolution {}x{}", path, res_x, res_y);
+    info!("Writing image {} with resolution {}x{}", path, res_x, res_y);
 
     // Allocate an image buffer.
     let mut imgbuf = ImageBuffer::new(res_x, res_y);

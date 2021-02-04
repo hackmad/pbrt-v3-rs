@@ -122,7 +122,7 @@ impl TextureParams {
             // Don't complain about any unused material parameters if their
             // values were provided by a shape parameter.
             if geom.keys().filter(|gp_name| name.eq(*gp_name)).count() > 0 {
-                eprintln!("Texture parameter {:} not used.", name);
+                warn!("Texture parameter {:} not used.", name);
             }
         }
     }

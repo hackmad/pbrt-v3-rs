@@ -283,7 +283,7 @@ impl Primitive for BVHAccel {
     /// *NOTE*: This should never be called. Calling code should directly call
     /// get_area_light() on the primitive from the ray-primitive intersection.
     fn get_area_light(&self) -> Option<ArcAreaLight> {
-        eprintln!(
+        error!(
             "TransformedPrimitive::get_area_light() shouldn't be called; \
             should've gone to GeometricPrimitive."
         );
@@ -299,7 +299,7 @@ impl Primitive for BVHAccel {
     /// *NOTE*: This should never be called. Calling code should directly call
     /// get_material() on the primitive from the ray-primitive intersection.
     fn get_material(&self) -> Option<ArcMaterial> {
-        eprintln!(
+        error!(
             "TransformedPrimitive::get_material() shouldn't be called; \
             should've gone to GeometricPrimitive."
         );
@@ -322,7 +322,7 @@ impl Primitive for BVHAccel {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
     ) {
-        eprintln!(
+        error!(
             "TransformedPrimitive::compute_scattering_functions() shouldn't be \
             called; should've gone to GeometricPrimitive."
         );
@@ -342,7 +342,7 @@ impl From<(&mut ParamSet, Vec<ArcPrimitive>)> for BVHAccel {
             "middle" => SplitMethod::Middle,
             "equal" => SplitMethod::EqualCounts,
             sm => {
-                eprintln!("BVH split method '{}' unknown.  Using 'sah'.", sm);
+                warn!("BVH split method '{}' unknown.  Using 'sah'.", sm);
                 SplitMethod::SAH
             }
         };
