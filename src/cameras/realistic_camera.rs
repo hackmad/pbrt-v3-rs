@@ -66,7 +66,7 @@ impl RealisticCamera {
         simple_weighting: bool,
         lens_data: Vec<Float>,
         film: Arc<Film>,
-        medium: ArcMedium,
+        medium: Option<ArcMedium>,
     ) -> Self {
         let data = CameraData::new(
             camera_to_world,
@@ -308,7 +308,7 @@ impl RealisticCamera {
             Vector3f::new(0.0, 0.0, -1.0),
             INFINITY,
             0.0,
-            Some(self.data.medium.clone()),
+            self.data.medium.clone(),
         );
         let (pz0, fz0) = if let Some(r_film) = self.trace_lenses_from_scene(&r_scene) {
             compute_cardinal_points(&r_scene, &r_film)
@@ -325,7 +325,7 @@ impl RealisticCamera {
             Vector3f::new(0.0, 0.0, 1.0),
             INFINITY,
             0.0,
-            Some(self.data.medium.clone()),
+            self.data.medium.clone(),
         );
         let (pz1, fz1) = if let Some(r_scene) = self.trace_lenses_from_film(&r_film) {
             compute_cardinal_points(&r_film, &r_scene)
@@ -412,7 +412,7 @@ impl RealisticCamera {
                         p_rear - p_film,
                         INFINITY,
                         0.0,
-                        Some(self.data.medium.clone()),
+                        self.data.medium.clone(),
                     ))
                     .is_none()
             {
@@ -475,13 +475,13 @@ impl RealisticCamera {
     }
 }
 
-impl From<(&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)> for RealisticCamera {
+impl From<(&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)> for RealisticCamera {
     /// Create a `RealisticCamera` from given parameter set, animated transform,
     /// film and medium.
     ///
     /// * `p` - A tuple containing  parameter set, animated transform, film and
     ///         medium.
-    fn from(p: (&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)) -> Self {
+    fn from(p: (&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)) -> Self {
         let (params, cam2world, film, medium) = p;
 
         // Extract common camera parameters from `ParamSet`
@@ -561,7 +561,7 @@ impl Camera for RealisticCamera {
             p_rear - p_film,
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            Some(self.data.medium.clone()),
+            self.data.medium.clone(),
         );
 
         if let Some(ray) = self.trace_lenses_from_film(&r_film) {

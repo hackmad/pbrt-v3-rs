@@ -21,14 +21,6 @@ pub struct Options {
     /// Suppress all text output other than error messages.:
     pub quiet: bool,
 
-    /// Print a reformatted version of the input file(s) to the standard output
-    /// instead of rendering an image.
-    pub cat: bool,
-
-    /// Print a reformatted version of the input file(s) to standard output and
-    /// convert all triangle meshes to PLY files. Does not render an image.
-    pub to_ply: bool,
-
     /// Path to the image file.
     pub image_file: String,
 
@@ -93,27 +85,6 @@ impl Options {
                         WARNING, 2 -> ERROR, 3 -> FATAL).",
                     ),
             )
-            .arg(
-                Arg::with_name("cat")
-                    .long("cat")
-                    .takes_value(false)
-                    .default_value("false")
-                    .help(
-                        "Print a reformatted version of the input file(s) to \
-                    standard output. Does not render an image.",
-                    ),
-            )
-            .arg(
-                Arg::with_name("toply")
-                    .long("toply")
-                    .takes_value(false)
-                    .default_value("false")
-                    .help(
-                        "Print a reformatted version of the input file(s) to \
-                    standard output and convert all triangle meshes to PLY files. \
-                    Does not render an image.",
-                    ),
-            )
             .get_matches();
 
         let max_threads = num_cpus::get();
@@ -165,22 +136,10 @@ impl Options {
             _ => false,
         };
 
-        let cat = match matches.value_of("cat") {
-            Some(s) => s.parse::<bool>().expect("Invalid cat"),
-            _ => false,
-        };
-
-        let to_ply = match matches.value_of("toply") {
-            Some(s) => s.parse::<bool>().expect("Invalid toply"),
-            _ => false,
-        };
-
         Self {
             n_threads,
             quick_render,
             quiet,
-            cat,
-            to_ply,
             image_file,
             crop_window,
         }

@@ -219,7 +219,7 @@ pub struct CameraData {
     pub film: Arc<Film>,
 
     /// Scattering medium the camera lies in.
-    pub medium: ArcMedium,
+    pub medium: Option<ArcMedium>,
 }
 
 impl CameraData {
@@ -236,14 +236,14 @@ impl CameraData {
         shutter_open: Float,
         shutter_close: Float,
         film: Arc<Film>,
-        medium: ArcMedium,
+        medium: Option<ArcMedium>,
     ) -> Self {
         Self {
             camera_to_world,
             shutter_open,
             shutter_close,
             film,
-            medium,
+            medium: medium.clone(),
         }
     }
 }

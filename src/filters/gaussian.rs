@@ -61,11 +61,11 @@ impl Filter for GaussianFilter {
     }
 }
 
-impl From<&mut ParamSet> for GaussianFilter {
+impl From<&ParamSet> for GaussianFilter {
     /// Create a `GaussianFilter` from `ParamSet`.
     ///
     /// * `params` - Parameter set.
-    fn from(params: &mut ParamSet) -> Self {
+    fn from(params: &ParamSet) -> Self {
         let xw = params.find_one_float("xwidth", 2.0);
         let yw = params.find_one_float("ywidth", 2.0);
         let alpha = params.find_one_float("alpha", 2.0);

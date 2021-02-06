@@ -31,7 +31,7 @@ impl EnvironmentCamera {
         shutter_open: Float,
         shutter_close: Float,
         film: Arc<Film>,
-        medium: ArcMedium,
+        medium: Option<ArcMedium>,
     ) -> Self {
         Self {
             data: CameraData::new(
@@ -62,7 +62,7 @@ impl Camera for EnvironmentCamera {
             dir,
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            Some(self.data.medium.clone()),
+            self.data.medium.clone(),
         );
 
         (self.data.camera_to_world.transform_ray(&ray), 1.0)
@@ -77,13 +77,13 @@ impl Camera for EnvironmentCamera {
     }
 }
 
-impl From<(&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)> for EnvironmentCamera {
+impl From<(&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)> for EnvironmentCamera {
     /// Create a `EnvironmentCamera` from given parameter set, animated transform,
     /// film and medium.
     ///
     /// * `p` - A tuple containing  parameter set, animated transform, film and
     ///         medium.
-    fn from(p: (&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)) -> Self {
+    fn from(p: (&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)) -> Self {
         let (params, cam2world, film, medium) = p;
 
         // Extract common camera parameters from `ParamSet`

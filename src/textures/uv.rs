@@ -39,13 +39,13 @@ impl Texture<Spectrum> for UVTexture {
     }
 }
 
-impl From<(&mut TextureParams, &Transform)> for UVTexture {
+impl From<(&TextureParams, &Transform)> for UVTexture {
     /// Create a `UVTexture` from given parameter set and
     /// transformation from texture space to world space.
     ///
     /// * `p` - Tuple containing texture parameters and texture space
     ///         to world space transform.
-    fn from(p: (&mut TextureParams, &Transform)) -> Self {
+    fn from(p: (&TextureParams, &Transform)) -> Self {
         let (tp, tex2world) = p;
 
         // Initialize 2D texture mapping `map` from `tp`.

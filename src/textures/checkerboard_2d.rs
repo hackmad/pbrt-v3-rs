@@ -116,13 +116,13 @@ where
 
 macro_rules! from_params {
     ($t: ty, $get_texture_or_else_func: ident) => {
-        impl From<(&mut TextureParams, &Transform)> for CheckerboardTexture2D<$t> {
+        impl From<(&TextureParams, &Transform)> for CheckerboardTexture2D<$t> {
             /// Create a `CheckerboardTexture2D<$t>` from given parameter set and
             /// transformation from texture space to world space.
             ///
             /// * `p` - Tuple containing texture parameters and texture space
             ///         to world space transform.
-            fn from(p: (&mut TextureParams, &Transform)) -> Self {
+            fn from(p: (&TextureParams, &Transform)) -> Self {
                 let (tp, tex2world) = p;
 
                 // Check texture dimensions.

@@ -342,11 +342,11 @@ impl Film {
     }
 }
 
-impl From<(&mut ParamSet, ArcFilter)> for Film {
+impl From<(&ParamSet, ArcFilter)> for Film {
     /// Create a `BVHAccel` from given parameter set and filter.
     ///
     /// * `p` - Tuple containing the parameter set and filter.
-    fn from(p: (&mut ParamSet, ArcFilter)) -> Self {
+    fn from(p: (&ParamSet, ArcFilter)) -> Self {
         let (params, filter) = p;
 
         let image_file = &OPTIONS.image_file[..];

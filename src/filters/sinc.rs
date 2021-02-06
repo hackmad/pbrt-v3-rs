@@ -60,11 +60,11 @@ impl Filter for LanczosSincFilter {
     }
 }
 
-impl From<&mut ParamSet> for LanczosSincFilter {
+impl From<&ParamSet> for LanczosSincFilter {
     /// Create a `LanczosSincFilter` from `ParamSet`.
     ///
     /// * `params` - Parameter set.
-    fn from(params: &mut ParamSet) -> Self {
+    fn from(params: &ParamSet) -> Self {
         let xw = params.find_one_float("xwidth", 4.0);
         let yw = params.find_one_float("ywidth", 4.0);
         let tau = params.find_one_float("tau", 3.0);

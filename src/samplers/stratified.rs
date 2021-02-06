@@ -161,11 +161,11 @@ impl Sampler for StratifiedSampler {
     }
 }
 
-impl From<(&mut ParamSet, Bounds2i)> for StratifiedSampler {
+impl From<(&ParamSet, Bounds2i)> for StratifiedSampler {
     /// Create a `StratifiedSampler` from given parameter set and sample bounds.
     ///
     /// * `p` - A tuple containing parameter set and sample bounds.
-    fn from(p: (&mut ParamSet, Bounds2i)) -> Self {
+    fn from(p: (&ParamSet, Bounds2i)) -> Self {
         let (params, _sample_bounds) = p;
 
         let mut x_samples = params.find_one_int("xsamples", 4) as usize;

@@ -181,8 +181,8 @@ impl TriangleMesh {
     ///                      whether or not surface normal orientation is reversed.
     /// * `float_textures` - Float textures.
     pub fn from_props(
-        p: (&mut ParamSet, ArcTransform, ArcTransform, bool),
-        float_textures: Arc<HashMap<String, ArcTexture<Float>>>,
+        p: (&ParamSet, ArcTransform, ArcTransform, bool),
+        float_textures: &HashMap<String, ArcTexture<Float>>,
     ) -> Vec<ArcShape> {
         let (params, o2w, w2o, reverse_orientation) = p;
 

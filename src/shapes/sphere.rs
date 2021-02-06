@@ -361,7 +361,7 @@ impl Shape for Sphere {
     }
 }
 
-impl From<(&mut ParamSet, ArcTransform, ArcTransform, bool)> for Sphere {
+impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Sphere {
     /// Create a `Sphere` from given parameter set, object to world transform,
     /// world to object transform and whether or not surface normal orientation
     /// is reversed.
@@ -369,7 +369,7 @@ impl From<(&mut ParamSet, ArcTransform, ArcTransform, bool)> for Sphere {
     /// * `p` - A tuple containing the parameter set, object to world transform,
     ///         world to object transform and whether or not surface normal
     ///         orientation is reversed.
-    fn from(p: (&mut ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
+    fn from(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
         let (params, o2w, w2o, reverse_orientation) = p;
 
         let radius = params.find_one_float("radius", 1.0);

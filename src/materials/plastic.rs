@@ -108,11 +108,11 @@ impl Material for PlasticMaterial {
     }
 }
 
-impl From<&mut TextureParams> for PlasticMaterial {
+impl From<&TextureParams> for PlasticMaterial {
     /// Create a plastic material from given parameter set.
     ///
     /// * `tp` - Texture parameter set.
-    fn from(tp: &mut TextureParams) -> Self {
+    fn from(tp: &TextureParams) -> Self {
         let kd = tp.get_spectrum_texture_or_else(
             "Kd",
             Arc::new(ConstantTexture::new(Spectrum::new(0.25))),

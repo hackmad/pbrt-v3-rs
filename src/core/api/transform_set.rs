@@ -1,7 +1,7 @@
 //! Transform Set
 
 #![allow(dead_code)]
-use crate::core::geometry::ArcTransform;
+use crate::core::geometry::{ArcTransform, Transform};
 use std::ops::{Index, IndexMut};
 use std::sync::Arc;
 
@@ -14,7 +14,7 @@ pub const START_TRANSFORM_BITS: usize = 1 << 0;
 /// Transformation for ending time.
 pub const END_TRANSFORM_BITS: usize = 1 << 1;
 
-/// All transformations.
+/// Transformation for both starting and ending time.
 pub const ALL_TRANSFORM_BITS: usize = (1 << MAX_TRANSFORMS) - 1;
 
 /// Stores an array of transformations.
@@ -28,7 +28,7 @@ impl TransformSet {
     /// Returns a new `TransformSet` containing the inverse transformations.
     pub fn inverse(&self) -> Self {
         let mut t_inv = Self::default();
-        for i in 0..MAX_TRANSFORMS {
+        for i in 0..self.t.len() {
             t_inv.t[i] = Arc::new(self.t[i].inverse());
         }
         t_inv
@@ -37,12 +37,19 @@ impl TransformSet {
     /// Returns `true` if 2 successive transformations are not the same
     /// indicating that this is storing animated transforms.
     pub fn is_animated(&self) -> bool {
-        for i in 0..MAX_TRANSFORMS - 1 {
+        for i in 0..self.t.len() {
             if self.t[i] != self.t[i + 1] {
                 return true;
             }
         }
         false
+    }
+
+    /// Reset transforms to identity.
+    pub fn reset(&mut self) {
+        for i in 0..self.t.len() {
+            self.t[i] = Arc::new(Transform::default());
+        }
     }
 }
 

@@ -22,10 +22,10 @@ pub type ArcMedium = Arc<dyn Medium + Send + Sync>;
 #[derive(Clone)]
 pub struct MediumInterface {
     /// Represent the interior of a geometric primitive.
-    pub inside: ArcMedium,
+    pub inside: Option<ArcMedium>,
 
     /// Represent the exterior of a geometric primitive.
-    pub outside: ArcMedium,
+    pub outside: Option<ArcMedium>,
 }
 
 impl MediumInterface {
@@ -33,7 +33,7 @@ impl MediumInterface {
     ///
     /// * `inside`  - The interior medium.
     /// * `outside` - The exterior medium.
-    pub fn new(inside: ArcMedium, outside: ArcMedium) -> Self {
+    pub fn new(inside: Option<ArcMedium>, outside: Option<ArcMedium>) -> Self {
         Self {
             inside: inside.clone(),
             outside: outside.clone(),
@@ -43,7 +43,12 @@ impl MediumInterface {
     /// Returns `true` if the medium interface marks a transition between
     /// two distinct media.
     pub fn is_medium_transition(&self) -> bool {
-        Arc::ptr_eq(&self.inside, &self.outside)
+        match (self.inside.clone(), self.outside.clone()) {
+            (Some(inside), Some(outside)) => Arc::ptr_eq(&inside, &outside),
+            (Some(_), None) => true,
+            (None, Some(_)) => true,
+            (None, None) => false,
+        }
     }
 }
 
@@ -53,8 +58,8 @@ impl From<ArcMedium> for MediumInterface {
     /// * `medium` - The medium on either side of the interface.
     fn from(medium: ArcMedium) -> Self {
         Self {
-            inside: medium.clone(),
-            outside: medium.clone(),
+            inside: Some(medium.clone()),
+            outside: Some(medium.clone()),
         }
     }
 }

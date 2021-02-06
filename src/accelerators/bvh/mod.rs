@@ -12,7 +12,7 @@ mod hlbvh;
 mod morton;
 mod sah;
 
-use common::*;
+pub use common::*;
 use hlbvh::*;
 use sah::*;
 use std::sync::{Arc, Mutex};
@@ -41,14 +41,14 @@ impl BVHAccel {
     /// * `max_prims_in_node` - Maximum number of primitives in a node.
     /// * `split_method`      - The splitting method.
     pub fn new(
-        primitives: Vec<ArcPrimitive>,
+        primitives: &Vec<ArcPrimitive>,
         max_prims_in_node: u8,
         split_method: SplitMethod,
     ) -> Self {
         let n_primitives = primitives.len();
         if n_primitives == 0 {
             Self {
-                primitives,
+                primitives: primitives.clone(),
                 max_prims_in_node,
                 split_method,
                 nodes: vec![],
@@ -329,11 +329,11 @@ impl Primitive for BVHAccel {
     }
 }
 
-impl From<(&mut ParamSet, Vec<ArcPrimitive>)> for BVHAccel {
+impl From<(&ParamSet, &Vec<ArcPrimitive>)> for BVHAccel {
     /// Create a `BVHAccel` from given parameter set and primitives.
     ///
     /// * `p` - Tuple containing the parameter set and primitives.
-    fn from(p: (&mut ParamSet, Vec<ArcPrimitive>)) -> Self {
+    fn from(p: (&ParamSet, &Vec<ArcPrimitive>)) -> Self {
         let (params, prims) = p;
         let split_method_name = params.find_one_string("splitmethod", String::from("sah"));
         let split_method = match &split_method_name[..] {
@@ -348,6 +348,6 @@ impl From<(&mut ParamSet, Vec<ArcPrimitive>)> for BVHAccel {
         };
 
         let max_prims_in_node = params.find_one_int("maxnodeprims", 4) as u8;
-        Self::new(prims.clone(), max_prims_in_node, split_method)
+        Self::new(prims, max_prims_in_node, split_method)
     }
 }

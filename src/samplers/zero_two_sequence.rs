@@ -135,11 +135,11 @@ impl Sampler for ZeroTwoSequenceSampler {
     }
 }
 
-impl From<(&mut ParamSet, Bounds2i)> for ZeroTwoSequenceSampler {
+impl From<(&ParamSet, Bounds2i)> for ZeroTwoSequenceSampler {
     /// Create a `ZeroTwoSequenceSampler` from given parameter set and sample bounds.
     ///
     /// * `p` - A tuple containing parameter set and sample bounds.
-    fn from(p: (&mut ParamSet, Bounds2i)) -> Self {
+    fn from(p: (&ParamSet, Bounds2i)) -> Self {
         let (params, _sample_bounds) = p;
 
         let mut samples_per_pixel = params.find_one_int("pixelsamples", 16) as usize;

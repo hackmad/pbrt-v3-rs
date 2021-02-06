@@ -410,7 +410,7 @@ impl Shape for Hyperboloid {
     }
 }
 
-impl From<(&mut ParamSet, ArcTransform, ArcTransform, bool)> for Hyperboloid {
+impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Hyperboloid {
     /// Create a `Hyperboloid` from given parameter set, object to world transform,
     /// world to object transform and whether or not surface normal orientation
     /// is reversed.
@@ -418,7 +418,7 @@ impl From<(&mut ParamSet, ArcTransform, ArcTransform, bool)> for Hyperboloid {
     /// * `p` - A tuple containing the parameter set, object to world transform,
     ///         world to object transform and whether or not surface normal
     ///         orientation is reversed.
-    fn from(p: (&mut ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
+    fn from(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
         let (params, o2w, w2o, reverse_orientation) = p;
 
         let p1 = params.find_one_point3f("p1", Point3f::new(0.0, 0.0, 0.0));

@@ -311,7 +311,7 @@ impl Shape for Cone {
     }
 }
 
-impl From<(&mut ParamSet, ArcTransform, ArcTransform, bool)> for Cone {
+impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Cone {
     /// Create a `Cone` from given parameter set, object to world transform,
     /// world to object transform and whether or not surface normal orientation
     /// is reversed.
@@ -319,7 +319,7 @@ impl From<(&mut ParamSet, ArcTransform, ArcTransform, bool)> for Cone {
     /// * `p` - A tuple containing the parameter set, object to world transform,
     ///         world to object transform and whether or not surface normal
     ///         orientation is reversed.
-    fn from(p: (&mut ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
+    fn from(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
         let (params, o2w, w2o, reverse_orientation) = p;
 
         let radius = params.find_one_float("radius", 1.0);

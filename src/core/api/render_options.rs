@@ -70,19 +70,19 @@ pub struct RenderOptions {
     /// Primitives.
     pub primitives: Vec<ArcPrimitive>,
 
-    /// Instances.
-    pub instances: HashMap<String, Vec<ArcPrimitive>>,
+    /// Object instances (each is a collection of primitives).
+    pub instances: HashMap<String, Arc<Vec<ArcPrimitive>>>,
 
-    /// Current instance.
-    pub current_instance: Option<Vec<ArcPrimitive>>,
+    /// Current instance (a collection of primitives).
+    pub current_instance: Option<Arc<Vec<ArcPrimitive>>>,
 
     /// Is there scattering media in the scene.
     pub have_scattering_media: bool,
 }
 
-impl Default for RenderOptions {
-    /// Return a default `RenderOptions` instance.
-    fn default() -> Self {
+impl RenderOptions {
+    /// Creates a new `RenderOptions` instance.
+    pub fn new() -> Self {
         Self {
             transform_start_time: 0.0,
             transform_end_time: 1.0,
@@ -107,9 +107,7 @@ impl Default for RenderOptions {
             have_scattering_media: false,
         }
     }
-}
 
-impl RenderOptions {
     /// Returns an `Integrator` based on the render options.
     pub fn make_integrator(&self) -> ArcIntegrator {
         todo!();

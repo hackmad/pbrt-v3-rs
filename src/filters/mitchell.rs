@@ -71,11 +71,11 @@ impl Filter for MitchellFilter {
     }
 }
 
-impl From<&mut ParamSet> for MitchellFilter {
+impl From<&ParamSet> for MitchellFilter {
     /// Create a `MitchellFilter` from `ParamSet`.
     ///
     /// * `params` - Parameter set.
-    fn from(params: &mut ParamSet) -> Self {
+    fn from(params: &ParamSet) -> Self {
         let xw = params.find_one_float("xwidth", 2.0);
         let yw = params.find_one_float("ywidth", 2.0);
         let b = params.find_one_float("B", 1.0 / 3.0);

@@ -82,11 +82,11 @@ impl Sampler for RandomSampler {
     }
 }
 
-impl From<(&mut ParamSet, Bounds2i)> for RandomSampler {
+impl From<(&ParamSet, Bounds2i)> for RandomSampler {
     /// Create a `RandomSampler` from given parameter set and sample bounds.
     ///
     /// * `p` - A tuple containing parameter set and sample bounds.
-    fn from(p: (&mut ParamSet, Bounds2i)) -> Self {
+    fn from(p: (&ParamSet, Bounds2i)) -> Self {
         let (params, _sample_bounds) = p;
         let samples_per_pixel = params.find_one_int("pixelsamples", 4) as usize;
         Self::new(samples_per_pixel, None)

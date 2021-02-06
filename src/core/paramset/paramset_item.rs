@@ -8,21 +8,13 @@ use std::fmt;
 pub struct ParamSetItem<T: fmt::Display> {
     /// The values.
     pub values: Vec<T>,
-
-    /// Indicates if the parameter set item was ever read back.
-    /// Set to `false` on creation / default.
-    pub looked_up: bool,
 }
 
 impl<T: fmt::Display> ParamSetItem<T> {
     /// Create new `ParamSet<T>`.
     /// * `values`    - The values.
-    /// * `looked_up` - Indicates if the parameter set item was ever read back.
     pub fn new(values: Vec<T>) -> Self {
-        Self {
-            values,
-            looked_up: false,
-        }
+        Self { values }
     }
 }
 

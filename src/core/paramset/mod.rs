@@ -5,6 +5,7 @@ use crate::core::fileutil::*;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
+use crate::core::texture::*;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -17,20 +18,23 @@ pub use common::*;
 pub use paramset_item::*;
 pub use texture_params::*;
 
+/// A hashmap of parameter sets stored by name.
+pub type ParamSetMap<T> = HashMap<String, ParamSetItem<T>>;
+
 /// Stores parameter set items of different types in hashmaps.
 #[derive(Clone)]
 pub struct ParamSet {
-    pub bools: HashMap<String, ParamSetItem<bool>>,
-    pub ints: HashMap<String, ParamSetItem<Int>>,
-    pub floats: HashMap<String, ParamSetItem<Float>>,
-    pub point2fs: HashMap<String, ParamSetItem<Point2f>>,
-    pub vector2fs: HashMap<String, ParamSetItem<Vector2f>>,
-    pub point3fs: HashMap<String, ParamSetItem<Point3f>>,
-    pub vector3fs: HashMap<String, ParamSetItem<Vector3f>>,
-    pub normal3fs: HashMap<String, ParamSetItem<Normal3f>>,
-    pub spectra: HashMap<String, ParamSetItem<Spectrum>>,
-    pub strings: HashMap<String, ParamSetItem<String>>,
-    pub textures: HashMap<String, ParamSetItem<String>>,
+    pub bools: ParamSetMap<bool>,
+    pub ints: ParamSetMap<Int>,
+    pub floats: ParamSetMap<Float>,
+    pub point2fs: ParamSetMap<Point2f>,
+    pub vector2fs: ParamSetMap<Vector2f>,
+    pub point3fs: ParamSetMap<Point3f>,
+    pub vector3fs: ParamSetMap<Vector3f>,
+    pub normal3fs: ParamSetMap<Normal3f>,
+    pub spectra: ParamSetMap<Spectrum>,
+    pub strings: ParamSetMap<String>,
+    pub textures: ParamSetMap<String>,
     pub cached_spectra: HashMap<String, Spectrum>,
 }
 
@@ -60,12 +64,11 @@ macro_rules! paramset_erase {
 /// parameter set item that is stored as a single item.
 macro_rules! paramset_find_one {
     ($func: ident, $t: ty, $paramset: ident) => {
-        pub fn $func(&mut self, name: &str, default: $t) -> $t {
+        pub fn $func(&self, name: &str, default: $t) -> $t {
             let n = String::from(name);
-            match self.$paramset.get_mut(&n) {
+            match self.$paramset.get(&n) {
                 Some(param) => {
                     if param.values.len() == 1 {
-                        param.looked_up = true;
                         param.values[0].clone()
                     } else {
                         default.clone()
@@ -81,26 +84,11 @@ macro_rules! paramset_find_one {
 /// parameter set item that is stored as a list.
 macro_rules! paramset_find {
     ($func: ident, $t: ty, $paramset: ident) => {
-        pub fn $func(&mut self, name: &str) -> Vec<$t> {
+        pub fn $func(&self, name: &str) -> Vec<$t> {
             let n = String::from(name);
-            match self.$paramset.get_mut(&n) {
-                Some(param) => {
-                    param.looked_up = true;
-                    param.values.clone()
-                }
+            match self.$paramset.get(&n) {
+                Some(param) => param.values.clone(),
                 None => vec![],
-            }
-        }
-    };
-}
-
-/// Define a macro that can be used to generate a function for checking if
-/// parameter set item has been read after storage.
-macro_rules! check_unused {
-    ($params: expr, $set_name: literal) => {
-        for (name, param) in $params.iter() {
-            if !param.looked_up {
-                warn!("Parameter {:}/{:} not used.", $set_name, name);
             }
         }
     };
@@ -335,29 +323,13 @@ impl ParamSet {
     ///
     /// * `name`    - Parameter name.
     /// * `default` - Default file to use.
-    pub fn find_one_filename(&mut self, name: &str, default: String) -> String {
+    pub fn find_one_filename(&self, name: &str, default: String) -> String {
         let filename = self.find_one_string(name, String::from(""));
         if filename.len() == 0 {
             default
         } else {
             absolute_path(&filename).map_or(default, |s| s)
         }
-    }
-
-    /// Prints a report of the different parameter set items that have not been
-    /// read after being stored.
-    pub fn report_unused(&self) {
-        check_unused!(self.bools, "bools");
-        check_unused!(self.ints, "ints");
-        check_unused!(self.floats, "floats");
-        check_unused!(self.point2fs, "point2fs");
-        check_unused!(self.vector2fs, "vector2fs");
-        check_unused!(self.point3fs, "point3fs");
-        check_unused!(self.vector3fs, "vector3fs");
-        check_unused!(self.normal3fs, "normal3fs");
-        check_unused!(self.spectra, "spectra");
-        check_unused!(self.strings, "strings");
-        check_unused!(self.textures, "textures");
     }
 
     /// Clear all parameter set items.

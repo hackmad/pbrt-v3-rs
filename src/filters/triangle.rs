@@ -40,11 +40,11 @@ impl Filter for TriangleFilter {
     }
 }
 
-impl From<&mut ParamSet> for TriangleFilter {
+impl From<&ParamSet> for TriangleFilter {
     /// Create a `TriangleFilter` from `ParamSet`.
     ///
     /// * `params` - Parameter set.
-    fn from(params: &mut ParamSet) -> Self {
+    fn from(params: &ParamSet) -> Self {
         let xw = params.find_one_float("xwidth", 2.0);
         let yw = params.find_one_float("ywidth", 2.0);
         Self::new(Vector2f::new(xw, yw))

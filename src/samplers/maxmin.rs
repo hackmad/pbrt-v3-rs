@@ -159,11 +159,11 @@ impl Sampler for MaxMinDistSampler {
     }
 }
 
-impl From<(&mut ParamSet, Bounds2i)> for MaxMinDistSampler {
+impl From<(&ParamSet, Bounds2i)> for MaxMinDistSampler {
     /// Create a `MaxMinDistSampler` from given parameter set and sample bounds.
     ///
     /// * `p` - A tuple containing parameter set and sample bounds.
-    fn from(p: (&mut ParamSet, Bounds2i)) -> Self {
+    fn from(p: (&ParamSet, Bounds2i)) -> Self {
         let (params, _sample_bounds) = p;
 
         let mut samples_per_pixel = params.find_one_int("pixelsamples", 16) as usize;

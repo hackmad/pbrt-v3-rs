@@ -8,7 +8,7 @@ pub trait Integrator {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&self, scene: &Scene);
+    fn render(&self, scene: Arc<Scene>);
 }
 
 /// Atomic reference counted `Integrator`.

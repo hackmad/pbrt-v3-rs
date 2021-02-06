@@ -56,7 +56,7 @@ impl KDTreeAccel {
     /// * `max_prims`      - Maximum number of primitives in leaf.
     /// * `max_depth`      - Maximum depth of tree.
     pub fn new(
-        primitives: Vec<ArcPrimitive>,
+        primitives: &Vec<ArcPrimitive>,
         isect_cost: i32,
         traversal_cost: i32,
         empty_bonus: Float,
@@ -102,7 +102,7 @@ impl KDTreeAccel {
             traversal_cost,
             max_prims,
             empty_bonus,
-            primitives,
+            primitives: primitives.clone(),
             primitive_indices: vec![],
             nodes: vec![],
             n_alloced_nodes,
@@ -579,11 +579,11 @@ impl Primitive for KDTreeAccel {
     }
 }
 
-impl From<(&mut ParamSet, Vec<ArcPrimitive>)> for KDTreeAccel {
+impl From<(&ParamSet, &Vec<ArcPrimitive>)> for KDTreeAccel {
     /// Create a `KDTreeAccel ` from given parameter set and primitives.
     ///
     /// * `p` - Tuple containing the parameter set and primitives.
-    fn from(p: (&mut ParamSet, Vec<ArcPrimitive>)) -> Self {
+    fn from(p: (&ParamSet, &Vec<ArcPrimitive>)) -> Self {
         let (params, prims) = p;
         let isect_cost = params.find_one_int("intersectcost", 80);
         let trav_cost = params.find_one_int("traversalcost", 1);
@@ -592,7 +592,7 @@ impl From<(&mut ParamSet, Vec<ArcPrimitive>)> for KDTreeAccel {
         let max_depth = params.find_one_int("maxdepth", -1);
 
         Self::new(
-            prims.clone(),
+            prims,
             isect_cost,
             trav_cost,
             empty_bonus,

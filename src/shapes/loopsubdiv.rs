@@ -673,7 +673,7 @@ impl LoopSubDiv {
     /// * `p` - A tuple containing the parameter set, object to world transform,
     ///         world to object transform and whether or not surface normal
     ///         orientation is reversed.
-    pub fn from_props(p: (&mut ParamSet, ArcTransform, ArcTransform, bool)) -> Vec<ArcShape> {
+    pub fn from_props(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Vec<ArcShape> {
         let (params, o2w, w2o, reverse_orientation) = p;
 
         let n_levels = params.find_one_int("nlevels", 3) as usize;

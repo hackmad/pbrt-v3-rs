@@ -52,7 +52,7 @@ impl PerspectiveCamera {
         focal_distance: Float,
         fov: Float,
         film: Arc<Film>,
-        medium: ArcMedium,
+        medium: Option<ArcMedium>,
     ) -> Self {
         let data = CameraData::new(
             camera_to_world,
@@ -127,7 +127,7 @@ impl Camera for PerspectiveCamera {
             Vector3f::from(p_camera).normalize(),
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            Some(self.data.medium.clone()),
+            self.data.medium.clone(),
         );
 
         // Modify ray for depth of field.
@@ -166,7 +166,7 @@ impl Camera for PerspectiveCamera {
             Vector3f::from(p_camera).normalize(),
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            Some(self.data.medium.clone()),
+            self.data.medium.clone(),
         );
 
         // Modify ray for depth of field.
@@ -224,13 +224,13 @@ impl Camera for PerspectiveCamera {
     }
 }
 
-impl From<(&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)> for PerspectiveCamera {
+impl From<(&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)> for PerspectiveCamera {
     /// Create a `PerspectiveCamera` from given parameter set, animated transform,
     /// film and medium.
     ///
     /// * `p` - A tuple containing  parameter set, animated transform, film and
     ///         medium.
-    fn from(p: (&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)) -> Self {
+    fn from(p: (&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)) -> Self {
         let (params, cam2world, film, medium) = p;
 
         // Extract common camera parameters from `ParamSet`

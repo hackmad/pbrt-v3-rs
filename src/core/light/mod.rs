@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 mod light_type;
 mod visibility_tester;
+
 /// Light trait provides common behavior.
 pub trait Light {
     /// Initialize the light source before rendering begins.
@@ -18,6 +19,10 @@ pub trait Light {
 
 /// Atomic reference counted `Light`.
 pub type ArcLight = Arc<dyn Light + Send + Sync>;
+
+pub trait AsLight {
+    fn as_light(&self) -> &'static dyn Light;
+}
 
 /// AreaLight trait provides common behavior for area lights.
 pub trait AreaLight: Light {}

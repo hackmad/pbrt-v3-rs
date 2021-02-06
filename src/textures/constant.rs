@@ -36,13 +36,13 @@ where
 
 macro_rules! from_params {
     ($t: ty, $find_func: ident) => {
-        impl From<(&mut TextureParams, &Transform)> for ConstantTexture<$t> {
+        impl From<(&TextureParams, &Transform)> for ConstantTexture<$t> {
             /// Create a `ConstantTexture<$t>` from given parameter set and
             /// transformation from texture space to world space.
             ///
             /// * `p` - Tuple containing texture parameters and texture space
             ///         to world space transform.
-            fn from(p: (&mut TextureParams, &Transform)) -> Self {
+            fn from(p: (&TextureParams, &Transform)) -> Self {
                 let (tp, _tex2world) = p;
                 Self::new(tp.$find_func("value", 1.0.into()))
             }

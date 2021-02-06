@@ -90,11 +90,11 @@ impl Material for FourierMaterial {
     }
 }
 
-impl From<&mut TextureParams> for FourierMaterial {
+impl From<&TextureParams> for FourierMaterial {
     /// Create a Fourier material from given parameter set.
     ///
     /// * `tp` - Texture parameter set.
-    fn from(tp: &mut TextureParams) -> Self {
+    fn from(tp: &TextureParams) -> Self {
         let bump_map = tp.get_float_texture("bumpmap");
         let path = tp.find_filename("bsdfffile", String::from(""));
         Self::new(&path, bump_map)

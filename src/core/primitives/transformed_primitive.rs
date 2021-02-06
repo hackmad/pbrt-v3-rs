@@ -4,7 +4,6 @@
 use crate::core::geometry::*;
 use crate::core::light::*;
 use crate::core::material::*;
-use crate::core::medium::*;
 use crate::core::primitive::*;
 
 /// TransformedPrimitive stores an underlying primitive and animated transform
@@ -35,7 +34,7 @@ impl Primitive for TransformedPrimitive {
     /// Returns a bounding box in the world space.
     fn world_bound(&self) -> Bounds3f {
         self.primitive_to_world
-            .motion_bounds(self.primitive.world_bound())
+            .motion_bounds(&self.primitive.world_bound())
     }
 
     /// Returns geometric details if a ray intersects the primitive and updates
@@ -47,15 +46,15 @@ impl Primitive for TransformedPrimitive {
         let interpolated_prim_to_world = self.primitive_to_world.interpolate(r.time);
         let mut ray = interpolated_prim_to_world.inverse().transform_ray(r);
 
-        if let Some(mut it) = self.primitive.intersect(&mut ray, true) {
+        if let Some(mut it) = self.primitive.intersect(&mut ray) {
             r.t_max = ray.t_max;
             if !interpolated_prim_to_world.is_identity() {
-                it.isect = interpolated_prim_to_world.transform_surface_interaction(it.isect);
+                it = interpolated_prim_to_world.transform_surface_interaction(&it);
             }
 
-            debug_assert!(it.isect.hit.n.dot(&it.isect.shading.n) > 0.0);
+            debug_assert!(it.hit.n.dot(&it.shading.n) > 0.0);
 
-            Some(it.isect)
+            Some(it)
         } else {
             None
         }
@@ -66,8 +65,8 @@ impl Primitive for TransformedPrimitive {
     /// * `r`                  - The ray.
     fn intersect_p(&self, r: &Ray) -> bool {
         let interpolated_prim_to_world = self.primitive_to_world.interpolate(r.time);
-        let ray = interpolated_prim_to_world.inverse().transform_ray(r);
-        self.primitive.intersect_p(r)
+        let mut ray = interpolated_prim_to_world.inverse().transform_ray(r);
+        self.primitive.intersect_p(&mut ray)
     }
 
     /// Returns a reference to the AreaLight that describes the primitive’s

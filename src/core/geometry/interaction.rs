@@ -104,10 +104,11 @@ impl Hit {
     ///
     /// * `w` - The direction.
     pub fn get_medium_in_direction(&self, w: &Vector3f) -> Option<ArcMedium> {
+        let mi = self.medium_interface.clone();
         if w.dot(&self.n) > 0.0 {
-            self.medium_interface.clone().map(|mi| mi.outside.clone())
+            mi.map_or(None, |mi| mi.outside.clone())
         } else {
-            self.medium_interface.clone().map(|mi| mi.inside.clone())
+            mi.map_or(None, |mi| mi.inside.clone())
         }
     }
 
@@ -115,7 +116,7 @@ impl Hit {
     pub fn get_medium(&self) -> Option<ArcMedium> {
         if let Some(mi) = self.medium_interface.clone() {
             if mi.is_medium_transition() {
-                Some(mi.inside.clone())
+                mi.inside.clone()
             } else {
                 None
             }

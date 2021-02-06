@@ -36,7 +36,7 @@ pub use windy::*;
 ///
 /// * `tp`        - Texture parameters.
 /// * `tex2world` - Texture space to world space transform.
-fn get_texture_mapping(tp: &mut TextureParams, tex2world: &Transform) -> ArcTextureMapping2D {
+fn get_texture_mapping(tp: &TextureParams, tex2world: &Transform) -> ArcTextureMapping2D {
     let map_type = tp.find_string("mapping", String::from("uv"));
     match &map_type[..] {
         "uv" => {

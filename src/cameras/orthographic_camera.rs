@@ -47,7 +47,7 @@ impl OrthographicCamera {
         lens_radius: Float,
         focal_distance: Float,
         film: Arc<Film>,
-        medium: ArcMedium,
+        medium: Option<ArcMedium>,
     ) -> Self {
         let data = CameraData::new(
             camera_to_world,
@@ -98,7 +98,7 @@ impl Camera for OrthographicCamera {
             Vector3f::new(0.0, 0.0, 1.0),
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            Some(self.data.medium.clone()),
+            self.data.medium.clone(),
         );
 
         // Modify ray for depth of field.
@@ -137,7 +137,7 @@ impl Camera for OrthographicCamera {
             Vector3f::new(0.0, 0.0, 1.0),
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            Some(self.data.medium.clone()),
+            self.data.medium.clone(),
         );
 
         // Modify ray for depth of field.
@@ -192,13 +192,13 @@ impl Camera for OrthographicCamera {
     }
 }
 
-impl From<(&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)> for OrthographicCamera {
+impl From<(&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)> for OrthographicCamera {
     /// Create a `OrthographicCamera` from given parameter set, animated transform,
     /// film and medium.
     ///
     /// * `p` - A tuple containing  parameter set, animated transform, film and
     ///         medium.
-    fn from(p: (&mut ParamSet, &AnimatedTransform, Arc<Film>, ArcMedium)) -> Self {
+    fn from(p: (&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)) -> Self {
         let (params, cam2world, film, medium) = p;
 
         // Extract common camera parameters from `ParamSet`

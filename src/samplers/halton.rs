@@ -300,11 +300,11 @@ impl Sampler for HaltonSampler {
     }
 }
 
-impl From<(&mut ParamSet, Bounds2i)> for HaltonSampler {
+impl From<(&ParamSet, Bounds2i)> for HaltonSampler {
     /// Create a `HaltonSampler` from given parameter set and sample bounds.
     ///
     /// * `p` - A tuple containing parameter set and sample bounds.
-    fn from(p: (&mut ParamSet, Bounds2i)) -> Self {
+    fn from(p: (&ParamSet, Bounds2i)) -> Self {
         let (params, sample_bounds) = p;
 
         let mut samples_per_pixel = params.find_one_int("pixelsamples", 16) as usize;

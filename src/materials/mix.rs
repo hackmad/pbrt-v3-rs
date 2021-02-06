@@ -86,11 +86,11 @@ impl Material for MixMaterial {
     }
 }
 
-impl From<(&mut TextureParams, ArcMaterial, ArcMaterial)> for MixMaterial {
+impl From<(&TextureParams, ArcMaterial, ArcMaterial)> for MixMaterial {
     /// Create a mix material from given parameter set and materials.
     ///
     /// * `props` - Mix material creation properties.
-    fn from(props: (&mut TextureParams, ArcMaterial, ArcMaterial)) -> Self {
+    fn from(props: (&TextureParams, ArcMaterial, ArcMaterial)) -> Self {
         let (tp, mat1, mat2) = props;
         let scale = tp.get_spectrum_texture_or_else(
             "amount",

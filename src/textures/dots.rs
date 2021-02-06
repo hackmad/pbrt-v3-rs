@@ -77,13 +77,13 @@ where
 
 macro_rules! from_params {
     ($t: ty, $get_texture_or_else_func: ident) => {
-        impl From<(&mut TextureParams, &Transform)> for DotsTexture<$t> {
+        impl From<(&TextureParams, &Transform)> for DotsTexture<$t> {
             /// Create a `DotsTexture<$t>` from given parameter set and
             /// transformation from texture space to world space.
             ///
             /// * `p` - Tuple containing texture parameters and texture space
             ///         to world space transform.
-            fn from(p: (&mut TextureParams, &Transform)) -> Self {
+            fn from(p: (&TextureParams, &Transform)) -> Self {
                 let (tp, tex2world) = p;
 
                 // Initialize 2D texture mapping `map` from `tp`.
