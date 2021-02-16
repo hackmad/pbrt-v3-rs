@@ -26,6 +26,9 @@ pub struct Options {
 
     /// The crop window x0, x1, y0, y1.
     pub crop_window: [[Float; 2]; 2],
+
+    /// Input file paths. Empty vector implies read from stdin.
+    pub paths: Vec<String>,
 }
 
 impl Options {
@@ -64,7 +67,7 @@ impl Options {
                     .takes_value(false)
                     .default_value("false")
                     .help(
-                        "Automatically reduce a number of quality settings to \
+                        "Automatically reduce a number of quality settings to 
                         render more quickly.",
                     ),
             )
@@ -76,14 +79,10 @@ impl Options {
                     .help("Suppress all text output other than error messages."),
             )
             .arg(
-                Arg::with_name("minloglevel")
-                    .long("minloglevel")
-                    .takes_value(true)
-                    .default_value("0")
-                    .help(
-                        "Log messages at or above this level (0 -> INFO, 1 -> \
-                        WARNING, 2 -> ERROR, 3 -> FATAL).",
-                    ),
+                Arg::with_name("INPUT")
+                    .required(false)
+                    .multiple(true)
+                    .help("Input files"),
             )
             .get_matches();
 
@@ -136,12 +135,18 @@ impl Options {
             _ => false,
         };
 
+        let paths: Vec<String> = match matches.values_of("INPUT") {
+            Some(p) => p.map(String::from).collect(),
+            None => vec![],
+        };
+
         Self {
             n_threads,
             quick_render,
             quiet,
             image_file,
             crop_window,
+            paths,
         }
     }
 }

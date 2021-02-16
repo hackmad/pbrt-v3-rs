@@ -21,6 +21,7 @@ pub mod memory;
 pub mod microfacet;
 pub mod mipmap;
 pub mod paramset;
+pub mod parsers;
 pub mod pbrt;
 pub mod primitive;
 pub mod primitives;

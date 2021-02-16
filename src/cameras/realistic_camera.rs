@@ -7,8 +7,8 @@ use crate::core::film::*;
 use crate::core::geometry::*;
 use crate::core::low_discrepency::*;
 use crate::core::medium::*;
-use crate::core::paramset::read_float_file;
 use crate::core::paramset::*;
+use crate::core::parsers::parse_float_file;
 use crate::core::pbrt::*;
 use crate::core::reflection::*;
 use rayon::prelude::*;
@@ -506,7 +506,7 @@ impl From<(&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)> for Rea
         }
 
         // Load element data from lens description file
-        let lens_data = match read_float_file(&lens_file) {
+        let lens_data = match parse_float_file(&lens_file) {
             Ok(data) => data,
             Err(err) => panic!(
                 "Error reading lens specification file '{}'. {}.",

@@ -514,6 +514,10 @@ impl GraphicsState {
     }
 
     /// Creates a film.
+    ///
+    /// * `name`     - Name.
+    /// * `paramset` - Parameter set.
+    /// * `filter`   - Filter.
     pub fn make_film(
         &self,
         name: &str,

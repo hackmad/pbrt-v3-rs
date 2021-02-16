@@ -109,7 +109,7 @@ impl Api {
 
     /// API Cleanup.
     pub fn pbrt_cleanup(&mut self) {
-        if self.current_api_state != ApiState::Uninitialized {
+        if self.current_api_state == ApiState::Uninitialized {
             error!("pbrt_cleanup() called without pbrt_init().");
         } else if self.current_api_state == ApiState::WorldBlock {
             error!("pbrt_cleanup() called while inside world block.");

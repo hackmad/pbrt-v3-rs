@@ -9,12 +9,10 @@ use crate::core::texture::*;
 use std::collections::HashMap;
 use std::fmt;
 
-mod common;
 mod paramset_item;
 mod texture_params;
 
 // Re-export
-pub use common::*;
 pub use paramset_item::*;
 pub use texture_params::*;
 
@@ -291,6 +289,7 @@ impl ParamSet {
                         spectra.push(spectrum.clone());
                         continue;
                     }
+                    /*
                     match read_float_file(path) {
                         Ok(values) => {
                             let samples = Sample::list(&values);
@@ -303,7 +302,7 @@ impl ParamSet {
                             );
                             spectra.push(Spectrum::new(0.0));
                         }
-                    }
+                    } */
                 }
                 Err(err) => {
                     error!(

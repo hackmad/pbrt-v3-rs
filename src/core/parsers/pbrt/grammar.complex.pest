@@ -1,0 +1,275 @@
+pbrt = { SOI ~ (pbrt_main | pbrt_include) ~ EOI }
+
+pbrt_main = {
+    option_stmt*
+    ~ world_stmts
+}
+
+pbrt_include = { scene_stmt* }
+
+world_stmts = {
+    world_begin_stmt
+    ~ scene_stmt*
+    ~ world_end_stmt
+}
+
+option_stmt = {
+    medium_interface_stmt
+    | look_at_stmt
+    | transform_times_stmt
+    | option_param_list_stmt
+    | attribute_stmts
+    | ctm_stmts
+    | graphics_state_stmt
+    | comment_stmt
+}
+
+scene_stmt = {
+    medium_interface_stmt
+    | include_stmt
+    | attribute_stmts
+    | ctm_stmts
+    | graphics_state_stmt
+    | scene_param_list_stmt
+    | object_instance_stmts
+    | object_instance_stmt
+    | comment_stmt
+}
+
+attribute_stmts = {
+    attribute_begin_stmt
+    ~ (graphics_state_stmt | attribute_stmts)*
+    ~ attribute_end_stmt
+}
+
+ctm_stmts = {
+    transform_begin_stmt
+    ~ graphics_state_stmt*
+    ~ transform_end_stmt
+}
+
+graphics_state_stmt = {
+    transformation_stmt
+    | reverse_orientation_stmt
+    | medium_interface_stmt
+    | include_stmt
+    | attribute_stmts
+    | ctm_stmts
+    | scene_param_list_stmt
+    | object_instance_stmts
+    | object_instance_stmt
+    | comment_stmt
+}
+
+transformation_stmt = {
+    identity_stmt
+    | translate_stmt
+    | scale_stmt
+    | rotate_stmt
+    | coordinate_system_stmt
+    | coord_sys_transform_stmt
+    | transform_stmt
+    | concat_transform_stmt
+    | active_transform_stmt
+}
+
+object_instance_stmts = {
+    object_begin_stmt
+    ~ scene_stmt*
+    ~ object_end_stmt
+}
+
+comment_stmt = { "#" ~ ANY* ~ NEWLINE }
+
+world_begin_stmt = { "WorldBegin" ~ EOL }
+world_end_stmt = { "WorldEnd" ~ EOL }
+
+attribute_begin_stmt = { "AttributeBegin" ~ EOL }
+attribute_end_stmt = { "AttributeEnd" ~ EOL }
+
+transform_begin_stmt = { "TransformBegin" ~ EOL }
+transform_end_stmt = { "TransformEnd" ~ EOL }
+
+object_begin_stmt = { "ObjectBegin" ~ quoted_str ~ EOL }
+object_end_stmt = { "ObjectEnd" ~ EOL }
+
+include_stmt = { "Include" ~ quoted_str_expr }
+
+option_param_list_stmt = {
+    option_param_list_stmt_type
+    ~ quoted_str
+    ~ EOL?
+    ~ param_list?
+}
+option_param_list_stmt_type = {
+    "Accelerator"
+    | "Camera"
+    | "Film"
+    | "Filter"
+    | "Integrator"
+    | "MakeNamedMedium"
+    | "Sampler"
+}
+
+scene_param_list_stmt = {
+    scene_param_list_stmt_type
+    ~ quoted_str
+    ~ EOL?
+    ~ param_list?
+}
+scene_param_list_stmt_type = {
+    "AreaLightSource"
+    | "LightSource"
+    | "MakeNamedMaterial"
+    | "Material"
+    | "Shape"
+    | "Texture"
+}
+
+named_material_stmt = { "NamedMaterial" ~ quoted_ident_expr }
+object_instance_stmt = { "ObjectInstance" ~ quoted_ident_expr }
+reverse_orientation_stmt = { "ReverseOrientation" ~ EOL }
+
+medium_interface_stmt = { "MediumInterface" ~ quoted_medium_type ~ quoted_ident_expr }
+quoted_medium_type = { QUOTATION_MARK ~ medium_type ~ QUOTATION_MARK }
+medium_type = { "inside" | "outside" | "" }
+
+identity_stmt = { "Identity" ~ EOL }
+translate_stmt = { "Translate" ~ num_expr{3} }
+scale_stmt = { "Scale" ~ num_expr{3} }
+rotate_stmt = { "Rotate" ~ num_expr{4} }
+look_at_stmt = { "LookAt" ~ COMMENT?  ~ num_expr{9} }
+coordinate_system_stmt = { "CoordinateSystem" ~ quoted_ident_expr }
+coord_sys_transform_stmt = { "CoordSysTransform" ~ quoted_ident_expr }
+transform_stmt = { "Transform" ~ num_list_expr }
+concat_transform_stmt = { "ConcatTransform" ~ num_list_expr }
+transform_times_stmt = { "TransformTimes" ~ num ~ num_expr }
+
+active_transform_stmt = { "ActiveTransform" ~ transform_type ~ EOL }
+transform_type = { "StartTime" | "EndTime" | "All" }
+
+
+param_list = { param+ }
+param = {
+    point3d_param | vector3d_param | normal3d_param | point2d_param |
+    vector2d_param | string_param | bool_param | float_param |
+    int_param | colour_param | spectrum_param | blackbody_param
+}
+
+point3d_param = ${
+    QUOTATION_MARK ~ point3d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ num_list_expr
+}
+vector3d_param = ${
+    QUOTATION_MARK ~ vector3d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ num_list_expr
+}
+normal3d_param = ${
+    QUOTATION_MARK ~ normal3d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ num_list_expr
+}
+point2d_param = ${
+    QUOTATION_MARK ~ point2d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ num_list_expr
+}
+vector2d_param = ${
+    QUOTATION_MARK ~ vector2d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ num_list_expr
+}
+string_param = ${
+    QUOTATION_MARK ~ string_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ quoted_str_expr
+}
+bool_param = ${
+    QUOTATION_MARK ~ bool_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ quoted_bool_expr
+}
+float_param = ${
+    QUOTATION_MARK ~ float_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ (num_expr | num_list_expr)
+}
+int_param = ${
+    QUOTATION_MARK ~ int_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ (int_expr | int_list_expr)
+}
+colour_param = ${
+    QUOTATION_MARK ~ colour_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ num_list_expr
+}
+spectrum_param = ${
+    QUOTATION_MARK ~ spectrum_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ (num_list_expr | quoted_str_expr)
+}
+blackbody_param = @{
+    QUOTATION_MARK ~ blackbody_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ num_list_expr
+}
+
+point3d_type = { "point3" | "point" }
+vector3d_type = { "vector3" | "vector" }
+normal3d_type = { "normal3" | "normal" }
+point2d_type = { "point2" }
+vector2d_type = { "vector2" }
+string_type = { "string" }
+bool_type = { "bool" }
+float_type = { "float" }
+int_type = { "integer" }
+colour_type = { "color" | "rgb" | "xyz" }
+spectrum_type = { "spectrum" }
+blackbody_type = { "blackbody" }
+
+
+num = @{ num_no_int_before_period | num_int_before_period }
+num_no_int_before_period = { "." ~ ASCII_DIGIT+ ~ (^"e" ~ int)?  }
+num_int_before_period = { int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
+int = { ("+" | "-")? ~ ASCII_DIGIT+ }
+str = { (!QUOTATION_MARK ~ ANY)* }
+bool = { "true" | "false" }
+quoted_str = { QUOTATION_MARK ~ str ~ QUOTATION_MARK }
+quoted_bool = { QUOTATION_MARK ~ bool ~ QUOTATION_MARK }
+ident = { LETTER ~ ASCII_ALPHANUMERIC* }
+quoted_ident = { QUOTATION_MARK ~ ident ~ QUOTATION_MARK }
+
+num_expr = { num ~ EOL }
+num_list_expr = { "["
+      ~ (
+          WHITESPACE_OR_NEWLINE*
+          ~ num
+          ~ WHITESPACE_OR_NEWLINE*
+        )+
+    ~ "]"
+    ~ EOL
+}
+int_expr = { int ~ EOL }
+int_list_expr = {
+	"["
+      ~ (
+          WHITESPACE_OR_NEWLINE*
+          ~ int
+          ~ WHITESPACE_OR_NEWLINE*
+        )+
+    ~ "]"
+    ~ EOL
+}
+ident_expr = { ident ~ EOL }
+quoted_ident_expr = { quoted_ident ~ EOL }
+quoted_str_expr = { quoted_str ~ EOL }
+quoted_bool_expr = { quoted_bool ~ EOL }
+
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+WHITESPACE_OR_NEWLINE = _{ WHITESPACE | NEWLINE }
+COMMENT = _{ "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE? }
+EOL = _{ WHITESPACE_OR_NEWLINE+ | COMMENT? }

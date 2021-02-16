@@ -1,0 +1,11 @@
+file = { SOI ~ nums* ~ EOI }
+
+nums = { num+ ~ COMMENT? }
+
+num = @{ num_no_int_before_period | num_int_before_period }
+num_no_int_before_period = { "." ~ ASCII_DIGIT+ ~ (^"e" ~ int)?  }
+num_int_before_period = { int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
+int = { ("+" | "-")? ~ ASCII_DIGIT+ }
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT = _{ "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE? }
