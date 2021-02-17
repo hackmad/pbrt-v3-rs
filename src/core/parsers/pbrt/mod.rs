@@ -41,7 +41,7 @@ impl PbrtFileParser {
         }
     }
 
-    /// Reads a PBRT file format.
+    /// Reads a PBRT file format and calls the API wrapper functions.
     ///
     /// * `api`  - The PBRT API interface.
     pub fn parse(&self, api: &mut Api) -> Result<(), String> {
@@ -49,6 +49,7 @@ impl PbrtFileParser {
         let unparsed_file = file_to_string(&self.file_path)?;
         let pbrt = self.parse_pbrt_rule(&unparsed_file)?;
 
+        // Parse all the `stmt` rules.
         for pair in pbrt.into_inner() {
             match pair.as_rule() {
                 Rule::stmt => {
@@ -74,6 +75,9 @@ impl PbrtFileParser {
         }
     }
 
+    /// Parse a `stmt` rule of the grammar and call the API.
+    ///
+    /// * `pairs` - The inner token pairs for matched `stmt` rule.
     fn parse_stmt_rule(&self, pairs: &mut Pairs<Rule>, api: &mut Api) {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
@@ -96,6 +100,12 @@ impl PbrtFileParser {
         }
     }
 
+    /// Parse a `include_stmt` rule of the grammar and call the API.
+    /// This will create a new parser to parse the included file and
+    /// parse it entirely while calling the API before returning.
+    ///
+    /// * `pairs` - The inner token pairs for matched `include_stmt` rule.
+    /// * `api`   - The PBRT API interface.
     fn parse_include_stmt(&self, pairs: &mut Pairs<Rule>, api: &mut Api) {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
@@ -119,6 +129,10 @@ impl PbrtFileParser {
         }
     }
 
+    /// Parse a `block_stmt` rule of the grammar and call the API.
+    ///
+    /// * `pairs` - The inner token pairs for matched `block_stmt` rule.
+    /// * `api`   - The PBRT API interface.
     fn parse_block_stmt(&self, pairs: &mut Pairs<Rule>, api: &mut Api) {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
@@ -137,6 +151,10 @@ impl PbrtFileParser {
         }
     }
 
+    /// Parse an `option_stmt` rule of the grammar and call the API.
+    ///
+    /// * `pairs` - The inner token pairs for matched `option_stmt` rule.
+    /// * `api`   - The PBRT API interface.
     fn parse_option_stmt(&self, pairs: &mut Pairs<Rule>, _api: &mut Api) {
         let next_pair = pairs.next().unwrap();
         let rule = next_pair.as_rule();
@@ -161,6 +179,10 @@ impl PbrtFileParser {
         }
     }
 
+    /// Parse a `scene_stmt` rule of the grammar and call the API.
+    ///
+    /// * `pairs` - The inner token pairs for matched `scene_stmt` rule.
+    /// * `api`   - The PBRT API interface.
     fn parse_scene_stmt(&self, pairs: &mut Pairs<Rule>, _api: &mut Api) {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
@@ -181,6 +203,10 @@ impl PbrtFileParser {
         }
     }
 
+    /// Parse a `ctm_stmt` rule of the grammar and call the API.
+    ///
+    /// * `pairs` - The inner token pairs for matched `ctm_stmt` rule.
+    /// * `api`   - The PBRT API interface.
     fn parse_ctm_stmt(&self, pairs: &mut Pairs<Rule>, _api: &mut Api) {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
@@ -198,6 +224,9 @@ impl PbrtFileParser {
         }
     }
 
+    /// Parse a `param_list` rule of the grammar and return a `ParamSet`.
+    ///
+    /// * `pairs` - The inner token pairs for matched `param_list` rule.
     fn parse_param_list(&self, pairs: Pairs<Rule>) -> ParamSet {
         let mut paramset = ParamSet::new();
 
@@ -213,6 +242,10 @@ impl PbrtFileParser {
         paramset
     }
 
+    /// Parse a `param` rule of the grammar and add parameter to a `ParamSet`.
+    ///
+    /// * `pairs`  - The inner token pairs for matched `param_list` rule.
+    /// * `params` - The `ParamSet` to update.
     fn parse_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
         let next_pair = pairs.next().unwrap();
         let rule = next_pair.as_rule();
@@ -234,6 +267,11 @@ impl PbrtFileParser {
         }
     }
 
+    /// Parse an `int_param` rule of the grammar and add parameter to a
+    /// `ParamSet`.
+    ///
+    /// * `pairs`  - The inner token pairs for matched `int_list` rule.
+    /// * `params` - The `ParamSet` to update.
     fn parse_int_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
         let int_type = pairs.next().unwrap().as_str();
         assert!(int_type == "integer");
@@ -250,6 +288,9 @@ impl PbrtFileParser {
         params.add_int(ident, &list);
     }
 
+    /// Parse an `int_list_expr` rule of the grammar and return a `Vec<Int>`.
+    ///
+    /// * `pairs`  - The inner token pairs for matched `int_list_expr` rule.
     fn parse_int_list(&self, pairs: Pairs<Rule>) -> Vec<Int> {
         let mut v: Vec<Int> = vec![];
         for pair in pairs {
@@ -261,10 +302,19 @@ impl PbrtFileParser {
         v
     }
 
+    /// Parse an `int_expr` or `int` rule of the grammar and return an `Int`.
+    ///
+    /// * `pairs`  - The inner token pairs for matched `int_expr` or `int` rule.
     fn parse_int(&self, pair: Pair<Rule>) -> Int {
+        // Parse string to int. The unwrap shouldn't fail if our pest
+        // grammar is correct.
         pair.as_str().parse::<Int>().unwrap()
     }
 
+    /// Parse a `quoted_str` rule of the grammar and return the unquoted
+    /// `String` value.
+    ///
+    /// * `pairs`  - The inner token pairs for matched `quoted_str` rule.
     fn parse_quoted_str(&self, pairs: &mut Pairs<Rule>) -> String {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
@@ -276,6 +326,9 @@ impl PbrtFileParser {
         }
     }
 
+    /// Parse a `str` rule of the grammar and return the `String` value.
+    ///
+    /// * `pairs`  - The inner token pairs for matched `str` rule.
     fn parse_str(&self, pairs: &mut Pairs<Rule>) -> String {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
