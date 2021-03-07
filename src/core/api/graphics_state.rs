@@ -236,7 +236,7 @@ impl GraphicsState {
             "paraboloid" => Ok(vec![Arc::new(Paraboloid::from(p))]),
             "sphere" => Ok(vec![Arc::new(Sphere::from(p))]),
             "trianglemesh" => Ok(TriangleMesh::from_props(p, &self.float_textures)),
-            _ => Err(format!("Shape '{}' unknown. Using 'matte'.", name)),
+            _ => Err(format!("Shape '{}' unknown.", name)),
         }
     }
 

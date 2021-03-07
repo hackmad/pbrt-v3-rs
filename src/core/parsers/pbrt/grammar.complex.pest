@@ -135,15 +135,15 @@ quoted_medium_type = { QUOTATION_MARK ~ medium_type ~ QUOTATION_MARK }
 medium_type = { "inside" | "outside" | "" }
 
 identity_stmt = { "Identity" ~ EOL }
-translate_stmt = { "Translate" ~ num_expr{3} }
-scale_stmt = { "Scale" ~ num_expr{3} }
-rotate_stmt = { "Rotate" ~ num_expr{4} }
-look_at_stmt = { "LookAt" ~ COMMENT?  ~ num_expr{9} }
+translate_stmt = { "Translate" ~ float_expr{3} }
+scale_stmt = { "Scale" ~ float_expr{3} }
+rotate_stmt = { "Rotate" ~ float_expr{4} }
+look_at_stmt = { "LookAt" ~ COMMENT?  ~ float_expr{9} }
 coordinate_system_stmt = { "CoordinateSystem" ~ quoted_ident_expr }
 coord_sys_transform_stmt = { "CoordSysTransform" ~ quoted_ident_expr }
-transform_stmt = { "Transform" ~ num_list_expr }
-concat_transform_stmt = { "ConcatTransform" ~ num_list_expr }
-transform_times_stmt = { "TransformTimes" ~ num ~ num_expr }
+transform_stmt = { "Transform" ~ float_list_expr }
+concat_transform_stmt = { "ConcatTransform" ~ float_list_expr }
+transform_times_stmt = { "TransformTimes" ~ float ~ float_expr }
 
 active_transform_stmt = { "ActiveTransform" ~ transform_type ~ EOL }
 transform_type = { "StartTime" | "EndTime" | "All" }
@@ -159,27 +159,27 @@ param = {
 point3d_param = ${
     QUOTATION_MARK ~ point3d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 vector3d_param = ${
     QUOTATION_MARK ~ vector3d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 normal3d_param = ${
     QUOTATION_MARK ~ normal3d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 point2d_param = ${
     QUOTATION_MARK ~ point2d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 vector2d_param = ${
     QUOTATION_MARK ~ vector2d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 string_param = ${
     QUOTATION_MARK ~ string_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
@@ -194,7 +194,7 @@ bool_param = ${
 float_param = ${
     QUOTATION_MARK ~ float_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ (num_expr | num_list_expr)
+    ~ (float_expr | float_list_expr)
 }
 int_param = ${
     QUOTATION_MARK ~ int_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
@@ -204,17 +204,17 @@ int_param = ${
 colour_param = ${
     QUOTATION_MARK ~ colour_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 spectrum_param = ${
     QUOTATION_MARK ~ spectrum_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ (num_list_expr | quoted_str_expr)
+    ~ (float_list_expr | quoted_str_expr)
 }
 blackbody_param = @{
     QUOTATION_MARK ~ blackbody_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 
 point3d_type = { "point3" | "point" }
@@ -231,9 +231,9 @@ spectrum_type = { "spectrum" }
 blackbody_type = { "blackbody" }
 
 
-num = @{ num_no_int_before_period | num_int_before_period }
-num_no_int_before_period = { "." ~ ASCII_DIGIT+ ~ (^"e" ~ int)?  }
-num_int_before_period = { int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
+float = @{ float_no_int_before_period | float_int_before_period }
+float_no_int_before_period = { "." ~ ASCII_DIGIT+ ~ (^"e" ~ int)?  }
+float_int_before_period = { int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
 int = { ("+" | "-")? ~ ASCII_DIGIT+ }
 str = { (!QUOTATION_MARK ~ ANY)* }
 bool = { "true" | "false" }
@@ -242,11 +242,11 @@ quoted_bool = { QUOTATION_MARK ~ bool ~ QUOTATION_MARK }
 ident = { LETTER ~ ASCII_ALPHANUMERIC* }
 quoted_ident = { QUOTATION_MARK ~ ident ~ QUOTATION_MARK }
 
-num_expr = { num ~ EOL }
-num_list_expr = { "["
+float_expr = { float ~ EOL }
+float_list_expr = { "["
       ~ (
           WHITESPACE_OR_NEWLINE*
-          ~ num
+          ~ float
           ~ WHITESPACE_OR_NEWLINE*
         )+
     ~ "]"

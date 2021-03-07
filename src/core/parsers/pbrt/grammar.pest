@@ -1,7 +1,8 @@
 pbrt = { SOI ~ stmt* ~ EOI }
 
 stmt = { 
-    empty_stmt | include_stmt | comment_stmt | option_stmt | scene_stmt | block_stmt
+    empty_stmt | include_stmt | comment_stmt | option_stmt | scene_stmt
+    | block_stmt | ctm_stmt
 }
 
 empty_stmt = { WHITESPACE* ~ NEWLINE }
@@ -45,14 +46,20 @@ scene_stmt = {
     area_light_source_stmt | light_source_stmt | make_named_material_stmt
     | material_stmt | shape_stmt | texture_stmt | named_material_stmt
     | object_instance_stmt | reverse_orientation_stmt | medium_interface_stmt 
-    | ctm_stmt | active_transform_stmt | transform_type
+    | active_transform_stmt | transform_type
 }
 area_light_source_stmt = { "AreaLightSource" ~ quoted_str ~ stmt_end?  ~ param_list? }
 light_source_stmt = { "LightSource" ~ quoted_str ~ stmt_end?  ~ param_list? }
 make_named_material_stmt = { "MakeNamedMaterial" ~ quoted_str ~ stmt_end?  ~ param_list? }
 material_stmt = { "Material" ~ quoted_str ~ stmt_end?  ~ param_list? }
 shape_stmt = { "Shape" ~ quoted_str ~ stmt_end?  ~ param_list? }
-texture_stmt = { "Texture" ~ quoted_str ~ stmt_end?  ~ param_list? }
+
+texture_stmt = { 
+    "Texture" ~ quoted_str ~ stmt_end?
+    ~ quoted_str ~ stmt_end?
+    ~ quoted_str ~ stmt_end?
+    ~ param_list?
+}
 
 named_material_stmt = { "NamedMaterial" ~ quoted_ident_expr }
 object_instance_stmt = { "ObjectInstance" ~ quoted_ident_expr }
@@ -71,63 +78,64 @@ ctm_stmt = {
     | concat_transform_stmt | transform_times_stmt
 }
 identity_stmt = { "Identity" ~ stmt_end }
-translate_stmt = { "Translate" ~ num_expr{3} }
-scale_stmt = { "Scale" ~ num_expr{3} }
-rotate_stmt = { "Rotate" ~ num_expr{4} }
-look_at_stmt = { "LookAt" ~ comment?  ~ num_expr{9} }
+translate_stmt = { "Translate" ~ float_expr{3} }
+scale_stmt = { "Scale" ~ float_expr{3} }
+rotate_stmt = { "Rotate" ~ float_expr{4} }
+look_at_stmt = { "LookAt" ~ comment?  ~ float_expr{9} }
 coordinate_system_stmt = { "CoordinateSystem" ~ quoted_ident_expr }
 coord_sys_transform_stmt = { "CoordSysTransform" ~ quoted_ident_expr }
-transform_stmt = { "Transform" ~ num_list_expr }
-concat_transform_stmt = { "ConcatTransform" ~ num_list_expr }
-transform_times_stmt = { "TransformTimes" ~ num ~ num_expr }
+transform_stmt = { "Transform" ~ float_list_expr }
+concat_transform_stmt = { "ConcatTransform" ~ float_list_expr }
+transform_times_stmt = { "TransformTimes" ~ float ~ float_expr }
 
 
-param_list = { param+ }
+param_list = { (param | comment)+ }
 param = {
-    point3d_param | vector3d_param | normal3d_param | point2d_param |
-    vector2d_param | string_param | bool_param | float_param |
-    int_param | colour_param | spectrum_param | blackbody_param
+    point3d_param | vector3d_param | normal3d_param | point2d_param
+    | vector2d_param | string_param | bool_param | float_param
+    | int_param | colour_param | spectrum_param | blackbody_param
+    | texture_param
 }
 
 point3d_param = ${
     QUOTATION_MARK ~ point3d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 vector3d_param = ${
     QUOTATION_MARK ~ vector3d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 normal3d_param = ${
     QUOTATION_MARK ~ normal3d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 point2d_param = ${
     QUOTATION_MARK ~ point2d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 vector2d_param = ${
     QUOTATION_MARK ~ vector2d_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 string_param = ${
     QUOTATION_MARK ~ string_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ quoted_str_expr
+    ~ (quoted_str_expr | quoted_str_list_expr)
 }
 bool_param = ${
     QUOTATION_MARK ~ bool_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ quoted_bool_expr
+    ~ (quoted_bool_expr | quoted_bool_list_expr)
 }
 float_param = ${
     QUOTATION_MARK ~ float_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ (num_expr | num_list_expr)
+    ~ (float_expr | float_list_expr)
 }
 int_param = ${
     QUOTATION_MARK ~ int_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
@@ -137,17 +145,22 @@ int_param = ${
 colour_param = ${
     QUOTATION_MARK ~ colour_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
 }
 spectrum_param = ${
     QUOTATION_MARK ~ spectrum_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ (num_list_expr | quoted_str_expr)
+    ~ (float_list_expr | quoted_str_expr)
 }
-blackbody_param = @{
+blackbody_param = ${
     QUOTATION_MARK ~ blackbody_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
     ~ WHITESPACE+
-    ~ num_list_expr
+    ~ float_list_expr
+}
+texture_param = ${
+    QUOTATION_MARK ~ texture_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE+
+    ~ (quoted_str_expr | quoted_str_list_expr)
 }
 
 point3d_type = { "point3" | "point" }
@@ -162,24 +175,24 @@ int_type = { "integer" }
 colour_type = { "color" | "rgb" | "xyz" }
 spectrum_type = { "spectrum" }
 blackbody_type = { "blackbody" }
+texture_type = { "texture" }
 
-
-num = @{ num_no_int_before_period | num_int_before_period }
-num_no_int_before_period = { "." ~ ASCII_DIGIT+ ~ (^"e" ~ int)?  }
-num_int_before_period = { int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
+float = @{ float_no_int_before_period | float_int_before_period }
+float_no_int_before_period = { "." ~ ASCII_DIGIT+ ~ (^"e" ~ int)?  }
+float_int_before_period = { int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
 int = { ("+" | "-")? ~ ASCII_DIGIT+ }
 str = { (!QUOTATION_MARK ~ ANY)* }
 bool = { "true" | "false" }
+ident = { LETTER ~ (ASCII_ALPHANUMERIC | "_" | "." | "-")* }
 quoted_str = { QUOTATION_MARK ~ str ~ QUOTATION_MARK }
 quoted_bool = { QUOTATION_MARK ~ bool ~ QUOTATION_MARK }
-ident = { LETTER ~ ASCII_ALPHANUMERIC* }
 quoted_ident = { QUOTATION_MARK ~ ident ~ QUOTATION_MARK }
 
-num_expr = { num ~ stmt_end }
-num_list_expr = { "["
+float_expr = { float ~ stmt_end }
+float_list_expr = { "["
       ~ (
           WHITESPACE_OR_NEWLINE*
-          ~ num
+          ~ float
           ~ WHITESPACE_OR_NEWLINE*
         )+
     ~ "]"
@@ -199,8 +212,27 @@ int_list_expr = {
 ident_expr = { ident ~ stmt_end }
 quoted_ident_expr = { quoted_ident ~ stmt_end }
 quoted_str_expr = { quoted_str ~ stmt_end }
+quoted_str_list_expr = {
+	"["
+      ~ (
+          WHITESPACE_OR_NEWLINE*
+          ~ quoted_str
+          ~ WHITESPACE_OR_NEWLINE*
+        )+
+    ~ "]"
+    ~ stmt_end
+}
 quoted_bool_expr = { quoted_bool ~ stmt_end }
-
+quoted_bool_list_expr = {
+	"["
+      ~ (
+          WHITESPACE_OR_NEWLINE*
+          ~ quoted_bool
+          ~ WHITESPACE_OR_NEWLINE*
+        )+
+    ~ "]"
+    ~ stmt_end
+}
 
 WHITESPACE = _{ " " | "\t" }
 WHITESPACE_OR_NEWLINE = _{ WHITESPACE | NEWLINE }

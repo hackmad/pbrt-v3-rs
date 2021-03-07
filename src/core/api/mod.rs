@@ -145,6 +145,25 @@ impl Api {
         }
     }
 
+    /// Setthe active transformation to a given transformation matrix.
+    ///
+    /// * `tr` - The transformation matrix in column-major form.
+    ///          |0, 4,  8, 12|
+    ///          |1, 5,  9, 13|
+    ///          |2, 6, 10, 14|
+    ///          |3, 7, 11, 15|
+    pub fn pbrt_transform(&mut self, tr: &[Float; 16]) {
+        if self.verify_initialized("Transform") {
+            for i in 0..MAX_TRANSFORMS {
+                let t = Transform::from(Matrix4x4::new(
+                    tr[0], tr[4], tr[8], tr[12], tr[1], tr[5], tr[9], tr[13], tr[2], tr[6], tr[10],
+                    tr[14], tr[3], tr[7], tr[11], tr[15],
+                ));
+                self.current_transforms[i] = Arc::new(t);
+            }
+        }
+    }
+
     /// Concatenate a transformation to the active transformation.
     ///
     /// * `tr` - Transformation matrix in column-major format.
@@ -152,7 +171,7 @@ impl Api {
     ///          |1, 5,  9, 13|
     ///          |2, 6, 10, 14|
     ///          |3, 7, 11, 15|
-    pub fn pbrt_concat_transform(&mut self, tr: [Float; 16]) {
+    pub fn pbrt_concat_transform(&mut self, tr: &[Float; 16]) {
         if self.verify_initialized("ConcatTransform") {
             let transform = Transform::from(Matrix4x4::new(
                 tr[0], tr[4], tr[8], tr[12], tr[1], tr[5], tr[9], tr[13], tr[2], tr[6], tr[10],
@@ -976,10 +995,7 @@ impl Api {
                     None
                 }
             }
-            None => {
-                error!("No medium name provided for side '{}'.", side);
-                None
-            }
+            None => None,
         }
     }
 

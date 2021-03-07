@@ -37,7 +37,7 @@ impl TransformSet {
     /// Returns `true` if 2 successive transformations are not the same
     /// indicating that this is storing animated transforms.
     pub fn is_animated(&self) -> bool {
-        for i in 0..self.t.len() {
+        for i in 0..self.t.len() - 1 {
             if self.t[i] != self.t[i + 1] {
                 return true;
             }
