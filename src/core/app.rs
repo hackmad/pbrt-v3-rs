@@ -94,7 +94,7 @@ impl Options {
                 if n == 0 {
                     panic!("Invalid nthreads");
                 } else if n > max_threads {
-                    panic!(format!("Num threads > max logical CPUs {}", max_threads));
+                    panic!("Num threads > max logical CPUs {}", max_threads);
                 }
 
                 n
