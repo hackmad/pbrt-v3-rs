@@ -365,7 +365,7 @@ impl GraphicsState {
         _medium2world: ArcTransform,
         _paramset: &ParamSet,
     ) -> Result<ArcMedium, String> {
-        todo!()
+        Err(String::from("GraphicsState::make_medium() not implemented"))
     }
 
     /// Creates a light.
@@ -380,7 +380,7 @@ impl GraphicsState {
         _medium_interface: &MediumInterface,
         _paramset: &ParamSet,
     ) -> Result<ArcLight, String> {
-        todo!()
+        Err(String::from("GraphicsState::make_light() not implemented"))
     }
 
     /// Creates an area light.
@@ -400,7 +400,9 @@ impl GraphicsState {
         _shape: ArcShape,
         _paramset: &ParamSet,
     ) -> Result<ArcLight, String> {
-        todo!()
+        Err(String::from(
+            "GraphicsState::make_area_light() not implemented",
+        ))
     }
 
     /// Creates an accelerator.
@@ -519,7 +521,6 @@ impl GraphicsState {
     /// * `paramset` - Parameter set.
     /// * `filter`   - Filter.
     pub fn make_film(
-        &self,
         name: &str,
         paramset: &ParamSet,
         filter: ArcFilter,
