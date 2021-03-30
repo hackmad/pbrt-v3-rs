@@ -1,6 +1,7 @@
 //! Render options
 
 #![allow(dead_code)]
+use super::graphics_state::GraphicsState;
 use super::transform_set::*;
 use crate::core::camera::*;
 use crate::core::integrator::*;
@@ -10,6 +11,7 @@ use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::primitive::*;
 use crate::core::scene::*;
+use crate::{accelerators::BVHAccel, accelerators::SplitMethod};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -114,12 +116,65 @@ impl RenderOptions {
     }
 
     /// Returns a `Scene` based on the render options.
-    pub fn make_scene(&self) -> Arc<Scene> {
-        todo!();
+    pub fn make_scene(&mut self) -> Arc<Scene> {
+        let scene = match GraphicsState::make_accelerator(
+            &self.accelerator_name,
+            &self.primitives,
+            &self.accelerator_params,
+        ) {
+            Ok(accelerator) => Arc::new(Scene::new(accelerator, self.lights.clone())),
+            Err(err) => {
+                warn!("Error: {}. Using BVH.", err);
+                let accelerator = Arc::new(BVHAccel::new(&self.primitives, 1, SplitMethod::SAH));
+                Arc::new(Scene::new(accelerator, self.lights.clone()))
+            }
+        };
+        self.primitives.clear();
+        self.lights.clear();
+        scene
     }
 
     /// Returns a `Camera` based on the render options.
-    pub fn make_camera(&self) -> ArcCamera {
-        todo!();
+    ///
+    /// * `gs` - The `GraphicsState`.
+    pub fn make_camera(&self, gs: &GraphicsState) -> ArcCamera {
+        let filter = match GraphicsState::make_filter(&self.filter_name, &self.filter_params) {
+            Ok(f) => f,
+            Err(err) => panic!("{}", err),
+        };
+        let film = match GraphicsState::make_film(&self.film_name, &self.film_params, filter) {
+            Ok(f) => f,
+            Err(err) => panic!("{}", err),
+        };
+
+        let inside_medium =
+            gs.current_inside_medium
+                .clone()
+                .map_or(None, |m| match self.named_media.get(&m) {
+                    Some(medium) => Some(medium.clone()),
+                    None => None,
+                });
+        let outside_medium =
+            gs.current_outside_medium
+                .clone()
+                .map_or(None, |m| match self.named_media.get(&m) {
+                    Some(medium) => Some(medium.clone()),
+                    None => None,
+                });
+
+        let medium_interface = MediumInterface::new(inside_medium, outside_medium);
+
+        match gs.make_camera(
+            &self.camera_name,
+            &self.camera_params,
+            &self.camera_to_world,
+            self.transform_start_time,
+            self.transform_end_time,
+            film,
+            &medium_interface,
+        ) {
+            Ok(camera) => camera,
+            Err(err) => panic!("{}", err),
+        }
     }
 }
