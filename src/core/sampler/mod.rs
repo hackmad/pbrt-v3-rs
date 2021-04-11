@@ -85,14 +85,14 @@ pub trait Sampler {
     /// Get an array of 1D samples.
     ///
     /// * `n` - The number of samples.
-    fn get_1d_array(&mut self, n: usize) -> &[Float] {
+    fn get_1d_array(&mut self, n: usize) -> Vec<Float> {
         self.get_data().get_1d_array(n)
     }
 
     /// Get an array of 2D samples.
     ///
     /// * `n` - The number of samples.
-    fn get_2d_array(&mut self, n: usize) -> &[Point2f] {
+    fn get_2d_array(&mut self, n: usize) -> Vec<Point2f> {
         self.get_data().get_2d_array(n)
     }
 

@@ -4,6 +4,7 @@ use crate::core::geometry::*;
 use crate::core::sampler::*;
 use crate::core::scene::*;
 use crate::core::spectrum::*;
+use std::sync::Arc;
 
 /// VisibilityTester allows lights to return a radiance value under the
 /// assumption that the reference point and light source are mutually
@@ -33,7 +34,7 @@ impl VisibilityTester {
     /// true if the points are visible to each other.
     ///
     /// * `scene` - The scene.
-    pub fn unoccluded(&self, _scene: &Scene) -> bool {
+    pub fn unoccluded(&self, _scene: Arc<Scene>) -> bool {
         false
     }
 
@@ -43,7 +44,7 @@ impl VisibilityTester {
     ///
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
-    pub fn tr(&self, _scene: &Scene, _sampler: ArcSampler) -> Spectrum {
+    pub fn tr(&self, _scene: Arc<Scene>, _sampler: ArcSampler) -> Spectrum {
         Spectrum::default()
     }
 }

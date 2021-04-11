@@ -7,10 +7,17 @@ use crate::core::light::*;
 use crate::core::medium::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
+use std::fmt;
 use std::sync::Arc;
 
 /// Light trait provides common behavior.
 pub trait Camera {
+    /// Returns the common camera data.
+    fn get_data(&self) -> &CameraData;
+
+    /// Returns the mutable common camera data.
+    fn get_mut_data(&mut self) -> &mut CameraData;
+
     /// Returns a ray corresponding to a given sample. It also returns, a floating
     /// point value that affects how much the radiance arriving at the film plane
     /// will contribute to final image.
@@ -136,6 +143,19 @@ impl CameraSample {
             p_lens,
             time,
         }
+    }
+}
+
+impl fmt::Display for CameraSample {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "CameraSample<p_film: {:}, p_lens: {:}, time: {}>",
+            self.p_film, self.p_lens, self.time
+        )
     }
 }
 

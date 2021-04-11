@@ -6,6 +6,7 @@ use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use crate::core::primitive::*;
 use crate::core::reflection::*;
+use crate::core::spectrum::*;
 
 /// SurfaceInteraction represents geometry of a particular point on a surface.
 #[derive(Clone)]
@@ -158,7 +159,7 @@ impl<'a> SurfaceInteraction<'a> {
     /// mappings u(x, y) and v(x, y) from (x, y) to (u, v) parametric coordinates,
     /// giving theworld space positions ∂p/∂x and ∂p/∂y.
     ///
-    ///  * `ray` - The ray.
+    /// * `ray` - The ray.
     pub fn compute_differentials(&mut self, ray: &Ray) {
         if let Some(rd) = ray.differentials {
             // Estimate screen space change in `pt{}` and `(u,v)`.
@@ -235,9 +236,36 @@ impl<'a> SurfaceInteraction<'a> {
             self.dpdy = Vector3f::new(0.0, 0.0, 0.0);
         }
     }
+
+    /// Returns the emitted radiance at a surface point intersected by a ray
+    /// for an area light.
+    ///
+    /// * `w` - The outgoing direction.
+    pub fn le(&self, w: &Vector3f) -> Spectrum {
+        if let Some(area_light) = self.primitive.map(|p| p.get_area_light()).flatten() {
+            area_light.l(self, &w)
+        } else {
+            Spectrum::new(0.0)
+        }
+    }
 }
 
-impl<'a> Interaction for SurfaceInteraction<'a> {}
+impl<'a> Interaction for SurfaceInteraction<'a> {
+    /// Returns the interaction hit data.
+    fn get_hit(&self) -> &Hit {
+        &self.hit
+    }
+
+    /// Returns the surface interaction.
+    ///
+    /// NOTE: This is a hack because I don't want to write a function
+    /// for retrieving every field in `SurfaceInteraction`. If there is a clean
+    /// way of retrieving a struct that implements an interface I will get rid
+    /// of this.
+    fn get_surface_interaction(&self) -> Option<&SurfaceInteraction> {
+        Some(self)
+    }
+}
 
 /// Shading geometry used for perturbed values for bump mapping.
 #[derive(Clone)]

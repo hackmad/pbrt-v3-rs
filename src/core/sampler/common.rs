@@ -90,9 +90,9 @@ impl SamplerData {
     /// Get an array of 1D samples.
     ///
     /// * `n` - The number of samples.
-    pub fn get_1d_array(&mut self, n: usize) -> &[Float] {
+    pub fn get_1d_array(&mut self, n: usize) -> Vec<Float> {
         if self.array_1d_offset == self.sample_array_1d.len() {
-            &[]
+            vec![]
         } else {
             assert!(self.samples_1d_array_sizes[self.array_1d_offset] == n);
             assert!(self.current_pixel_sample_index < self.samples_per_pixel);
@@ -102,16 +102,16 @@ impl SamplerData {
 
             let i = self.current_pixel_sample_index * n;
             let m = i + n * self.samples_per_pixel;
-            &array[i..m]
+            array[i..m].to_vec()
         }
     }
 
     /// Get an array of 2D samples.
     ///
     /// * `n` - The number of samples.
-    pub fn get_2d_array(&mut self, n: usize) -> &[Point2f] {
+    pub fn get_2d_array(&mut self, n: usize) -> Vec<Point2f> {
         if self.array_2d_offset == self.sample_array_2d.len() {
-            &[]
+            vec![]
         } else {
             assert!(self.samples_2d_array_sizes[self.array_2d_offset] == n);
             assert!(self.current_pixel_sample_index < self.samples_per_pixel);
@@ -121,7 +121,7 @@ impl SamplerData {
 
             let i = self.current_pixel_sample_index * n;
             let m = i + n * self.samples_per_pixel;
-            &array[i..m]
+            array[i..m].to_vec()
         }
     }
 
@@ -146,6 +146,11 @@ impl SamplerData {
         self.array_2d_offset = 0;
         self.current_pixel_sample_index = sample_num;
         self.current_pixel_sample_index < self.samples_per_pixel
+    }
+
+    /// Returns the index of the samle in the current pixel.
+    pub fn current_sample_number(&self) -> usize {
+        self.current_pixel_sample_index
     }
 }
 

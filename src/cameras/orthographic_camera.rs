@@ -82,6 +82,16 @@ impl OrthographicCamera {
 }
 
 impl Camera for OrthographicCamera {
+    /// Returns the common camera data.
+    fn get_data(&self) -> &CameraData {
+        &self.data
+    }
+
+    /// Returns the mutable common camera data.
+    fn get_mut_data(&mut self) -> &mut CameraData {
+        &mut self.data
+    }
+
     /// Returns a ray corresponding to a given sample. It also returns, a floating
     /// point value that affects how much the radiance arriving at the film plane
     /// will contribute to final image.

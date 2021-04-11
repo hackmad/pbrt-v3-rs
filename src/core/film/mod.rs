@@ -296,7 +296,7 @@ impl Film {
 
     /// Write the image to an output file.
     ///
-    /// * `splat_scale` - Scale factor provided to `add_splat()`.
+    /// * `splat_scale` - Scale factor for `add_splat()` (default = 1.0).
     pub fn write_image(&self, splat_scale: Float) {
         info!("Converting image to RGB and computing final weighted pixel values");
 

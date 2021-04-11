@@ -7,7 +7,18 @@ use crate::core::pbrt::*;
 use std::sync::Arc;
 
 /// Interaction trait provide common behavior.
-pub trait Interaction {}
+pub trait Interaction {
+    /// Returns the interaction hit data.
+    fn get_hit(&self) -> &Hit;
+
+    /// Returns the surface interaction or None.
+    ///
+    /// NOTE: This is a hack because I don't want to write a function
+    /// for retrieving every field in `SurfaceInteraction`. If there is a clean
+    /// way of retrieving a struct that implements an interface I will get rid
+    /// of this.
+    fn get_surface_interaction(&self) -> Option<&SurfaceInteraction>;
+}
 
 /// Atomic reference counted `Interaction`.
 pub type ArcInteraction = Arc<dyn Interaction + Send + Sync>;

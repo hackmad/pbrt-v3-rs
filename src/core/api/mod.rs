@@ -437,9 +437,9 @@ impl Api {
             }
 
             // Create scene and render.
-            let integrator = self.render_options.make_integrator();
+            let mut integrator = self.render_options.make_integrator();
             let scene = self.render_options.make_scene();
-            integrator.render(scene);
+            Arc::get_mut(&mut integrator).unwrap().render(scene);
 
             // Clean up after rendering.
             let mut transform_cache = self.transform_cache.lock().unwrap();

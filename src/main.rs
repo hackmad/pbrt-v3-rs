@@ -10,6 +10,7 @@ extern crate float_cmp;
 #[macro_use]
 extern crate hexf;
 extern crate image;
+extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
 extern crate num_traits;

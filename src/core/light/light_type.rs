@@ -19,6 +19,14 @@ impl LightType {
     pub fn matches(&self, flag: u8) -> bool {
         self.t & flag > 0
     }
+
+    /// Returns true if the light flags has the DELTA_POSITION_LIGHT or
+    /// DELTA_DIRECTION_LIGHT flag set.
+    ///
+    /// * `flags` - Light flags to check.
+    pub fn is_delta_light(&self) -> bool {
+        self.t & DELTA_POSITION_LIGHT > 0 || self.t & DELTA_DIRECTION_LIGHT > 0
+    }
 }
 
 impl PartialEq for LightType {
