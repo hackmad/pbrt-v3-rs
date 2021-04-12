@@ -71,7 +71,7 @@ pub trait Light {
     ///
     /// * `reference` - The interaction point.
     /// * `u`         - Sample value for Monte Carlo integration.
-    fn sample_li(&self, reference: ArcInteraction, u: &Point2f) -> Li;
+    fn sample_li(&self, reference: &dyn Interaction, u: &Point2f) -> Li;
 
     /// Return the total emitted power.
     fn power(&self) -> Spectrum;

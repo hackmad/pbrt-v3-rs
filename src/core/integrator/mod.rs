@@ -5,7 +5,10 @@
 mod common;
 mod sampler_integrator;
 
+use crate::core::geometry::*;
+use crate::core::sampler::*;
 use crate::core::scene::Scene;
+use crate::core::spectrum::*;
 use std::sync::Arc;
 
 // Re-export.
@@ -18,6 +21,22 @@ pub trait Integrator {
     ///
     /// * `scene` - The scene.
     fn render(&mut self, scene: Arc<Scene>);
+
+    /// Returns the incident radiance at the origin of a given ray.
+    ///
+    /// * `ray`     - The ray.
+    /// * `scene`   - The scene.
+    /// * `sampler` - The sampler.
+    /// * `depth`   - The recursion depth.
+    fn li(
+        &self,
+        _ray: &mut Ray,
+        _scene: Arc<Scene>,
+        _sampler: &mut ArcSampler,
+        _depth: usize,
+    ) -> Spectrum {
+        Spectrum::new(0.0)
+    }
 }
 
 /// Atomic reference counted `Integrator`.

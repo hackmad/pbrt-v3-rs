@@ -162,7 +162,7 @@ pub fn estimate_direct(
         pdf: light_pdf,
         visibility,
         value: mut li,
-    } = light.sample_li(it.clone(), u_light);
+    } = light.sample_li(&*it, u_light);
     if light_pdf > 0.0 && !li.is_black() {
         // Compute BSDF or phase function's value for light sample
         let mut f = Spectrum::new(0.0);

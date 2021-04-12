@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use crate::core::bssrdf::*;
 use crate::core::geometry::*;
+use crate::core::material::*;
 use crate::core::pbrt::*;
 use crate::core::primitive::*;
 use crate::core::reflection::*;
@@ -152,6 +153,27 @@ impl<'a> SurfaceInteraction<'a> {
         // Initialize shading partial derivative values.
         self.hit.n = hit_n;
         self.shading = Shading::new(shading_n, dpdu, dpdv, dndu, dndv);
+    }
+
+    /// Initializes representations of the light-scattering properties of the
+    /// material at the intersection point on the primtive's surface.
+    ///
+    /// * `ray`                  - The ray.
+    /// * `mode`                 - Transport mode.
+    /// * `allow_multiple_lobes` - Indicates whether the material should use
+    ///                            BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs
+    ///                            are available.
+    pub fn compute_scattering_functions(
+        &mut self,
+        ray: &Ray,
+        allow_multiple_lobes: bool,
+        mode: TransportMode,
+    ) {
+        self.compute_differentials(ray);
+        if let Some(primitive) = self.primitive {
+            primitive.compute_scattering_functions(self, mode, allow_multiple_lobes);
+        }
     }
 
     /// Use offset rays to estimate the partial derivatives mapping p(x, y) from

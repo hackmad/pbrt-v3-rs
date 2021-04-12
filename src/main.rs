@@ -26,6 +26,7 @@ mod accelerators;
 mod cameras;
 mod core;
 mod filters;
+mod integrators;
 mod lights;
 mod materials;
 mod samplers;
