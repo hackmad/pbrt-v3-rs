@@ -284,10 +284,10 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
             let tile_bounds = Bounds2i::new(Point2i::new(x0, y0), Point2i::new(x1, y1));
             info!("Starting image tile {:}", tile_bounds);
 
-            // Get _FilmTile_ for tile
+            // Get `FilmTile` for tile.
             let mut film_tile = film.get_film_tile(tile_bounds);
 
-            // Loop over pixels in tile to render them
+            // Loop over pixels in tile to render them.
             for pixel in tile_bounds {
                 Arc::get_mut(&mut tile_sampler).unwrap().start_pixel(&pixel);
 
@@ -299,25 +299,25 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                 }
 
                 loop {
-                    // Initialize _CameraSample_ for current sample
+                    // Initialize `CameraSample` for current sample.
                     let camera_sample = Arc::get_mut(&mut tile_sampler)
                         .unwrap()
                         .get_camera_sample(&pixel);
 
-                    // Generate camera ray for current sample
+                    // Generate camera ray for current sample.
                     let (mut ray, ray_weight) = self
                         .get_data()
                         .camera
                         .generate_ray_differential(&camera_sample);
                     ray.scale_differentials(1.0 / (samples_per_pixel as Float).sqrt());
 
-                    // Evaluate radiance along camera ray
+                    // Evaluate radiance along camera ray.
                     let mut l = Spectrum::new(0.0);
                     if ray_weight > 0.0 {
                         l = self.li(&mut ray, scene.clone(), &mut tile_sampler, 0);
                     }
 
-                    // Issue warning if unexpected radiance value returned
+                    // Issue warning if unexpected radiance value returned.
                     let tile_sampler_data = Arc::get_mut(&mut tile_sampler).unwrap().get_data();
                     let current_sample_number = tile_sampler_data.current_sample_number();
                     if l.has_nans() {
@@ -351,7 +351,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                         camera_sample, ray, l
                     );
 
-                    // Add camera ray's contribution to image
+                    // Add camera ray's contribution to image.
                     Arc::get_mut(&mut film_tile).unwrap().add_sample(
                         camera_sample.p_film,
                         l,

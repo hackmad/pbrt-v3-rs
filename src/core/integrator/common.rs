@@ -158,24 +158,29 @@ pub fn estimate_direct(
 
     // Sample light source with multiple importance sampling.
     let Li {
-        wi,
+        mut wi,
         pdf: light_pdf,
         visibility,
         value: mut li,
     } = light.sample_li(&*it, u_light);
     if light_pdf > 0.0 && !li.is_black() {
-        // Compute BSDF or phase function's value for light sample
+        // Compute BSDF or phase function's value for light sample.
         let mut f = Spectrum::new(0.0);
         if hit.is_surface_interaction() {
-            // Evaluate BSDF for light sampling strategy
+            // Evaluate BSDF for light sampling strategy.
             let isect = it.get_surface_interaction().unwrap();
             if let Some(bsdf) = isect.bsdf.clone() {
                 f = bsdf.f(&hit.wo, &wi, bsdf_flags) * wi.abs_dot(&isect.shading.n);
                 scattering_pdf = bsdf.pdf(&hit.wo, &wi, bsdf_flags);
+                info!("  surf f*dot : {:}, scatteringPdf: {}", f, scattering_pdf);
             }
         } else {
-            // Evaluate phase function for light sampling strategy
-            todo!()
+            // Evaluate phase function for light sampling strategy.
+            let mi = it.get_medium_interaction().unwrap();
+            let p = mi.phase.p(&mi.hit.wo, &wi);
+            f = Spectrum::new(p);
+            scattering_pdf = p;
+            info!("  medium p: {}", p);
         }
 
         if !f.is_black() {
@@ -214,15 +219,20 @@ pub fn estimate_direct(
                 let BxDFSample {
                     f: f1,
                     pdf: _scattering_pdf,
-                    wi,
+                    wi: wi2,
                     sampled_type,
                 } = bsdf.sample_f(&hit.wo, u_scattering, bsdf_flags);
+                wi = wi2;
                 f = f1 * wi.abs_dot(&isect.shading.n);
                 sampled_specular = sampled_type.matches(BSDF_SPECULAR);
             }
         } else {
             // Sample scattered direction for medium interactions.
-            todo!()
+            let mi = it.get_medium_interaction().unwrap();
+            let (p, wi2) = mi.phase.sample_p(&mi.hit.wo, &u_scattering);
+            f = Spectrum::new(p);
+            scattering_pdf = p;
+            wi = wi2;
         }
         debug!(
             "  BSDF / phase sampling f: {:}, scattering_pdf: {}",

@@ -18,6 +18,14 @@ pub trait Interaction {
     /// way of retrieving a struct that implements an interface I will get rid
     /// of this.
     fn get_surface_interaction(&self) -> Option<&SurfaceInteraction>;
+
+    /// Returns the medium interaction or None.
+    ///
+    /// NOTE: This is a hack because I don't want to write a function
+    /// for retrieving every field in `MediumInteraction`. If there is a clean
+    /// way of retrieving a struct that implements an interface I will get rid
+    /// of this.
+    fn get_medium_interaction(&self) -> Option<&MediumInteraction>;
 }
 
 /// Atomic reference counted `Interaction`.
