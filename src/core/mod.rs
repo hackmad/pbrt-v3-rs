@@ -23,7 +23,6 @@ pub mod mipmap;
 pub mod paramset;
 pub mod parsers;
 pub mod pbrt;
-pub mod phase_function;
 pub mod primitive;
 pub mod primitives;
 pub mod reflection;

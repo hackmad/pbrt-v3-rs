@@ -10,6 +10,7 @@ mod henyey_greenstein;
 mod phase_function;
 
 // Re-exports
+pub use henyey_greenstein::*;
 pub use phase_function::*;
 
 /// Medium trait to handle volumetric scattering properties.
