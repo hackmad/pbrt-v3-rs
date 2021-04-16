@@ -6,6 +6,12 @@ use crate::core::sampler::*;
 use crate::core::spectrum::*;
 use std::sync::Arc;
 
+mod henyey_greenstein;
+mod phase_function;
+
+// Re-exports
+pub use phase_function::*;
+
 /// Medium trait to handle volumetric scattering properties.
 pub trait Medium {
     /// Returns the beam transmittance along a given ray.

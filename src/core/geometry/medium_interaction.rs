@@ -4,7 +4,6 @@
 use crate::core::geometry::*;
 use crate::core::medium::*;
 use crate::core::pbrt::*;
-use crate::core::phase_function::*;
 
 /// MediumInteraction represents an interaction point in a scattering medium.
 #[derive(Clone)]
