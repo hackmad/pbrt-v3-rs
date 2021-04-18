@@ -34,8 +34,8 @@ impl VisibilityTester {
     /// true if the points are visible to each other.
     ///
     /// * `scene` - The scene.
-    pub fn unoccluded(&self, _scene: Arc<Scene>) -> bool {
-        false
+    pub fn unoccluded(&self, scene: Arc<Scene>) -> bool {
+        scene.intersect_p(&self.p0.get_hit().spawn_ray_to(&self.p1.get_hit().p))
     }
 
     /// Computes the beam transmittance, the fraction of radiance transmitted
@@ -44,7 +44,35 @@ impl VisibilityTester {
     ///
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
-    pub fn tr(&self, _scene: Arc<Scene>, _sampler: ArcSampler) -> Spectrum {
-        Spectrum::default()
+    pub fn tr(&self, scene: Arc<Scene>, sampler: ArcSampler) -> Spectrum {
+        let mut ray = self.p0.get_hit().spawn_ray_to(&self.p1.get_hit().p);
+        let mut tr = Spectrum::new(1.0);
+
+        loop {
+            if let Some(isect) = scene.intersect(&mut ray) {
+                // Handle opaque surface along ray's path.
+                if let Some(_material) = isect.primitive.map(|p| p.get_material()) {
+                    return Spectrum::new(0.0);
+                }
+
+                // Update transmittance for current ray segment.
+                let medium = ray.medium.clone();
+                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, sampler.clone())) {
+                    tr *= tr2;
+                }
+
+                // Generate next ray segment or return final transmittance.
+                ray = isect.get_hit().spawn_ray_to(&self.p1.get_hit().p);
+            } else {
+                // Update transmittance for current ray segment.
+                let medium = ray.medium.clone();
+                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, sampler.clone())) {
+                    tr *= tr2;
+                }
+                break;
+            }
+        }
+
+        tr
     }
 }
