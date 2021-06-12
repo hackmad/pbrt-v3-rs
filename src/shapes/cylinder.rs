@@ -314,6 +314,58 @@ impl Shape for Cylinder {
     fn area(&self) -> Float {
         (self.z_max - self.z_min) * self.radius * self.phi_max
     }
+
+    /// Sample a point on the surface and return the PDF with respect to area on
+    /// the surface.
+    ///
+    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
+    ///
+    /// * `u` - Sample value to use.
+    fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
+        let z = lerp(u[0], self.z_min, self.z_max);
+        let phi = u[1] * self.phi_max;
+        let mut p_obj = Point3f::new(self.radius * cos(phi), self.radius * sin(phi), z);
+
+        let mut n = self
+            .data
+            .object_to_world
+            .transform_normal(&Normal3f::new(p_obj.x, p_obj.y, 0.0))
+            .normalize();
+        if self.data.reverse_orientation {
+            n *= -1.0;
+        }
+
+        // Reproject _pObj_ to cylinder surface and compute _pObjError_
+        let hit_rad = (p_obj.x * p_obj.x + p_obj.y * p_obj.y).sqrt();
+        p_obj.x *= self.radius / hit_rad;
+        p_obj.y *= self.radius / hit_rad;
+        let p_obj_error = gamma(3) * Vector3f::new(p_obj.x, p_obj.y, 0.0).abs();
+        let p = self.data.object_to_world.transform_point(&p_obj);
+        let p_error = self
+            .data
+            .object_to_world
+            .transform_point_abs_error(&p_obj, &p_obj_error);
+        let it = Hit::new(p, 0.0, p_error, Vector3f::default(), n, None);
+        let pdf = 1.0 / self.area();
+        (it, pdf)
+    }
+
+    /// Sample a point on the shape given a reference point and return the PDF
+    /// with respect to the solid angle from ref.
+    ///
+    /// * `hit` - Reference point on shape.
+    /// * `u`   - Sample value to use.
+    fn sample_solid_angle(&self, hit: &Hit, u: &Point2f) -> (Hit, Float) {
+        todo!()
+    }
+
+    /// Returns the PDF with respect to solid angle.
+    ///
+    /// * `hit` - The interaction hit point.
+    /// * `wi`  - The incoming direction.
+    fn pdf_solid_angle(&self, hit: &Hit, wi: &Vector3f) -> Float {
+        todo!()
+    }
 }
 
 impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Cylinder {

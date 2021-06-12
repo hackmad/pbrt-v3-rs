@@ -102,7 +102,7 @@ pub trait Camera {
     /// * `u`                    - Used to sample point on the lens.
     /// * `include_raster_point` - Indicates whether or not to return the raster
     ///                            position.
-    fn sample_wi(&self, _interaction: ArcInteraction, _u: &Point2f) -> SampleResult {
+    fn sample_wi(&self, _interaction: &dyn Interaction, _u: &Point2f) -> SampleResult {
         panic!("Camera::sample_wi() is not implemented");
     }
 }

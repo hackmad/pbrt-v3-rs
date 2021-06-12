@@ -5,6 +5,7 @@ use crate::core::efloat::*;
 use crate::core::geometry::*;
 use crate::core::paramset::*;
 use crate::core::pbrt::*;
+use crate::core::sampling::*;
 use std::sync::Arc;
 
 /// A sphere at origin [0, 0, 0].
@@ -358,6 +359,54 @@ impl Shape for Sphere {
     /// Returns the surface area of the shape in object space.
     fn area(&self) -> Float {
         self.phi_max * self.radius * (self.z_max - self.z_min)
+    }
+
+    /// Sample a point on the surface and return the PDF with respect to area on
+    /// the surface.
+    ///
+    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
+    ///
+    /// * `u` - Sample value to use.
+    fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
+        let mut p_obj = Point3f::default() + self.radius * uniform_sample_sphere(u);
+
+        let mut n = self
+            .data
+            .object_to_world
+            .transform_normal(&Normal3f::new(p_obj.x, p_obj.y, p_obj.z))
+            .normalize();
+        if self.data.reverse_orientation {
+            n *= -1.0;
+        }
+
+        // Reproject _pObj_ to sphere surface and compute _pObjError_
+        p_obj *= self.radius / p_obj.distance(Point3f::default());
+        let p_obj_error = gamma(5) * Vector3f::from(p_obj).abs();
+        let p = self.data.object_to_world.transform_point(&p_obj);
+        let p_error = self
+            .data
+            .object_to_world
+            .transform_point_abs_error(&p_obj, &p_obj_error);
+        let it = Hit::new(p, 0.0, p_error, Vector3f::default(), n, None);
+        let pdf = 1.0 / self.area();
+        (it, pdf)
+    }
+
+    /// Sample a point on the shape given a reference point and return the PDF
+    /// with respect to the solid angle from ref.
+    ///
+    /// * `hit` - Reference point on shape.
+    /// * `u`   - Sample value to use.
+    fn sample_solid_angle(&self, hit: &Hit, u: &Point2f) -> (Hit, Float) {
+        todo!()
+    }
+
+    /// Returns the PDF with respect to solid angle.
+    ///
+    /// * `hit` - The interaction hit point.
+    /// * `wi`  - The incoming direction.
+    fn pdf_solid_angle(&self, hit: &Hit, wi: &Vector3f) -> Float {
+        todo!()
     }
 }
 

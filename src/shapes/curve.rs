@@ -569,8 +569,8 @@ impl Shape for Curve {
             // points are parallel, dx will be zero.  Generate an arbitrary xy
             // orientation for the ray coordinate system so that intersection
             // tests can proceeed in this unusual case.
-            let mut dy = Vector3f::default();
-            coordinate_system(&ray.d, &mut dx, &mut dy);
+            let (dx_new, _dy) = coordinate_system(&ray.d);
+            dx = dx_new;
         }
 
         let object_to_ray = Transform::look_at(&ray.o, &(ray.o + ray.d), &dx);
@@ -651,6 +651,33 @@ impl Shape for Curve {
         let avg_width = (width0 + width1) * 0.5;
         let approx_length = (0..3).fold(0.0, |a, i| a + cp_obj[i].distance(cp_obj[i + 1]));
         approx_length * avg_width
+    }
+
+    /// Sample a point on the surface and return the PDF with respect to area on
+    /// the surface.
+    ///
+    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
+    ///
+    /// * `u` - Sample value to use.
+    fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
+        todo!()
+    }
+
+    /// Sample a point on the shape given a reference point and return the PDF
+    /// with respect to the solid angle from ref.
+    ///
+    /// * `hit` - Reference point on shape.
+    /// * `u`   - Sample value to use.
+    fn sample_solid_angle(&self, hit: &Hit, u: &Point2f) -> (Hit, Float) {
+        todo!()
+    }
+
+    /// Returns the PDF with respect to solid angle.
+    ///
+    /// * `hit` - The interaction hit point.
+    /// * `wi`  - The incoming direction.
+    fn pdf_solid_angle(&self, hit: &Hit, wi: &Vector3f) -> Float {
+        todo!()
     }
 }
 

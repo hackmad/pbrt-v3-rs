@@ -41,6 +41,34 @@ pub trait Shape {
 
     /// Returns the surface area of the shape in object space.
     fn area(&self) -> Float;
+
+    /// Sample a point on the surface and return the PDF with respect to area on
+    /// the surface.
+    ///
+    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
+    ///
+    /// * `u` - Sample value to use.
+    fn sample_area(&self, u: &Point2f) -> (Hit, Float);
+
+    /// Sample a point on the shape given a reference point and return the PDF
+    /// with respect to the solid angle from ref.
+    ///
+    /// * `hit` - Reference point on shape.
+    /// * `u`   - Sample value to use.
+    fn sample_solid_angle(&self, hit: &Hit, u: &Point2f) -> (Hit, Float);
+
+    /// Return the PDF for the shape. By default it is 1/area.
+    ///
+    /// * `hit` - The interaction hit point.
+    fn pdf(&self, _hit: &Hit) -> Float {
+        1.0 / self.area()
+    }
+
+    /// Returns the PDF with respect to solid angle.
+    ///
+    /// * `hit` - The interaction hit point.
+    /// * `wi`  - The incoming direction.
+    fn pdf_solid_angle(&self, hit: &Hit, wi: &Vector3f) -> Float;
 }
 
 /// Atomic reference counted `Shape`.

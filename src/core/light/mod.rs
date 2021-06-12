@@ -20,10 +20,32 @@ pub struct Li {
     pub pdf: Float,
 
     /// Visibility tester.
-    pub visibility: VisibilityTester,
+    pub visibility: Option<VisibilityTester>,
 
     /// Radiance arriving at intersection point.
     pub value: Spectrum,
+}
+
+impl Li {
+    /// Return a new `Li`.
+    ///
+    /// * `wi`         - Incoming direction.
+    /// * `pdf`        - PDF.
+    /// * `visibility` - Visibility tester.
+    /// * `value`      - Radiance arriving at intersection point.
+    pub fn new(
+        wi: Vector3f,
+        pdf: Float,
+        visibility: Option<VisibilityTester>,
+        value: Spectrum,
+    ) -> Self {
+        Self {
+            wi,
+            pdf,
+            visibility,
+            value,
+        }
+    }
 }
 
 /// Return value for `Light::sample_le()`.
@@ -46,6 +68,33 @@ pub struct Le {
     pub value: Spectrum,
 }
 
+impl Le {
+    /// Return a new `Le`.
+    ///
+    /// * `ray`     - Ray leaving the light source.
+    /// * `n_light` - Surface normal at the point on the light source.
+    /// * `pdf_pos` - The ray origin's probability density with respect to surface
+    ///               area on the light.
+    /// * `pdf_dir` - The ray directions's probability density with respect to
+    ///               solid angle.
+    /// * `value`   - Emitted radiance value.
+    pub fn new(
+        ray: Ray,
+        n_light: Normal3f,
+        pdf_pos: Float,
+        pdf_dir: Float,
+        value: Spectrum,
+    ) -> Self {
+        Self {
+            ray,
+            n_light,
+            pdf_pos,
+            pdf_dir,
+            value,
+        }
+    }
+}
+
 /// Return value for `Light::pdf_le()`.
 #[derive(Copy, Clone)]
 pub struct Pdf {
@@ -55,6 +104,18 @@ pub struct Pdf {
 
     /// The ray directions's probability density with respect to solid angle.
     pub pdf_dir: Float,
+}
+
+impl Pdf {
+    /// Return a new `Pdf`.
+    ///
+    /// * `pdf_pos` - The ray origin's probability density with respect to
+    ///               surface area on the light.
+    /// * `pdf_dir` - The ray directions's probability density with respect to
+    ///               solid angle.
+    pub fn new(pdf_pos: Float, pdf_dir: Float) -> Self {
+        Self { pdf_pos, pdf_dir }
+    }
 }
 
 /// Light trait provides common behavior.
@@ -69,9 +130,9 @@ pub trait Light {
 
     /// Return the radiance arriving at an interaction point.
     ///
-    /// * `reference` - The interaction point.
-    /// * `u`         - Sample value for Monte Carlo integration.
-    fn sample_li(&self, reference: &dyn Interaction, u: &Point2f) -> Li;
+    /// * `hit` - The interaction hit point.
+    /// * `u`   - Sample value for Monte Carlo integration.
+    fn sample_li(&self, hit: &Hit, u: &Point2f) -> Li;
 
     /// Return the total emitted power.
     fn power(&self) -> Spectrum;
@@ -80,14 +141,16 @@ pub trait Light {
     /// scene bounds.
     ///
     /// * `r` - The ray differentials.
-    fn le(&self, r: &RayDifferential) -> Spectrum;
+    fn le(&self, _r: &RayDifferential) -> Spectrum {
+        Spectrum::new(0.0)
+    }
 
     /// Returns the probability density with respect to solid angle for the light’s
     /// `sample_li()`.
     ///
-    /// * `reference` - The interaction point.
-    /// * `wi`        - The incoming direction.
-    fn pdf_li(&self, reference: ArcInteraction, wi: &Vector3f) -> Float;
+    /// * `hit` - The interaction hit point.
+    /// * `wi`  - The incoming direction.
+    fn pdf_li(&self, hit: &Hit, wi: &Vector3f) -> Float;
 
     /// Returns a sampled light-carrying ray leaving the light source.
     ///
@@ -103,7 +166,9 @@ pub trait Light {
     fn pdf_le(&self, ray: &Ray, n_light: &Normal3f) -> Pdf;
 
     /// Returns whether light source is a delta light.
-    fn is_delta_light(&self) -> bool;
+    fn is_delta_light(&self) -> bool {
+        self.get_type().is_delta_light()
+    }
 }
 
 /// Atomic reference counted `Light`.
@@ -111,14 +176,11 @@ pub type ArcLight = Arc<dyn Light + Send + Sync>;
 
 /// AreaLight trait provides common behavior for area lights.
 pub trait AreaLight: Light {
-    /// Return struct as `Light`.
-    fn as_light(&self) -> &'static dyn Light;
-
     /// Returns the area light's emitted radiance in a given outgoing direction.
     ///
     /// * `it` - Point on a surface to evaluate emitted radiance.
     /// * `w`  - Outgoing direction.
-    fn l(&self, it: &dyn Interaction, w: &Vector3f) -> Spectrum;
+    fn l(&self, hit: &Hit, w: &Vector3f) -> Spectrum;
 }
 
 /// Atomic reference counted `AreaLight`.

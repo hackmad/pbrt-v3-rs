@@ -18,8 +18,8 @@ use std::sync::Arc;
 /// * `n_light_samples` - The number of samples to take for each light.
 /// * `handle_media`    - Indicates whether effects of volumetric attenuation
 ///                       should be considered.
-pub fn uniform_sample_all_lights(
-    it: ArcInteraction,
+pub fn uniform_sample_all_lights<T: Interaction>(
+    it: &T,
     scene: Arc<Scene>,
     sampler: &mut ArcSampler,
     n_light_samples: &Vec<usize>,
@@ -81,8 +81,8 @@ pub fn uniform_sample_all_lights(
 /// * `handle_media`  - Indicates whether effects of volumetric attenuation
 ///                     should be considered.
 /// * `light_distrib` - PDF for the light's distribution.
-pub fn uniform_sample_one_light(
-    it: ArcInteraction,
+pub fn uniform_sample_one_light<T: Interaction>(
+    it: &T,
     scene: Arc<Scene>,
     sampler: &mut ArcSampler,
     handle_media: bool,
@@ -137,8 +137,8 @@ pub fn uniform_sample_one_light(
 ///                    should be considered (default to false).
 /// * `specular`     - Indicates whether perfectly specular lobes should be
 ///                    considered (default to false).
-pub fn estimate_direct(
-    it: ArcInteraction,
+pub fn estimate_direct<T: Interaction>(
+    it: &T,
     u_scattering: &Point2f,
     light: ArcLight,
     u_light: &Point2f,
@@ -162,7 +162,7 @@ pub fn estimate_direct(
         pdf: light_pdf,
         visibility,
         value: mut li,
-    } = light.sample_li(&*it, u_light);
+    } = light.sample_li(hit, u_light);
     if light_pdf > 0.0 && !li.is_black() {
         // Compute BSDF or phase function's value for light sample.
         let mut f = Spectrum::new(0.0);
@@ -184,16 +184,20 @@ pub fn estimate_direct(
         }
 
         if !f.is_black() {
-            // Compute effect of visibility for light source sample
-            if handle_media {
-                li *= visibility.tr(scene.clone(), sampler.clone());
-            } else {
-                if !visibility.unoccluded(scene.clone()) {
-                    debug!("  shadow ray blocked");
-                    li = Spectrum::new(0.0);
+            // Compute effect of visibility for light source sample.
+            if let Some(vis) = visibility {
+                if handle_media {
+                    li *= vis.tr(scene.clone(), sampler.clone());
                 } else {
-                    debug!("  shadow ray unoccluded");
+                    if !vis.unoccluded(scene.clone()) {
+                        debug!("  visiblity tester: shadow ray blocked");
+                        li = Spectrum::new(0.0);
+                    } else {
+                        debug!("  visiblity tester: shadow ray unoccluded");
+                    }
                 }
+            } else {
+                debug!("  no visiblity tester");
             }
 
             // Add light's contribution to reflected radiance
@@ -242,7 +246,7 @@ pub fn estimate_direct(
             // Account for light contributions along sampled direction `wi`.
             let mut weight = 1.0;
             if !sampled_specular {
-                let light_pdf = light.pdf_li(it.clone(), &wi);
+                let light_pdf = light.pdf_li(hit, &wi);
                 if light_pdf == 0.0 {
                     return ld;
                 }

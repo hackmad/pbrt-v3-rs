@@ -4,6 +4,7 @@
 use crate::core::geometry::*;
 use crate::core::paramset::*;
 use crate::core::pbrt::*;
+use crate::core::sampling::*;
 use crate::core::texture::*;
 use crate::textures::*;
 use std::collections::HashMap;
@@ -557,7 +558,9 @@ impl Shape for Triangle {
                 // The triangle is actually degenerate; the intersection is bogus.
                 return None;
             }
-            coordinate_system(&ng.normalize(), &mut dpdu, &mut dpdv);
+            let (dpdu_new, dpdv_new) = coordinate_system(&ng.normalize());
+            dpdu = dpdu_new;
+            dpdv = dpdv_new;
         }
 
         // Compute error bounds for triangle intersection.
@@ -646,7 +649,9 @@ impl Shape for Triangle {
                 ts = ts.normalize();
                 ss = ts.cross(&ns.into());
             } else {
-                coordinate_system(&ns.into(), &mut ss, &mut ts);
+                let (ss_new, ts_new) = coordinate_system(&ns.into());
+                ss = ss_new;
+                ts = ts_new;
             }
 
             // Compute dndu and dndv for triangle shading geometry.
@@ -672,9 +677,7 @@ impl Shape for Triangle {
                     if dn.length_squared() == 0.0 {
                         (Normal3f::default(), Normal3f::default())
                     } else {
-                        let mut dndu2 = Vector3f::default();
-                        let mut dndv2 = Vector3f::default();
-                        coordinate_system(&dn, &mut dndu2, &mut dndv2);
+                        let (dndu2, dndv2) = coordinate_system(&dn);
                         (Normal3::from(dndu2), Normal3::from(dndv2))
                     }
                 } else {
@@ -837,7 +840,9 @@ impl Shape for Triangle {
                     // The triangle is actually degenerate; the intersection is bogus.
                     return false;
                 }
-                coordinate_system(&ng.normalize(), &mut dpdu, &mut dpdv);
+                let (dpdu_new, dpdv_new) = coordinate_system(&ng.normalize());
+                dpdu = dpdu_new;
+                dpdv = dpdv_new;
             }
 
             // Interpolate parametric coordinates and hit point.
@@ -872,5 +877,62 @@ impl Shape for Triangle {
         let p1 = self.mesh.p[self.v + 1];
         let p2 = self.mesh.p[self.v + 2];
         0.5 * (p1 - p0).cross(&(p2 - p0)).length()
+    }
+
+    /// Sample a point on the surface and return the PDF with respect to area on
+    /// the surface.
+    ///
+    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
+    ///
+    /// * `u` - Sample value to use.
+    fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
+        let b = uniform_sample_triangle(u);
+
+        // Get triangle vertices in `p0`, `p1`, and `p2`.
+        let p0 = self.mesh.p[self.v];
+        let p1 = self.mesh.p[self.v + 1];
+        let p2 = self.mesh.p[self.v + 2];
+
+        let p = b[0] * p0 + b[1] * p1 + (1.0 - b[0] - b[1]) * p2;
+
+        // Compute surface normal for sampled point on triangle.
+        let mut n = Normal3f::from((p1 - p0).cross(&(p2 - p0))).normalize();
+
+        // Ensure correct orientation of the geometric normal; follow the same
+        // approach as was used in intersect().
+        if self.mesh.n.len() > 0 {
+            let ns = Vector3f::from(
+                b[0] * self.mesh.n[self.v]
+                    + b[1] * self.mesh.n[self.v + 1]
+                    + (1.0 - b[0] - b[1]) * self.mesh.n[self.v + 2],
+            );
+            n = n.face_forward(&ns);
+        } else if self.data.reverse_orientation ^ self.data.transform_swaps_handedness {
+            n *= -1.0;
+        }
+
+        // Compute error bounds for sampled point on triangle.
+        let p_abs_sum = (b[0] * p0).abs() + (b[1] * p1).abs() + ((1.0 - b[0] - b[1]) * p2).abs();
+        let p_error = gamma(6) * Vector3f::new(p_abs_sum.x, p_abs_sum.y, p_abs_sum.z);
+        let it = Hit::new(p, 0.0, p_error, Vector3f::default(), n, None);
+        let pdf = 1.0 / self.area();
+        (it, pdf)
+    }
+
+    /// Sample a point on the shape given a reference point and return the PDF
+    /// with respect to the solid angle from ref.
+    ///
+    /// * `hit` - Reference point on shape.
+    /// * `u`   - Sample value to use.
+    fn sample_solid_angle(&self, hit: &Hit, u: &Point2f) -> (Hit, Float) {
+        todo!()
+    }
+
+    /// Returns the PDF with respect to solid angle.
+    ///
+    /// * `hit` - The interaction hit point.
+    /// * `wi`  - The incoming direction.
+    fn pdf_solid_angle(&self, hit: &Hit, wi: &Vector3f) -> Float {
+        todo!()
     }
 }

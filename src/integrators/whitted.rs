@@ -97,7 +97,7 @@ impl Integrator for WhittedIntegrator {
                     pdf,
                     visibility,
                     value: li,
-                } = light.sample_li(&isect, &sample);
+                } = light.sample_li(isect.get_hit(), &sample);
 
                 if li.is_black() || pdf == 0.0 {
                     continue;
@@ -109,7 +109,9 @@ impl Integrator for WhittedIntegrator {
                     .unwrap()
                     .f(&wo, &wi, BxDFType::from(BSDF_ALL));
 
-                if !f.is_black() && visibility.unoccluded(scene.clone()) {
+                // If no visiblity tester, then unoccluded = true.
+                let unoccluded = visibility.map_or(true, |vis| vis.unoccluded(scene.clone()));
+                if !f.is_black() && unoccluded {
                     l += f * li * wi.abs_dot(&n) / pdf;
                 }
             }
