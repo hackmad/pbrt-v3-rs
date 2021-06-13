@@ -132,7 +132,7 @@ impl Light for DiffuseAreaLight {
     /// `sample_li()`.
     ///
     /// * `hit` - The interaction hit point.
-    /// * `wi`  - The incoming direction.
+    /// * `wi`  - The incident direction.
     fn pdf_li(&self, hit: &Hit, wi: &Vector3f) -> Float {
         self.shape.pdf_solid_angle(hit, wi)
     }

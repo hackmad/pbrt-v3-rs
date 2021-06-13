@@ -10,7 +10,7 @@ use std::sync::Arc;
 pub trait Fresnel {
     /// Returns the amount of light reflected by the surface.
     ///
-    /// * `cos_thata_i` - Cosine of the angle made by incoming direction and
+    /// * `cos_thata_i` - Cosine of the angle made by incident direction and
     ///                   surface normal.
     fn evaluate(&self, cos_theta_i: Float) -> Spectrum;
 }
@@ -41,7 +41,7 @@ impl FresnelDielectric {
 impl Fresnel for FresnelDielectric {
     /// Returns the amount of light reflected by the surface.
     ///
-    /// * `cos_thata_i` - Cosine of the angle made by incoming direction and
+    /// * `cos_thata_i` - Cosine of the angle made by incident direction and
     ///                   surface normal.
     fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         Spectrum::new(fr_dielectric(cos_theta_i, self.eta_i, self.eta_t))
@@ -75,7 +75,7 @@ impl FresnelConductor {
 impl Fresnel for FresnelConductor {
     /// Returns the amount of light reflected by the surface.
     ///
-    /// * `cos_thata_i` - Cosine of the angle made by incoming direction and
+    /// * `cos_thata_i` - Cosine of the angle made by incident direction and
     ///                   surface normal.
     fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         // Need to take abs(cos_theta_i)) so angle is measured on same side as
@@ -97,7 +97,7 @@ impl FresnelNoOp {
 impl Fresnel for FresnelNoOp {
     /// Returns the amount of light reflected by the surface.
     ///
-    /// * `cos_thata_i` - Cosine of the angle made by incoming direction and
+    /// * `cos_thata_i` - Cosine of the angle made by incident direction and
     ///                   surface normal.
     fn evaluate(&self, _cos_theta_i: Float) -> Spectrum {
         Spectrum::new(1.0)

@@ -319,23 +319,6 @@ impl Shape for Cone {
     fn sample_area(&self, _u: &Point2f) -> (Hit, Float) {
         todo!()
     }
-
-    /// Sample a point on the shape given a reference point and return the PDF
-    /// with respect to the solid angle from ref.
-    ///
-    /// * `hit` - Reference point on shape.
-    /// * `u`   - Sample value to use.
-    fn sample_solid_angle(&self, _hit: &Hit, _u: &Point2f) -> (Hit, Float) {
-        todo!()
-    }
-
-    /// Returns the PDF with respect to solid angle.
-    ///
-    /// * `hit` - The interaction hit point.
-    /// * `wi`  - The incoming direction.
-    fn pdf_solid_angle(&self, _hit: &Hit, _wi: &Vector3f) -> Float {
-        todo!()
-    }
 }
 
 impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Cone {

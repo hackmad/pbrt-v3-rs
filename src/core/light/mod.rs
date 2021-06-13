@@ -13,7 +13,7 @@ mod visibility_tester;
 /// Return value for `Light::sample_li()`.
 #[derive(Clone)]
 pub struct Li {
-    /// Incoming direction.
+    /// Incident direction.
     pub wi: Vector3f,
 
     /// PDF.
@@ -29,7 +29,7 @@ pub struct Li {
 impl Li {
     /// Return a new `Li`.
     ///
-    /// * `wi`         - Incoming direction.
+    /// * `wi`         - Incident direction.
     /// * `pdf`        - PDF.
     /// * `visibility` - Visibility tester.
     /// * `value`      - Radiance arriving at intersection point.
@@ -149,7 +149,7 @@ pub trait Light {
     /// `sample_li()`.
     ///
     /// * `hit` - The interaction hit point.
-    /// * `wi`  - The incoming direction.
+    /// * `wi`  - The incident direction.
     fn pdf_li(&self, hit: &Hit, wi: &Vector3f) -> Float;
 
     /// Returns a sampled light-carrying ray leaving the light source.

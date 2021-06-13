@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 use crate::core::geometry::*;
+use crate::core::low_discrepency::radical_inverse;
 use crate::core::pbrt::*;
 use std::sync::Arc;
 
@@ -34,7 +35,7 @@ pub trait Shape {
     /// Returns `true` if a ray-shape intersection succeeds; otherwise `false`.
     ///
     /// * `r`                  - The ray.
-    /// * `test_alpha_textu re` - Perform alpha texture tests.
+    /// * `test_alpha_texture` - Perform alpha texture tests; default to true.
     fn intersect_p(&self, r: &Ray, test_alpha_texture: bool) -> bool {
         !self.intersect(r, test_alpha_texture).is_none()
     }
@@ -55,7 +56,24 @@ pub trait Shape {
     ///
     /// * `hit` - Reference point on shape.
     /// * `u`   - Sample value to use.
-    fn sample_solid_angle(&self, hit: &Hit, u: &Point2f) -> (Hit, Float);
+    fn sample_solid_angle(&self, hit: &Hit, u: &Point2f) -> (Hit, Float) {
+        let (intr, mut pdf) = self.sample_area(u);
+        let mut wi = intr.p - hit.p;
+
+        if wi.length_squared() == 0.0 {
+            pdf = 0.0;
+        } else {
+            wi = wi.normalize();
+            // Convert from area measure, as returned by the sample_area() call
+            // above, to solid angle measure.
+            pdf *= hit.p.distance_squared(intr.p) / intr.n.abs_dot(&(-wi));
+            if pdf.is_infinite() {
+                pdf = 0.0;
+            }
+        }
+
+        (intr, pdf)
+    }
 
     /// Return the PDF for the shape. By default it is 1/area.
     ///
@@ -67,8 +85,62 @@ pub trait Shape {
     /// Returns the PDF with respect to solid angle.
     ///
     /// * `hit` - The interaction hit point.
-    /// * `wi`  - The incoming direction.
-    fn pdf_solid_angle(&self, hit: &Hit, wi: &Vector3f) -> Float;
+    /// * `wi`  - The incident direction.
+    fn pdf_solid_angle(&self, hit: &Hit, wi: &Vector3f) -> Float {
+        // Intersect sample ray with area light geometry.
+        let ray = hit.spawn_ray(&wi);
+
+        // Ignore any alpha textures used for trimming the shape when performing
+        // this intersection. Hack for the "San Miguel" scene, where this is used
+        // to make an invisible area light.
+        if let Some(Intersection {
+            t: _t_hit,
+            isect: isect_light,
+        }) = self.intersect(&ray, false)
+        {
+            // Convert light sample weight to solid angle measure.
+            let pdf = hit.p.distance_squared(isect_light.hit.p)
+                / (isect_light.hit.n.abs_dot(&(-*wi)) * self.area());
+            if pdf.is_infinite() {
+                0.0
+            } else {
+                pdf
+            }
+        } else {
+            0.0
+        }
+    }
+
+    /// Returns the solid angle subtended by the shape w.r.t. the reference
+    /// point p, given in world space. Some shapes compute this value in
+    /// closed-form, while the default implementation uses Monte Carlo
+    /// integration.
+    ///
+    /// * `p`         - The reference point.
+    /// * `n_samples` - The number of samples to use for Monte-Carlo integration.
+    ///                 Default to 512.
+    fn solid_angle(&self, p: &Point3f, n_samples: usize) -> Float {
+        let hit = Hit::new(
+            *p,
+            0.0,
+            Vector3f::default(),
+            Vector3f::new(0.0, 0.0, 1.0),
+            Normal3f::default(),
+            None,
+        );
+
+        let mut solid_angle: f64 = 0.0;
+
+        for i in 0..n_samples {
+            let u = Point2f::new(radical_inverse(0, i as u64), radical_inverse(1, i as u64));
+            let (p_shape, pdf) = self.sample_solid_angle(&hit, &u);
+            let ray = Ray::new(*p, p_shape.p - *p, 0.999, 0.0, None);
+            if pdf > 0.0 && !self.intersect_p(&ray, true) {
+                solid_angle += 1.0_f64 / pdf as f64;
+            }
+        }
+        (solid_angle / n_samples as f64) as Float
+    }
 }
 
 /// Atomic reference counted `Shape`.

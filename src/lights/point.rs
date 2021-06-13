@@ -86,7 +86,7 @@ impl Light for PointLight {
     /// `sample_li()`.
     ///
     /// * `hit` - The interaction hit point.
-    /// * `wi`  - The incoming direction.
+    /// * `wi`  - The incident direction.
     fn pdf_li(&self, _hit: &Hit, _wi: &Vector3f) -> Float {
         0.0
     }
