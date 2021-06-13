@@ -91,7 +91,7 @@ impl CIE {
 
 // CIE X function values.
 #[rustfmt::skip]
-const CIE_X: [Float; CIE_SAMPLES] = [
+pub const CIE_X: [Float; CIE_SAMPLES] = [
     0.0001299000,   0.0001458470,   0.0001638021,   0.0001840037,
     0.0002066902,   0.0002321000,   0.0002607280,   0.0002930750,
     0.0003293880,   0.0003699140,   0.0004149000,   0.0004641587,
@@ -214,7 +214,7 @@ const CIE_X: [Float; CIE_SAMPLES] = [
 
 /// CIE Y function values.
 #[rustfmt::skip]
-const CIE_Y: [Float; CIE_SAMPLES] = [
+pub const CIE_Y: [Float; CIE_SAMPLES] = [
     0.000003917000,  0.000004393581,  0.000004929604,  0.000005532136,
     0.000006208245,  0.000006965000,  0.000007813219,  0.000008767336,
     0.000009839844,  0.00001104323,   0.00001239000,   0.00001388641,
@@ -337,7 +337,7 @@ const CIE_Y: [Float; CIE_SAMPLES] = [
 
 /// CIE Z function values.
 #[rustfmt::skip]
-const CIE_Z: [Float; CIE_SAMPLES] = [
+pub const CIE_Z: [Float; CIE_SAMPLES] = [
     0.0006061000,   0.0006808792,   0.0007651456,   0.0008600124,
     0.0009665928,   0.001086000,    0.001220586,    0.001372729,
     0.001543579,    0.001734286,    0.001946000,    0.002177777,

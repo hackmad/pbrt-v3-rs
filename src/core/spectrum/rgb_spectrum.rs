@@ -85,7 +85,7 @@ impl From<[Float; RGB_SAMPLES]> for RGBSpectrum {
 }
 
 impl From<&Vec<Sample>> for RGBSpectrum {
-    /// Create a new `RGBSpectrum` from sampled spectral samples.
+    /// Create a new `RGBSpectrum` from spectral samples.
     ///
     /// * `samples` - Samples.
     fn from(samples: &Vec<Sample>) -> Self {
@@ -98,9 +98,9 @@ impl From<&Vec<Sample>> for RGBSpectrum {
         let xyz = (0..CIE_SAMPLES).fold([0.0; 3], |v, i| {
             let val = interpolate_spectrum_samples(samples, (CIE_LAMBDA_START + i) as Float);
             [
-                v[0] + val * CIE_CURVES.x[i],
-                v[1] + val * CIE_CURVES.y[i],
-                v[2] + val * CIE_CURVES.z[i],
+                v[0] + val * CIE_X[i],
+                v[1] + val * CIE_Y[i],
+                v[2] + val * CIE_Z[i],
             ]
         });
 
