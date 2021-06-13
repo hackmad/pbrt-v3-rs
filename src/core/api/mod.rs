@@ -325,7 +325,7 @@ impl Api {
     pub fn pbrt_film(&mut self, film_type: String, params: &ParamSet) {
         if self.verify_options("Film") {
             self.render_options.film_name = film_type;
-            self.render_options.filter_params = params.clone();
+            self.render_options.film_params = params.clone();
         }
     }
 
@@ -437,7 +437,11 @@ impl Api {
             }
 
             // Create scene and render.
-            let mut integrator = self.render_options.make_integrator();
+            let mut integrator = match self.render_options.make_integrator(&self.graphics_state) {
+                Ok(integrator) => integrator,
+                Err(err) => panic!("Error creating integrator. {}", err),
+            };
+
             let scene = self.render_options.make_scene();
             Arc::get_mut(&mut integrator).unwrap().render(scene);
 

@@ -19,7 +19,10 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": [
+                "./scenes/example.pbrt"
+            ],
+            "program": "${workspaceFolder}/target/debug/pbr-rust",
             "cwd": "${workspaceFolder}"
         },
         {

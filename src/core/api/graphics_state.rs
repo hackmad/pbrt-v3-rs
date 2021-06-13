@@ -22,6 +22,7 @@ use crate::core::sampler::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
 use crate::filters::*;
+use crate::lights::*;
 use crate::materials::*;
 use crate::samplers::*;
 use crate::shapes::*;
@@ -375,12 +376,34 @@ impl GraphicsState {
     /// * `medium_interface` - Medium interface.
     /// * `paramset`         - Parameter set.
     pub fn make_light(
-        _name: &str,
-        _light2world: ArcTransform,
-        _medium_interface: &MediumInterface,
-        _paramset: &ParamSet,
+        name: &str,
+        light2world: ArcTransform,
+        medium_interface: &MediumInterface,
+        paramset: &ParamSet,
     ) -> Result<ArcLight, String> {
-        Err(String::from("GraphicsState::make_light() not implemented"))
+        match name {
+            "point" => {
+                let p = (
+                    paramset,
+                    light2world.clone(),
+                    medium_interface.outside.clone(),
+                );
+                Ok(Arc::new(PointLight::from(p)))
+            }
+            "distant" => {
+                let p = (paramset, light2world.clone());
+                Ok(Arc::new(DistantLight::from(p)))
+            }
+            "infinite" => {
+                let p = (paramset, light2world.clone());
+                Ok(Arc::new(InfiniteAreaLight::from(p)))
+            }
+            "exinfinite" => {
+                let p = (paramset, light2world.clone());
+                Ok(Arc::new(InfiniteAreaLight::from(p)))
+            }
+            _ => Err(format!("Light '{}' unknown.", name)),
+        }
     }
 
     /// Creates an area light.
@@ -394,15 +417,22 @@ impl GraphicsState {
     /// * `shape`            - Shape
     /// * `paramset`         - Parameter set.
     pub fn make_area_light(
-        _name: &str,
-        _light2world: ArcTransform,
-        _medium_interface: &MediumInterface,
-        _shape: ArcShape,
-        _paramset: &ParamSet,
+        name: &str,
+        light2world: ArcTransform,
+        medium_interface: &MediumInterface,
+        shape: ArcShape,
+        paramset: &ParamSet,
     ) -> Result<ArcLight, String> {
-        Err(String::from(
-            "GraphicsState::make_area_light() not implemented",
-        ))
+        let p = (
+            paramset,
+            light2world.clone(),
+            medium_interface.outside.clone(),
+            shape,
+        );
+        match name {
+            "diffuse" => Ok(Arc::new(DiffuseAreaLight::from(p))),
+            _ => Err(format!("AreaLight '{}' unknown.", name)),
+        }
     }
 
     /// Creates an accelerator.

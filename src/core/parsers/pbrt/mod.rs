@@ -198,9 +198,9 @@ impl PbrtFileParser {
             Rule::material_stmt => self.parse_named_param_list(&mut inner_rules, "Material", api),
             Rule::shape_stmt => self.parse_named_param_list(&mut inner_rules, "Shape", api),
             Rule::texture_stmt => {
-                let name = inner_rules.next().unwrap().as_str().to_string();
-                let texture_type = inner_rules.next().unwrap().as_str().to_string();
-                let texture_name = inner_rules.next().unwrap().as_str().to_string();
+                let name = self.parse_quoted_str(&mut inner_rules);
+                let texture_type = self.parse_quoted_str(&mut inner_rules);
+                let texture_name = self.parse_quoted_str(&mut inner_rules);
                 let params = inner_rules.next().map_or(ParamSet::new(), |param_list| {
                     self.parse_param_list(param_list.into_inner())
                 });
@@ -370,6 +370,7 @@ impl PbrtFileParser {
         let params = pairs.next().map_or(ParamSet::new(), |param_list| {
             self.parse_param_list(param_list.into_inner())
         });
+
         debug!("{} '{}' {:}", option_name, name, params);
         match option_name {
             "Accelerator" => api.pbrt_accelerator(name, &params),

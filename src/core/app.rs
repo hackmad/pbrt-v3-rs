@@ -105,7 +105,10 @@ impl Options {
 
         let image_file = match matches.value_of("outfile") {
             Some(s) => s.to_string(),
-            _ => panic!("Missing outfile"),
+            _ => {
+                warn!("Missing outfile. Will use one from scene description.");
+                String::from("")
+            }
         };
 
         let crop_window = match matches.values_of("cropwindow") {

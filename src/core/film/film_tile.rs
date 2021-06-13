@@ -1,5 +1,6 @@
 //! Film tile
 
+use crate::core::film::FILTER_TABLE_WIDTH;
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
@@ -75,34 +76,37 @@ impl<'a> FilmTile<'a> {
         p1 = p1.min(&self.pixel_bounds.p_max);
 
         // Loop over filter support and add sample to pixel arrays.
-        let filter_table_size = self.filter_table.len();
+        let filter_table_size = FILTER_TABLE_WIDTH; // NOTE: not the entire size of the filter table.
 
         // Precompute `x` and `y` filter table offsets.
-        let mut ifx: Vec<Int> = vec![0, p1.x - p0.x];
-        for x in p0.x..p1.x {
-            let fx = abs((x as Float - p_film_discrete.x)
-                * self.inv_filter_radius.x
-                * filter_table_size as Float);
-            ifx[(x - p0.x) as usize] = min(fx.floor(), (filter_table_size - 1) as Float) as Int;
-        }
+        let ifx: Vec<usize> = (p0.x..p1.x)
+            .map(|x| {
+                let fx = abs((x as Float - p_film_discrete.x)
+                    * self.inv_filter_radius.x
+                    * filter_table_size as Float);
+                min(fx.floor(), filter_table_size as Float - 1.0) as usize
+            })
+            .collect();
 
-        let mut ify: Vec<Int> = vec![0, p1.y - p0.y];
-        for y in p0.y..p1.y {
-            let fy = abs((y as Float - p_film_discrete.y)
-                * self.inv_filter_radius.y
-                * filter_table_size as Float);
-            ify[(y - p0.y) as usize] = min(fy.floor(), (filter_table_size - 1) as Float) as Int;
-        }
+        let ify: Vec<usize> = (p0.y..p1.y)
+            .map(|y| {
+                let fy = abs((y as Float - p_film_discrete.y)
+                    * self.inv_filter_radius.y
+                    * filter_table_size as Float);
+                min(fy.floor(), filter_table_size as Float - 1.0) as usize
+            })
+            .collect();
 
         for y in p0.y..p1.y {
             for x in p0.x..p1.x {
-                // Evaluate filter value at $(x,y)$ pixel
-                let offset = ify[(y - p0.y) as usize] as usize * filter_table_size
-                    + ifx[(x - p0.x) as usize] as usize;
+                // Evaluate filter value at `(x, y)` pixel.
+                let offset =
+                    ify[(y - p0.y) as usize] * filter_table_size + ifx[(x - p0.x) as usize];
                 let filter_weight = self.filter_table[offset];
 
-                // Update pixel values with filtered sample contribution
+                // Update pixel values with filtered sample contribution.
                 let pixel_offset = self.get_pixel_offset(&Point2i::new(x, y));
+
                 self.pixels[pixel_offset].contrib_sum += l * sample_weight * filter_weight;
                 self.pixels[pixel_offset].filter_weight_sum += filter_weight;
             }

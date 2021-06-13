@@ -358,11 +358,11 @@ impl Iterator for Bounds2iIterator {
             None
         } else {
             self.p.x += 1;
-            if self.p.x > self.b.p_max.x {
+            if self.p.x > self.b.p_max.x - 1 {
                 self.p.x = self.b.p_min.x;
                 self.p.y += 1;
             }
-            if self.p.y > self.b.p_max.y {
+            if self.p.y > self.b.p_max.y - 1 {
                 None
             } else {
                 Some(self.p)

@@ -54,7 +54,9 @@ impl Integrator for WhittedIntegrator {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&mut self, _scene: Arc<Scene>) {}
+    fn render(&mut self, scene: Arc<Scene>) {
+        SamplerIntegrator::render(self, scene)
+    }
 
     /// Returns the incident radiance at the origin of a given ray.
     ///

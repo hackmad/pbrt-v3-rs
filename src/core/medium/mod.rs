@@ -78,3 +78,15 @@ impl From<ArcMedium> for MediumInterface {
         }
     }
 }
+
+impl From<Option<ArcMedium>> for MediumInterface {
+    /// Create a medium interface between same media.
+    ///
+    /// * `medium` - The medium on either side of the interface.
+    fn from(medium: Option<ArcMedium>) -> Self {
+        Self {
+            inside: medium.clone(),
+            outside: medium.clone(),
+        }
+    }
+}

@@ -188,13 +188,13 @@ impl Light for DiffuseAreaLight {
     }
 }
 
-impl From<(&ParamSet, ArcTransform, ArcMedium, ArcShape)> for DiffuseAreaLight {
+impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape)> for DiffuseAreaLight {
     /// Create a `DiffuseAreaLight` from given parameter set, light to world transform
     /// medium, and shape.
     ///
     /// * `p` - A tuple containing the parameter set, light to world transform,
     ///         medium, and shape.
-    fn from(p: (&ParamSet, ArcTransform, ArcMedium, ArcShape)) -> Self {
+    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape)) -> Self {
         let (params, light_to_world, medium, shape) = p;
 
         let l = params.find_one_spectrum("L", Spectrum::new(1.0));
@@ -208,7 +208,7 @@ impl From<(&ParamSet, ArcTransform, ArcMedium, ArcShape)> for DiffuseAreaLight {
 
         Self::new(
             light_to_world,
-            MediumInterface::from(medium.clone()),
+            MediumInterface::from(medium),
             l * sc,
             n_samples as usize,
             shape,

@@ -118,7 +118,7 @@ impl HaltonSampler {
     /// * `dim` - Dimension.
     fn permutation_for_dimension(&self, dim: u16) -> &[u16] {
         assert!(
-            (dim as usize) >= PRIME_TABLE_SIZE,
+            (dim as usize) <= PRIME_TABLE_SIZE,
             "HaltonSampler can only sample {} dimensions",
             PRIME_TABLE_SIZE
         );

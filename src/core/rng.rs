@@ -73,7 +73,7 @@ impl RNG {
     /// * `count`        - Number n-dimensional values.
     /// * `n_dimensions` - Number of total dimensions.
     pub fn shuffle<T>(&mut self, v: &mut [T], count: usize, n_dimensions: usize) {
-        debug_assert!(count * n_dimensions == v.len());
+        debug_assert!(count * n_dimensions <= v.len());
 
         for i in 0..count {
             let other = i + self.bounded_uniform(0, count - i);

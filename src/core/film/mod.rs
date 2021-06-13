@@ -60,7 +60,7 @@ pub struct Film {
     /// Filename of output image.
     pub filename: String,
 
-    /// Crop windo of the subset of the image to render.
+    /// Crop window of the subset of the image to render.
     pub cropped_pixel_bounds: Bounds2i,
 
     /// The filter table.
@@ -222,7 +222,7 @@ impl Film {
     /// Merge the `FilmTile`'s pixel contribution into the image.
     ///
     /// * `tile` - The `FilmTile` to merge.
-    pub fn merge_film_tile(&mut self, tile: Arc<FilmTile>) {
+    pub fn merge_film_tile(&self, tile: Arc<FilmTile>) {
         let mut pixels = self.pixels.write().unwrap();
         for pixel in tile.get_pixel_bounds() {
             let tile_pixel = tile.get_pixel_offset(&pixel);
@@ -238,7 +238,7 @@ impl Film {
     /// Sets all pixel values in the cropped area with the given spectrum values.
     ///
     /// * `img` - The spectrum values for the cropped area.
-    pub fn set_image(&mut self, img: &[Spectrum]) {
+    pub fn set_image(&self, img: &[Spectrum]) {
         let mut pixels = self.pixels.write().unwrap();
         let n_pixels = self.cropped_pixel_bounds.area();
         for i in (0..n_pixels).map(|i| i as usize) {
@@ -252,7 +252,7 @@ impl Film {
     ///
     /// * `p` - The pixel coordinates with respect to the overall image.
     /// * `v` - `Splat` contribution to add to the pixel.
-    pub fn add_splat(&mut self, p: &Point2f, v: &Spectrum) {
+    pub fn add_splat(&self, p: &Point2f, v: &Spectrum) {
         if v.has_nans() {
             warn!(
                 "Ignoring splatted spectrum with NaN values at ({}, {})",

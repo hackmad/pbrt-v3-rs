@@ -11,6 +11,7 @@ use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::primitive::*;
 use crate::core::scene::*;
+use crate::integrators::*;
 use crate::{accelerators::BVHAccel, accelerators::SplitMethod};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -111,8 +112,44 @@ impl RenderOptions {
     }
 
     /// Returns an `Integrator` based on the render options.
-    pub fn make_integrator(&self) -> ArcIntegrator {
-        todo!();
+    ///
+    /// * `gs` - The `GraphicsState`.
+    pub fn make_integrator(&self, gs: &GraphicsState) -> Result<ArcIntegrator, String> {
+        let camera = self.make_camera(gs);
+        let sampler = GraphicsState::make_sampler(
+            &self.sampler_name,
+            &self.sampler_params,
+            camera.get_data().film.clone(),
+        )?;
+
+        let integrator: Result<ArcIntegrator, String> = match self.integrator_name.as_str() {
+            "whitted" => {
+                let p = (&self.integrator_params, sampler, camera);
+                Ok(Arc::new(WhittedIntegrator::from(p)))
+            }
+            _ => Err(format!("Integrator '{}' unknown.", self.integrator_name)),
+        };
+
+        if integrator.is_ok() {
+            if self.have_scattering_media
+                && self.integrator_name != "volpath"
+                && self.integrator_name != "bdpt"
+                && self.integrator_name != "mlt"
+            {
+                warn!(
+                    "Scene has scattering media but '{}' integrator doesn't support 
+                volume scattering. Consider using 'volpath', 'bdpt', or 'mlt'.",
+                    self.integrator_name
+                );
+            }
+
+            // Warn if no light sources are defined.
+            if self.lights.is_empty() {
+                warn!("No light sources defined in scene; rendering a black image.");
+            }
+        }
+
+        integrator
     }
 
     /// Returns a `Scene` based on the render options.

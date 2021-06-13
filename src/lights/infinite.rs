@@ -64,15 +64,18 @@ impl InfiniteAreaLight {
         let lrgb = l.to_rgb_spectrum();
 
         // Read texel data from texmap and initialize `l_map`.
-        let (texels, resolution) = match read_image(texmap) {
-            Ok(RGBImage { pixels, resolution }) => {
-                let texels = pixels.iter().map(|texel| *texel * lrgb).collect();
-                (texels, resolution)
-            }
-            Err(err) => {
-                warn!("Problem reading {}. {}", texmap, err);
-                (vec![lrgb], Point2::new(1_usize, 1_usize))
-            }
+        let (texels, resolution) = match texmap {
+            "" => (vec![lrgb], Point2::new(1_usize, 1_usize)),
+            _ => match read_image(texmap) {
+                Ok(RGBImage { pixels, resolution }) => {
+                    let texels = pixels.iter().map(|texel| *texel * lrgb).collect();
+                    (texels, resolution)
+                }
+                Err(err) => {
+                    warn!("Problem reading file '{}'. {}", texmap, err);
+                    (vec![lrgb], Point2::new(1_usize, 1_usize))
+                }
+            },
         };
 
         let l_map = MIPMap::new(

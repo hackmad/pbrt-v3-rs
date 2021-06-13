@@ -259,7 +259,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
             ((sample_extent.y + tile_size - 1) / tile_size) as usize,
         );
 
-        info!("Rendering tiles {}", n_tiles.x * n_tiles.y);
+        info!("Rendering {}x{} tiles", n_tiles.x, n_tiles.y);
 
         // Parallelize.
         let tiles = iproduct!(0..n_tiles.x, 0..n_tiles.y).par_bridge();
@@ -276,13 +276,17 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                 tile_sampler_data.samples_per_pixel
             };
 
-            // Compute sample bounds for tile
+            // Compute sample bounds for tile.
             let x0 = sample_bounds.p_min.x + tile.x as i32 * tile_size;
             let x1 = min(x0 + tile_size, sample_bounds.p_max.x);
             let y0 = sample_bounds.p_min.y + tile.y as i32 * tile_size;
             let y1 = min(y0 + tile_size, sample_bounds.p_max.y);
             let tile_bounds = Bounds2i::new(Point2i::new(x0, y0), Point2i::new(x1, y1));
-            info!("Starting image tile {:}", tile_bounds);
+
+            info!(
+                "Starting image tile ({}, {}) -> {:}",
+                tile_x, tile_y, tile_bounds
+            );
 
             // Get `FilmTile` for tile.
             let mut film_tile = film.get_film_tile(tile_bounds);
@@ -346,10 +350,10 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                         l = Spectrum::new(0.0);
                     }
 
-                    info!(
-                        "Camera sample: {:} -> ray: {:} -> L = {:}",
-                        camera_sample, ray, l
-                    );
+                    //debug!(
+                    //    "Camera sample: {:} -> ray: {:} -> L = {:}",
+                    //    camera_sample, ray, l
+                    //);
 
                     // Add camera ray's contribution to image.
                     Arc::get_mut(&mut film_tile).unwrap().add_sample(
@@ -363,13 +367,13 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     }
                 }
             }
-            info!("Finished image tile {:}", tile_bounds);
+            info!(
+                "Finished image tile ({}, {}) -> {:}",
+                tile_x, tile_y, tile_bounds
+            );
 
             // Merge image tile into `Film`.
-            let mut film_mut = film.clone();
-            Arc::get_mut(&mut film_mut)
-                .unwrap()
-                .merge_film_tile(film_tile.clone());
+            film.merge_film_tile(film_tile.clone());
         });
 
         info!("Rendering finished.");

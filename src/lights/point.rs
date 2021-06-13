@@ -123,23 +123,19 @@ impl Light for PointLight {
     }
 }
 
-impl From<(&ParamSet, ArcTransform, ArcMedium)> for PointLight {
+impl From<(&ParamSet, ArcTransform, Option<ArcMedium>)> for PointLight {
     /// Create a `PointLight` from given parameter set, light to world transform
     /// and medium.
     ///
     /// * `p` - A tuple containing the parameter set, light to world transform
     ///         and medium.
-    fn from(p: (&ParamSet, ArcTransform, ArcMedium)) -> Self {
+    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>)) -> Self {
         let (params, light_to_world, medium) = p;
 
         let intensity = params.find_one_spectrum("I", Spectrum::new(1.0));
         let sc = params.find_one_spectrum("scale", Spectrum::new(1.0));
         let p = params.find_one_point3f("from", Point3f::default());
         let l2w = Transform::translate(&Vector3f::new(p.x, p.y, p.z)) * *light_to_world;
-        Self::new(
-            Arc::new(l2w),
-            MediumInterface::from(medium.clone()),
-            intensity * sc,
-        )
+        Self::new(Arc::new(l2w), MediumInterface::from(medium), intensity * sc)
     }
 }
