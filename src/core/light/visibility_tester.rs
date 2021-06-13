@@ -59,7 +59,7 @@ impl VisibilityTester {
                 }
 
                 // Generate next ray segment or return final transmittance.
-                ray = isect.get_hit().spawn_ray_to(&self.p1);
+                ray = isect.hit.spawn_ray_to(&self.p1);
             } else {
                 // Update transmittance for current ray segment.
                 let medium = ray.medium.clone();

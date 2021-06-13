@@ -18,8 +18,8 @@ use std::sync::Arc;
 /// * `n_light_samples` - The number of samples to take for each light.
 /// * `handle_media`    - Indicates whether effects of volumetric attenuation
 ///                       should be considered.
-pub fn uniform_sample_all_lights<T: Interaction>(
-    it: &T,
+pub fn uniform_sample_all_lights(
+    it: &Interaction,
     scene: Arc<Scene>,
     sampler: &mut ArcSampler,
     n_light_samples: &Vec<usize>,
@@ -81,8 +81,8 @@ pub fn uniform_sample_all_lights<T: Interaction>(
 /// * `handle_media`  - Indicates whether effects of volumetric attenuation
 ///                     should be considered.
 /// * `light_distrib` - PDF for the light's distribution.
-pub fn uniform_sample_one_light<T: Interaction>(
-    it: &T,
+pub fn uniform_sample_one_light(
+    it: &Interaction,
     scene: Arc<Scene>,
     sampler: &mut ArcSampler,
     handle_media: bool,
@@ -137,8 +137,8 @@ pub fn uniform_sample_one_light<T: Interaction>(
 ///                    should be considered (default to false).
 /// * `specular`     - Indicates whether perfectly specular lobes should be
 ///                    considered (default to false).
-pub fn estimate_direct<T: Interaction>(
-    it: &T,
+pub fn estimate_direct(
+    it: &Interaction,
     u_scattering: &Point2f,
     light: ArcLight,
     u_light: &Point2f,
@@ -166,21 +166,22 @@ pub fn estimate_direct<T: Interaction>(
     if light_pdf > 0.0 && !li.is_black() {
         // Compute BSDF or phase function's value for light sample.
         let mut f = Spectrum::new(0.0);
-        if hit.is_surface_interaction() {
-            // Evaluate BSDF for light sampling strategy.
-            let isect = it.get_surface_interaction().unwrap();
-            if let Some(bsdf) = isect.bsdf.clone() {
-                f = bsdf.f(&hit.wo, &wi, bsdf_flags) * wi.abs_dot(&isect.shading.n);
-                scattering_pdf = bsdf.pdf(&hit.wo, &wi, bsdf_flags);
-                info!("  surf f*dot : {:}, scatteringPdf: {}", f, scattering_pdf);
+        match it {
+            Interaction::Surface { si } => {
+                // Evaluate BSDF for light sampling strategy.
+                if let Some(bsdf) = si.bsdf.clone() {
+                    f = bsdf.f(&hit.wo, &wi, bsdf_flags) * wi.abs_dot(&si.shading.n);
+                    scattering_pdf = bsdf.pdf(&hit.wo, &wi, bsdf_flags);
+                    info!("  surf f*dot : {:}, scatteringPdf: {}", f, scattering_pdf);
+                }
             }
-        } else {
-            // Evaluate phase function for light sampling strategy.
-            let mi = it.get_medium_interaction().unwrap();
-            let p = mi.phase.p(&mi.hit.wo, &wi);
-            f = Spectrum::new(p);
-            scattering_pdf = p;
-            info!("  medium p: {}", p);
+            Interaction::Medium { mi } => {
+                // Evaluate phase function for light sampling strategy.
+                let p = mi.phase.p(&mi.hit.wo, &wi);
+                f = Spectrum::new(p);
+                scattering_pdf = p;
+                info!("  medium p: {}", p);
+            }
         }
 
         if !f.is_black() {
@@ -216,32 +217,34 @@ pub fn estimate_direct<T: Interaction>(
     if !light.is_delta_light() {
         let mut f = Spectrum::new(0.0);
         let mut sampled_specular = false;
-        if hit.is_surface_interaction() {
-            // Sample scattered direction for surface interactions.
-            let isect = it.get_surface_interaction().unwrap();
-            if let Some(bsdf) = isect.bsdf.clone() {
-                let BxDFSample {
-                    f: f1,
-                    pdf: _scattering_pdf,
-                    wi: wi2,
-                    sampled_type,
-                } = bsdf.sample_f(&hit.wo, u_scattering, bsdf_flags);
-                wi = wi2;
-                f = f1 * wi.abs_dot(&isect.shading.n);
-                sampled_specular = sampled_type.matches(BSDF_SPECULAR);
+        match it {
+            Interaction::Surface { si } => {
+                // Sample scattered direction for surface interactions.
+                if let Some(bsdf) = si.bsdf.clone() {
+                    let BxDFSample {
+                        f: f1,
+                        pdf: _scattering_pdf,
+                        wi: wi2,
+                        sampled_type,
+                    } = bsdf.sample_f(&hit.wo, u_scattering, bsdf_flags);
+                    wi = wi2;
+                    f = f1 * wi.abs_dot(&si.shading.n);
+                    sampled_specular = sampled_type.matches(BSDF_SPECULAR);
+                }
             }
-        } else {
-            // Sample scattered direction for medium interactions.
-            let mi = it.get_medium_interaction().unwrap();
-            let (p, wi2) = mi.phase.sample_p(&mi.hit.wo, &u_scattering);
-            f = Spectrum::new(p);
-            scattering_pdf = p;
-            wi = wi2;
+            Interaction::Medium { mi } => {
+                // Sample scattered direction for medium interactions.
+                let (p, wi2) = mi.phase.sample_p(&mi.hit.wo, &u_scattering);
+                f = Spectrum::new(p);
+                scattering_pdf = p;
+                wi = wi2;
+            }
         }
         debug!(
             "  BSDF / phase sampling f: {:}, scattering_pdf: {}",
             f, scattering_pdf
         );
+
         if !f.is_black() && scattering_pdf > 0.0 {
             // Account for light contributions along sampled direction `wi`.
             let mut weight = 1.0;

@@ -316,7 +316,7 @@ impl Shape for Cone {
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
     ///
     /// * `u` - Sample value to use.
-    fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
+    fn sample_area(&self, _u: &Point2f) -> (Hit, Float) {
         todo!()
     }
 
@@ -325,7 +325,7 @@ impl Shape for Cone {
     ///
     /// * `hit` - Reference point on shape.
     /// * `u`   - Sample value to use.
-    fn sample_solid_angle(&self, hit: &Hit, u: &Point2f) -> (Hit, Float) {
+    fn sample_solid_angle(&self, _hit: &Hit, _u: &Point2f) -> (Hit, Float) {
         todo!()
     }
 
@@ -333,7 +333,7 @@ impl Shape for Cone {
     ///
     /// * `hit` - The interaction hit point.
     /// * `wi`  - The incoming direction.
-    fn pdf_solid_angle(&self, hit: &Hit, wi: &Vector3f) -> Float {
+    fn pdf_solid_angle(&self, _hit: &Hit, _wi: &Vector3f) -> Float {
         todo!()
     }
 }

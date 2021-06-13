@@ -265,37 +265,10 @@ impl<'a> SurfaceInteraction<'a> {
     /// * `w` - The outgoing direction.
     pub fn le(&self, w: &Vector3f) -> Spectrum {
         if let Some(area_light) = self.primitive.map(|p| p.get_area_light()).flatten() {
-            area_light.l(self.get_hit(), &w)
+            area_light.l(&self.hit, &w)
         } else {
             Spectrum::new(0.0)
         }
-    }
-}
-
-impl<'a> Interaction for SurfaceInteraction<'a> {
-    /// Returns the interaction hit data.
-    fn get_hit(&self) -> &Hit {
-        &self.hit
-    }
-
-    /// Returns the surface interaction.
-    ///
-    /// NOTE: This is a hack because I don't want to write a function
-    /// for retrieving every field in `SurfaceInteraction`. If there is a clean
-    /// way of retrieving a struct that implements an interface I will get rid
-    /// of this.
-    fn get_surface_interaction(&self) -> Option<&SurfaceInteraction> {
-        Some(self)
-    }
-
-    /// Returns the medium interaction or None.
-    ///
-    /// NOTE: This is a hack because I don't want to write a function
-    /// for retrieving every field in `MediumInteraction`. If there is a clean
-    /// way of retrieving a struct that implements an interface I will get rid
-    /// of this.
-    fn get_medium_interaction(&self) -> Option<&MediumInteraction> {
-        None
     }
 }
 

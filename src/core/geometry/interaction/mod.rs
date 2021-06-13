@@ -6,30 +6,30 @@ use crate::core::medium::*;
 use crate::core::pbrt::*;
 use std::sync::Arc;
 
-/// Interaction trait provide common behavior.
-pub trait Interaction {
-    /// Returns the interaction hit data.
-    fn get_hit(&self) -> &Hit;
+mod medium_interaction;
+mod surface_interaction;
 
-    /// Returns the surface interaction or None.
-    ///
-    /// NOTE: This is a hack because I don't want to write a function
-    /// for retrieving every field in `SurfaceInteraction`. If there is a clean
-    /// way of retrieving a struct that implements an interface I will get rid
-    /// of this.
-    fn get_surface_interaction(&self) -> Option<&SurfaceInteraction>;
+pub use medium_interaction::*;
+pub use surface_interaction::*;
 
-    /// Returns the medium interaction or None.
-    ///
-    /// NOTE: This is a hack because I don't want to write a function
-    /// for retrieving every field in `MediumInteraction`. If there is a clean
-    /// way of retrieving a struct that implements an interface I will get rid
-    /// of this.
-    fn get_medium_interaction(&self) -> Option<&MediumInteraction>;
+/// Interaction enumeration.
+pub enum Interaction<'a> {
+    /// Represents geometry of a particular point on a surface.
+    Surface { si: SurfaceInteraction<'a> },
+
+    /// Represents an interaction point in a scattering medium.
+    Medium { mi: MediumInteraction },
 }
 
-/// Atomic reference counted `Interaction`.
-pub type ArcInteraction = Arc<dyn Interaction + Send + Sync>;
+impl<'a> Interaction<'a> {
+    /// Returns the interaction hit point.
+    pub fn get_hit(&self) -> &Hit {
+        match self {
+            Self::Surface { si } => &si.hit,
+            Self::Medium { mi } => &mi.hit,
+        }
+    }
+}
 
 /// Hit provides common data shared by implementations of `Interaction` trait.
 #[derive(Clone)]

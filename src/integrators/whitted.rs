@@ -97,7 +97,7 @@ impl Integrator for WhittedIntegrator {
                     pdf,
                     visibility,
                     value: li,
-                } = light.sample_li(isect.get_hit(), &sample);
+                } = light.sample_li(&isect.hit, &sample);
 
                 if li.is_black() || pdf == 0.0 {
                     continue;
