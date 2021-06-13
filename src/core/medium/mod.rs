@@ -47,6 +47,14 @@ impl MediumInterface {
         }
     }
 
+    /// Create a medium interface that represents a vacuum.
+    pub fn vacuum() -> Self {
+        Self {
+            inside: None,
+            outside: None,
+        }
+    }
+
     /// Returns `true` if the medium interface marks a transition between
     /// two distinct media.
     pub fn is_medium_transition(&self) -> bool {

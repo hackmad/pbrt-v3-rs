@@ -227,6 +227,11 @@ impl CoefficientSpectrum for SampledSpectrum {
         }
         Self { c }
     }
+
+    /// Converts to an `RGBSpectrum`.
+    fn to_rgb_spectrum(&self) -> RGBSpectrum {
+        RGBSpectrum::from(self.to_rgb())
+    }
 }
 
 impl Add for SampledSpectrum {

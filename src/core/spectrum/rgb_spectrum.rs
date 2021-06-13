@@ -73,6 +73,17 @@ impl From<Vec<Float>> for RGBSpectrum {
     }
 }
 
+impl From<[Float; RGB_SAMPLES]> for RGBSpectrum {
+    /// Create a new `RGBSpectrum` from sampled spectral values.
+    ///
+    /// * `c` - Sample values.
+    fn from(c: [Float; RGB_SAMPLES]) -> Self {
+        let ret = Self { c };
+        assert!(!ret.has_nans());
+        ret
+    }
+}
+
 impl From<&Vec<Sample>> for RGBSpectrum {
     /// Create a new `RGBSpectrum` from sampled spectral samples.
     ///
@@ -162,6 +173,11 @@ impl CoefficientSpectrum for RGBSpectrum {
         Self {
             c: [self.c[0].powf(p), self.c[1].powf(p), self.c[2].powf(p)],
         }
+    }
+
+    /// Converts to an `RGBSpectrum`.
+    fn to_rgb_spectrum(&self) -> RGBSpectrum {
+        *self
     }
 }
 

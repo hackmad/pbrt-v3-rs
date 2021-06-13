@@ -21,8 +21,10 @@ impl Distribution2D {
     ///
     /// - `func` - Piecewise-constant 2D function.
     pub fn new(func: Vec<Vec<Float>>) -> Self {
-        let p_conditional_v: Vec<Distribution1D> =
-            func.iter().map(|f| Distribution1D::new(*f)).collect();
+        let p_conditional_v: Vec<Distribution1D> = func
+            .iter()
+            .map(|f| Distribution1D::new(f.clone()))
+            .collect();
         let marginal_func: Vec<Float> = p_conditional_v.iter().map(|pcv| pcv.func_int).collect();
         let p_marginal = Distribution1D::new(marginal_func);
         Self {
@@ -51,7 +53,7 @@ impl Distribution2D {
     /// Return the PDF value for a given sample value.
     ///
     /// * `p` - Sample value.
-    pub fn pdf(&self, p: &Point3f) -> Float {
+    pub fn pdf(&self, p: &Point2f) -> Float {
         // Compute the product of the conditional and marginal PDFs for sampling
         // it from the distribution.
         let iu = clamp(

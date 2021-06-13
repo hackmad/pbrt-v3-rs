@@ -246,8 +246,9 @@ where
     /// Applies the appropriate filter method based on `method` over the texture
     /// samples to remove high frequencies.
     ///
-    /// * `st`    - The sample point coordinates (s, t).
-    /// * `width` - Filter width.
+    /// * `st`   - The sample point coordinates (s, t).
+    /// * `dst0` - Length of first elliptical axis.
+    /// * `dst1` - Length of second elliptical axis.
     pub fn lookup(&self, st: &Point2f, dst0: &Vector2f, dst1: &Vector2f) -> T {
         match self.filtering_method {
             FilteringMethod::Trilinear => {
@@ -287,9 +288,9 @@ where
 
     /// Uses the EWA filter over the texture samples to remove high frequencies.
     ///
-    /// * `st`             - The sample point coordinates (s, t).
-    /// * `dst0`           - Length of first elliptical axis.
-    /// * `dst1`           - Length of second elliptical axis.
+    /// * `st`   - The sample point coordinates (s, t).
+    /// * `dst0` - Length of first elliptical axis.
+    /// * `dst1` - Length of second elliptical axis.
     fn lookup_ewa(&self, st: &Point2f, dst0: &Vector2f, dst1: &Vector2f) -> T {
         // Compute ellipse minor and major axes.
         let (dst0, mut dst1) = if dst0.length_squared() < dst1.length_squared() {

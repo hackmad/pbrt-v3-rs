@@ -51,7 +51,7 @@ impl DiffuseAreaLight {
     /// * `light_to_world`   - Transformation from light coordinate system to
     ///                        world coordinate system.
     /// * `medium_interface` - Participating medium.
-    /// * `l_emit`           -
+    /// * `l_emit`           - Emitted radiance.
     /// * `n_samples`        - Used to trace multiple shadow rays to the light
     ///                        to compute soft shadows. Default to 1.
     /// * `shape`            - Shape describing surface of the light source.
@@ -199,12 +199,13 @@ impl From<(&ParamSet, ArcTransform, ArcMedium, ArcShape)> for DiffuseAreaLight {
 
         let l = params.find_one_spectrum("L", Spectrum::new(1.0));
         let sc = params.find_one_spectrum("scale", Spectrum::new(1.0));
-        let mut n_samples = params.find_one_int("samples", params.find_one_int("nsamples", 1));
         let two_sided = params.find_one_bool("twosided", false);
 
+        let mut n_samples = params.find_one_int("samples", params.find_one_int("nsamples", 1));
         if OPTIONS.quick_render {
             n_samples = max(1, n_samples / 4);
         }
+
         Self::new(
             light_to_world,
             MediumInterface::from(medium.clone()),

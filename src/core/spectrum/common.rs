@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 
 use crate::core::pbrt::*;
+use crate::core::spectrum::RGBSpectrum;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
@@ -148,6 +149,9 @@ pub trait CoefficientSpectrum:
 
     /// Convert the SPD to RGB cooefficients.
     fn to_rgb(&self) -> [Float; 3];
+
+    /// Converts to an `RGBSpectrum`.
+    fn to_rgb_spectrum(&self) -> RGBSpectrum;
 
     /// Adds the sample values from another SPD.
     ///

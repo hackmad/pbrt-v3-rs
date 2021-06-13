@@ -59,9 +59,9 @@ impl DistantLight {
             light_type: LightType::from(DELTA_DIRECTION_LIGHT),
             light_to_world: light_to_world.clone(),
             world_to_light: Arc::new(world_to_light),
-            medium_interface: MediumInterface::new(None, None), // Vacuum.
-            world_center: Point3f::default(),                   // Calculated in preprocess().
-            world_radius: 1.0,                                  // Calculated in preprocess().
+            medium_interface: MediumInterface::vacuum(),
+            world_center: Point3f::default(), // Calculated in preprocess().
+            world_radius: 1.0,                // Calculated in preprocess().
             w_light,
             emitted_radiance,
         }
