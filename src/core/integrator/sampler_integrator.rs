@@ -60,15 +60,15 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         ray: &mut Ray,
         isect: &SurfaceInteraction,
         scene: Arc<Scene>,
-        sampler: ArcSampler,
+        sampler: &mut ArcSampler,
         depth: usize,
     ) -> Spectrum {
         if let Some(bsdf) = isect.bsdf.clone() {
             // Compute specular reflection direction `wi` and BSDF value.
             let wo = isect.hit.wo;
 
-            let mut sampler = sampler.clone();
-            let sample = Arc::get_mut(&mut sampler).unwrap().get_2d();
+            let samp = Arc::get_mut(sampler).unwrap();
+            let sample = samp.get_2d();
             let bxdf_type = BxDFType::from(BSDF_REFLECTION | BSDF_SPECULAR);
             let BxDFSample {
                 f,
@@ -105,10 +105,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     ));
                 }
 
-                let mut sampler = sampler.clone();
-                return f
-                    * self.li(&mut rd, scene.clone(), &mut sampler, depth + 1)
-                    * wi.abs_dot(&ns)
+                return f * self.li(&mut rd, scene.clone(), sampler, depth + 1) * wi.abs_dot(&ns)
                     / pdf;
             }
         }
@@ -128,15 +125,15 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         ray: &mut Ray,
         isect: &SurfaceInteraction,
         scene: Arc<Scene>,
-        sampler: ArcSampler,
+        sampler: &mut ArcSampler,
         depth: usize,
     ) -> Spectrum {
         if let Some(bsdf) = isect.bsdf.clone() {
             let wo = isect.hit.wo;
             let p = isect.hit.p;
 
-            let mut sampler = sampler.clone();
-            let sample = Arc::get_mut(&mut sampler).unwrap().get_2d();
+            let samp = Arc::get_mut(sampler).unwrap();
+            let sample = samp.get_2d();
             let bxdf_type = BxDFType::from(BSDF_TRANSMISSION | BSDF_SPECULAR);
             let BxDFSample {
                 f,
@@ -231,10 +228,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     ));
                 }
 
-                let mut sampler = sampler.clone();
-                return f
-                    * self.li(&mut rd, scene.clone(), &mut sampler, depth + 1)
-                    * wi.abs_dot(&ns)
+                return f * self.li(&mut rd, scene.clone(), sampler, depth + 1) * wi.abs_dot(&ns)
                     / pdf;
             }
         }

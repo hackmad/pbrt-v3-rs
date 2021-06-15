@@ -811,8 +811,11 @@ impl Api {
                         .unwrap()
                         .append(&mut prims);
                 }
+                Arc::get_mut(&mut current_instance)
+                    .unwrap()
+                    .append(&mut prims);
             } else {
-                self.render_options.current_instance = Some(Arc::new(prims));
+                self.render_options.primitives.append(&mut prims);
                 if area_lights.len() > 0 {
                     self.render_options.lights.append(&mut area_lights);
                 }

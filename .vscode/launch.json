@@ -20,6 +20,8 @@
                 }
             },
             "args": [
+                "-t",
+                "1",
                 "./scenes/example.pbrt"
             ],
             "program": "${workspaceFolder}/target/debug/pbr-rust",

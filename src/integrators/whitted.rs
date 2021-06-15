@@ -124,7 +124,7 @@ impl Integrator for WhittedIntegrator {
                     ray,
                     &isect,
                     scene.clone(),
-                    sampler.clone(),
+                    sampler,
                     depth,
                 );
                 l += SamplerIntegrator::specular_transmit(
@@ -132,7 +132,7 @@ impl Integrator for WhittedIntegrator {
                     ray,
                     &isect,
                     scene.clone(),
-                    sampler.clone(),
+                    sampler,
                     depth,
                 );
             }
@@ -157,7 +157,7 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for WhittedIntegrator {
 
         let max_depth = params.find_one_int("max_depth", 5) as usize;
 
-        let pb = params.find_int("pixel_bounds");
+        let pb = params.find_int("pixelbounds");
         let np = pb.len();
 
         let mut pixel_bounds = camera.get_data().film.get_sample_bounds();
