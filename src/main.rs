@@ -44,6 +44,12 @@ fn main() {
     // Load the program options.
     let options = OPTIONS.clone();
 
+    // Configure number of threads.
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(options.n_threads)
+        .build_global()
+        .unwrap();
+
     // Initialize PBRT API.
     let mut api = Api::new();
     api.pbrt_init();
