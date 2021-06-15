@@ -32,6 +32,7 @@ impl EFloat {
         let mut r = Self::default();
 
         if err == 0.0 {
+            r.v = v;
             r.low = v;
             r.high = v;
         } else {
@@ -39,6 +40,7 @@ impl EFloat {
             // middle. Note that this will be over-conservative in cases where v-err
             // or v+err are exactly representable in floating-point, but it's
             // probably not worth the trouble of checking this case.
+            r.v = v;
             r.low = next_float_down(r.v - err);
             r.high = next_float_up(r.v + err);
         };
@@ -78,14 +80,14 @@ impl EFloat {
             && self.high.is_finite()
             && !self.high.is_nan()
         {
-            assert!(self.low < self.high);
+            assert!(self.low <= self.high);
         }
 
         #[cfg(debug_assertions)]
         {
             if self.v.is_finite() && !self.v.is_nan() {
-                assert!((self.low as f64) < self.v_precise);
-                assert!(self.v_precise < (self.high as f64));
+                assert!((self.low as f64) <= self.v_precise);
+                assert!(self.v_precise <= (self.high as f64));
             }
         }
     }
