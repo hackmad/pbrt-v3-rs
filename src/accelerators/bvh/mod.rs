@@ -119,7 +119,10 @@ impl BVHAccel {
         *offset += 1;
 
         if node.n_primitives > 0 {
-            debug_assert!(!node.children[0].is_none() && !node.children[1].is_none());
+            // This debug_assert!() doesn't make sense. When you have a single
+            // primitive in the BVH, children node will be None.
+            //debug_assert!(!node.children[0].is_none() && !node.children[1].is_none());
+
             debug_assert!(node.n_primitives < 65536);
 
             nodes[my_offset as usize] = LinearBVHNode::new_leaf_node(
