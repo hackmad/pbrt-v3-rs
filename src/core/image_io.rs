@@ -41,21 +41,17 @@ fn read_exr(path: &str) -> Result<RGBImage, String> {
         .no_deep_data()
         .largest_resolution_level()
         .rgba_channels(
-            |layer_info: &exrs::RgbaChannelsInfo| {
-                let width = layer_info.resolution.width();
-                let height = layer_info.resolution.height();
+            |resolution, _channels| {
+                let width = resolution.width();
+                let height = resolution.height();
                 RGBImage {
                     pixels: vec![RGBSpectrum::default(); width * height],
                     resolution: Point2::new(width, height),
                 }
             },
-            |img: &mut RGBImage, position: exrs::Vec2<usize>, pixel: exrs::RgbaPixel| {
+            |img, position, (r, g, b, _a): (f32, f32, f32, f32)| {
                 let offset = position.y() * img.resolution.x + position.x();
-                img.pixels[offset] = RGBSpectrum::from(vec![
-                    pixel.red.to_f32(),
-                    pixel.green.to_f32(),
-                    pixel.blue.to_f32(),
-                ]);
+                img.pixels[offset] = RGBSpectrum::from(vec![r, g, b]);
             },
         )
         .first_valid_layer()
@@ -63,7 +59,7 @@ fn read_exr(path: &str) -> Result<RGBImage, String> {
 
     // Return the `RGBImage`.
     match reader.from_file(path) {
-        Ok(image) => Ok(image.layer_data.channel_data.storage),
+        Ok(image) => Ok(image.layer_data.channel_data.pixels),
         Err(err) => Err(format!("{:}", err)),
     }
 }
@@ -146,9 +142,10 @@ fn get_extension_from_filename(path: &str) -> Option<&str> {
 /// * `res_y`       - Y resolution.
 fn write_exr(path: &str, rgb: &[Float], res_x: u32, res_y: u32) -> Result<(), String> {
     info!("Writing image {} with resolution {}x{}", path, res_x, res_y);
-    match write_rgb_f32_file(
+    match write_rgb_file(
         String::from(path),
-        (res_x as usize, res_y as usize),
+        res_x as usize,
+        res_y as usize,
         |x, y| {
             let offset = y * (res_x as usize) + x;
             (rgb[offset], rgb[offset + 1], rgb[offset + 2])
