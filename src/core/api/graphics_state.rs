@@ -470,7 +470,7 @@ impl GraphicsState {
         cam2world_set: &TransformSet,
         transform_start: Float,
         transform_end: Float,
-        film: Arc<Film>,
+        film: Film,
         medium_interface: &MediumInterface,
     ) -> Result<ArcCamera, String> {
         assert!(
@@ -508,15 +508,15 @@ impl GraphicsState {
 
     /// Creates a sampler.
     ///
-    /// * `name`     - Name.
-    /// * `paramset` - Parameter set.
-    /// * `film`     - The film.
+    /// * `name`               - Name.
+    /// * `paramset`           - Parameter set.
+    /// * `film_sample_bounds` - The film sample bounds.
     pub fn make_sampler(
         name: &str,
         paramset: &ParamSet,
-        film: Arc<Film>,
+        film_sample_bounds: Bounds2i,
     ) -> Result<ArcSampler, String> {
-        let p = (paramset, film.clone().get_sample_bounds());
+        let p = (paramset, film_sample_bounds);
 
         match name {
             "02sequence" => Ok(Arc::new(ZeroTwoSequenceSampler::from(p))),
@@ -550,13 +550,9 @@ impl GraphicsState {
     /// * `name`     - Name.
     /// * `paramset` - Parameter set.
     /// * `filter`   - Filter.
-    pub fn make_film(
-        name: &str,
-        paramset: &ParamSet,
-        filter: ArcFilter,
-    ) -> Result<Arc<Film>, String> {
+    pub fn make_film(name: &str, paramset: &ParamSet, filter: ArcFilter) -> Result<Film, String> {
         match name {
-            "image" => Ok(Arc::new(Film::from((paramset, filter)))),
+            "image" => Ok(Film::from((paramset, filter))),
             _ => Err(format!("Film '{}' unknown.", name)),
         }
     }

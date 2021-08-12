@@ -25,7 +25,7 @@ impl MaxMinDistSampler {
     /// * `n_sampled_dimensions` - Number of dimensions for sampling.
     /// * `seed`                 - Optional seed for the random number generator.
     pub fn new(samples_per_pixel: usize, n_sampled_dimensions: usize, seed: Option<u64>) -> Self {
-        let c_index = samples_per_pixel.log2() as usize;
+        let c_index = Log2::log2(samples_per_pixel) as usize;
         let max_c_index = C_MAX_MIN_DIST.len();
 
         let spp = if c_index >= max_c_index {

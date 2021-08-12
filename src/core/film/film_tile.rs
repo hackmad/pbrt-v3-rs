@@ -1,12 +1,14 @@
 //! Film tile
 
-use crate::core::film::FILTER_TABLE_WIDTH;
+use crate::core::film::{FILTER_TABLE_SIZE, FILTER_TABLE_WIDTH};
 use crate::core::geometry::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
+use std::sync::Arc;
 
 /// Stores contributions for the pixels in a region of the image.
-pub struct FilmTile<'a> {
+#[derive(Clone)]
+pub struct FilmTile {
     /// Contributions of all pixels in the tile.
     pub pixels: Vec<FilmTilePixel>,
 
@@ -20,13 +22,13 @@ pub struct FilmTile<'a> {
     inv_filter_radius: Vector2f,
 
     /// Filter table.
-    filter_table: &'a [Float],
+    filter_table: Arc<[Float; FILTER_TABLE_SIZE]>,
 
     /// Maximum sample luminence.
     max_sample_luminance: Float,
 }
 
-impl<'a> FilmTile<'a> {
+impl FilmTile {
     /// Create a new `FilmTile` instance.
     ///
     /// * `pixel_bounds`         - Bounds of the pixels in the final image.
@@ -37,14 +39,14 @@ impl<'a> FilmTile<'a> {
     pub fn new(
         pixel_bounds: Bounds2i,
         filter_radius: Vector2f,
-        filter_table: &'a [Float],
+        filter_table: Arc<[Float; FILTER_TABLE_SIZE]>,
         max_sample_luminance: Option<Float>,
     ) -> Self {
         Self {
             pixel_bounds,
             filter_radius,
             inv_filter_radius: Vector2f::new(1.0 / filter_radius.x, 1.0 / filter_radius.y),
-            filter_table,
+            filter_table: Arc::clone(&filter_table),
             pixels: vec![FilmTilePixel::default(); max(0, pixel_bounds.area() as usize)],
             max_sample_luminance: match max_sample_luminance {
                 Some(luminence) => luminence,

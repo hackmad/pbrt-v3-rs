@@ -8,7 +8,7 @@ use crate::core::image_io::*;
 use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::spectrum::*;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 mod film_tile;
 
@@ -64,7 +64,7 @@ pub struct Film {
     pub cropped_pixel_bounds: Bounds2i,
 
     /// The filter table.
-    filter_table: [Float; FILTER_TABLE_SIZE],
+    filter_table: Arc<[Float; FILTER_TABLE_SIZE]>,
 
     /// Scale factor for pixel values.
     scale: Float,
@@ -73,7 +73,7 @@ pub struct Film {
     max_sample_luminance: Float,
 
     /// Stores the image pixels.
-    pixels: Arc<RwLock<Vec<Pixel>>>,
+    pixels: Vec<Pixel>,
 }
 
 impl Film {
@@ -129,13 +129,13 @@ impl Film {
 
         // Allocate film image storage.
         let n = cropped_pixel_bounds.area() as usize;
-        let pixels = Arc::new(RwLock::new(vec![Pixel::default(); n]));
+        let pixels = vec![Pixel::default(); n];
 
         Self {
             full_resolution: *resolution,
             diagonal: diagonal * 0.001, // Convert to meters.
             filter,
-            filter_table,
+            filter_table: Arc::new(filter_table),
             filename: String::from(filename),
             cropped_pixel_bounds,
             scale: match scale {
@@ -187,11 +187,11 @@ impl Film {
         offset as usize
     }
 
-    /// Returns an `Arc<FilmTile>` that stores the contributions for pixels in
+    /// Returns a `FilmTile` that stores the contributions for pixels in
     /// the specified region of the image.
     ///
     /// * `sample_bounds` - Tile region in the overall image.
-    pub fn get_film_tile(&self, sample_bounds: Bounds2i) -> Arc<FilmTile> {
+    pub fn get_film_tile(&self, sample_bounds: Bounds2i) -> FilmTile {
         let filter_data = self.filter.get_data();
         let half_pixel = Vector2f::new(0.5, 0.5);
 
@@ -202,49 +202,46 @@ impl Film {
             + Point2i::new(1, 1);
         let tile_pixel_bounds = Bounds2i::new(p0, p1).intersect(&self.cropped_pixel_bounds);
 
-        Arc::new(FilmTile::new(
+        FilmTile::new(
             tile_pixel_bounds,
             filter_data.radius,
-            &self.filter_table,
+            Arc::clone(&self.filter_table),
             Some(self.max_sample_luminance),
-        ))
+        )
     }
 
     /// Clear the splats for all pixels in the image.
     pub fn clear(&mut self) {
-        let mut pixels = self.pixels.write().unwrap();
         for pixel in self.cropped_pixel_bounds {
             let pixel_offset = self.get_pixel_offset(&pixel);
-            (*pixels)[pixel_offset].splat_xyz = [0.0; 3];
+            self.pixels[pixel_offset].splat_xyz = [0.0; 3];
         }
     }
 
     /// Merge the `FilmTile`'s pixel contribution into the image.
     ///
     /// * `tile` - The `FilmTile` to merge.
-    pub fn merge_film_tile(&self, tile: Arc<FilmTile>) {
-        let mut pixels = self.pixels.write().unwrap();
+    pub fn merge_film_tile(&mut self, tile: &FilmTile) {
         for pixel in tile.get_pixel_bounds() {
             let tile_pixel = tile.get_pixel_offset(&pixel);
             let merge_pixel = self.get_pixel_offset(&pixel);
             let xyz = tile.pixels[tile_pixel].contrib_sum.to_xyz();
             for i in 0..3 {
-                (*pixels)[merge_pixel].xyz[i] += xyz[i];
+                self.pixels[merge_pixel].xyz[i] += xyz[i];
             }
-            (*pixels)[merge_pixel].filter_weight_sum += tile.pixels[tile_pixel].filter_weight_sum;
+            self.pixels[merge_pixel].filter_weight_sum += tile.pixels[tile_pixel].filter_weight_sum;
         }
     }
 
     /// Sets all pixel values in the cropped area with the given spectrum values.
     ///
     /// * `img` - The spectrum values for the cropped area.
-    pub fn set_image(&self, img: &[Spectrum]) {
-        let mut pixels = self.pixels.write().unwrap();
+    pub fn set_image(&mut self, img: &[Spectrum]) {
         let n_pixels = self.cropped_pixel_bounds.area();
         for i in (0..n_pixels).map(|i| i as usize) {
-            (*pixels)[i].xyz = img[i].to_xyz();
-            (*pixels)[i].filter_weight_sum = 1.0;
-            (*pixels)[i].splat_xyz = [0.0; 3];
+            self.pixels[i].xyz = img[i].to_xyz();
+            self.pixels[i].filter_weight_sum = 1.0;
+            self.pixels[i].splat_xyz = [0.0; 3];
         }
     }
 
@@ -252,7 +249,7 @@ impl Film {
     ///
     /// * `p` - The pixel coordinates with respect to the overall image.
     /// * `v` - `Splat` contribution to add to the pixel.
-    pub fn add_splat(&self, p: &Point2f, v: &Spectrum) {
+    pub fn add_splat(&mut self, p: &Point2f, v: &Spectrum) {
         if v.has_nans() {
             warn!(
                 "Ignoring splatted spectrum with NaN values at ({}, {})",
@@ -273,8 +270,6 @@ impl Film {
                 p.x, p.y
             );
         } else {
-            let mut pixels = self.pixels.write().unwrap();
-
             let pi = Point2i::from(p.floor());
             if !self.cropped_pixel_bounds.contains_exclusive(&pi) {
                 return;
@@ -289,7 +284,7 @@ impl Film {
             let xyz = v.to_xyz();
             let pixel_offset = self.get_pixel_offset(&pi);
             for i in 0..3 {
-                (*pixels)[pixel_offset].splat_xyz[i] += xyz[i];
+                self.pixels[pixel_offset].splat_xyz[i] += xyz[i];
             }
         }
     }
@@ -297,10 +292,8 @@ impl Film {
     /// Write the image to an output file.
     ///
     /// * `splat_scale` - Scale factor for `add_splat()` (default = 1.0).
-    pub fn write_image(&self, splat_scale: Float) {
+    pub fn write_image(&mut self, splat_scale: Float) {
         info!("Converting image to RGB and computing final weighted pixel values");
-
-        let mut pixels = self.pixels.write().unwrap();
 
         let n = 3 * self.cropped_pixel_bounds.area() as usize;
         let mut rgb = vec![0.0; n];
@@ -309,11 +302,11 @@ impl Film {
         for p in self.cropped_pixel_bounds {
             // Convert pixel XYZ color to RGB.
             let pixel_offset = self.get_pixel_offset(&p);
-            (*pixels)[pixel_offset].xyz =
+            self.pixels[pixel_offset].xyz =
                 xyz_to_rgb(&[rgb[3 * offset], rgb[3 * offset + 1], rgb[3 * offset + 2]]);
 
             // Normalize pixel with weight sum.
-            let filter_weight_sum = (*pixels)[pixel_offset].filter_weight_sum;
+            let filter_weight_sum = self.pixels[pixel_offset].filter_weight_sum;
             if filter_weight_sum != 0.0 {
                 let inv_wt = 1.0 / filter_weight_sum;
                 rgb[3 * offset] = max(0.0, rgb[3 * offset] * inv_wt);
@@ -322,7 +315,7 @@ impl Film {
             }
 
             // Add splat value at pixel.
-            let splat_rgb = xyz_to_rgb(&(*pixels)[pixel_offset].splat_xyz);
+            let splat_rgb = xyz_to_rgb(&self.pixels[pixel_offset].splat_xyz);
             rgb[3 * offset] += splat_scale * splat_rgb[0];
             rgb[3 * offset + 1] += splat_scale * splat_rgb[1];
             rgb[3 * offset + 2] += splat_scale * splat_rgb[2];

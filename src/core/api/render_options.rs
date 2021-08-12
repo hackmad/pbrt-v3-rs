@@ -119,7 +119,7 @@ impl RenderOptions {
         let sampler = GraphicsState::make_sampler(
             &self.sampler_name,
             &self.sampler_params,
-            camera.get_data().film.clone(),
+            camera.get_film_sample_bounds(),
         )?;
 
         let integrator: Result<ArcIntegrator, String> = match self.integrator_name.as_str() {

@@ -13,7 +13,6 @@ use crate::core::pbrt::*;
 use crate::core::reflection::*;
 use rayon::prelude::*;
 use std::mem::swap;
-use std::sync::Arc;
 
 /// Realistic camera implements a camera consisting of multiple lens
 /// elements.
@@ -65,7 +64,7 @@ impl RealisticCamera {
         focus_distance: Float,
         simple_weighting: bool,
         lens_data: Vec<Float>,
-        film: Arc<Film>,
+        film: Film,
         medium: Option<ArcMedium>,
     ) -> Self {
         let data = CameraData::new(
@@ -475,13 +474,13 @@ impl RealisticCamera {
     }
 }
 
-impl From<(&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)> for RealisticCamera {
+impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for RealisticCamera {
     /// Create a `RealisticCamera` from given parameter set, animated transform,
     /// film and medium.
     ///
     /// * `p` - A tuple containing  parameter set, animated transform, film and
     ///         medium.
-    fn from(p: (&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)) -> Self {
+    fn from(p: (&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)) -> Self {
         let (params, cam2world, film, medium) = p;
 
         // Extract common camera parameters from `ParamSet`
@@ -531,16 +530,39 @@ impl From<(&ParamSet, &AnimatedTransform, Arc<Film>, Option<ArcMedium>)> for Rea
             focus_distance,
             simple_weighting,
             lens_data,
-            film.clone(),
+            film,
             medium.clone(),
         )
     }
 }
 
 impl Camera for RealisticCamera {
-    /// Returns the common camera data.
-    fn get_data(&self) -> &CameraData {
-        &self.data
+    /// Returns the sample bounds accounting for the half-pixel offsets when
+    /// converting from discrete to continuous pixel coordinates.
+    fn get_film_sample_bounds(&self) -> Bounds2i {
+        self.data.film.get_sample_bounds()
+    }
+
+    /// Returns a `FilmTile` that stores the contributions for pixels in
+    /// the specified region of the image.
+    ///
+    /// * `sample_bounds` - Tile region in the overall image.
+    fn get_film_tile(&self, sample_bounds: Bounds2i) -> FilmTile {
+        self.data.film.get_film_tile(sample_bounds)
+    }
+
+    /// Merge the `FilmTile`'s pixel contribution into the image.
+    ///
+    /// * `tile` - The `FilmTile` to merge.
+    fn merge_film_tile(&mut self, tile: &FilmTile) {
+        self.data.film.merge_film_tile(tile);
+    }
+
+    /// Write the image to an output file.
+    ///
+    /// * `splat_scale` - Scale factor for `add_splat()` (default = 1.0).
+    fn write_image(&mut self, splat_scale: Float) {
+        self.data.film.write_image(splat_scale);
     }
 
     /// Returns a ray corresponding to a given sample. It also returns, a floating

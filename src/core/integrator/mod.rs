@@ -3,7 +3,6 @@
 #![allow(dead_code)]
 
 mod common;
-mod sampler_integrator;
 
 use crate::core::geometry::*;
 use crate::core::sampler::*;
@@ -13,7 +12,6 @@ use std::sync::Arc;
 
 // Re-export.
 pub use common::*;
-pub use sampler_integrator::*;
 
 /// Integrator interface.
 pub trait Integrator {

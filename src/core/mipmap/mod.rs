@@ -178,7 +178,7 @@ where
         };
 
         // Initialize levels of MIPMap from image.
-        let n_levels = 1 + max(resolution[0], resolution[1]).log2() as usize;
+        let n_levels = 1 + Log2::log2(max(resolution[0], resolution[1])) as usize;
         let mut pyramid: Vec<BlockedArray<T>> = Vec::with_capacity(n_levels);
 
         // Initialize most detailed level of MIPMap

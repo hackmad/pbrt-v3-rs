@@ -33,7 +33,7 @@ impl Log2<i32> for u32 {
 impl Log2<i32> for i32 {
     /// Returns log base 2 of a value.
     fn log2(self) -> i32 {
-        (self as u32).log2()
+        Log2::log2(self as u32)
     }
 }
 
@@ -47,7 +47,7 @@ impl Log2<i64> for u64 {
 impl Log2<i64> for i64 {
     /// Returns log base 2 of a value.
     fn log2(self) -> i64 {
-        (self as u64).log2()
+        Log2::log2(self as u64)
     }
 }
 

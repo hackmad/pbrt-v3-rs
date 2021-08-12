@@ -12,8 +12,25 @@ use std::sync::Arc;
 
 /// Light trait provides common behavior.
 pub trait Camera {
-    /// Returns the common camera data.
-    fn get_data(&self) -> &CameraData;
+    /// Returns the sample bounds accounting for the half-pixel offsets when
+    /// converting from discrete to continuous pixel coordinates..
+    fn get_film_sample_bounds(&self) -> Bounds2i;
+
+    /// Returns a `FilmTile` that stores the contributions for pixels in
+    /// the specified region of the image.
+    ///
+    /// * `sample_bounds` - Tile region in the overall image.
+    fn get_film_tile(&self, sample_bounds: Bounds2i) -> FilmTile;
+
+    /// Merge the `FilmTile`'s pixel contribution into the image.
+    ///
+    /// * `tile` - The `FilmTile` to merge.
+    fn merge_film_tile(&mut self, tile: &FilmTile);
+
+    /// Write the image to an output file.
+    ///
+    /// * `splat_scale` - Scale factor for `add_splat()` (default = 1.0).
+    fn write_image(&mut self, splat_scale: Float);
 
     /// Returns a ray corresponding to a given sample. It also returns, a floating
     /// point value that affects how much the radiance arriving at the film plane
@@ -233,7 +250,7 @@ pub struct CameraData {
     pub shutter_close: Float,
 
     /// The film to capture the rendered image.
-    pub film: Arc<Film>,
+    pub film: Film,
 
     /// Scattering medium the camera lies in.
     pub medium: Option<ArcMedium>,
@@ -252,7 +269,7 @@ impl CameraData {
         camera_to_world: AnimatedTransform,
         shutter_open: Float,
         shutter_close: Float,
-        film: Arc<Film>,
+        film: Film,
         medium: Option<ArcMedium>,
     ) -> Self {
         Self {
