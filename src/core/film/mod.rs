@@ -302,8 +302,11 @@ impl Film {
         for p in self.cropped_pixel_bounds {
             // Convert pixel XYZ color to RGB.
             let pixel_offset = self.get_pixel_offset(&p);
-            self.pixels[pixel_offset].xyz =
-                xyz_to_rgb(&[rgb[3 * offset], rgb[3 * offset + 1], rgb[3 * offset + 2]]);
+
+            let pixel_rgb = xyz_to_rgb(&self.pixels[pixel_offset].xyz);
+            rgb[3 * offset] = pixel_rgb[0];
+            rgb[3 * offset + 1] = pixel_rgb[1];
+            rgb[3 * offset + 2] = pixel_rgb[2];
 
             // Normalize pixel with weight sum.
             let filter_weight_sum = self.pixels[pixel_offset].filter_weight_sum;
