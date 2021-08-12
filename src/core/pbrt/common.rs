@@ -213,7 +213,7 @@ pub fn next_float_down(v: Float) -> Float {
 
     // Advance v to next lower float
     let nv = if v == 0.0 { -0.0 } else { v };
-    let mut ui = float_to_bits(v);
+    let mut ui = float_to_bits(nv);
     if nv > 0.0 {
         ui -= 1;
     } else {
