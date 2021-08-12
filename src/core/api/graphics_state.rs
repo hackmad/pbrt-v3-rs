@@ -84,7 +84,7 @@ impl GraphicsState {
         let current_material = Arc::new(MaterialInstance::new("matte", matte, &ParamSet::new()));
 
         Self {
-            transform_cache: transform_cache.clone(),
+            transform_cache: Arc::clone(&transform_cache),
             current_inside_medium: None,
             current_outside_medium: None,
             float_textures: FloatTextureMap::new(),
@@ -121,7 +121,7 @@ impl GraphicsState {
             );
             self.make_material(&current_material.name, &mp)
         } else {
-            Ok(current_material.material.clone())
+            Ok(Arc::clone(&current_material.material))
         }
     }
 
@@ -253,7 +253,7 @@ impl GraphicsState {
             "mix" => {
                 let m1 = mp.find_string("namedmaterial1", String::from(""));
                 let mat1 = match self.named_materials.get(&m1) {
-                    Some(mat) => mat.material.clone(),
+                    Some(mat) => Arc::clone(&mat.material),
                     None => {
                         warn!("Named material '{}' undefined. Using 'matte'.", m1);
                         self.make_material("matte", mp).unwrap()
@@ -262,7 +262,7 @@ impl GraphicsState {
 
                 let m2 = mp.find_string("namedmaterial2", String::from(""));
                 let mat2 = match self.named_materials.get(&m2) {
-                    Some(mat) => mat.material.clone(),
+                    Some(mat) => Arc::clone(&mat.material),
                     None => {
                         warn!("Named material '{}' undefined. Using 'matte'.", m2);
                         self.make_material("matte", mp).unwrap()
@@ -385,21 +385,21 @@ impl GraphicsState {
             "point" => {
                 let p = (
                     paramset,
-                    light2world.clone(),
+                    Arc::clone(&light2world),
                     medium_interface.outside.clone(),
                 );
                 Ok(Arc::new(PointLight::from(p)))
             }
             "distant" => {
-                let p = (paramset, light2world.clone());
+                let p = (paramset, Arc::clone(&light2world));
                 Ok(Arc::new(DistantLight::from(p)))
             }
             "infinite" => {
-                let p = (paramset, light2world.clone());
+                let p = (paramset, Arc::clone(&light2world));
                 Ok(Arc::new(InfiniteAreaLight::from(p)))
             }
             "exinfinite" => {
-                let p = (paramset, light2world.clone());
+                let p = (paramset, Arc::clone(&light2world));
                 Ok(Arc::new(InfiniteAreaLight::from(p)))
             }
             _ => Err(format!("Light '{}' unknown.", name)),
@@ -425,7 +425,7 @@ impl GraphicsState {
     ) -> Result<ArcLight, String> {
         let p = (
             paramset,
-            light2world.clone(),
+            Arc::clone(&light2world),
             medium_interface.outside.clone(),
             shape,
         );

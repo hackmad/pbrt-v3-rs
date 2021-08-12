@@ -67,11 +67,14 @@ impl RealisticCamera {
         film: Film,
         medium: Option<ArcMedium>,
     ) -> Self {
+        let film = film.clone();
+        let film_diagonal = film.diagonal;
+
         let data = CameraData::new(
             camera_to_world,
             shutter_open,
             shutter_close,
-            film.clone(),
+            film,
             medium.clone(),
         );
 
@@ -95,7 +98,6 @@ impl RealisticCamera {
             camera.focus_thick_lens(focus_distance);
 
         // Compute exit pupil bounds at sampled points on the film.
-        let film_diagonal = film.clone().diagonal;
         camera.exit_pupil_bounds = (0..n_samples)
             .into_par_iter()
             .map(|i| {

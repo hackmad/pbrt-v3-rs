@@ -450,14 +450,18 @@ impl LoopSubDiv {
                     if !v[vi].boundary {
                         // Apply one-ring rule for even vertex.
                         if v[vi].regular {
-                            child.p = weight_one_ring(v[vi].clone(), 1.0 / 16.0, &v, &f);
+                            child.p = weight_one_ring(Arc::clone(&v[vi]), 1.0 / 16.0, &v, &f);
                         } else {
-                            child.p =
-                                weight_one_ring(v[vi].clone(), beta(v[vi].valence(&f)), &v, &f);
+                            child.p = weight_one_ring(
+                                Arc::clone(&v[vi]),
+                                beta(v[vi].valence(&f)),
+                                &v,
+                                &f,
+                            );
                         }
                     } else {
                         // Apply boundary rule for even vertex.
-                        child.p = weight_boundary(v[vi].clone(), 1.0 / 8.0, &v, &f);
+                        child.p = weight_boundary(Arc::clone(&v[vi]), 1.0 / 8.0, &v, &f);
                     }
                 }
             }
@@ -477,15 +481,16 @@ impl LoopSubDiv {
                         vert.start_face = face.children[3];
 
                         // Apply edge rules to compute new vertex position.
-                        let v0 = v[edge.v[0] as usize].clone();
-                        let v1 = v[edge.v[1] as usize].clone();
+                        let v0 = Arc::clone(&v[edge.v[0] as usize]);
+                        let v1 = Arc::clone(&v[edge.v[1] as usize]);
 
                         if vert.boundary {
                             vert.p = 0.5 * v0.p + 0.5 * v1.p;
                         } else {
-                            let ov = v[face.other_vert(v0.vi, v1.vi) as usize].clone();
-                            let fk = f[face.f[k] as usize].clone();
-                            let fk_ov = v[fk.other_vert(edge.v[0], edge.v[1]) as usize].clone();
+                            let ov = Arc::clone(&v[face.other_vert(v0.vi, v1.vi) as usize]);
+                            let fk = Arc::clone(&f[face.f[k] as usize]);
+                            let fk_ov =
+                                Arc::clone(&v[fk.other_vert(edge.v[0], edge.v[1]) as usize]);
                             vert.p = 3.0 / 8.0 * v0.p
                                 + 3.0 / 8.0 * v1.p
                                 + 1.0 / 8.0 * ov.p
@@ -503,7 +508,7 @@ impl LoopSubDiv {
             // Update even vertex face pointers.
             for vertex in v.iter() {
                 if vertex.child != -1 {
-                    let start_face = f[vertex.start_face as usize].clone();
+                    let start_face = Arc::clone(&f[vertex.start_face as usize]);
                     let vert_num = start_face.vnum(vertex.vi) as usize;
                     let child_start_face = start_face.children[vert_num];
                     if let Some(child) = Arc::get_mut(&mut new_vertices[vertex.child as usize]) {
@@ -529,7 +534,7 @@ impl LoopSubDiv {
                     let f2 = face.f[j];
                     if let Some(child) = Arc::get_mut(&mut new_faces[cj]) {
                         child.f[j] = if f2 != -1 {
-                            let face2 = f[f2 as usize].clone();
+                            let face2 = Arc::clone(&f[f2 as usize]);
                             face2.children[face2.vnum(face.v[j]) as usize]
                         } else {
                             -1
@@ -540,7 +545,7 @@ impl LoopSubDiv {
                     let cj = face.children[j] as usize;
                     if let Some(child) = Arc::get_mut(&mut new_faces[cj]) {
                         child.f[prev(j as i64) as usize] = if f2 != -1 {
-                            let face2 = f[f2 as usize].clone();
+                            let face2 = Arc::clone(&f[f2 as usize]);
                             face2.children[face2.vnum(face.v[j]) as usize]
                         } else {
                             -1
@@ -587,11 +592,11 @@ impl LoopSubDiv {
         let mut p_limit: Vec<Point3f> = Vec::with_capacity(v.len());
         for i in 0..v.len() {
             if v[i].boundary {
-                p_limit.push(weight_boundary(v[i].clone(), 1.0 / 5.0, &v, &f));
+                p_limit.push(weight_boundary(Arc::clone(&v[i]), 1.0 / 5.0, &v, &f));
             } else {
                 p_limit.push(weight_one_ring(
-                    v[i].clone(),
-                    loop_gamma(v[i].clone().valence(&f)),
+                    Arc::clone(&v[i]),
+                    loop_gamma(Arc::clone(&v[i]).valence(&f)),
                     &v,
                     &f,
                 ));
@@ -604,7 +609,7 @@ impl LoopSubDiv {
         // Compute vertex tangents on limit surface.
         let mut ns: Vec<Normal3f> = Vec::with_capacity(v.len());
         for i in 0..v.len() {
-            let vertex = v[i].clone();
+            let vertex = Arc::clone(&v[i]);
             let mut s = Vector3f::default();
             let mut t = Vector3f::default();
             let valence = vertex.valence(&f);
@@ -655,8 +660,8 @@ impl LoopSubDiv {
         }
 
         TriangleMesh::create(
-            object_to_world.clone(),
-            world_to_object.clone(),
+            Arc::clone(&object_to_world),
+            Arc::clone(&world_to_object),
             reverse_orientation,
             vertex_indices,
             p_limit,
@@ -697,8 +702,8 @@ impl LoopSubDiv {
         }
 
         Self::subdivide(
-            o2w.clone(),
-            w2o.clone(),
+            Arc::clone(&o2w),
+            Arc::clone(&w2o),
             reverse_orientation,
             n_levels,
             vertex_indices,

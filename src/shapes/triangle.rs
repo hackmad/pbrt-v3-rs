@@ -100,7 +100,7 @@ impl TriangleMesh {
             alpha_mask,
             shadow_alpha_mask,
             face_indices,
-            data: ShapeData::new(object_to_world.clone(), None, reverse_orientation),
+            data: ShapeData::new(Arc::clone(&object_to_world), None, reverse_orientation),
         }
     }
 
@@ -142,7 +142,7 @@ impl TriangleMesh {
         assert!(num_triangles == 0);
 
         let mesh = Self::new(
-            object_to_world.clone(),
+            Arc::clone(&object_to_world),
             reverse_orientation,
             vertex_indices,
             p,
@@ -158,10 +158,10 @@ impl TriangleMesh {
         let mut tris = Vec::<ArcShape>::with_capacity(num_triangles);
         for i in 0..num_triangles {
             let tri = Triangle::new(
-                object_to_world.clone(),
-                world_to_object.clone(),
+                Arc::clone(&object_to_world),
+                Arc::clone(&world_to_object),
                 reverse_orientation,
-                m.clone(),
+                Arc::clone(&m),
                 i,
             );
             tris.push(Arc::new(tri));
@@ -286,7 +286,7 @@ impl TriangleMesh {
         let alpha_tex_name = params.find_one_texture("alpha", String::from(""));
         let alpha_tex = if alpha_tex_name.len() > 0 {
             if let Some(tex) = float_textures.get(&alpha_tex_name) {
-                tex.clone()
+                Arc::clone(tex)
             } else {
                 warn!(
                     "Couldn't find float texture '{}' for 'alpha' parameter. 
@@ -304,7 +304,7 @@ impl TriangleMesh {
         let shadow_alpha_tex_name = params.find_one_texture("shadowalpha", String::from(""));
         let shadow_alpha_tex = if shadow_alpha_tex_name.len() > 0 {
             if let Some(tex) = float_textures.get(&shadow_alpha_tex_name) {
-                tex.clone()
+                Arc::clone(tex)
             } else {
                 warn!(
                     "Couldn't find float texture '{}' for 'shadowalpha' 
@@ -320,8 +320,8 @@ impl TriangleMesh {
         };
 
         Self::create(
-            o2w.clone(),
-            w2o.clone(),
+            Arc::clone(&o2w),
+            Arc::clone(&w2o),
             reverse_orientation,
             vi,
             p,
@@ -366,11 +366,11 @@ impl Triangle {
         triangle_index: usize,
     ) -> Self {
         Self {
-            mesh: mesh.clone(),
+            mesh: Arc::clone(&mesh),
             v: 3 * triangle_index,
             data: ShapeData::new(
-                object_to_world.clone(),
-                Some(world_to_object.clone()),
+                Arc::clone(&object_to_world),
+                Some(Arc::clone(&world_to_object)),
                 reverse_orientation,
             ),
         }

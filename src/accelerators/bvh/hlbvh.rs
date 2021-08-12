@@ -87,7 +87,7 @@ impl HLBVH {
                     &morton_prims[start_index..],
                     n_primitives,
                     &mut nodes_created,
-                    ordered_prims.clone(),
+                    Arc::clone(&ordered_prims),
                     &ordered_prims_offset,
                     Some(FIRST_BIT_INDEX),
                 );
@@ -136,11 +136,11 @@ impl HLBVH {
             let mut bounds = Bounds3f::default();
             let first_prim_offset = ordered_prims_offset.fetch_add(n_primitives, Ordering::SeqCst);
 
-            let prims = ordered_prims.clone();
+            let prims = Arc::clone(&ordered_prims);
             let mut prims2 = prims.lock().expect("unabled to lock ordered_prims");
             for i in 0..n_primitives {
                 let primitive_index = morton_prims[i].primitive_index;
-                prims2[first_prim_offset + i] = primitives[primitive_index].clone();
+                prims2[first_prim_offset + i] = Arc::clone(&primitives[primitive_index]);
                 bounds = bounds.union(&primitive_info[primitive_index].bounds);
             }
 
@@ -159,7 +159,7 @@ impl HLBVH {
                     morton_prims,
                     n_primitives,
                     total_nodes,
-                    ordered_prims.clone(),
+                    Arc::clone(&ordered_prims),
                     ordered_prims_offset,
                     Some(bit_idx - 1),
                 );
@@ -198,7 +198,7 @@ impl HLBVH {
                 morton_prims,
                 split_offset,
                 total_nodes,
-                ordered_prims.clone(),
+                Arc::clone(&ordered_prims),
                 ordered_prims_offset,
                 Some(bit_idx - 1),
             );
@@ -209,7 +209,7 @@ impl HLBVH {
                 &morton_prims[split_offset..],
                 n_primitives - split_offset,
                 total_nodes,
-                ordered_prims.clone(),
+                Arc::clone(&ordered_prims),
                 ordered_prims_offset,
                 Some(bit_idx - 1),
             );
@@ -236,7 +236,7 @@ impl HLBVH {
 
         let n_nodes = end - start;
         if n_nodes == 1 {
-            return treelet_roots[start].clone();
+            return Arc::clone(&treelet_roots[start]);
         }
         *total_nodes += 1;
 

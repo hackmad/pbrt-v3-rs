@@ -32,7 +32,7 @@ impl<T> FBmTexture<T> {
     /// * `octaves` - Maximum number of octaves of noise to use for the sum.
     pub fn new(mapping: ArcTextureMapping3D, omega: Float, octaves: usize) -> Self {
         Self {
-            mapping: mapping.clone(),
+            mapping: Arc::clone(&mapping),
             omega,
             octaves,
             _marker: PhantomData,

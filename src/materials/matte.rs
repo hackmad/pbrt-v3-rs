@@ -36,8 +36,8 @@ impl MatteMaterial {
         bump_map: Option<ArcTexture<Float>>,
     ) -> Self {
         Self {
-            kd: kd.clone(),
-            sigma: sigma.clone(),
+            kd: Arc::clone(&kd),
+            sigma: Arc::clone(&sigma),
             bump_map: bump_map.clone(),
         }
     }

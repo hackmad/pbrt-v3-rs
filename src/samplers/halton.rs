@@ -130,7 +130,7 @@ impl HaltonSampler {
     ///
     /// * `sample_num` - The sample number.
     fn get_index_for_sample(&mut self, sample_num: usize) -> u64 {
-        let pixel = self.pixel_for_offset.clone();
+        let pixel = Arc::clone(&self.pixel_for_offset);
         let mut pixel_for_offset = pixel.lock().unwrap();
         let offset_for_current_pixel = self.offset_for_current_pixel.get_mut();
 

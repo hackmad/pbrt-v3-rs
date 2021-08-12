@@ -6,6 +6,7 @@ use crate::core::light::*;
 use crate::core::primitive::*;
 use crate::core::sampler::*;
 use crate::core::spectrum::*;
+use std::sync::Arc;
 
 /// Scene.
 #[derive(Clone)]
@@ -30,13 +31,13 @@ impl Scene {
     /// * `lights`    - All light sources in the scene.
     pub fn new(aggregate: ArcPrimitive, lights: Vec<ArcLight>) -> Self {
         Self {
-            aggregate: aggregate.clone(),
+            aggregate: Arc::clone(&aggregate),
             world_bound: aggregate.world_bound(),
-            lights: lights.iter().map(|l| l.clone()).collect(),
+            lights: lights.iter().map(|l| Arc::clone(&l)).collect(),
             infinite_lights: lights
                 .iter()
                 .filter(|l| l.get_type().matches(INFINITE_LIGHT))
-                .map(|l| l.clone())
+                .map(|l| Arc::clone(&l))
                 .collect(),
         }
     }
@@ -75,7 +76,7 @@ impl Scene {
 
             // Accumulate beam transmittance for ray segment
             if let Some(medium) = &ray.medium {
-                tr *= medium.tr(ray, sampler.clone());
+                tr *= medium.tr(ray, Arc::clone(&sampler));
             }
 
             // Initialize next ray segment or terminate transmittance computation.

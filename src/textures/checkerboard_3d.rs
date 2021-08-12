@@ -29,9 +29,9 @@ impl<T> CheckerboardTexture3D<T> {
     /// * `mapping`   - The 3D mapping.
     pub fn new(tex1: ArcTexture<T>, tex2: ArcTexture<T>, mapping: ArcTextureMapping3D) -> Self {
         Self {
-            tex1: tex1.clone(),
-            tex2: tex2.clone(),
-            mapping: mapping.clone(),
+            tex1: Arc::clone(&tex1),
+            tex2: Arc::clone(&tex2),
+            mapping: Arc::clone(&mapping),
         }
     }
 }

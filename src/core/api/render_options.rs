@@ -188,14 +188,14 @@ impl RenderOptions {
             gs.current_inside_medium
                 .clone()
                 .map_or(None, |m| match self.named_media.get(&m) {
-                    Some(medium) => Some(medium.clone()),
+                    Some(medium) => Some(Arc::clone(&medium)),
                     None => None,
                 });
         let outside_medium =
             gs.current_outside_medium
                 .clone()
                 .map_or(None, |m| match self.named_media.get(&m) {
-                    Some(medium) => Some(medium.clone()),
+                    Some(medium) => Some(Arc::clone(&medium)),
                     None => None,
                 });
 

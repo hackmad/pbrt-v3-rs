@@ -53,11 +53,14 @@ impl PerspectiveCamera {
         film: Film,
         medium: Option<ArcMedium>,
     ) -> Self {
+        let film = film.clone();
+        let res = film.full_resolution;
+
         let data = CameraData::new(
             camera_to_world,
             shutter_open,
             shutter_close,
-            film.clone(),
+            film,
             medium.clone(),
         );
         let proj_data = ProjectiveCameraData::new(
@@ -83,8 +86,6 @@ impl PerspectiveCamera {
                 .transform_point(&Point3f::new(0.0, 0.0, 0.0));
 
         // Compute the image plane bounds at z=1 for perspective camera.
-        let res = film.full_resolution;
-
         let mut p_min = proj_data
             .raster_to_camera
             .transform_point(&Point3f::new(0.0, 0.0, 0.0));

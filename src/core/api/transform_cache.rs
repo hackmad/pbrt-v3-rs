@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use crate::core::geometry::ArcTransform;
 use std::collections::HashSet;
+use std::sync::Arc;
 
 /// Allocates and stores a single `Transform` reference for each unique
 /// transformation.
@@ -18,10 +19,10 @@ impl TransformCache {
     /// * `t` - Reference to a transform to lookup.
     pub fn lookup(&mut self, t: ArcTransform) -> ArcTransform {
         match self.transforms.get(&t) {
-            Some(transform) => transform.clone(),
+            Some(transform) => Arc::clone(&transform),
             None => {
-                self.transforms.insert(t.clone());
-                t.clone()
+                self.transforms.insert(Arc::clone(&t));
+                Arc::clone(&t)
             }
         }
     }

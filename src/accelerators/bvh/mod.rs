@@ -74,7 +74,7 @@ impl BVHAccel {
                     max_prims_in_node,
                     &mut primitive_info,
                     &mut total_nodes,
-                    ordered_prims.clone(),
+                    Arc::clone(&ordered_prims),
                 ),
                 _ => SAH::recursive_build(
                     &primitives,
@@ -84,7 +84,7 @@ impl BVHAccel {
                     0,
                     n_primitives,
                     &mut total_nodes,
-                    ordered_prims.clone(),
+                    Arc::clone(&ordered_prims),
                 ),
             };
 
@@ -95,7 +95,7 @@ impl BVHAccel {
 
             debug_assert!(total_nodes == offset as usize);
 
-            let prims = ordered_prims.clone();
+            let prims = Arc::clone(&ordered_prims);
             let prims2 = prims.lock().expect("unabled to lock ordered_prims");
             BVHAccel {
                 primitives: prims2.to_vec(),

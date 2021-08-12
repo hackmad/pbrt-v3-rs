@@ -6,6 +6,7 @@ use crate::core::geometry::*;
 use crate::core::paramset::*;
 use crate::core::spectrum::*;
 use crate::core::texture::*;
+use std::sync::Arc;
 
 /// Implements a texture that converts the surface's (u, v) coordinates
 /// into red and green components of a `Spectrum`.
@@ -21,7 +22,7 @@ impl UVTexture {
     /// * `mapping` - The 2D mapping.
     pub fn new(mapping: ArcTextureMapping2D) -> Self {
         Self {
-            mapping: mapping.clone(),
+            mapping: Arc::clone(&mapping),
         }
     }
 }

@@ -6,6 +6,7 @@ use crate::core::light::*;
 use crate::core::material::*;
 use crate::core::medium::*;
 use crate::core::primitive::*;
+use std::sync::Arc;
 
 /// GeometricPrimitive represents a single shape in a scene.
 #[derive(Clone)]
@@ -41,8 +42,8 @@ impl GeometricPrimitive {
         medium_interface: MediumInterface,
     ) -> Self {
         Self {
-            shape: shape.clone(),
-            material: Some(material.clone()),
+            shape: Arc::clone(&shape),
+            material: Some(Arc::clone(&material)),
             area_light: area_light.clone(),
             medium_interface: medium_interface.clone(),
         }

@@ -37,7 +37,7 @@ impl EnvironmentCamera {
                 camera_to_world,
                 shutter_open,
                 shutter_close,
-                film.clone(),
+                film,
                 medium.clone(),
             ),
         }

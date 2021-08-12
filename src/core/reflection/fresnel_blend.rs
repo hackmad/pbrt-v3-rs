@@ -33,7 +33,7 @@ impl FresnelBlend {
             bxdf_type: BxDFType::from(BSDF_REFLECTION | BSDF_GLOSSY),
             rd,
             rs,
-            distribution: distribution.clone(),
+            distribution: Arc::clone(&distribution),
         }
     }
 

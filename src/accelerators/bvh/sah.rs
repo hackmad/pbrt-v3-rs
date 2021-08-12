@@ -104,7 +104,7 @@ impl SAH {
                 start,
                 mid,
                 total_nodes,
-                ordered_prims.clone(),
+                Arc::clone(&ordered_prims),
             );
             let c1 = Self::recursive_build(
                 primitives,
@@ -114,17 +114,17 @@ impl SAH {
                 mid,
                 end,
                 total_nodes,
-                ordered_prims.clone(),
+                Arc::clone(&ordered_prims),
             );
             BVHBuildNode::new_interior_node(dim, c0, c1)
         } else {
             // Create leaf BVHBuildNode.
-            let prims = ordered_prims.clone();
+            let prims = Arc::clone(&ordered_prims);
             let mut prims2 = prims.lock().expect("unable to lock ordered_prims");
             let first_prim_offset = prims2.len();
             for i in start..end {
                 let prim_num = primitive_info[i].primitive_number;
-                prims2.push(primitives[prim_num].clone());
+                prims2.push(Arc::clone(&primitives[prim_num]));
             }
             BVHBuildNode::new_leaf_node(first_prim_offset, n_primitives, bounds)
         }

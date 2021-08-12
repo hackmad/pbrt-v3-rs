@@ -73,8 +73,8 @@ impl From<ArcMedium> for MediumInterface {
     /// * `medium` - The medium on either side of the interface.
     fn from(medium: ArcMedium) -> Self {
         Self {
-            inside: Some(medium.clone()),
-            outside: Some(medium.clone()),
+            inside: Some(Arc::clone(&medium)),
+            outside: Some(Arc::clone(&medium)),
         }
     }
 }

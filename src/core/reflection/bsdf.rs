@@ -62,7 +62,7 @@ impl BSDF {
             "Cannot add BxDFs. BSDF maximum limit {} reached.",
             MAX_BXDFS
         );
-        self.bxdfs.push(bxdf.clone());
+        self.bxdfs.push(Arc::clone(&bxdf));
     }
 
     /// Returns the number of `BxDF`s that match the given type.
@@ -136,7 +136,7 @@ impl BSDF {
         let mut bxdf: Option<ArcBxDF> = None;
         for b in self.bxdfs.iter() {
             if b.matches(bxdf_type) && count == 0 {
-                bxdf = Some(b.clone());
+                bxdf = Some(Arc::clone(b));
                 break;
             }
             count -= 1;

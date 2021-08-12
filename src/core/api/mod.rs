@@ -89,11 +89,11 @@ impl Api {
             active_transform_bits: ALL_TRANSFORM_BITS,
             named_coordinate_systems: HashMap::new(),
             render_options: RenderOptions::new(),
-            graphics_state: GraphicsState::new(transform_cache.clone()),
+            graphics_state: GraphicsState::new(Arc::clone(&transform_cache)),
             pushed_graphics_states: vec![],
             pushed_transforms: vec![],
             pushed_active_transform_bits: vec![],
-            transform_cache: transform_cache.clone(),
+            transform_cache: Arc::clone(&transform_cache),
         }
     }
 
@@ -449,7 +449,7 @@ impl Api {
             let mut transform_cache = self.transform_cache.lock().unwrap();
             transform_cache.clear();
 
-            self.graphics_state = GraphicsState::new(self.transform_cache.clone());
+            self.graphics_state = GraphicsState::new(Arc::clone(&self.transform_cache));
             self.current_api_state = ApiState::OptionsBlock;
             self.current_transforms.reset();
 
@@ -599,8 +599,11 @@ impl Api {
                 self.graphics_state.spectrum_textures.clone(),
             );
             if let Ok(mtl) = self.graphics_state.make_material(&name, &mut mp) {
-                self.graphics_state.current_material =
-                    Some(Arc::new(MaterialInstance::new(&name, mtl.clone(), params)))
+                self.graphics_state.current_material = Some(Arc::new(MaterialInstance::new(
+                    &name,
+                    Arc::clone(&mtl),
+                    params,
+                )))
             }
         }
     }
@@ -634,7 +637,7 @@ impl Api {
                         self.graphics_state.named_materials = nm;
                         self.graphics_state.named_materials_shared = false;
                     }
-                    let mtli = Arc::new(MaterialInstance::new(&name, mtl.clone(), params));
+                    let mtli = Arc::new(MaterialInstance::new(&name, Arc::clone(&mtl), params));
                     self.graphics_state.named_materials.insert(name, mtli);
                 }
             }
@@ -698,14 +701,14 @@ impl Api {
                 let mut transform_cache = self.transform_cache.lock().unwrap();
                 let tr = self.current_transforms[0].clone();
                 let tr_inv = Arc::new(tr.inverse());
-                let obj2world = transform_cache.lookup(tr.clone());
+                let obj2world = transform_cache.lookup(Arc::clone(&tr));
                 let world2obj = transform_cache.lookup(tr_inv);
                 let shapes = self
                     .graphics_state
                     .make_shape(
                         &name,
-                        obj2world.clone(),
-                        world2obj.clone(),
+                        Arc::clone(&obj2world),
+                        Arc::clone(&world2obj),
                         self.graphics_state.reverse_orientation,
                         params,
                     )
@@ -725,15 +728,19 @@ impl Api {
                             &area_light,
                             self.current_transforms[0].clone(),
                             &mi,
-                            shape.clone(),
+                            Arc::clone(&shape),
                             params,
                         ) {
                             area_lights.push(area);
                         }
                     }
 
-                    let prim =
-                        GeometricPrimitive::new(shape.clone(), mtl.clone(), None, mi.clone());
+                    let prim = GeometricPrimitive::new(
+                        Arc::clone(&shape),
+                        Arc::clone(&mtl),
+                        None,
+                        mi.clone(),
+                    );
                     prims.push(Arc::new(prim));
                 }
             } else {
@@ -766,8 +773,12 @@ impl Api {
                 let mi = self.create_medium_interface();
 
                 for shape in shapes.iter() {
-                    let prim =
-                        GeometricPrimitive::new(shape.clone(), mtl.clone(), None, mi.clone());
+                    let prim = GeometricPrimitive::new(
+                        Arc::clone(&shape),
+                        Arc::clone(&mtl),
+                        None,
+                        mi.clone(),
+                    );
                     prims.push(Arc::new(prim));
                 }
 
@@ -783,8 +794,8 @@ impl Api {
                     transform_cache.lookup(self.current_transforms[1].clone()),
                 ];
                 let animated_object2world = AnimatedTransform::new(
-                    obj2world[0].clone(),
-                    obj2world[1].clone(),
+                    Arc::clone(&obj2world[0]),
+                    Arc::clone(&obj2world[1]),
                     self.render_options.transform_start_time,
                     self.render_options.transform_end_time,
                 );
@@ -794,7 +805,7 @@ impl Api {
                 }
                 if prims.len() == 1 {
                     let prim = Arc::new(TransformedPrimitive::new(
-                        prims[0].clone(),
+                        Arc::clone(&prims[0]),
                         animated_object2world,
                     ));
                     prims[0] = prim;
@@ -844,8 +855,8 @@ impl Api {
                 let new_instance: Arc<Vec<ArcPrimitive>> = Arc::new(vec![]);
                 self.render_options
                     .instances
-                    .insert(name, new_instance.clone());
-                self.render_options.current_instance = Some(new_instance.clone());
+                    .insert(name, Arc::clone(&new_instance));
+                self.render_options.current_instance = Some(Arc::clone(&new_instance));
             }
         }
     }
@@ -877,7 +888,7 @@ impl Api {
                     0 => {
                         return;
                     }
-                    1 => (&*instance)[0].clone(),
+                    1 => Arc::clone(&(&*instance)[0]),
                     _ => {
                         // Create an aggregate for the instance `Primitives`.
                         match GraphicsState::make_accelerator(
@@ -906,8 +917,8 @@ impl Api {
                     transform_cache.lookup(self.current_transforms[1].clone()),
                 ];
                 let animated_instance2world = AnimatedTransform::new(
-                    instance2world[0].clone(),
-                    instance2world[1].clone(),
+                    Arc::clone(&instance2world[0]),
+                    Arc::clone(&instance2world[1]),
                     self.render_options.transform_start_time,
                     self.render_options.transform_end_time,
                 );

@@ -32,9 +32,9 @@ impl MixMaterial {
     /// * `scale` - Texture used to blend between `m1` and `m2`.
     pub fn new(m1: ArcMaterial, m2: ArcMaterial, scale: ArcTexture<Spectrum>) -> Self {
         Self {
-            m1: m1.clone(),
-            m2: m2.clone(),
-            scale: scale.clone(),
+            m1: Arc::clone(&m1),
+            m2: Arc::clone(&m2),
+            scale: Arc::clone(&scale),
         }
     }
 }
@@ -71,14 +71,17 @@ impl Material for MixMaterial {
         if let Some(si_bsdf) = si.bsdf.as_mut() {
             let n1 = si_bsdf.num_components(BxDFType::from(BSDF_ALL));
             for i in 0..n1 {
-                bsdf.add(Arc::new(ScaledBxDF::new(si_bsdf.bxdfs[i].clone(), s1)));
+                bsdf.add(Arc::new(ScaledBxDF::new(Arc::clone(&si_bsdf.bxdfs[i]), s1)));
             }
         }
 
         if let Some(si2_bsdf) = si2.bsdf.as_mut() {
             let n2 = si2_bsdf.num_components(BxDFType::from(BSDF_ALL));
             for i in 0..n2 {
-                bsdf.add(Arc::new(ScaledBxDF::new(si2_bsdf.bxdfs[i].clone(), s2)));
+                bsdf.add(Arc::new(ScaledBxDF::new(
+                    Arc::clone(&si2_bsdf.bxdfs[i]),
+                    s2,
+                )));
             }
         }
 
@@ -96,6 +99,6 @@ impl From<(&TextureParams, ArcMaterial, ArcMaterial)> for MixMaterial {
             "amount",
             Arc::new(ConstantTexture::new(Spectrum::new(0.5))),
         );
-        Self::new(mat1.clone(), mat2.clone(), scale)
+        Self::new(Arc::clone(&mat1), Arc::clone(&mat2), scale)
     }
 }

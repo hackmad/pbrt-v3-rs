@@ -36,12 +36,12 @@ impl FourierMaterial {
         // Use preloaded BSDF data if available.
         let mut tables = BSDF_TABLES.lock().unwrap();
         let bsdf_table = if let Some(table) = tables.get(&key) {
-            table.clone()
+            Arc::clone(table)
         } else {
             match FourierBSDFTable::from_file(path) {
                 Ok(table) => {
                     let t = Arc::new(table);
-                    tables.insert(key, t.clone());
+                    tables.insert(key, Arc::clone(&t));
                     t
                 }
                 Err(err) => {
@@ -83,7 +83,10 @@ impl Material for FourierMaterial {
         // Checking for zero channels works as a proxy for checking whether the
         // table was successfully read from the file.
         if self.bsdf_table.n_channels > 0 {
-            bsdf.add(Arc::new(FourierBSDF::new(self.bsdf_table.clone(), mode)));
+            bsdf.add(Arc::new(FourierBSDF::new(
+                Arc::clone(&self.bsdf_table),
+                mode,
+            )));
         }
 
         si.bsdf = Some(Arc::new(bsdf));

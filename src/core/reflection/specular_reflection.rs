@@ -25,7 +25,7 @@ impl SpecularReflection {
     pub fn new(r: Spectrum, fresnel: ArcFresnel) -> Self {
         Self {
             bxdf_type: BxDFType::from(BSDF_REFLECTION | BSDF_SPECULAR),
-            fresnel: fresnel.clone(),
+            fresnel: Arc::clone(&fresnel),
             r,
         }
     }

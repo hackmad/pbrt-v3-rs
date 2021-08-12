@@ -51,9 +51,9 @@ impl PlasticMaterial {
         bump_map: Option<ArcTexture<Float>>,
     ) -> Self {
         Self {
-            kd: kd.clone(),
-            ks: ks.clone(),
-            roughness: roughness.clone(),
+            kd: Arc::clone(&kd),
+            ks: Arc::clone(&ks),
+            roughness: Arc::clone(&roughness),
             remap_roughness,
             bump_map: bump_map.clone(),
         }

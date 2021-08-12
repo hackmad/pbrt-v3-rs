@@ -45,7 +45,7 @@ impl WhittedIntegrator {
         pixel_bounds: Bounds2i,
     ) -> Self {
         Self {
-            camera: Arc::new(Mutex::new(camera.clone())),
+            camera: Arc::new(Mutex::new(Arc::clone(&camera))),
             sampler,
             pixel_bounds,
             max_depth,
@@ -109,7 +109,9 @@ impl WhittedIntegrator {
                     ));
                 }
 
-                return f * self.li(&mut rd, scene.clone(), sampler, depth + 1) * wi.abs_dot(&ns)
+                return f
+                    * self.li(&mut rd, Arc::clone(&scene), sampler, depth + 1)
+                    * wi.abs_dot(&ns)
                     / pdf;
             }
         }
@@ -232,7 +234,9 @@ impl WhittedIntegrator {
                     ));
                 }
 
-                return f * self.li(&mut rd, scene.clone(), sampler, depth + 1) * wi.abs_dot(&ns)
+                return f
+                    * self.li(&mut rd, Arc::clone(&scene), sampler, depth + 1)
+                    * wi.abs_dot(&ns)
                     / pdf;
             }
         }
@@ -383,7 +387,7 @@ impl Integrator for WhittedIntegrator {
         info!("Rendering finished.");
 
         // Save final image after rendering.
-        let camera_clone = self.camera.clone();
+        let camera_clone = Arc::clone(&self.camera);
         let mut camera = camera_clone.lock().unwrap();
         Arc::get_mut(&mut *camera).unwrap().write_image(1.0);
         info!("Output image written.");
@@ -457,7 +461,7 @@ impl Integrator for WhittedIntegrator {
                     self,
                     ray,
                     &isect,
-                    scene.clone(),
+                    Arc::clone(&scene),
                     sampler,
                     depth,
                 );
@@ -465,7 +469,7 @@ impl Integrator for WhittedIntegrator {
                     self,
                     ray,
                     &isect,
-                    scene.clone(),
+                    Arc::clone(&scene),
                     sampler,
                     depth,
                 );
@@ -510,6 +514,11 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for WhittedIntegrator {
             }
         }
 
-        Self::new(max_depth, camera.clone(), sampler.clone(), pixel_bounds)
+        Self::new(
+            max_depth,
+            Arc::clone(&camera),
+            Arc::clone(&sampler),
+            pixel_bounds,
+        )
     }
 }

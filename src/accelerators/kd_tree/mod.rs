@@ -7,6 +7,7 @@ use crate::core::material::*;
 use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::primitive::*;
+use std::sync::Arc;
 
 mod common;
 use common::*;
@@ -490,7 +491,7 @@ impl Primitive for KDTreeAccel {
                     let n_primitives = node.n_primitives();
                     if n_primitives == 1 {
                         let one_primitive = node.one_primitive() as usize;
-                        let p = self.primitives[one_primitive].clone();
+                        let p = Arc::clone(&self.primitives[one_primitive]);
 
                         // Check one primitive inside leaf node.
                         if p.intersect_p(r) {
@@ -500,7 +501,7 @@ impl Primitive for KDTreeAccel {
                         for i in 0..n_primitives as usize {
                             let offset = node.primitive_indices_offset() as usize;
                             let index = self.primitive_indices[offset + i] as usize;
-                            let p = self.primitives[index].clone();
+                            let p = Arc::clone(&self.primitives[index]);
 
                             // Check one primitive inside leaf node.
                             if p.intersect_p(r) {

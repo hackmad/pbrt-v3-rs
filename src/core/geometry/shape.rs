@@ -19,10 +19,7 @@ pub trait Shape {
     /// Default is to transform the object bounds with the object-to0world
     /// transformation. Override for tighter bounds implementation.
     fn world_bound(&self) -> Bounds3f {
-        self.get_data()
-            .object_to_world
-            .clone()
-            .transform_bounds(&self.object_bound())
+        Arc::clone(&self.get_data().object_to_world).transform_bounds(&self.object_bound())
     }
 
     /// Returns geometric details if a ray intersects the shape intersection.
@@ -197,7 +194,7 @@ impl ShapeData {
         reverse_orientation: bool,
     ) -> Self {
         Self {
-            object_to_world: object_to_world.clone(),
+            object_to_world: Arc::clone(&object_to_world),
             world_to_object: world_to_object.clone(),
             reverse_orientation,
             transform_swaps_handedness: object_to_world.swaps_handedness(),

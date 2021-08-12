@@ -32,8 +32,8 @@ impl MicrofacetReflection {
         Self {
             bxdf_type: BxDFType::from(BSDF_REFLECTION | BSDF_GLOSSY),
             r,
-            distribution: distribution.clone(),
-            fresnel: fresnel.clone(),
+            distribution: Arc::clone(&distribution),
+            fresnel: Arc::clone(&fresnel),
         }
     }
 }

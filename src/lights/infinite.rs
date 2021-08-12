@@ -59,7 +59,7 @@ impl InfiniteAreaLight {
     ///                        to compute soft shadows. Default to 1.
     /// * `texmap`           - Path to the image to use for the radiance map.
     pub fn new(light_to_world: ArcTransform, l: Spectrum, n_samples: usize, texmap: &str) -> Self {
-        let world_to_light = light_to_world.clone().inverse();
+        let world_to_light = Arc::clone(&light_to_world).inverse();
 
         let lrgb = l.to_rgb_spectrum();
 
@@ -113,7 +113,7 @@ impl InfiniteAreaLight {
         Self {
             light_type: LightType::from(INFINITE_LIGHT),
             medium_interface: MediumInterface::vacuum(),
-            light_to_world: light_to_world.clone(),
+            light_to_world: Arc::clone(&light_to_world),
             world_to_light: Arc::new(world_to_light),
             n_samples,
             l_map,

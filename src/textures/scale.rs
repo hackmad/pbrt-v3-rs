@@ -26,8 +26,8 @@ impl<T> ScaleTexture<T> {
     /// * `tex2` - The second texture.
     pub fn new(tex1: ArcTexture<T>, tex2: ArcTexture<T>) -> Self {
         Self {
-            tex1: tex1.clone(),
-            tex2: tex2.clone(),
+            tex1: Arc::clone(&tex1),
+            tex2: Arc::clone(&tex2),
         }
     }
 }

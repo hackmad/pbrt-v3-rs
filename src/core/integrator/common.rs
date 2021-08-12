@@ -44,9 +44,9 @@ pub fn uniform_sample_all_lights(
             l += estimate_direct(
                 it.clone(),
                 &u_scattering,
-                light.clone(),
+                Arc::clone(&light),
                 &u_light,
-                scene.clone(),
+                Arc::clone(&scene),
                 sampler,
                 handle_media,
                 false,
@@ -58,9 +58,9 @@ pub fn uniform_sample_all_lights(
                 ld += estimate_direct(
                     it.clone(),
                     &u_scattering_array[k],
-                    light.clone(),
+                    Arc::clone(&light),
                     &u_light_array[k],
-                    scene.clone(),
+                    Arc::clone(&scene),
                     sampler,
                     handle_media,
                     false,
@@ -108,7 +108,7 @@ pub fn uniform_sample_one_light(
         (ln, pdf)
     };
 
-    let light = scene.clone().lights[light_num].clone();
+    let light = Arc::clone(&Arc::clone(&scene).lights[light_num]);
     let u_light = Arc::get_mut(sampler).unwrap().get_2d();
     let u_scattering = Arc::get_mut(sampler).unwrap().get_2d();
     let estimate = estimate_direct(
@@ -116,7 +116,7 @@ pub fn uniform_sample_one_light(
         &u_scattering,
         light,
         &u_light,
-        scene.clone(),
+        Arc::clone(&scene),
         sampler,
         handle_media,
         false,
@@ -188,9 +188,9 @@ pub fn estimate_direct(
             // Compute effect of visibility for light source sample.
             if let Some(vis) = visibility {
                 if handle_media {
-                    li *= vis.tr(scene.clone(), sampler.clone());
+                    li *= vis.tr(Arc::clone(&scene), Arc::clone(&sampler));
                 } else {
-                    if !vis.unoccluded(scene.clone()) {
+                    if !vis.unoccluded(Arc::clone(&scene)) {
                         debug!("  visiblity tester: shadow ray blocked");
                         li = Spectrum::new(0.0);
                     } else {
@@ -259,7 +259,7 @@ pub fn estimate_direct(
             // Find intersection and compute transmittance.
             let mut ray = hit.spawn_ray(&wi);
             let light_isect_and_tr = if handle_media {
-                scene.intersect_tr(&mut ray, sampler.clone())
+                scene.intersect_tr(&mut ray, Arc::clone(&sampler))
             } else if let Some(light_isect) = scene.intersect(&mut ray) {
                 Some((light_isect, Spectrum::new(1.0)))
             } else {

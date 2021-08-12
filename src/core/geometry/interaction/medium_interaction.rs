@@ -4,6 +4,7 @@
 use crate::core::geometry::*;
 use crate::core::medium::*;
 use crate::core::pbrt::*;
+use std::sync::Arc;
 
 /// MediumInteraction represents an interaction point in a scattering medium.
 #[derive(Clone)]
@@ -40,7 +41,7 @@ impl MediumInteraction {
                 Normal3f::default(),
                 Some(MediumInterface::from(medium)),
             ),
-            phase: phase.clone(),
+            phase: Arc::clone(&phase),
         }
     }
 }

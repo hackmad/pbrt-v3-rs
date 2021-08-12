@@ -44,10 +44,10 @@ macro_rules! cache_provider {
             fn get(info: TexInfo) -> Result<ArcMIPMap<$t>, String> {
                 let mut mipmaps = $id.lock().expect("Unable to access mipmap mutex");
                 match mipmaps.get(&info) {
-                    Some(mipmap) => Ok(mipmap.clone()),
+                    Some(mipmap) => Ok(Arc::clone(&mipmap)),
                     None => {
                         let mipmap = generate_mipmap(&info)?;
-                        mipmaps.insert(info, mipmap.clone());
+                        mipmaps.insert(info, Arc::clone(&mipmap));
                         Ok(mipmap)
                     }
                 }

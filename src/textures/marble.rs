@@ -43,7 +43,7 @@ impl MarbleTexture {
         variation: Float,
     ) -> Self {
         Self {
-            mapping: mapping.clone(),
+            mapping: Arc::clone(&mapping),
             omega,
             octaves,
             scale,

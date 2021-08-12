@@ -54,7 +54,7 @@ impl VisibilityTester {
 
                 // Update transmittance for current ray segment.
                 let medium = ray.medium.clone();
-                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, sampler.clone())) {
+                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, Arc::clone(&sampler))) {
                     tr *= tr2;
                 }
 
@@ -63,7 +63,7 @@ impl VisibilityTester {
             } else {
                 // Update transmittance for current ray segment.
                 let medium = ray.medium.clone();
-                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, sampler.clone())) {
+                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, Arc::clone(&sampler))) {
                     tr *= tr2;
                 }
                 break;

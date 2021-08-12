@@ -25,7 +25,7 @@ impl ScaledBxDF {
     pub fn new(bxdf: ArcBxDF, scale: Spectrum) -> Self {
         Self {
             bxdf_type: bxdf.get_type(),
-            bxdf: bxdf.clone(),
+            bxdf: Arc::clone(&bxdf),
             scale,
         }
     }

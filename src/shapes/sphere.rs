@@ -63,8 +63,8 @@ impl Sphere {
             theta_max: clamp(zmax / radius, -1.0, 1.0).acos(),
             phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
             data: ShapeData::new(
-                object_to_world.clone(),
-                Some(world_to_object.clone()),
+                Arc::clone(&object_to_world),
+                Some(Arc::clone(&world_to_object)),
                 reverse_orientation,
             ),
         }
@@ -410,8 +410,8 @@ impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Sphere {
         let phi_max = params.find_one_float("phimax", 360.0);
 
         Self::new(
-            o2w.clone(),
-            w2o.clone(),
+            Arc::clone(&o2w),
+            Arc::clone(&w2o),
             reverse_orientation,
             radius,
             z_min,

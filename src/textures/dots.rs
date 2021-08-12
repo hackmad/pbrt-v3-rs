@@ -35,9 +35,9 @@ impl<T> DotsTexture<T> {
         mapping: ArcTextureMapping2D,
     ) -> Self {
         Self {
-            outside_dot: outside_dot.clone(),
-            inside_dot: inside_dot.clone(),
-            mapping: mapping.clone(),
+            outside_dot: Arc::clone(&outside_dot),
+            inside_dot: Arc::clone(&inside_dot),
+            mapping: Arc::clone(&mapping),
         }
     }
 }

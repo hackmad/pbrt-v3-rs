@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use crate::core::material::*;
 use crate::core::paramset::*;
+use std::sync::Arc;
 
 /// Stores a reference to a named material and its parameters.
 #[derive(Clone)]
@@ -26,7 +27,7 @@ impl MaterialInstance {
     pub fn new(name: &str, material: ArcMaterial, params: &ParamSet) -> Self {
         Self {
             name: String::from(name),
-            material: material.clone(),
+            material: Arc::clone(&material),
             params: params.clone(),
         }
     }

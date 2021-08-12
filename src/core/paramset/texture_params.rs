@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use super::*;
 use crate::core::api::{FloatTextureMap, SpectrumTextureMap};
+use std::sync::Arc;
 
 /// Stores texture, geometry and material parameters of different types in hashmaps.
 #[derive(Clone)]
@@ -70,7 +71,7 @@ impl TextureParams {
     ) -> ArcTexture<Float> {
         self.float_textures
             .get(&String::from(name))
-            .map_or(default.clone(), |v| v.clone())
+            .map_or(Arc::clone(&default), |v| Arc::clone(&v))
     }
 
     /// Returns a spectrum point texture.
@@ -91,7 +92,7 @@ impl TextureParams {
     ) -> ArcTexture<Spectrum> {
         self.spectrum_textures
             .get(&String::from(name))
-            .map_or(default.clone(), |v| v.clone())
+            .map_or(Arc::clone(&default), |v| Arc::clone(&v))
     }
 
     texture_params_find!(find_float, Float, find_one_float);

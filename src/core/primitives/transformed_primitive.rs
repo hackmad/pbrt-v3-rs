@@ -5,6 +5,7 @@ use crate::core::geometry::*;
 use crate::core::light::*;
 use crate::core::material::*;
 use crate::core::primitive::*;
+use std::sync::Arc;
 
 /// TransformedPrimitive stores an underlying primitive and animated transform
 /// and is used for object instancing and animated transformations.
@@ -24,7 +25,7 @@ impl TransformedPrimitive {
     /// * `primitive_to_world` - The animated transform.
     pub fn new(primitive: ArcPrimitive, primitive_to_world: AnimatedTransform) -> Self {
         Self {
-            primitive: primitive.clone(),
+            primitive: Arc::clone(&primitive),
             primitive_to_world,
         }
     }

@@ -56,8 +56,8 @@ impl AnimatedTransform {
         start_time: Float,
         end_time: Float,
     ) -> Self {
-        let start_transform = start_transform.clone();
-        let end_transform = end_transform.clone();
+        let start_transform = Arc::clone(&start_transform);
+        let end_transform = Arc::clone(&end_transform);
         let actually_animated = start_transform != end_transform;
         let mut t = [Vector3f::default(); 2];
         let mut r = [Quaternion::default(); 2];
@@ -1216,10 +1216,10 @@ impl AnimatedTransform {
     pub fn interpolate(&self, time: Float) -> ArcTransform {
         // Handle boundary conditions for matrix interpolation.
         if !self.actually_animated || time <= self.start_time {
-            return self.start_transform.clone();
+            return Arc::clone(&self.start_transform);
         }
         if time >= self.end_time {
-            return self.end_transform.clone();
+            return Arc::clone(&self.end_transform);
         }
 
         // Map time to range [0, 1].
@@ -1248,9 +1248,9 @@ impl AnimatedTransform {
     /// * `r` - The ray.
     pub fn transform_ray(&self, r: &Ray) -> Ray {
         let t = if !self.actually_animated || r.time <= self.start_time {
-            self.start_transform.clone()
+            Arc::clone(&self.start_transform)
         } else if r.time >= self.end_time {
-            self.end_transform.clone()
+            Arc::clone(&self.end_transform)
         } else {
             self.interpolate(r.time)
         };
@@ -1263,9 +1263,9 @@ impl AnimatedTransform {
     /// * `p`    - The point.
     pub fn transform_point(&self, time: Float, p: &Point3f) -> Point3f {
         let t = if !self.actually_animated || time <= self.start_time {
-            self.start_transform.clone()
+            Arc::clone(&self.start_transform)
         } else if time >= self.end_time {
-            self.end_transform.clone()
+            Arc::clone(&self.end_transform)
         } else {
             self.interpolate(time)
         };
@@ -1278,9 +1278,9 @@ impl AnimatedTransform {
     /// * `v`    - The vector.
     pub fn transform_vector(&self, time: Float, v: &Vector3f) -> Vector3f {
         let t = if !self.actually_animated || time <= self.start_time {
-            self.start_transform.clone()
+            Arc::clone(&self.start_transform)
         } else if time >= self.end_time {
-            self.end_transform.clone()
+            Arc::clone(&self.end_transform)
         } else {
             self.interpolate(time)
         };

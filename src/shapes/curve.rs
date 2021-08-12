@@ -56,8 +56,8 @@ impl Curve {
     ) -> Self {
         Self {
             data: ShapeData::new(
-                object_to_world.clone(),
-                Some(world_to_object.clone()),
+                Arc::clone(&object_to_world),
+                Some(Arc::clone(&world_to_object)),
                 reverse_orientation,
             ),
             common,
@@ -97,8 +97,8 @@ impl Curve {
             let u_min = i as Float * f;
             let u_max = (i + 1) as Float * f;
             let curve = Curve::new(
-                object_to_world.clone(),
-                world_to_object.clone(),
+                Arc::clone(&object_to_world),
+                Arc::clone(&world_to_object),
                 reverse_orientation,
                 common,
                 u_min,
@@ -284,8 +284,8 @@ impl Curve {
                 lerp((seg + 1) as Float / n_segments as Float, width0, width1),
             ];
             let c = Curve::create_segments(
-                o2w.clone(),
-                w2o.clone(),
+                Arc::clone(&o2w),
+                Arc::clone(&w2o),
                 reverse_orientation,
                 curve_type,
                 seg_cp_bezier,
@@ -486,11 +486,7 @@ impl Curve {
                 ray.time,
                 Some(Arc::new(self.clone())),
             );
-            let isect = self
-                .data
-                .object_to_world
-                .clone()
-                .transform_surface_interaction(&si);
+            let isect = Arc::clone(&self.data.object_to_world).transform_surface_interaction(&si);
 
             Some(Intersection::new(t_hit, isect))
         } else {
