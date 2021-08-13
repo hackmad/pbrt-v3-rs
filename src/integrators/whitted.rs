@@ -5,6 +5,8 @@
 use crate::core::camera::*;
 use crate::core::geometry::*;
 use crate::core::integrator::*;
+use crate::core::light::*;
+use crate::core::material::*;
 use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::reflection::*;
@@ -403,19 +405,16 @@ impl Integrator for WhittedIntegrator {
         &self,
         ray: &mut Ray,
         scene: Arc<Scene>,
-        _sampler: &mut ArcSampler,
-        _depth: usize,
+        sampler: &mut ArcSampler,
+        depth: usize,
     ) -> Spectrum {
         let mut l = Spectrum::new(0.0);
 
         // Find closest ray intersection or return background radiance.
-        if let Some(isect) = scene.intersect(ray) {
+        if let Some(mut isect) = scene.intersect(ray) {
             // Compute emitted and reflected light at ray intersection point.
-            let v = (Vector3f::from(isect.hit.p).normalize() + Vector3f::new(1.0, 1.0, 1.0)) / 2.0;
-            l = Spectrum::from_rgb(&[v[0], v[1], v[2]], Some(SpectrumType::Illuminant));
 
             // Initialize common variables for Whitted integrator.
-            /*
             let n = isect.shading.n;
             let wo = isect.hit.wo;
 
@@ -457,24 +456,9 @@ impl Integrator for WhittedIntegrator {
             }
             if depth + 1 < self.max_depth {
                 // Trace rays for specular reflection and refraction.
-                l += SamplerIntegrator::specular_reflect(
-                    self,
-                    ray,
-                    &isect,
-                    Arc::clone(&scene),
-                    sampler,
-                    depth,
-                );
-                l += SamplerIntegrator::specular_transmit(
-                    self,
-                    ray,
-                    &isect,
-                    Arc::clone(&scene),
-                    sampler,
-                    depth,
-                );
+                l += self.specular_reflect(ray, &isect, Arc::clone(&scene), sampler, depth);
+                l += self.specular_transmit(ray, &isect, Arc::clone(&scene), sampler, depth);
             }
-            */
         } else {
             if let Some(rd) = ray.differentials {
                 for light in scene.lights.iter() {
