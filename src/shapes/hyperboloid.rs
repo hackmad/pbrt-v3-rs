@@ -86,20 +86,26 @@ impl Hyperboloid {
         }
 
         let mut pp = p1;
-        let mut xy1: Float;
-        let mut xy2: Float;
         let mut ah: Float;
         let mut ch: Float;
+        let mut count = 0;
         loop {
             pp += 2.0 * (p2 - p1);
-            xy1 = pp.x * pp.x + pp.y * pp.y;
-            xy2 = p2.x * p2.x + p2.y * p2.y;
+            let xy1 = pp.x * pp.x + pp.y * pp.y;
+            let xy2 = p2.x * p2.x + p2.y * p2.y;
             ah = (1.0 / xy1 - (pp.z * pp.z) / (xy1 * p2.z * p2.z))
                 / (1.0 - (xy2 * pp.z * pp.z) / (xy1 * p2.z * p2.z));
             ch = (ah * xy2 - 1.0) / (p2.z * p2.z);
 
-            if ah.is_finite() || ah != Float::NAN {
+            if ah.is_finite() && !ah.is_nan() {
                 break;
+            }
+
+            // Give up after 100,000 interations for fear of getting stuck in
+            // infinte loop :(
+            count += 1;
+            if count > 100000 {
+                panic!("Hyperboloid parameters possibly causing infinte loop.");
             }
         }
 
@@ -431,8 +437,14 @@ impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Hyperboloid {
     fn from(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
         let (params, o2w, w2o, reverse_orientation) = p;
 
-        let p1 = params.find_one_point3f("p1", Point3f::new(0.0, 0.0, 0.0));
-        let p2 = params.find_one_point3f("p2", Point3f::new(1.0, 1.0, 1.0));
+        // NOTE: These are the original defaults in PBRT v2/v3 that cause
+        // the constructor to get stuck in an infinite loop.
+        //let p1 = params.find_one_point3f("p1", Point3f::new(0.0, 0.0, 0.0));
+        //let p2 = params.find_one_point3f("p2", Point3f::new(1.0, 1.0, 1.0));
+
+        let p1 = params.find_one_point3f("p1", Point3f::new(3.0, 1.2, 1.0));
+        let p2 = params.find_one_point3f("p2", Point3f::new(1.0, -0.5, -1.0));
+
         let phi_max = params.find_one_float("phimax", 360.0);
 
         Self::new(
