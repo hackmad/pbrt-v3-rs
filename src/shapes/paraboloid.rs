@@ -45,12 +45,10 @@ impl Paraboloid {
         z_max: Float,
         phi_max: Float,
     ) -> Self {
-        let zmin = clamp(min(z_min, z_max), -radius, radius);
-        let zmax = clamp(max(z_min, z_max), -radius, radius);
         Self {
             radius,
-            z_min: zmin,
-            z_max: zmax,
+            z_min: min(z_min, z_max),
+            z_max: max(z_min, z_max),
             phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
             data: ShapeData::new(
                 Arc::clone(&object_to_world),
