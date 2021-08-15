@@ -340,8 +340,8 @@ impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Cone {
             Arc::clone(&o2w),
             Arc::clone(&w2o),
             reverse_orientation,
-            height,
             radius,
+            height,
             phi_max,
         )
     }
