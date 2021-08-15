@@ -46,8 +46,8 @@ impl Cylinder {
         z_max: Float,
         phi_max: Float,
     ) -> Self {
-        let zmin = clamp(min(z_min, z_max), -radius, radius);
-        let zmax = clamp(max(z_min, z_max), -radius, radius);
+        let zmin = min(z_min, z_max);
+        let zmax = max(z_min, z_max);
         Self {
             radius,
             z_min: zmin,
