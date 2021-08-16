@@ -87,7 +87,7 @@ impl TriangleMesh {
         // Transform normals to world space.
         let tn = n.iter().map(|v| object_to_world.transform_normal(&v));
 
-        // Transform normals to world space.
+        // Transform tangent vectors to world space.
         let ts = s.iter().map(|v| object_to_world.transform_vector(&v));
 
         Self {
@@ -138,9 +138,10 @@ impl TriangleMesh {
         shadow_alpha_mask: Option<ArcTexture<Float>>,
         face_indices: Vec<usize>,
     ) -> Vec<ArcShape> {
-        let num_triangles = vertex_indices.len() % 3;
-        assert!(num_triangles == 0);
+        let n_vertices = vertex_indices.len();
+        assert!(n_vertices % 3 == 0);
 
+        let num_triangles = n_vertices / 3;
         let mesh = Self::new(
             Arc::clone(&object_to_world),
             reverse_orientation,
@@ -383,9 +384,9 @@ impl Triangle {
     fn get_uvs(&self) -> [Point2f; 3] {
         if self.mesh.uv.len() > 0 {
             [
-                self.mesh.uv[self.v],
-                self.mesh.uv[self.v + 1],
-                self.mesh.uv[self.v + 2],
+                self.mesh.uv[self.mesh.vertex_indices[self.v]],
+                self.mesh.uv[self.mesh.vertex_indices[self.v + 1]],
+                self.mesh.uv[self.mesh.vertex_indices[self.v + 2]],
             ]
         } else {
             [
@@ -408,9 +409,11 @@ impl Shape for Triangle {
         // We can unwrap safely because the factory methods guarantee world_to_object
         // is passed. If it is constructed without that, then tough luck!
         let world_to_object = self.data.world_to_object.clone().unwrap();
-        (0..3).fold(Bounds3f::empty(), |b, i| {
-            b.union(&world_to_object.transform_point(&self.mesh.p[self.v + i]))
-        })
+        Bounds3f::from(
+            world_to_object.transform_point(&self.mesh.p[self.mesh.vertex_indices[self.v]]),
+        )
+        .union(&world_to_object.transform_point(&self.mesh.p[self.mesh.vertex_indices[self.v + 1]]))
+        .union(&world_to_object.transform_point(&self.mesh.p[self.mesh.vertex_indices[self.v + 2]]))
     }
 
     /// Returns a bounding box in the world space.
@@ -418,7 +421,9 @@ impl Shape for Triangle {
     /// Default is to transform the object bounds with the object-to0world
     /// transformation. Override for tighter bounds implementation.
     fn world_bound(&self) -> Bounds3f {
-        (0..3).fold(Bounds3f::empty(), |b, i| b.union(&self.mesh.p[self.v + i]))
+        Bounds3f::from(self.mesh.p[self.mesh.vertex_indices[self.v]])
+            .union(&self.mesh.p[self.mesh.vertex_indices[self.v + 1]])
+            .union(&self.mesh.p[self.mesh.vertex_indices[self.v + 2]])
     }
 
     /// Returns geometric details if a ray intersects the shape intersection.
@@ -428,9 +433,9 @@ impl Shape for Triangle {
     /// * `test_alpha_texture` - Perform alpha texture tests.
     fn intersect<'a>(&self, r: &Ray, test_alpha_texture: bool) -> Option<Intersection<'a>> {
         // Get triangle vertices in p0, p1, and p2
-        let p0 = self.mesh.p[self.v];
-        let p1 = self.mesh.p[self.v + 1];
-        let p2 = self.mesh.p[self.v + 2];
+        let p0 = self.mesh.p[self.mesh.vertex_indices[self.v]];
+        let p1 = self.mesh.p[self.mesh.vertex_indices[self.v + 1]];
+        let p2 = self.mesh.p[self.mesh.vertex_indices[self.v + 2]];
 
         // Perform ray-triangle intersection test.
 
@@ -623,9 +628,11 @@ impl Shape for Triangle {
             // Compute shading normal ns for triangle.
             let mut ns = isect.hit.n;
             if has_vertex_normals {
-                let ns2 = b0 * self.mesh.n[self.v]
-                    + b1 * self.mesh.n[self.v + 1]
-                    + b2 * self.mesh.n[self.v + 2];
+                let n0 = self.mesh.n[self.mesh.vertex_indices[self.v]];
+                let n1 = self.mesh.n[self.mesh.vertex_indices[self.v + 1]];
+                let n2 = self.mesh.n[self.mesh.vertex_indices[self.v + 2]];
+
+                let ns2 = b0 * n0 + b1 * n1 + b2 * n2;
                 if ns2.length_squared() > 0.0 {
                     ns = ns2.normalize();
                 }
@@ -634,9 +641,11 @@ impl Shape for Triangle {
             // Compute shading tangent ss for triangle.
             let mut ss = isect.dpdu;
             if has_vertex_tangents {
-                let ss2 = b0 * self.mesh.s[self.v]
-                    + b1 * self.mesh.s[self.v + 1]
-                    + b2 * self.mesh.s[self.v + 2];
+                let s0 = self.mesh.s[self.mesh.vertex_indices[self.v]];
+                let s1 = self.mesh.s[self.mesh.vertex_indices[self.v + 1]];
+                let s2 = self.mesh.s[self.mesh.vertex_indices[self.v + 2]];
+
+                let ss2 = b0 * s0 + b1 * s1 + b2 * s2;
                 if ss2.length_squared() > 0.0 {
                     ss = ss2;
                 }
@@ -657,10 +666,14 @@ impl Shape for Triangle {
             // Compute dndu and dndv for triangle shading geometry.
             let (dndu, dndv) = if has_vertex_normals {
                 // Compute deltas for triangle partial derivatives of normal
+                let n0 = self.mesh.n[self.mesh.vertex_indices[self.v]];
+                let n1 = self.mesh.n[self.mesh.vertex_indices[self.v + 1]];
+                let n2 = self.mesh.n[self.mesh.vertex_indices[self.v + 2]];
+
                 let duv02 = uv[0] - uv[2];
                 let duv12 = uv[1] - uv[2];
-                let dn1 = self.mesh.n[self.v] - self.mesh.n[self.v + 2];
-                let dn2 = self.mesh.n[self.v + 1] - self.mesh.n[self.v + 2];
+                let dn1 = n0 - n2;
+                let dn2 = n1 - n2;
 
                 let determinant = duv02[0] * duv12[1] - duv02[1] * duv12[0];
                 let degenerate_uv = determinant.abs() < 1e-8;
@@ -671,9 +684,7 @@ impl Shape for Triangle {
                     // (rather than giving up) so that ray differentials for
                     // rays reflected from triangles with degenerate
                     // parameterizations are still reasonable.
-                    let dn = Vector3::from(self.mesh.n[self.v + 2] - self.mesh.n[self.v]).cross(
-                        &Vector3::from(self.mesh.n[self.v + 1] - self.mesh.n[self.v]),
-                    );
+                    let dn = Vector3::from(n2 - n0).cross(&Vector3::from(n1 - n0));
                     if dn.length_squared() == 0.0 {
                         (Normal3f::default(), Normal3f::default())
                     } else {
@@ -707,9 +718,9 @@ impl Shape for Triangle {
     /// * `test_alpha_texture` - Perform alpha texture tests.
     fn intersect_p(&self, r: &Ray, test_alpha_texture: bool) -> bool {
         // Get triangle vertices in p0, p1, and p2
-        let p0 = self.mesh.p[self.v];
-        let p1 = self.mesh.p[self.v + 1];
-        let p2 = self.mesh.p[self.v + 2];
+        let p0 = self.mesh.p[self.mesh.vertex_indices[self.v]];
+        let p1 = self.mesh.p[self.mesh.vertex_indices[self.v + 1]];
+        let p2 = self.mesh.p[self.mesh.vertex_indices[self.v + 2]];
 
         // Perform ray-triangle intersection test.
 
@@ -873,9 +884,9 @@ impl Shape for Triangle {
 
     /// Returns the surface area of the shape in object space.
     fn area(&self) -> Float {
-        let p0 = self.mesh.p[self.v];
-        let p1 = self.mesh.p[self.v + 1];
-        let p2 = self.mesh.p[self.v + 2];
+        let p0 = self.mesh.p[self.mesh.vertex_indices[self.v]];
+        let p1 = self.mesh.p[self.mesh.vertex_indices[self.v + 1]];
+        let p2 = self.mesh.p[self.mesh.vertex_indices[self.v + 2]];
         0.5 * (p1 - p0).cross(&(p2 - p0)).length()
     }
 
@@ -889,10 +900,9 @@ impl Shape for Triangle {
         let b = uniform_sample_triangle(u);
 
         // Get triangle vertices in `p0`, `p1`, and `p2`.
-        let p0 = self.mesh.p[self.v];
-        let p1 = self.mesh.p[self.v + 1];
-        let p2 = self.mesh.p[self.v + 2];
-
+        let p0 = self.mesh.p[self.mesh.vertex_indices[self.v]];
+        let p1 = self.mesh.p[self.mesh.vertex_indices[self.v + 1]];
+        let p2 = self.mesh.p[self.mesh.vertex_indices[self.v + 2]];
         let p = b[0] * p0 + b[1] * p1 + (1.0 - b[0] - b[1]) * p2;
 
         // Compute surface normal for sampled point on triangle.
@@ -901,11 +911,11 @@ impl Shape for Triangle {
         // Ensure correct orientation of the geometric normal; follow the same
         // approach as was used in intersect().
         if self.mesh.n.len() > 0 {
-            let ns = Vector3f::from(
-                b[0] * self.mesh.n[self.v]
-                    + b[1] * self.mesh.n[self.v + 1]
-                    + (1.0 - b[0] - b[1]) * self.mesh.n[self.v + 2],
-            );
+            let n0 = self.mesh.n[self.mesh.vertex_indices[self.v]];
+            let n1 = self.mesh.n[self.mesh.vertex_indices[self.v + 1]];
+            let n2 = self.mesh.n[self.mesh.vertex_indices[self.v + 2]];
+
+            let ns = Vector3f::from(b[0] * n0 + b[1] * n1 + (1.0 - b[0] - b[1]) * n2);
             n = n.face_forward(&ns);
         } else if self.data.reverse_orientation ^ self.data.transform_swaps_handedness {
             n *= -1.0;
