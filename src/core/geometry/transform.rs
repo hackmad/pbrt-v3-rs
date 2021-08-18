@@ -238,7 +238,7 @@ impl Transform {
 
         // Scale canonical perspective view to specified field of view
         let inv_tan_ang = 1.0 / tan(fov.to_radians() / 2.0);
-        return Self::scale(inv_tan_ang, inv_tan_ang, 1.0) * Self::from(persp);
+        Self::scale(inv_tan_ang, inv_tan_ang, 1.0) * Self::from(persp)
     }
 
     // Returns the inverse transformation.

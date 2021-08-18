@@ -184,20 +184,14 @@ impl RenderOptions {
             Err(err) => panic!("{}", err),
         };
 
-        let inside_medium =
-            gs.current_inside_medium
-                .clone()
-                .map_or(None, |m| match self.named_media.get(&m) {
-                    Some(medium) => Some(Arc::clone(&medium)),
-                    None => None,
-                });
-        let outside_medium =
-            gs.current_outside_medium
-                .clone()
-                .map_or(None, |m| match self.named_media.get(&m) {
-                    Some(medium) => Some(Arc::clone(&medium)),
-                    None => None,
-                });
+        let inside_medium = gs
+            .current_inside_medium
+            .clone()
+            .and_then(|m| self.named_media.get(&m).map(|medium| Arc::clone(medium)));
+        let outside_medium = gs
+            .current_outside_medium
+            .clone()
+            .and_then(|m| self.named_media.get(&m).map(|medium| Arc::clone(medium)));
 
         let medium_interface = MediumInterface::new(inside_medium, outside_medium);
 

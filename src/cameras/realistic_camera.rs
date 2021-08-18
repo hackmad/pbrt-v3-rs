@@ -67,14 +67,14 @@ impl RealisticCamera {
         film: Film,
         medium: Option<ArcMedium>,
     ) -> Self {
-        let film = film.clone();
-        let film_diagonal = film.diagonal;
+        let film_clone = film;
+        let film_diagonal = film_clone.diagonal;
 
         let data = CameraData::new(
             camera_to_world,
             shutter_open,
             shutter_close,
-            film,
+            film_clone,
             medium.clone(),
         );
 
@@ -158,7 +158,7 @@ impl RealisticCamera {
 
         // Transform `r_camera` from camera to lens system space.
         let camera_to_lens = Transform::scale(1.0, 1.0, -1.0);
-        let mut r_lens = camera_to_lens.transform_ray(&r_camera);
+        let mut r_lens = camera_to_lens.transform_ray(r_camera);
 
         for (i, element) in self.element_interfaces.iter().enumerate().rev() {
             // Update ray from film accounting for interaction with `element`.
@@ -234,7 +234,7 @@ impl RealisticCamera {
 
         // Transform `r_camera` from camera to lens system space.
         let camera_to_lens = Transform::scale(1.0, 1.0, -1.0);
-        let mut r_lens = camera_to_lens.transform_ray(&r_camera);
+        let mut r_lens = camera_to_lens.transform_ray(r_camera);
 
         for (i, element) in self.element_interfaces.iter().enumerate() {
             // Compute intersection of ray with lens element.
@@ -407,7 +407,7 @@ impl RealisticCamera {
 
             // Expand pupil bounds if ray makes it through the lens system
             if pupil_bounds.contains(&Point2f::new(p_rear.x, p_rear.y))
-                || !self
+                || self
                     .trace_lenses_from_film(&Ray::new(
                         p_film,
                         p_rear - p_film,
@@ -415,7 +415,7 @@ impl RealisticCamera {
                         0.0,
                         self.data.medium.clone(),
                     ))
-                    .is_none()
+                    .is_some()
             {
                 pupil_bounds = pupil_bounds.union(&Point2f::new(p_rear.x, p_rear.y));
                 n_exiting_rays += 1;
@@ -451,7 +451,7 @@ impl RealisticCamera {
         let sample_bounds_area = pupil_bounds.area();
 
         // Generate sample point inside exit pupil bound.
-        let p_lens = pupil_bounds.lerp(&lens_sample);
+        let p_lens = pupil_bounds.lerp(lens_sample);
 
         // Return sample point rotated by angle of `p_film` with `+x` axis.
         let sin_theta = if r_film != 0.0 {
@@ -502,7 +502,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Realisti
         let aperture_diameter = params.find_one_float("aperturediameter", 1.0);
         let focus_distance = params.find_one_float("focusdistance", 10.0);
         let simple_weighting = params.find_one_bool("simpleweighting", true);
-        if lens_file.len() == 0 {
+        if lens_file.is_empty() {
             panic!("No lens description file supplied!");
         }
 

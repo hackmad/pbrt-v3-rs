@@ -229,9 +229,9 @@ pub fn sample_catmull_rom_2d(
     };
 
     // Map `u` to a spline interval by inverting the interpolated `cdf`.
-    let maximum = interpolate(&cdf, size2 - 1);
+    let maximum = interpolate(cdf, size2 - 1);
     let u = u * maximum;
-    let idx = find_interval(size2, |i| interpolate(&cdf, i) <= u);
+    let idx = find_interval(size2, |i| interpolate(cdf, i) <= u);
 
     // Look up node positions and interpolated function values.
     let f0 = interpolate(values, idx);

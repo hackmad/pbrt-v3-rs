@@ -1329,11 +1329,11 @@ impl AnimatedTransform {
             let mut zeros = [0.0; 8];
             let mut n_zeros = 0_usize;
             Interval::new(0.0, 1.0).find_zeros(
-                self.c1[c].eval(&p),
-                self.c2[c].eval(&p),
-                self.c3[c].eval(&p),
-                self.c4[c].eval(&p),
-                self.c5[c].eval(&p),
+                self.c1[c].eval(p),
+                self.c2[c].eval(p),
+                self.c3[c].eval(p),
+                self.c4[c].eval(p),
+                self.c5[c].eval(p),
                 theta,
                 &mut zeros,
                 &mut n_zeros,

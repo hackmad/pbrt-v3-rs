@@ -30,7 +30,7 @@ impl SAH {
     ///                         primitives in leaf nodes occupy contiguous ranges in
     ///                         the vector.
     pub fn recursive_build(
-        primitives: &Vec<ArcPrimitive>,
+        primitives: &[ArcPrimitive],
         split_method: SplitMethod,
         max_prims_in_node: u8,
         primitive_info: &mut Vec<BVHPrimitiveInfo>,

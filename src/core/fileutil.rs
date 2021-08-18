@@ -26,7 +26,7 @@ pub fn absolute_path(path: &str) -> Result<String, String> {
 pub fn parent_path(path: &str) -> Option<String> {
     PathBuf::from(path)
         .parent()
-        .map_or(None, |p| p.to_str().map(|s| String::from(s)))
+        .and_then(|p| p.to_str().map(String::from))
 }
 
 /// Returns `true` if given path is a relative path; otherwise returns `false`.

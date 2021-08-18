@@ -271,7 +271,7 @@ impl GraphicsState {
 
                 Ok(Arc::new(MixMaterial::from((mp, mat1, mat2))))
             }
-            "" => Err(format!("Unable to create material with no name")),
+            "" => Err(String::from("Unable to create material with no name")),
             "none" => Err(String::from("Unable to create material 'none'.")),
             _ => {
                 warn!("Material '{}' unknown. Using 'matte'.", name);
@@ -442,7 +442,7 @@ impl GraphicsState {
     /// * `paramset` - Parameter set.
     pub fn make_accelerator(
         name: &str,
-        prims: &Vec<ArcPrimitive>,
+        prims: &[ArcPrimitive],
         paramset: &ParamSet,
     ) -> Result<ArcPrimitive, String> {
         let p = (paramset, prims);

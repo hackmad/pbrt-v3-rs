@@ -125,9 +125,9 @@ impl Default for KdAccelNode {
     fn default() -> Self {
         Self {
             split: SplitData {
-                one_primitive: 0_32,
+                one_primitive: 0_u32,
             },
-            node: NodeData { flags: 0_32 },
+            node: NodeData { flags: 0_u32 },
         }
     }
 }

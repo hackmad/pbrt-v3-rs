@@ -34,7 +34,7 @@ pub trait Shape {
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests; default to true.
     fn intersect_p(&self, r: &Ray, test_alpha_texture: bool) -> bool {
-        !self.intersect(r, test_alpha_texture).is_none()
+        self.intersect(r, test_alpha_texture).is_some()
     }
 
     /// Returns the surface area of the shape in object space.
@@ -85,7 +85,7 @@ pub trait Shape {
     /// * `wi`  - The incident direction.
     fn pdf_solid_angle(&self, hit: &Hit, wi: &Vector3f) -> Float {
         // Intersect sample ray with area light geometry.
-        let ray = hit.spawn_ray(&wi);
+        let ray = hit.spawn_ray(wi);
 
         // Ignore any alpha textures used for trimming the shape when performing
         // this intersection. Hack for the "San Miguel" scene, where this is used
@@ -195,7 +195,7 @@ impl ShapeData {
     ) -> Self {
         Self {
             object_to_world: Arc::clone(&object_to_world),
-            world_to_object: world_to_object.clone(),
+            world_to_object,
             reverse_orientation,
             transform_swaps_handedness: object_to_world.swaps_handedness(),
         }

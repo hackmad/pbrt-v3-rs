@@ -22,7 +22,7 @@ pub fn uniform_sample_all_lights(
     it: &Interaction,
     scene: Arc<Scene>,
     sampler: &mut ArcSampler,
-    n_light_samples: &Vec<usize>,
+    n_light_samples: &[usize],
     handle_media: bool,
 ) -> Spectrum {
     let mut l = Spectrum::new(0.0);
@@ -42,9 +42,9 @@ pub fn uniform_sample_all_lights(
             let u_light = Arc::get_mut(sampler).unwrap().get_2d();
             let u_scattering = Arc::get_mut(sampler).unwrap().get_2d();
             l += estimate_direct(
-                it.clone(),
+                &(*it).clone(),
                 &u_scattering,
-                Arc::clone(&light),
+                Arc::clone(light),
                 &u_light,
                 Arc::clone(&scene),
                 sampler,
@@ -56,9 +56,9 @@ pub fn uniform_sample_all_lights(
             let mut ld = Spectrum::new(0.0);
             for k in 0..n_samples {
                 ld += estimate_direct(
-                    it.clone(),
+                    &(*it).clone(),
                     &u_scattering_array[k],
-                    Arc::clone(&light),
+                    Arc::clone(light),
                     &u_light_array[k],
                     Arc::clone(&scene),
                     sampler,
@@ -188,7 +188,7 @@ pub fn estimate_direct(
             // Compute effect of visibility for light source sample.
             if let Some(vis) = visibility {
                 if handle_media {
-                    li *= vis.tr(Arc::clone(&scene), Arc::clone(&sampler));
+                    li *= vis.tr(Arc::clone(&scene), Arc::clone(sampler));
                 } else {
                     if !vis.unoccluded(Arc::clone(&scene)) {
                         debug!("  visiblity tester: shadow ray blocked");
@@ -234,7 +234,7 @@ pub fn estimate_direct(
             }
             Interaction::Medium { mi } => {
                 // Sample scattered direction for medium interactions.
-                let (p, wi2) = mi.phase.sample_p(&mi.hit.wo, &u_scattering);
+                let (p, wi2) = mi.phase.sample_p(&mi.hit.wo, u_scattering);
                 f = Spectrum::new(p);
                 scattering_pdf = p;
                 wi = wi2;
@@ -259,11 +259,11 @@ pub fn estimate_direct(
             // Find intersection and compute transmittance.
             let mut ray = hit.spawn_ray(&wi);
             let light_isect_and_tr = if handle_media {
-                scene.intersect_tr(&mut ray, Arc::clone(&sampler))
-            } else if let Some(light_isect) = scene.intersect(&mut ray) {
-                Some((light_isect, Spectrum::new(1.0)))
+                scene.intersect_tr(&mut ray, Arc::clone(sampler))
             } else {
-                None
+                scene
+                    .intersect(&mut ray)
+                    .map(|light_isect| (light_isect, Spectrum::new(1.0)))
             };
 
             // Add light contribution from material sampling.
@@ -297,7 +297,7 @@ pub fn estimate_direct(
 ///
 /// * `scene` - The scene.
 pub fn compute_light_power_distribution(scene: Arc<Scene>) -> Option<Distribution1D> {
-    if scene.lights.len() == 0 {
+    if scene.lights.is_empty() {
         None
     } else {
         let light_power: Vec<Float> = scene.lights.iter().map(|light| light.power().y()).collect();

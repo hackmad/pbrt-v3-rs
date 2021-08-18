@@ -19,7 +19,7 @@ impl TransformCache {
     /// * `t` - Reference to a transform to lookup.
     pub fn lookup(&mut self, t: ArcTransform) -> ArcTransform {
         match self.transforms.get(&t) {
-            Some(transform) => Arc::clone(&transform),
+            Some(transform) => Arc::clone(transform),
             None => {
                 self.transforms.insert(Arc::clone(&t));
                 Arc::clone(&t)

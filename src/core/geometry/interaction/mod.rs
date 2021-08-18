@@ -13,6 +13,7 @@ pub use medium_interaction::*;
 pub use surface_interaction::*;
 
 /// Interaction enumeration.
+#[derive(Clone)]
 pub enum Interaction<'a> {
     /// Represents geometry of a particular point on a surface.
     Surface { si: SurfaceInteraction<'a> },
@@ -125,9 +126,9 @@ impl Hit {
     pub fn get_medium_in_direction(&self, w: &Vector3f) -> Option<ArcMedium> {
         let mi = self.medium_interface.clone();
         if w.dot(&self.n) > 0.0 {
-            mi.map_or(None, |mi| mi.outside.clone())
+            mi.and_then(|mi| mi.outside)
         } else {
-            mi.map_or(None, |mi| mi.inside.clone())
+            mi.and_then(|mi| mi.inside)
         }
     }
 
@@ -135,7 +136,7 @@ impl Hit {
     pub fn get_medium(&self) -> Option<ArcMedium> {
         if let Some(mi) = self.medium_interface.clone() {
             if mi.is_medium_transition() {
-                mi.inside.clone()
+                mi.inside
             } else {
                 None
             }

@@ -138,10 +138,7 @@ impl Film {
             filter_table: Arc::new(filter_table),
             filename: String::from(filename),
             cropped_pixel_bounds,
-            scale: match scale {
-                Some(s) => s,
-                None => 1.0,
-            },
+            scale: scale.unwrap_or(1.0),
             max_sample_luminance: match max_sample_luminance {
                 Some(luminence) => luminence,
                 None => INFINITY,
@@ -215,6 +212,7 @@ impl Film {
         for pixel in self.cropped_pixel_bounds {
             let pixel_offset = self.get_pixel_offset(&pixel);
             self.pixels[pixel_offset].splat_xyz = [0.0; 3];
+            self.pixels[pixel_offset].filter_weight_sum = 0.0;
         }
     }
 
@@ -346,9 +344,9 @@ impl From<(&ParamSet, ArcFilter)> for Film {
         let (params, filter) = p;
 
         let image_file = &OPTIONS.image_file[..];
-        let filename = if image_file.len() > 0 {
+        let filename = if !image_file.is_empty() {
             let params_filename = params.find_one_string("filename", String::from(""));
-            if params_filename.len() > 0 {
+            if !params_filename.is_empty() {
                 warn!(
                     "Output filename supplied on command line, '{}' is overriding 
                     filename provided in scene description file, '{}'.",

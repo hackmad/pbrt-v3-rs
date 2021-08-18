@@ -425,13 +425,13 @@ impl Api {
     pub fn pbrt_world_end(&mut self) {
         if self.verify_world("WorldEnd") {
             // Ensure there are no pushed graphics states.
-            while self.pushed_graphics_states.len() > 0 {
+            while !self.pushed_graphics_states.is_empty() {
                 warn!("Missing end to pbrtAttributeBegin().");
                 self.pushed_graphics_states.pop();
                 self.pushed_transforms.pop();
             }
 
-            while self.pushed_transforms.len() > 0 {
+            while !self.pushed_transforms.is_empty() {
                 warn!("Missing end to pbrtTransformBegin().");
                 self.pushed_transforms.pop();
             }
@@ -532,7 +532,7 @@ impl Api {
         params: &ParamSet,
     ) {
         if self.verify_world("Texture") {
-            let mut tp = TextureParams::new(
+            let tp = TextureParams::new(
                 params.clone(),
                 params.clone(),
                 self.graphics_state.float_textures.clone(),
@@ -547,11 +547,9 @@ impl Api {
 
                 self.warn_if_animated_transform("Texture");
 
-                if let Ok(ft) = GraphicsState::make_float_texture(
-                    &tex_name,
-                    &*self.current_transforms[0],
-                    &mut tp,
-                ) {
+                if let Ok(ft) =
+                    GraphicsState::make_float_texture(&tex_name, &*self.current_transforms[0], &tp)
+                {
                     if self.graphics_state.float_textures_shared {
                         let ftm = self.graphics_state.float_textures.clone();
                         self.graphics_state.float_textures = ftm;
@@ -570,7 +568,7 @@ impl Api {
                 if let Ok(st) = GraphicsState::make_spectrum_texture(
                     &tex_name,
                     &*self.current_transforms[0],
-                    &mut tp,
+                    &tp,
                 ) {
                     if self.graphics_state.spectrum_textures_shared {
                         let stm = self.graphics_state.spectrum_textures.clone();
@@ -592,13 +590,13 @@ impl Api {
     pub fn pbrt_material(&mut self, name: String, params: &ParamSet) {
         if self.verify_world("Material") {
             let empty_params = ParamSet::new();
-            let mut mp = TextureParams::new(
+            let mp = TextureParams::new(
                 params.clone(),
                 empty_params,
                 self.graphics_state.float_textures.clone(),
                 self.graphics_state.spectrum_textures.clone(),
             );
-            if let Ok(mtl) = self.graphics_state.make_material(&name, &mut mp) {
+            if let Ok(mtl) = self.graphics_state.make_material(&name, &mp) {
                 self.graphics_state.current_material = Some(Arc::new(MaterialInstance::new(
                     &name,
                     Arc::clone(&mtl),
@@ -615,7 +613,7 @@ impl Api {
     pub fn pbrt_make_named_material(&mut self, name: String, params: &ParamSet) {
         if self.verify_world("MakeNamedMaterial") {
             let empty_params = ParamSet::new();
-            let mut mp = TextureParams::new(
+            let mp = TextureParams::new(
                 params.clone(),
                 empty_params,
                 self.graphics_state.float_textures.clone(),
@@ -628,7 +626,7 @@ impl Api {
             if mat_name.is_empty() {
                 error!("No parameter string 'type' found in MakeNamedMaterial.");
             } else {
-                if let Ok(mtl) = self.graphics_state.make_material(&mat_name, &mut mp) {
+                if let Ok(mtl) = self.graphics_state.make_material(&mat_name, &mp) {
                     if self.graphics_state.named_materials.contains_key(&name) {
                         warn!("Named material '{}' redefined.", name);
                     }
@@ -728,7 +726,7 @@ impl Api {
                             &area_light,
                             self.current_transforms[0].clone(),
                             &mi,
-                            Arc::clone(&shape),
+                            Arc::clone(shape),
                             params,
                         ) {
                             area_lights.push(area);
@@ -736,7 +734,7 @@ impl Api {
                     }
 
                     let prim = GeometricPrimitive::new(
-                        Arc::clone(&shape),
+                        Arc::clone(shape),
                         Arc::clone(&mtl),
                         None,
                         mi.clone(),
@@ -774,7 +772,7 @@ impl Api {
 
                 for shape in shapes.iter() {
                     let prim = GeometricPrimitive::new(
-                        Arc::clone(&shape),
+                        Arc::clone(shape),
                         Arc::clone(&mtl),
                         None,
                         mi.clone(),
@@ -816,7 +814,7 @@ impl Api {
 
             // Add `prims` and `area_lights` to scene or current instance.
             if let Some(mut current_instance) = self.render_options.current_instance.clone() {
-                if area_lights.len() > 0 {
+                if !area_lights.is_empty() {
                     warn!("Area lights not supported with object instancing.");
                     Arc::get_mut(&mut current_instance)
                         .unwrap()

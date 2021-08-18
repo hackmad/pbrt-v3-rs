@@ -53,15 +53,15 @@ impl PerspectiveCamera {
         film: Film,
         medium: Option<ArcMedium>,
     ) -> Self {
-        let film = film.clone();
-        let res = film.full_resolution;
+        let film_clone = film;
+        let res = film_clone.full_resolution;
 
         let data = CameraData::new(
             camera_to_world,
             shutter_open,
             shutter_close,
-            film,
-            medium.clone(),
+            film_clone,
+            medium,
         );
         let proj_data = ProjectiveCameraData::new(
             &data,

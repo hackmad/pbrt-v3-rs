@@ -41,14 +41,14 @@ impl BVHAccel {
     /// * `max_prims_in_node` - Maximum number of primitives in a node.
     /// * `split_method`      - The splitting method.
     pub fn new(
-        primitives: &Vec<ArcPrimitive>,
+        primitives: &[ArcPrimitive],
         max_prims_in_node: u8,
         split_method: SplitMethod,
     ) -> Self {
         let n_primitives = primitives.len();
         if n_primitives == 0 {
             Self {
-                primitives: primitives.clone(),
+                primitives: primitives.to_vec(),
                 max_prims_in_node,
                 split_method,
                 nodes: vec![],
@@ -69,14 +69,14 @@ impl BVHAccel {
 
             let root = match split_method {
                 SplitMethod::HLBVH => HLBVH::build(
-                    &primitives,
+                    primitives,
                     max_prims_in_node,
                     &mut primitive_info,
                     &mut total_nodes,
                     Arc::clone(&ordered_prims),
                 ),
                 _ => SAH::recursive_build(
-                    &primitives,
+                    primitives,
                     split_method,
                     max_prims_in_node,
                     &mut primitive_info,
@@ -156,7 +156,7 @@ impl Aggregate for BVHAccel {}
 impl Primitive for BVHAccel {
     /// Returns a bounding box in the world space.
     fn world_bound(&self) -> Bounds3f {
-        if self.nodes.len() > 0 {
+        if !self.nodes.is_empty() {
             self.nodes[0].bounds
         } else {
             Bounds3f::empty()
@@ -170,7 +170,7 @@ impl Primitive for BVHAccel {
     /// * `r`                  - The ray.
     fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
         let mut si: Option<SurfaceInteraction> = None;
-        if self.nodes.len() > 0 {
+        if !self.nodes.is_empty() {
             let inv_dir = Vector3f::new(1.0 / r.d.x, 1.0 / r.d.y, 1.0 / r.d.z);
             let dir_is_neg = [
                 if inv_dir.x < 0.0 { 1_u8 } else { 0_u8 },
@@ -209,7 +209,7 @@ impl Primitive for BVHAccel {
                         } else {
                             nodes_to_visit[to_visit_offset] = node.offset as usize;
                             to_visit_offset += 1;
-                            current_node_index = current_node_index + 1;
+                            current_node_index += 1;
                         }
                     }
                 } else {
@@ -228,7 +228,7 @@ impl Primitive for BVHAccel {
     ///
     /// * `r`                  - The ray.
     fn intersect_p(&self, r: &Ray) -> bool {
-        if self.nodes.len() > 0 {
+        if !self.nodes.is_empty() {
             let inv_dir = Vector3f::new(1.0 / r.d.x, 1.0 / r.d.y, 1.0 / r.d.z);
             let dir_is_neg = [
                 if inv_dir.x < 0.0 { 1_u8 } else { 0_u8 },
@@ -267,7 +267,7 @@ impl Primitive for BVHAccel {
                         } else {
                             nodes_to_visit[to_visit_offset] = node.offset as usize;
                             to_visit_offset += 1;
-                            current_node_index = current_node_index + 1;
+                            current_node_index += 1;
                         }
                     }
                 } else {
@@ -335,11 +335,11 @@ impl Primitive for BVHAccel {
     }
 }
 
-impl From<(&ParamSet, &Vec<ArcPrimitive>)> for BVHAccel {
+impl From<(&ParamSet, &[ArcPrimitive])> for BVHAccel {
     /// Create a `BVHAccel` from given parameter set and primitives.
     ///
     /// * `p` - Tuple containing the parameter set and primitives.
-    fn from(p: (&ParamSet, &Vec<ArcPrimitive>)) -> Self {
+    fn from(p: (&ParamSet, &[ArcPrimitive])) -> Self {
         let (params, prims) = p;
         let split_method_name = params.find_one_string("splitmethod", String::from("sah"));
         let split_method = match &split_method_name[..] {

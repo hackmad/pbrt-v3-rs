@@ -48,13 +48,7 @@ impl OrthographicCamera {
         film: Film,
         medium: Option<ArcMedium>,
     ) -> Self {
-        let data = CameraData::new(
-            camera_to_world,
-            shutter_open,
-            shutter_close,
-            film,
-            medium.clone(),
-        );
+        let data = CameraData::new(camera_to_world, shutter_open, shutter_close, film, medium);
         let proj_data = ProjectiveCameraData::new(
             &data,
             Transform::orthographic(0.0, 1.0),

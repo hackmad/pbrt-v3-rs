@@ -165,7 +165,7 @@ impl Interval {
                     break;
                 }
 
-                t_newton = t_newton - f_newton / f_prime_newton;
+                t_newton -= f_newton / f_prime_newton;
             }
             if t_newton >= self.low - 1e-3 && t_newton < self.high + 1e-3 {
                 zeros[*zero_count] = t_newton;

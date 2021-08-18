@@ -30,7 +30,7 @@ impl HLBVH {
     ///                         primitives in leaf nodes occupy contiguous ranges in
     ///                         the vector.
     pub fn build(
-        primitives: &Vec<ArcPrimitive>,
+        primitives: &[ArcPrimitive],
         max_prims_in_node: u8,
         primitive_info: &mut Vec<BVHPrimitiveInfo>,
         total_nodes: &mut usize,
@@ -119,7 +119,7 @@ impl HLBVH {
     /// * `ordered_prims_offset  - Index in `ordered_prims` for start of this node.
     /// * `bit_index`            - The bit index.
     fn emit_lbvh(
-        primitives: &Vec<ArcPrimitive>,
+        primitives: &[ArcPrimitive],
         max_prims_in_node: usize,
         primitive_info: &Vec<BVHPrimitiveInfo>,
         morton_prims: &[MortonPrimitive],

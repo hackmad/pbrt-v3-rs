@@ -33,13 +33,7 @@ impl EnvironmentCamera {
         medium: Option<ArcMedium>,
     ) -> Self {
         Self {
-            data: CameraData::new(
-                camera_to_world,
-                shutter_open,
-                shutter_close,
-                film,
-                medium.clone(),
-            ),
+            data: CameraData::new(camera_to_world, shutter_open, shutter_close, film, medium),
         }
     }
 }

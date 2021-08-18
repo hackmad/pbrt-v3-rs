@@ -57,7 +57,7 @@ impl KDTreeAccel {
     /// * `max_prims`      - Maximum number of primitives in leaf.
     /// * `max_depth`      - Maximum depth of tree.
     pub fn new(
-        primitives: &Vec<ArcPrimitive>,
+        primitives: &[ArcPrimitive],
         isect_cost: i32,
         traversal_cost: i32,
         empty_bonus: Float,
@@ -103,7 +103,7 @@ impl KDTreeAccel {
             traversal_cost,
             max_prims,
             empty_bonus,
-            primitives: primitives.clone(),
+            primitives: primitives.to_vec(),
             primitive_indices: vec![],
             nodes: vec![],
             n_alloced_nodes,
@@ -131,7 +131,7 @@ impl KDTreeAccel {
         &mut self,
         node_num: u32,
         node_bounds: &Bounds3f,
-        all_prim_bounds: &Vec<Bounds3f>,
+        all_prim_bounds: &[Bounds3f],
         prim_nums: &[u32],
         n_primitives: u32,
         depth: i32,
@@ -297,7 +297,7 @@ impl KDTreeAccel {
                 node_num + 1,
                 &bounds0,
                 all_prim_bounds,
-                &prim_nums[..],
+                prim_nums,
                 n0,
                 depth - 1,
                 edges,
@@ -313,7 +313,7 @@ impl KDTreeAccel {
                 above_child,
                 &bounds1,
                 all_prim_bounds,
-                &prim_nums[..],
+                prim_nums,
                 n1,
                 depth - 1,
                 edges,
@@ -580,11 +580,11 @@ impl Primitive for KDTreeAccel {
     }
 }
 
-impl From<(&ParamSet, &Vec<ArcPrimitive>)> for KDTreeAccel {
+impl From<(&ParamSet, &[ArcPrimitive])> for KDTreeAccel {
     /// Create a `KDTreeAccel ` from given parameter set and primitives.
     ///
     /// * `p` - Tuple containing the parameter set and primitives.
-    fn from(p: (&ParamSet, &Vec<ArcPrimitive>)) -> Self {
+    fn from(p: (&ParamSet, &[ArcPrimitive])) -> Self {
         let (params, prims) = p;
         let isect_cost = params.find_one_int("intersectcost", 80);
         let trav_cost = params.find_one_int("traversalcost", 1);
