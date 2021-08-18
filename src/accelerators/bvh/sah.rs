@@ -40,9 +40,10 @@ impl SAH {
         ordered_prims: Arc<Mutex<Vec<ArcPrimitive>>>,
     ) -> Arc<BVHBuildNode> {
         // Compute bounds of all primitives in BVH node.
-        let bounds = (start..end).fold(Bounds3f::default(), |b, i| {
-            b.union(&primitive_info[i].bounds)
-        });
+        let mut bounds = Bounds3f::empty();
+        for i in start..end {
+            bounds = bounds.union(&primitive_info[i].bounds);
+        }
 
         let mut dim = Axis::default(); // Will be set if we need to make interior node.
 
@@ -53,9 +54,10 @@ impl SAH {
             None
         } else {
             // Compute bound of primitive centroids, choose split dimension dim.
-            let centroid_bounds = (start..end).fold(Bounds3f::default(), |b, i| {
-                b.union(&primitive_info[i].centroid)
-            });
+            let mut centroid_bounds = Bounds3f::empty();
+            for i in start..end {
+                centroid_bounds = centroid_bounds.union(&primitive_info[i].centroid);
+            }
             dim = centroid_bounds.maximum_extent();
 
             // Partition primitives into two sets and build children.
@@ -265,7 +267,7 @@ impl SAH {
             // Compute costs for splitting after each bucket
             let mut cost = [0.0 as Float; N_BUCKETS - 1];
             for i in 0..N_BUCKETS - 1 {
-                let (mut b0, mut b1) = (Bounds3f::default(), Bounds3f::default());
+                let (mut b0, mut b1) = (Bounds3f::empty(), Bounds3f::empty());
                 let (mut count0, mut count1) = (0, 0);
                 for j in 0..i + 1 {
                     b0 = b0.union(&buckets[j].bounds);

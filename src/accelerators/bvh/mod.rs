@@ -57,11 +57,10 @@ impl BVHAccel {
             // Build BVH from primitives.
 
             // Initializes primitive_info array for primitives.
-            let mut primitive_info: Vec<BVHPrimitiveInfo> = primitives
-                .iter()
-                .enumerate()
-                .map(|(i, p)| BVHPrimitiveInfo::new(i, p.world_bound()))
-                .collect();
+            let mut primitive_info: Vec<BVHPrimitiveInfo> = Vec::with_capacity(n_primitives);
+            for (i, p) in primitives.iter().enumerate() {
+                primitive_info.push(BVHPrimitiveInfo::new(i, p.world_bound()));
+            }
 
             // Build BVH tree for primitives using primitive_info.
             let mut total_nodes = 0;
@@ -157,7 +156,11 @@ impl Aggregate for BVHAccel {}
 impl Primitive for BVHAccel {
     /// Returns a bounding box in the world space.
     fn world_bound(&self) -> Bounds3f {
-        Bounds3f::default()
+        if self.nodes.len() > 0 {
+            self.nodes[0].bounds
+        } else {
+            Bounds3f::empty()
+        }
     }
 
     /// Returns geometric details if a ray intersects the primitive and updates

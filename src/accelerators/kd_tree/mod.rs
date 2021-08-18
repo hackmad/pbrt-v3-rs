@@ -76,7 +76,7 @@ impl KDTreeAccel {
         };
 
         // Compute bounds for kd-tree construction.
-        let mut bounds = Bounds3f::default();
+        let mut bounds = Bounds3f::empty();
         let mut prim_bounds = Vec::<Bounds3f>::with_capacity(count);
         for prim in primitives.iter() {
             let b = prim.world_bound();

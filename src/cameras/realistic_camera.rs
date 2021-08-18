@@ -374,7 +374,7 @@ impl RealisticCamera {
     /// * `p_film_x0` - First point along x-axis of film plane.
     /// * `p_film_x1` - Second point along x-axis of film plane.
     fn bound_exit_pupil(&self, p_film_x0: Float, p_film_x1: Float) -> Bounds2f {
-        let mut pupil_bounds = Bounds2f::default();
+        let mut pupil_bounds = Bounds2f::empty();
         const N_SAMPLES: usize = 1024 * 1024;
         const N_SAMPLES_SQRT: usize = 1024;
 

@@ -757,8 +757,8 @@ impl Api {
                     .graphics_state
                     .make_shape(
                         &name,
-                        identity.clone(),
-                        identity.clone(),
+                        Arc::clone(&identity),
+                        Arc::clone(&identity),
                         self.graphics_state.reverse_orientation,
                         params,
                     )
@@ -790,8 +790,8 @@ impl Api {
                     "TransformCache assumes only two transforms"
                 );
                 let obj2world = [
-                    transform_cache.lookup(self.current_transforms[0].clone()),
-                    transform_cache.lookup(self.current_transforms[1].clone()),
+                    transform_cache.lookup(Arc::clone(&self.current_transforms[0])),
+                    transform_cache.lookup(Arc::clone(&self.current_transforms[1])),
                 ];
                 let animated_object2world = AnimatedTransform::new(
                     Arc::clone(&obj2world[0]),

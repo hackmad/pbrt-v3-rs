@@ -39,7 +39,7 @@ impl HLBVH {
         // Compute bounds of all primitives in BVH node.
         let bounds = primitive_info
             .iter()
-            .fold(Bounds3f::default(), |b, pi| b.union(&pi.bounds));
+            .fold(Bounds3f::empty(), |b, pi| b.union(&pi.bounds));
 
         // Compute Morton indices of primitives.
         let morton_prims: Vec<MortonPrimitive> = primitive_info
@@ -133,7 +133,7 @@ impl HLBVH {
 
         if bit_index.is_none() || n_primitives < max_prims_in_node {
             // Create and return leaf node of LBVH treelet.
-            let mut bounds = Bounds3f::default();
+            let mut bounds = Bounds3f::empty();
             let first_prim_offset = ordered_prims_offset.fetch_add(n_primitives, Ordering::SeqCst);
 
             let prims = Arc::clone(&ordered_prims);
@@ -241,15 +241,17 @@ impl HLBVH {
         *total_nodes += 1;
 
         // Compute bounds of all nodes under this HLBVH node
-        let bounds = (start..end).fold(Bounds3f::default(), |b, i| {
-            b.union(&treelet_roots[i].bounds)
-        });
+        let mut bounds = Bounds3f::empty();
+        for i in start..end {
+            bounds = bounds.union(&treelet_roots[i].bounds);
+        }
 
         // Compute bound of HLBVH node centroids, choose split dimension dim.
-        let centroid_bounds = (start..end).fold(Bounds3f::default(), |b, i| {
+        let mut centroid_bounds = Bounds3f::empty();
+        for i in start..end {
             let centroid = (treelet_roots[i].bounds.p_min + treelet_roots[i].bounds.p_max) * 0.5;
-            b.union(&centroid)
-        });
+            centroid_bounds = centroid_bounds.union(&centroid);
+        }
 
         let dim = centroid_bounds.maximum_extent();
 
@@ -279,7 +281,7 @@ impl HLBVH {
         // Compute costs for splitting after each bucket
         let mut cost = [0.0; N_BUCKETS - 1];
         for i in 0..N_BUCKETS - 1 {
-            let (mut b0, mut b1) = (Bounds3f::default(), Bounds3f::default());
+            let (mut b0, mut b1) = (Bounds3f::empty(), Bounds3f::empty());
             let (mut count0, mut count1) = (0, 0);
             for j in 0..i + 1 {
                 b0 = b0.union(&buckets[j].bounds);
