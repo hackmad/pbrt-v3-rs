@@ -142,12 +142,13 @@ fn get_extension_from_filename(path: &str) -> Option<&str> {
 /// * `res_y`       - Y resolution.
 fn write_exr(path: &str, rgb: &[Float], res_x: u32, res_y: u32) -> Result<(), String> {
     info!("Writing image {} with resolution {}x{}", path, res_x, res_y);
+
     match write_rgb_file(
         String::from(path),
         res_x as usize,
         res_y as usize,
         |x, y| {
-            let offset = y * (res_x as usize) + x;
+            let offset = 3 * (y * (res_x as usize) + x);
             (rgb[offset], rgb[offset + 1], rgb[offset + 2])
         },
     ) {
@@ -179,7 +180,7 @@ fn write_8_bit(
         for x in 0..res_x {
             // 8-bit format; apply gamma and clamp.
             let rgb = apply_gamma(&[rgb[offset], rgb[offset + 1], rgb[offset + 2]]);
-            imgbuf.put_pixel(x, res_y - 1 - y, Rgb(rgb));
+            imgbuf.put_pixel(x, y, Rgb(rgb));
             offset += 3;
         }
     }
