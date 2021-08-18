@@ -16,4 +16,6 @@ Cargo.lock
 
 /target
 
+renders/
+
 .DS_Store
