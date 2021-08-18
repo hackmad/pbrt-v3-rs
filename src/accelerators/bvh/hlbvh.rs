@@ -307,21 +307,20 @@ impl HLBVH {
         }
 
         // Split nodes and create interior HLBVH SAH node
-        let split = treelet_roots[start..end]
-            .iter_mut()
-            .partition_in_place(|node| {
-                let centroid = (node.bounds.p_min[dim] + node.bounds.p_max[dim]) * 0.5;
-                let mut b = (N_BUCKETS as Float
-                    * ((centroid - centroid_bounds.p_min[dim])
-                        / (centroid_bounds.p_max[dim] - centroid_bounds.p_min[dim])))
-                    as usize;
-                if b == N_BUCKETS {
-                    b = N_BUCKETS - 1;
-                }
-                debug_assert!(b > 0);
-                debug_assert!(b < N_BUCKETS);
-                b <= min_cost_split_bucket
-            });
+        let roots = treelet_roots[start..end].iter_mut();
+        let split = itertools::partition(roots, |node| {
+            let centroid = (node.bounds.p_min[dim] + node.bounds.p_max[dim]) * 0.5;
+            let mut b = (N_BUCKETS as Float
+                * ((centroid - centroid_bounds.p_min[dim])
+                    / (centroid_bounds.p_max[dim] - centroid_bounds.p_min[dim])))
+                as usize;
+            if b == N_BUCKETS {
+                b = N_BUCKETS - 1;
+            }
+            debug_assert!(b > 0);
+            debug_assert!(b < N_BUCKETS);
+            b <= min_cost_split_bucket
+        });
         let mid = start + split;
         debug_assert!(mid > start);
         debug_assert!(mid < end);

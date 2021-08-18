@@ -1,5 +1,3 @@
-#![feature(iter_partition_in_place)] // Can be removed once stable
-
 extern crate byteorder;
 extern crate clap;
 #[macro_use]

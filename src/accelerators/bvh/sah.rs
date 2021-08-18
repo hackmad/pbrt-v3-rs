@@ -149,9 +149,8 @@ impl SAH {
         centroid_bounds: &Bounds3f,
     ) -> usize {
         let pmid = (centroid_bounds.p_min[dim] + centroid_bounds.p_max[dim]) / 2.0;
-        let split = primitive_info[start..end]
-            .iter_mut()
-            .partition_in_place(|pi| pi.centroid[dim] < pmid);
+        let infos = primitive_info[start..end].iter_mut();
+        let split = itertools::partition(infos, |pi| pi.centroid[dim] < pmid);
         let mid = start + split;
 
         if mid != start && mid != end {
@@ -296,18 +295,17 @@ impl SAH {
             if n_primitives > max_prims_in_node as usize || min_cost < leaf_cost {
                 // Partition primitives at selected SAH bucket and return the
                 // pivot point as mid.
-                let split = primitive_info[start..end + 1]
-                    .iter_mut()
-                    .partition_in_place(|pi| {
-                        let mut b = (N_BUCKETS as Float * centroid_bounds.offset(&pi.centroid)[dim])
-                            as usize;
-                        if b == N_BUCKETS {
-                            b = N_BUCKETS - 1;
-                        }
-                        debug_assert!(b > 0);
-                        debug_assert!(b < N_BUCKETS);
-                        b <= min_cost_split_bucket
-                    });
+                let infos = primitive_info[start..end + 1].iter_mut();
+                let split = itertools::partition(infos, |pi| {
+                    let mut b =
+                        (N_BUCKETS as Float * centroid_bounds.offset(&pi.centroid)[dim]) as usize;
+                    if b == N_BUCKETS {
+                        b = N_BUCKETS - 1;
+                    }
+                    debug_assert!(b > 0);
+                    debug_assert!(b < N_BUCKETS);
+                    b <= min_cost_split_bucket
+                });
                 let pmid = start + split;
                 Some(pmid)
             } else {
