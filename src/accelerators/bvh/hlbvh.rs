@@ -121,7 +121,7 @@ impl HLBVH {
     fn emit_lbvh(
         primitives: &[ArcPrimitive],
         max_prims_in_node: usize,
-        primitive_info: &Vec<BVHPrimitiveInfo>,
+        primitive_info: &[BVHPrimitiveInfo],
         morton_prims: &[MortonPrimitive],
         n_primitives: usize,
         total_nodes: &mut usize,

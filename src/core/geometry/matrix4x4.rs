@@ -9,7 +9,7 @@ use std::ops::{Index, Mul};
 use std::slice;
 
 /// A 4x4 vector containing Float values.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug)]
 pub struct Matrix4x4 {
     /// Stores a 2-D array of Float
     pub m: [[Float; 4]; 4],
@@ -82,15 +82,15 @@ impl Matrix4x4 {
             // Choose pivot
             for j in 0..4 {
                 if ipiv[j] != 1 {
-                    for k in 0..4 {
-                        if ipiv[k] == 0 {
+                    for (k, ipiv_k) in ipiv.iter().enumerate() {
+                        if *ipiv_k == 0 {
                             let abs_minv = abs(minv[j][k]);
                             if abs_minv >= big {
                                 big = abs_minv;
                                 irow = j;
                                 icol = k;
                             }
-                        } else if ipiv[k] > 1 {
+                        } else if *ipiv_k > 1 {
                             panic!("Singular matrix in MatrixInvert");
                         }
                     }
@@ -135,10 +135,8 @@ impl Matrix4x4 {
         // Swap columns to reflect permutation
         for j in (0..4).rev() {
             if indxr[j] != indxc[j] {
-                for k in 0..4 {
-                    let tmp = minv[k][indxr[j]];
-                    minv[k][indxr[j]] = minv[k][indxc[j]];
-                    minv[k][indxc[j]] = tmp;
+                for minv_k in &mut minv {
+                    minv_k.swap(indxr[j], indxc[j]);
                 }
             }
         }
@@ -227,6 +225,14 @@ impl Hash for Matrix4x4 {
         let byte_ptr: *const u8 = ptr as *const _;
         let byte_slice: &[u8] = unsafe { slice::from_raw_parts(byte_ptr, size) };
         byte_slice.hash(state);
+    }
+}
+
+impl PartialEq for Matrix4x4 {
+    /// This method tests for `self` and `other` values to be equal, and is used
+    /// by `==`.
+    fn eq(&self, other: &Self) -> bool {
+        self.m == other.m
     }
 }
 

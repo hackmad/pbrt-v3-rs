@@ -189,13 +189,11 @@ pub fn estimate_direct(
             if let Some(vis) = visibility {
                 if handle_media {
                     li *= vis.tr(Arc::clone(&scene), Arc::clone(sampler));
+                } else if !vis.unoccluded(Arc::clone(&scene)) {
+                    debug!("  visiblity tester: shadow ray blocked");
+                    li = Spectrum::new(0.0);
                 } else {
-                    if !vis.unoccluded(Arc::clone(&scene)) {
-                        debug!("  visiblity tester: shadow ray blocked");
-                        li = Spectrum::new(0.0);
-                    } else {
-                        debug!("  visiblity tester: shadow ray unoccluded");
-                    }
+                    debug!("  visiblity tester: shadow ray unoccluded");
                 }
             } else {
                 debug!("  no visiblity tester");

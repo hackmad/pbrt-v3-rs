@@ -224,8 +224,8 @@ impl Film {
             let tile_pixel = tile.get_pixel_offset(&pixel);
             let merge_pixel = self.get_pixel_offset(&pixel);
             let xyz = tile.pixels[tile_pixel].contrib_sum.to_xyz();
-            for i in 0..3 {
-                self.pixels[merge_pixel].xyz[i] += xyz[i];
+            for (i, colour) in xyz.iter().enumerate() {
+                self.pixels[merge_pixel].xyz[i] += colour;
             }
             self.pixels[merge_pixel].filter_weight_sum += tile.pixels[tile_pixel].filter_weight_sum;
         }
@@ -281,8 +281,8 @@ impl Film {
 
             let xyz = v.to_xyz();
             let pixel_offset = self.get_pixel_offset(&pi);
-            for i in 0..3 {
-                self.pixels[pixel_offset].splat_xyz[i] += xyz[i];
+            for (i, colour) in xyz.iter().enumerate() {
+                self.pixels[pixel_offset].splat_xyz[i] += colour;
             }
         }
     }
@@ -296,8 +296,7 @@ impl Film {
         let n = 3 * self.cropped_pixel_bounds.area() as usize;
         let mut rgb = vec![0.0; n];
 
-        let mut offset = 0;
-        for p in self.cropped_pixel_bounds {
+        for (offset, p) in self.cropped_pixel_bounds.into_iter().enumerate() {
             // Convert pixel XYZ color to RGB.
             let pixel_offset = self.get_pixel_offset(&p);
 
@@ -325,8 +324,6 @@ impl Film {
             rgb[3 * offset] *= self.scale;
             rgb[3 * offset + 1] *= self.scale;
             rgb[3 * offset + 2] *= self.scale;
-
-            offset += 1;
         }
 
         // Write RGB image

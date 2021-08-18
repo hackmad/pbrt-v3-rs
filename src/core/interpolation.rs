@@ -353,9 +353,9 @@ fn invert_catmull_rom(x: &[Float], values: &[Float], u: Float) -> Float {
     let n = x.len();
 
     // Stop when `u` is out of bounds.
-    if !(u > values[0]) {
+    if u <= values[0] {
         return x[0];
-    } else if !(u < values[n - 1]) {
+    } else if u >= values[n - 1] {
         return x[n - 1];
     }
 

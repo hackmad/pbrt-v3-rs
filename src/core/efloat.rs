@@ -29,26 +29,31 @@ impl EFloat {
     /// * `v`   - The 32-bit floating point value.
     /// * `err` - The error (default to 0.0).
     pub fn new(v: f32, err: f32) -> Self {
-        let mut r = Self::default();
-
-        if err == 0.0 {
-            r.v = v;
-            r.low = v;
-            r.high = v;
+        let (low, high) = if err == 0.0 {
+            (v, v)
         } else {
             // Compute conservative bounds by rounding the endpoints away from the
             // middle. Note that this will be over-conservative in cases where v-err
             // or v+err are exactly representable in floating-point, but it's
             // probably not worth the trouble of checking this case.
-            r.v = v;
-            r.low = next_float_down(r.v - err);
-            r.high = next_float_up(r.v + err);
+            (next_float_down(v - err), next_float_up(v + err))
         };
 
-        #[cfg(debug_assertions)]
-        {
-            r.v_precise = v as f64;
-        }
+        let r = if cfg!(debug_assertions) {
+            Self {
+                v,
+                low,
+                high,
+                v_precise: v as f64,
+            }
+        } else {
+            Self {
+                v,
+                low,
+                high,
+                ..Default::default()
+            }
+        };
 
         r.check();
         r
@@ -121,17 +126,21 @@ impl EFloat {
 
     /// Returns the square root.
     pub fn sqrt(&self, ef: Self) -> Self {
-        let mut r = Self::default();
-
-        r.v = ef.v.sqrt();
-
-        #[cfg(debug_assertions)]
-        {
-            r.v_precise = ef.v_precise.sqrt();
-        }
-
-        r.low = next_float_down(ef.low.sqrt());
-        r.high = next_float_up(ef.high.sqrt());
+        let r = if cfg!(debug_assertions) {
+            Self {
+                v: ef.v.sqrt(),
+                low: next_float_down(ef.low.sqrt()),
+                high: next_float_up(ef.high.sqrt()),
+                v_precise: ef.v_precise.sqrt(),
+            }
+        } else {
+            Self {
+                v: ef.v.sqrt(),
+                low: next_float_down(ef.low.sqrt()),
+                high: next_float_up(ef.high.sqrt()),
+                ..Default::default()
+            }
+        };
 
         r.check();
         r
@@ -144,33 +153,41 @@ impl EFloat {
             *self
         } else if self.high <= 0.0 {
             // The entire interval is less than zero.
-            let mut r = Self::default();
-
-            r.v = -self.v;
-
-            #[cfg(debug_assertions)]
-            {
-                r.v_precise = -self.v_precise;
-            }
-
-            r.low = -self.high;
-            r.high = -self.low;
+            let r = if cfg!(debug_assertions) {
+                Self {
+                    v: -self.v,
+                    low: -self.high,
+                    high: -self.low,
+                    v_precise: -self.v_precise,
+                }
+            } else {
+                Self {
+                    v: -self.v,
+                    low: -self.high,
+                    high: -self.low,
+                    ..Default::default()
+                }
+            };
 
             r.check();
             r
         } else {
             // The interval straddles zero.
-            let mut r = Self::default();
-
-            r.v = self.v.abs();
-
-            #[cfg(debug_assertions)]
-            {
-                r.v_precise = self.v_precise.abs();
-            }
-
-            r.low = 0.0;
-            r.high = max(-self.low, self.high);
+            let r = if cfg!(debug_assertions) {
+                Self {
+                    v: self.v.abs(),
+                    low: 0.0,
+                    high: max(-self.low, self.high),
+                    v_precise: self.v_precise.abs(),
+                }
+            } else {
+                Self {
+                    v: self.v.abs(),
+                    low: 0.0,
+                    high: max(-self.low, self.high),
+                    ..Default::default()
+                }
+            };
 
             r.check();
             r
@@ -221,19 +238,23 @@ impl Add for EFloat {
     ///
     /// * `ef` - The value to add.
     fn add(self, ef: EFloat) -> Self::Output {
-        let mut r = Self::Output::default();
-
-        r.v = self.v + ef.v;
-
-        #[cfg(debug_assertions)]
-        {
-            r.v_precise = self.v_precise + ef.v_precise;
-        }
-
         // Interval arithemetic addition, with the result rounded away from
         // the value r.v in order to be conservative.
-        r.low = next_float_down(self.low + ef.low);
-        r.high = next_float_up(self.high + ef.high);
+        let r = if cfg!(debug_assertions) {
+            Self {
+                v: self.v + ef.v,
+                low: next_float_down(self.low + ef.low),
+                high: next_float_up(self.high + ef.high),
+                v_precise: self.v_precise + ef.v_precise,
+            }
+        } else {
+            Self {
+                v: self.v + ef.v,
+                low: next_float_down(self.low + ef.low),
+                high: next_float_up(self.high + ef.high),
+                ..Default::default()
+            }
+        };
 
         r.check();
         r
@@ -269,17 +290,21 @@ impl Sub for EFloat {
     ///
     /// * `ef` - The value to subtract.
     fn sub(self, ef: EFloat) -> Self::Output {
-        let mut r = Self::Output::default();
-
-        r.v = self.v - ef.v;
-
-        #[cfg(debug_assertions)]
-        {
-            r.v_precise = self.v_precise - ef.v_precise;
-        }
-
-        r.low = next_float_down(self.low - ef.high);
-        r.high = next_float_up(self.high - ef.low);
+        let r = if cfg!(debug_assertions) {
+            Self {
+                v: self.v - ef.v,
+                low: next_float_down(self.low - ef.high),
+                high: next_float_up(self.high - ef.low),
+                v_precise: self.v_precise - ef.v_precise,
+            }
+        } else {
+            Self {
+                v: self.v - ef.v,
+                low: next_float_down(self.low - ef.high),
+                high: next_float_up(self.high - ef.low),
+                ..Default::default()
+            }
+        };
 
         r.check();
         r
@@ -315,24 +340,30 @@ impl Mul for EFloat {
     ///
     /// * `ef` - The value to multiply.
     fn mul(self, ef: EFloat) -> Self::Output {
-        let mut r = Self::Output::default();
-
-        r.v = self.v * ef.v;
-
-        #[cfg(debug_assertions)]
-        {
-            r.v_precise = self.v_precise * ef.v_precise;
-        }
-
         let prod = [
             self.low * ef.low,
             self.high * ef.low,
             self.low * ef.high,
             self.high * ef.high,
         ];
+        let low = next_float_down(min(min(prod[0], prod[1]), min(prod[2], prod[3])));
+        let high = next_float_up(max(max(prod[0], prod[1]), max(prod[2], prod[3])));
 
-        r.low = next_float_down(min(min(prod[0], prod[1]), min(prod[2], prod[3])));
-        r.high = next_float_up(max(max(prod[0], prod[1]), max(prod[2], prod[3])));
+        let r = if cfg!(debug_assertions) {
+            Self {
+                v: self.v * ef.v,
+                low,
+                high,
+                v_precise: self.v_precise * ef.v_precise,
+            }
+        } else {
+            Self {
+                v: self.v * ef.v,
+                low,
+                high,
+                ..Default::default()
+            }
+        };
 
         r.check();
         r
@@ -368,20 +399,10 @@ impl Div for EFloat {
     ///
     /// * `ef` - The value to divide by.
     fn div(self, ef: EFloat) -> Self::Output {
-        let mut r = Self::Output::default();
-
-        r.v = self.v / ef.v;
-
-        #[cfg(debug_assertions)]
-        {
-            r.v_precise = self.v_precise / ef.v_precise;
-        }
-
-        if ef.low < 0.0 && ef.high > 0.0 {
+        let (low, high) = if ef.low < 0.0 && ef.high > 0.0 {
             // The interval we're dividing by straddles zero, so just
             // return an interval of everything.
-            r.low = f32::NEG_INFINITY;
-            r.high = f32::INFINITY;
+            (f32::NEG_INFINITY, f32::INFINITY)
         } else {
             let div = [
                 self.low / ef.low,
@@ -389,9 +410,26 @@ impl Div for EFloat {
                 self.low / ef.high,
                 self.high / ef.high,
             ];
-            r.low = next_float_down(min(min(div[0], div[1]), min(div[2], div[3])));
-            r.high = next_float_up(max(max(div[0], div[1]), max(div[2], div[3])));
-        }
+            (
+                next_float_down(min(min(div[0], div[1]), min(div[2], div[3]))),
+                next_float_up(max(max(div[0], div[1]), max(div[2], div[3]))),
+            )
+        };
+        let r = if cfg!(debug_assertions) {
+            Self {
+                v: self.v / ef.v,
+                low,
+                high,
+                v_precise: self.v_precise / ef.v_precise,
+            }
+        } else {
+            Self {
+                v: self.v / ef.v,
+                low,
+                high,
+                ..Default::default()
+            }
+        };
 
         r.check();
         r
@@ -425,17 +463,21 @@ impl Neg for EFloat {
 
     /// Return the negative value.
     fn neg(self) -> Self::Output {
-        let mut r = Self::Output::default();
-
-        r.v = -self.v;
-
-        #[cfg(debug_assertions)]
-        {
-            r.v_precise = -self.v_precise;
-        }
-
-        r.low = -self.high;
-        r.high = -self.low;
+        let r = if cfg!(debug_assertions) {
+            Self {
+                v: -self.v,
+                low: -self.high,
+                high: -self.low,
+                v_precise: -self.v_precise,
+            }
+        } else {
+            Self {
+                v: -self.v,
+                low: -self.high,
+                high: -self.low,
+                ..Default::default()
+            }
+        };
 
         r.check();
         r

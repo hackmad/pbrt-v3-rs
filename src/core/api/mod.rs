@@ -386,12 +386,10 @@ impl Api {
             let medium_type = params.find_one_string("type", String::new());
             if medium_type.is_empty() {
                 error!("No parameter string 'type' found in MakeNamedMedium.");
-            } else {
-                if let Ok(medium) =
-                    GraphicsState::make_medium(&name, self.current_transforms[0].clone(), params)
-                {
-                    self.render_options.named_media.insert(name, medium);
-                }
+            } else if let Ok(medium) =
+                GraphicsState::make_medium(&name, self.current_transforms[0].clone(), params)
+            {
+                self.render_options.named_media.insert(name, medium);
             }
         }
     }
@@ -625,19 +623,17 @@ impl Api {
             let mat_name = mp.find_string("type", String::new());
             if mat_name.is_empty() {
                 error!("No parameter string 'type' found in MakeNamedMaterial.");
-            } else {
-                if let Ok(mtl) = self.graphics_state.make_material(&mat_name, &mp) {
-                    if self.graphics_state.named_materials.contains_key(&name) {
-                        warn!("Named material '{}' redefined.", name);
-                    }
-                    if self.graphics_state.named_materials_shared {
-                        let nm = self.graphics_state.named_materials.clone();
-                        self.graphics_state.named_materials = nm;
-                        self.graphics_state.named_materials_shared = false;
-                    }
-                    let mtli = Arc::new(MaterialInstance::new(&name, Arc::clone(&mtl), params));
-                    self.graphics_state.named_materials.insert(name, mtli);
+            } else if let Ok(mtl) = self.graphics_state.make_material(&mat_name, &mp) {
+                if self.graphics_state.named_materials.contains_key(&name) {
+                    warn!("Named material '{}' redefined.", name);
                 }
+                if self.graphics_state.named_materials_shared {
+                    let nm = self.graphics_state.named_materials.clone();
+                    self.graphics_state.named_materials = nm;
+                    self.graphics_state.named_materials_shared = false;
+                }
+                let mtli = Arc::new(MaterialInstance::new(&name, Arc::clone(&mtl), params));
+                self.graphics_state.named_materials.insert(name, mtli);
             }
         }
     }
@@ -825,7 +821,7 @@ impl Api {
                     .append(&mut prims);
             } else {
                 self.render_options.primitives.append(&mut prims);
-                if area_lights.len() > 0 {
+                if !area_lights.is_empty() {
                     self.render_options.lights.append(&mut area_lights);
                 }
             }

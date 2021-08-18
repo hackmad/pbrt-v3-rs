@@ -25,7 +25,7 @@ pub type ArcTransform = Arc<Transform>;
 //
 // * `x` - The value to check
 fn not_one(x: Float) -> bool {
-    x < 0.999 || x > 1.001
+    !(0.999..=1.001).contains(&x)
 }
 
 impl Transform {
