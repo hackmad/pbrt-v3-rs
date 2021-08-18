@@ -184,7 +184,14 @@ impl Transform {
     #[rustfmt::skip]
     pub fn look_at(pos: &Point3f, look: &Point3f, up: &Vector3f) -> Self {
         let dir = (*look - *pos).normalize();
-        let right = up.normalize().cross(&dir).normalize();
+        let mut right = up.normalize().cross(&dir);
+        
+        if right.length() == 0.0 {
+            panic!("up vector {:} and viewing direction {:} passed to LookAt \
+                are pointing in the same direction.", up, dir);
+        }
+ 
+        right = right.normalize();
         let new_up = dir.cross(&right);
 
         let camera_to_world = Matrix4x4::new(
