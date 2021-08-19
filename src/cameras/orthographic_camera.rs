@@ -242,7 +242,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Orthogra
             film.full_resolution.x as Float / film.full_resolution.y as Float,
         );
         let mut screen = if frame > 1.0 {
-            Bounds2::new(Point2::new(-frame, -1.0), Point2::new(1.0, frame))
+            Bounds2::new(Point2::new(-frame, -1.0), Point2::new(frame, 1.0))
         } else {
             Bounds2::new(
                 Point2::new(-1.0, -1.0 / frame),

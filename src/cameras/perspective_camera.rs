@@ -89,13 +89,14 @@ impl PerspectiveCamera {
         let mut p_min = proj_data
             .raster_to_camera
             .transform_point(&Point3f::new(0.0, 0.0, 0.0));
-        p_min /= p_min.z;
 
         let mut p_max = proj_data.raster_to_camera.transform_point(&Point3f::new(
             res.x as Float,
             res.y as Float,
             0.0,
         ));
+
+        p_min /= p_min.z;
         p_max /= p_max.z;
 
         let a = abs((p_max.x - p_min.x) * (p_max.y - p_min.y));
@@ -281,7 +282,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Perspect
             film.full_resolution.x as Float / film.full_resolution.y as Float,
         );
         let mut screen = if frame > 1.0 {
-            Bounds2::new(Point2::new(-frame, -1.0), Point2::new(1.0, frame))
+            Bounds2::new(Point2::new(-frame, -1.0), Point2::new(frame, 1.0))
         } else {
             Bounds2::new(
                 Point2::new(-1.0, -1.0 / frame),
