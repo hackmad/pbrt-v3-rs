@@ -296,34 +296,35 @@ impl Film {
         let n = 3 * self.cropped_pixel_bounds.area() as usize;
         let mut rgb = vec![0.0; n];
 
-        for (offset, p) in self.cropped_pixel_bounds.into_iter().enumerate() {
+        for p in self.cropped_pixel_bounds {
             // Convert pixel XYZ color to RGB.
             let pixel_offset = self.get_pixel_offset(&p);
+            let rgb_offset = 3 * pixel_offset;
 
             let pixel_rgb = xyz_to_rgb(&self.pixels[pixel_offset].xyz);
-            rgb[3 * offset] = pixel_rgb[0];
-            rgb[3 * offset + 1] = pixel_rgb[1];
-            rgb[3 * offset + 2] = pixel_rgb[2];
+            rgb[rgb_offset] = pixel_rgb[0];
+            rgb[rgb_offset + 1] = pixel_rgb[1];
+            rgb[rgb_offset + 2] = pixel_rgb[2];
 
             // Normalize pixel with weight sum.
             let filter_weight_sum = self.pixels[pixel_offset].filter_weight_sum;
             if filter_weight_sum != 0.0 {
                 let inv_wt = 1.0 / filter_weight_sum;
-                rgb[3 * offset] = max(0.0, rgb[3 * offset] * inv_wt);
-                rgb[3 * offset + 1] = max(0.0, rgb[3 * offset + 1] * inv_wt);
-                rgb[3 * offset + 2] = max(0.0, rgb[3 * offset + 2] * inv_wt);
+                rgb[rgb_offset] = max(0.0, rgb[rgb_offset] * inv_wt);
+                rgb[rgb_offset + 1] = max(0.0, rgb[rgb_offset + 1] * inv_wt);
+                rgb[rgb_offset + 2] = max(0.0, rgb[rgb_offset + 2] * inv_wt);
             }
 
             // Add splat value at pixel.
             let splat_rgb = xyz_to_rgb(&self.pixels[pixel_offset].splat_xyz);
-            rgb[3 * offset] += splat_scale * splat_rgb[0];
-            rgb[3 * offset + 1] += splat_scale * splat_rgb[1];
-            rgb[3 * offset + 2] += splat_scale * splat_rgb[2];
+            rgb[rgb_offset] += splat_scale * splat_rgb[0];
+            rgb[rgb_offset + 1] += splat_scale * splat_rgb[1];
+            rgb[rgb_offset + 2] += splat_scale * splat_rgb[2];
 
             // Scale pixel value by `scale`.
-            rgb[3 * offset] *= self.scale;
-            rgb[3 * offset + 1] *= self.scale;
-            rgb[3 * offset + 2] *= self.scale;
+            rgb[rgb_offset] *= self.scale;
+            rgb[rgb_offset + 1] *= self.scale;
+            rgb[rgb_offset + 2] *= self.scale;
         }
 
         // Write RGB image
