@@ -2,10 +2,7 @@
 
 #![allow(dead_code)]
 use super::material_instance::MaterialInstance;
-use super::{
-    FloatTextureMap, NamedMaterialMap, SpectrumTextureMap, TransformCache, TransformSet,
-    MAX_TRANSFORMS,
-};
+use super::{FloatTextureMap, NamedMaterialMap, SpectrumTextureMap, TransformCache, TransformSet};
 use crate::accelerators::*;
 use crate::cameras::*;
 use crate::core::camera::*;
@@ -473,11 +470,6 @@ impl GraphicsState {
         film: Film,
         medium_interface: &MediumInterface,
     ) -> Result<ArcCamera, String> {
-        assert!(
-            MAX_TRANSFORMS == 2,
-            "TransformCache assumes only two transforms"
-        );
-
         let mut transform_cache = self.transform_cache.lock().unwrap();
 
         let cam2world_start = transform_cache.lookup(cam2world_set[0].clone());

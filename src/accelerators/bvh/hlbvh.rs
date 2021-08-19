@@ -242,14 +242,14 @@ impl HLBVH {
 
         // Compute bounds of all nodes under this HLBVH node
         let mut bounds = Bounds3f::empty();
-        for i in start..end {
-            bounds = bounds.union(&treelet_roots[i].bounds);
+        for treelet_root in treelet_roots.iter().take(end).skip(start) {
+            bounds = bounds.union(&treelet_root.bounds);
         }
 
         // Compute bound of HLBVH node centroids, choose split dimension dim.
         let mut centroid_bounds = Bounds3f::empty();
-        for i in start..end {
-            let centroid = (treelet_roots[i].bounds.p_min + treelet_roots[i].bounds.p_max) * 0.5;
+        for treelet_root in treelet_roots.iter().take(end).skip(start) {
+            let centroid = (treelet_root.bounds.p_min + treelet_root.bounds.p_max) * 0.5;
             centroid_bounds = centroid_bounds.union(&centroid);
         }
 
@@ -262,9 +262,9 @@ impl HLBVH {
         let mut buckets = [BucketInfo::default(); N_BUCKETS];
 
         // Initialize BucketInfo for HLBVH SAH partition buckets
-        for i in start..end {
-            let centroid =
-                (treelet_roots[i].bounds.p_min[dim] + treelet_roots[i].bounds.p_max[dim]) * 0.5;
+        for treelet_root in treelet_roots.iter().take(end).skip(start) {
+            let centroid = (treelet_root.bounds.p_min[dim] + treelet_root.bounds.p_max[dim]) * 0.5;
+
             let mut b = (N_BUCKETS as Float
                 * ((centroid - centroid_bounds.p_min[dim])
                     / (centroid_bounds.p_max[dim] - centroid_bounds.p_min[dim])))
@@ -274,24 +274,28 @@ impl HLBVH {
             }
             debug_assert!(b > 0);
             debug_assert!(b < N_BUCKETS);
+
             buckets[b].count += 1;
-            buckets[b].bounds = buckets[b].bounds.union(&treelet_roots[i].bounds);
+            buckets[b].bounds = buckets[b].bounds.union(&treelet_root.bounds);
         }
 
         // Compute costs for splitting after each bucket
         let mut cost = [0.0; N_BUCKETS - 1];
-        for i in 0..N_BUCKETS - 1 {
+        for (i, cost_i) in cost.iter_mut().enumerate().take(N_BUCKETS - 1) {
             let (mut b0, mut b1) = (Bounds3f::empty(), Bounds3f::empty());
             let (mut count0, mut count1) = (0, 0);
-            for j in 0..i + 1 {
-                b0 = b0.union(&buckets[j].bounds);
-                count0 += buckets[j].count;
+
+            for bucket in buckets.iter().take(i + 1) {
+                b0 = b0.union(&bucket.bounds);
+                count0 += bucket.count;
             }
-            for j in i + 1..N_BUCKETS {
-                b1 = b1.union(&buckets[j].bounds);
-                count1 += buckets[j].count;
+
+            for bucket in buckets.iter().take(N_BUCKETS).skip(i + 1) {
+                b1 = b1.union(&bucket.bounds);
+                count1 += bucket.count;
             }
-            cost[i] = 0.125
+
+            *cost_i = 0.125
                 + (count0 as Float * b0.surface_area() + count1 as Float * b1.surface_area())
                     / bounds.surface_area();
         }
@@ -299,9 +303,9 @@ impl HLBVH {
         // Find bucket to split at that minimizes SAH metric
         let mut min_cost = cost[0];
         let mut min_cost_split_bucket = 0;
-        for i in 1..N_BUCKETS - 1 {
-            if cost[i] < min_cost {
-                min_cost = cost[i];
+        for (i, cost_i) in cost.iter().enumerate().take(N_BUCKETS - 1).skip(1) {
+            if *cost_i < min_cost {
+                min_cost = *cost_i;
                 min_cost_split_bucket = i;
             }
         }

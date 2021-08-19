@@ -41,8 +41,8 @@ impl SAH {
     ) -> Arc<BVHBuildNode> {
         // Compute bounds of all primitives in BVH node.
         let mut bounds = Bounds3f::empty();
-        for i in start..end {
-            bounds = bounds.union(&primitive_info[i].bounds);
+        for info in primitive_info.iter().take(end).skip(start) {
+            bounds = bounds.union(&info.bounds);
         }
 
         let mut dim = Axis::default(); // Will be set if we need to make interior node.
@@ -55,8 +55,8 @@ impl SAH {
         } else {
             // Compute bound of primitive centroids, choose split dimension dim.
             let mut centroid_bounds = Bounds3f::empty();
-            for i in start..end {
-                centroid_bounds = centroid_bounds.union(&primitive_info[i].centroid);
+            for info in primitive_info.iter().take(end).skip(start) {
+                centroid_bounds = centroid_bounds.union(&info.centroid);
             }
             dim = centroid_bounds.maximum_extent();
 
@@ -124,9 +124,8 @@ impl SAH {
             let prims = Arc::clone(&ordered_prims);
             let mut prims2 = prims.lock().expect("unable to lock ordered_prims");
             let first_prim_offset = prims2.len();
-            for i in start..end {
-                let prim_num = primitive_info[i].primitive_number;
-                prims2.push(Arc::clone(&primitives[prim_num]));
+            for info in primitive_info.iter().take(end).skip(start) {
+                prims2.push(Arc::clone(&primitives[info.primitive_number]));
             }
             BVHBuildNode::new_leaf_node(first_prim_offset, n_primitives, bounds)
         }
@@ -250,33 +249,37 @@ impl SAH {
             let mut buckets = [BucketInfo::default(); N_BUCKETS];
 
             // Initialize BucketInfo for SAH partition buckets.
-            for i in start..end {
-                let mut b = (N_BUCKETS as Float
-                    * centroid_bounds.offset(&primitive_info[i].centroid)[dim])
-                    as usize;
+            for info in primitive_info.iter().take(end).skip(start) {
+                let mut b =
+                    (N_BUCKETS as Float * centroid_bounds.offset(&info.centroid)[dim]) as usize;
+
                 if b == N_BUCKETS {
                     b = N_BUCKETS - 1;
                 }
                 debug_assert!(b > 0);
                 debug_assert!(b < N_BUCKETS);
+
                 buckets[b].count += 1;
-                buckets[b].bounds = buckets[b].bounds.union(&primitive_info[i].bounds);
+                buckets[b].bounds = buckets[b].bounds.union(&info.bounds);
             }
 
             // Compute costs for splitting after each bucket
-            let mut cost = [0.0 as Float; N_BUCKETS - 1];
-            for i in 0..N_BUCKETS - 1 {
+            let mut cost = [0.0_f32; N_BUCKETS - 1];
+            for (i, cost_i) in cost.iter_mut().enumerate().take(N_BUCKETS - 1) {
                 let (mut b0, mut b1) = (Bounds3f::empty(), Bounds3f::empty());
                 let (mut count0, mut count1) = (0, 0);
-                for j in 0..i + 1 {
-                    b0 = b0.union(&buckets[j].bounds);
-                    count0 += buckets[j].count;
+
+                for bucket in buckets.iter().take(i + 1) {
+                    b0 = b0.union(&bucket.bounds);
+                    count0 += bucket.count;
                 }
-                for j in i + 1..N_BUCKETS {
-                    b1 = b1.union(&buckets[j].bounds);
-                    count1 += buckets[j].count;
+
+                for bucket in buckets.iter().take(N_BUCKETS).skip(i + 1) {
+                    b1 = b1.union(&bucket.bounds);
+                    count1 += bucket.count;
                 }
-                cost[i] = 1.0
+
+                *cost_i = 1.0
                     + (count0 as Float * b0.surface_area() + count1 as Float * b1.surface_area())
                         / bounds.surface_area();
             }
@@ -284,9 +287,9 @@ impl SAH {
             // Find bucket to split at that minimizes SAH metric.
             let mut min_cost = cost[0];
             let mut min_cost_split_bucket = 0;
-            for i in 1..N_BUCKETS - 1 {
-                if cost[i] < min_cost {
-                    min_cost = cost[i];
+            for (i, cost_i) in cost.iter().enumerate().take(N_BUCKETS - 1).skip(1) {
+                if *cost_i < min_cost {
+                    min_cost = *cost_i;
                     min_cost_split_bucket = i;
                 }
             }

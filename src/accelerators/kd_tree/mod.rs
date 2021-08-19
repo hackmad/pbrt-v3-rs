@@ -177,11 +177,10 @@ impl KDTreeAccel {
 
         loop {
             // Initialize edges for `axis`.
-            for i in 0..(n_primitives as usize) {
-                let pn = prim_nums[i];
-                let bounds = all_prim_bounds[pn as usize];
-                edges[axis][2 * i] = BoundEdge::new(bounds.p_min[axis], pn, true);
-                edges[axis][2 * i + 1] = BoundEdge::new(bounds.p_max[axis], pn, false);
+            for (i, pn) in prim_nums.iter().enumerate().take(n_primitives as usize) {
+                let bounds = all_prim_bounds[*pn as usize];
+                edges[axis][2 * i] = BoundEdge::new(bounds.p_min[axis], *pn, true);
+                edges[axis][2 * i + 1] = BoundEdge::new(bounds.p_max[axis], *pn, false);
             }
 
             // Sort `edges` for `axis`.

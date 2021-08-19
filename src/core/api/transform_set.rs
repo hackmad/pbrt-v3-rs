@@ -6,6 +6,7 @@ use std::ops::{Index, IndexMut};
 use std::sync::Arc;
 
 /// Number of transformations to store.
+/// NOTE: TransformCache assumes only two transforms. Don't change this.
 pub const MAX_TRANSFORMS: usize = 2;
 
 /// Transformation for starting time.

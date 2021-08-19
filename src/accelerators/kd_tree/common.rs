@@ -35,8 +35,8 @@ impl KdAccelNode {
             self.split.one_primitive = prim_nums[0];
         } else {
             self.split.primitive_indices_offset = primitive_indices.len() as u32;
-            for i in 0..(np as usize) {
-                primitive_indices.push(prim_nums[i]);
+            for prim_num in prim_nums.iter().take(np as usize) {
+                primitive_indices.push(*prim_num);
             }
         }
     }

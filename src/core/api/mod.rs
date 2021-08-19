@@ -779,10 +779,6 @@ impl Api {
                 // Create single `TransformedPrimitive` for `prims`.
 
                 // Get `animated_object_to_world` transform for shape.
-                assert!(
-                    MAX_TRANSFORMS == 2,
-                    "TransformCache assumes only two transforms"
-                );
                 let obj2world = [
                     transform_cache.lookup(Arc::clone(&self.current_transforms[0])),
                     transform_cache.lookup(Arc::clone(&self.current_transforms[1])),
@@ -898,11 +894,6 @@ impl Api {
                         }
                     }
                 };
-
-                assert!(
-                    MAX_TRANSFORMS == 2,
-                    "TransformCache assumes only two transforms"
-                );
 
                 // Create `animated_instance_to_world` transform for instance.
                 let mut transform_cache = self.transform_cache.lock().unwrap();
