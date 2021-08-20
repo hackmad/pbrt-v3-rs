@@ -263,7 +263,7 @@ impl SAH {
                 buckets[b].bounds = buckets[b].bounds.union(&info.bounds);
             }
 
-            // Compute costs for splitting after each bucket
+            // Compute costs for splitting after each bucket.
             let mut cost = [0.0_f32; N_BUCKETS - 1];
             for (i, cost_i) in cost.iter_mut().enumerate().take(N_BUCKETS - 1) {
                 let (mut b0, mut b1) = (Bounds3f::empty(), Bounds3f::empty());
@@ -294,11 +294,12 @@ impl SAH {
                 }
             }
 
+            // Either create leaf or split primitives at selected SAH bucket.
             let leaf_cost = n_primitives as Float;
             if n_primitives > max_prims_in_node as usize || min_cost < leaf_cost {
                 // Partition primitives at selected SAH bucket and return the
                 // pivot point as mid.
-                let infos = primitive_info[start..end + 1].iter_mut();
+                let infos = primitive_info[start..end].iter_mut();
                 let split = itertools::partition(infos, |pi| {
                     let mut b =
                         (N_BUCKETS as Float * centroid_bounds.offset(&pi.centroid)[dim]) as usize;
