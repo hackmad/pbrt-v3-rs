@@ -39,20 +39,13 @@ impl EFloat {
             (next_float_down(v - err), next_float_up(v + err))
         };
 
-        let r = if cfg!(debug_assertions) {
-            Self {
-                v,
-                low,
-                high,
-                v_precise: v as f64,
-            }
-        } else {
-            Self {
-                v,
-                low,
-                high,
-                ..Default::default()
-            }
+        let r = Self {
+            v,
+            low,
+            high,
+            #[cfg(debug_assertions)]
+            v_precise: v as f64,
+            ..Default::default()
         };
 
         r.check();
@@ -126,20 +119,13 @@ impl EFloat {
 
     /// Returns the square root.
     pub fn sqrt(&self, ef: Self) -> Self {
-        let r = if cfg!(debug_assertions) {
-            Self {
-                v: ef.v.sqrt(),
-                low: next_float_down(ef.low.sqrt()),
-                high: next_float_up(ef.high.sqrt()),
-                v_precise: ef.v_precise.sqrt(),
-            }
-        } else {
-            Self {
-                v: ef.v.sqrt(),
-                low: next_float_down(ef.low.sqrt()),
-                high: next_float_up(ef.high.sqrt()),
-                ..Default::default()
-            }
+        let r = Self {
+            v: ef.v.sqrt(),
+            low: next_float_down(ef.low.sqrt()),
+            high: next_float_up(ef.high.sqrt()),
+            #[cfg(debug_assertions)]
+            v_precise: ef.v_precise.sqrt(),
+            ..Default::default()
         };
 
         r.check();
@@ -153,40 +139,26 @@ impl EFloat {
             *self
         } else if self.high <= 0.0 {
             // The entire interval is less than zero.
-            let r = if cfg!(debug_assertions) {
-                Self {
-                    v: -self.v,
-                    low: -self.high,
-                    high: -self.low,
-                    v_precise: -self.v_precise,
-                }
-            } else {
-                Self {
-                    v: -self.v,
-                    low: -self.high,
-                    high: -self.low,
-                    ..Default::default()
-                }
+            let r = Self {
+                v: -self.v,
+                low: -self.high,
+                high: -self.low,
+                #[cfg(debug_assertions)]
+                v_precise: -self.v_precise,
+                ..Default::default()
             };
 
             r.check();
             r
         } else {
             // The interval straddles zero.
-            let r = if cfg!(debug_assertions) {
-                Self {
-                    v: self.v.abs(),
-                    low: 0.0,
-                    high: max(-self.low, self.high),
-                    v_precise: self.v_precise.abs(),
-                }
-            } else {
-                Self {
-                    v: self.v.abs(),
-                    low: 0.0,
-                    high: max(-self.low, self.high),
-                    ..Default::default()
-                }
+            let r = Self {
+                v: self.v.abs(),
+                low: 0.0,
+                high: max(-self.low, self.high),
+                #[cfg(debug_assertions)]
+                v_precise: self.v_precise.abs(),
+                ..Default::default()
             };
 
             r.check();
@@ -240,20 +212,13 @@ impl Add for EFloat {
     fn add(self, ef: EFloat) -> Self::Output {
         // Interval arithemetic addition, with the result rounded away from
         // the value r.v in order to be conservative.
-        let r = if cfg!(debug_assertions) {
-            Self {
-                v: self.v + ef.v,
-                low: next_float_down(self.low + ef.low),
-                high: next_float_up(self.high + ef.high),
-                v_precise: self.v_precise + ef.v_precise,
-            }
-        } else {
-            Self {
-                v: self.v + ef.v,
-                low: next_float_down(self.low + ef.low),
-                high: next_float_up(self.high + ef.high),
-                ..Default::default()
-            }
+        let r = Self {
+            v: self.v + ef.v,
+            low: next_float_down(self.low + ef.low),
+            high: next_float_up(self.high + ef.high),
+            #[cfg(debug_assertions)]
+            v_precise: self.v_precise + ef.v_precise,
+            ..Default::default()
         };
 
         r.check();
@@ -290,20 +255,13 @@ impl Sub for EFloat {
     ///
     /// * `ef` - The value to subtract.
     fn sub(self, ef: EFloat) -> Self::Output {
-        let r = if cfg!(debug_assertions) {
-            Self {
-                v: self.v - ef.v,
-                low: next_float_down(self.low - ef.high),
-                high: next_float_up(self.high - ef.low),
-                v_precise: self.v_precise - ef.v_precise,
-            }
-        } else {
-            Self {
-                v: self.v - ef.v,
-                low: next_float_down(self.low - ef.high),
-                high: next_float_up(self.high - ef.low),
-                ..Default::default()
-            }
+        let r = Self {
+            v: self.v - ef.v,
+            low: next_float_down(self.low - ef.high),
+            high: next_float_up(self.high - ef.low),
+            #[cfg(debug_assertions)]
+            v_precise: self.v_precise - ef.v_precise,
+            ..Default::default()
         };
 
         r.check();
@@ -349,20 +307,13 @@ impl Mul for EFloat {
         let low = next_float_down(min(min(prod[0], prod[1]), min(prod[2], prod[3])));
         let high = next_float_up(max(max(prod[0], prod[1]), max(prod[2], prod[3])));
 
-        let r = if cfg!(debug_assertions) {
-            Self {
-                v: self.v * ef.v,
-                low,
-                high,
-                v_precise: self.v_precise * ef.v_precise,
-            }
-        } else {
-            Self {
-                v: self.v * ef.v,
-                low,
-                high,
-                ..Default::default()
-            }
+        let r = Self {
+            v: self.v * ef.v,
+            low,
+            high,
+            #[cfg(debug_assertions)]
+            v_precise: self.v_precise * ef.v_precise,
+            ..Default::default()
         };
 
         r.check();
@@ -415,20 +366,13 @@ impl Div for EFloat {
                 next_float_up(max(max(div[0], div[1]), max(div[2], div[3]))),
             )
         };
-        let r = if cfg!(debug_assertions) {
-            Self {
-                v: self.v / ef.v,
-                low,
-                high,
-                v_precise: self.v_precise / ef.v_precise,
-            }
-        } else {
-            Self {
-                v: self.v / ef.v,
-                low,
-                high,
-                ..Default::default()
-            }
+        let r = Self {
+            v: self.v / ef.v,
+            low,
+            high,
+            #[cfg(debug_assertions)]
+            v_precise: self.v_precise / ef.v_precise,
+            ..Default::default()
         };
 
         r.check();
@@ -463,20 +407,13 @@ impl Neg for EFloat {
 
     /// Return the negative value.
     fn neg(self) -> Self::Output {
-        let r = if cfg!(debug_assertions) {
-            Self {
-                v: -self.v,
-                low: -self.high,
-                high: -self.low,
-                v_precise: -self.v_precise,
-            }
-        } else {
-            Self {
-                v: -self.v,
-                low: -self.high,
-                high: -self.low,
-                ..Default::default()
-            }
+        let r = Self {
+            v: -self.v,
+            low: -self.high,
+            high: -self.low,
+            #[cfg(debug_assertions)]
+            v_precise: -self.v_precise,
+            ..Default::default()
         };
 
         r.check();
@@ -488,12 +425,12 @@ impl Neg for EFloat {
 pub struct Quadratic {}
 
 impl Quadratic {
-    /// Solve the quadratic equation a * x ^ 2  + b * x + c = 0.
+    /// Solve the quadratic equation a * x ^ 2  + b * x + c = 0 for EFloat.
     ///
     /// * `a` - Coefficient of x ^ 2 term.
     /// * `b` - Coefficient of x term.
     /// * `c` - Coefficient of constant term.
-    pub fn solve(a: EFloat, b: EFloat, c: EFloat) -> Option<(EFloat, EFloat)> {
+    pub fn solve_efloat(a: EFloat, b: EFloat, c: EFloat) -> Option<(EFloat, EFloat)> {
         // Find quadratic discriminant
         let discrim: f64 = b.v as f64 * b.v as f64 - 4.0f64 * a.v as f64 * c.v as f64;
         if discrim < 0.0 {
@@ -517,6 +454,38 @@ impl Quadratic {
             } else {
                 Some((t0, t1))
             }
+        }
+    }
+
+    /// Solve the quadratic equation a * x ^ 2  + b * x + c = 0 for `Float`.
+    ///
+    /// * `a` - Coefficient of x ^ 2 term.
+    /// * `b` - Coefficient of x term.
+    /// * `c` - Coefficient of constant term.
+    pub fn solve_float(a: Float, b: Float, c: Float) -> Option<(Float, Float)> {
+        // Find quadratic discriminant
+        let a = a as f64;
+        let b = b as f64;
+        let c = c as f64;
+
+        let discrim = b * b - 4.0 * a * c;
+        if discrim < 0.0 {
+            None
+        } else {
+            let root_discrim = discrim.sqrt();
+
+            // Compute quadratic `t` values.
+            let q = if b < 0.0 {
+                -0.5 * (b - root_discrim)
+            } else {
+                -0.5 * (b + root_discrim)
+            };
+            let mut t0 = (q / a) as Float;
+            let mut t1 = (c / q) as Float;
+            if t0 > t1 {
+                std::mem::swap(&mut t0, &mut t1);
+            }
+            Some((t0, t1))
         }
     }
 }

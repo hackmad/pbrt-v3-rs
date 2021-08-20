@@ -115,7 +115,7 @@ impl Shape for Sphere {
         let c = ox * ox + oy * oy + oz * oz - EFloat::from(self.radius) * EFloat::from(self.radius);
 
         // Solve quadratic equation for t values
-        if let Some((t0, t1)) = Quadratic::solve(a, b, c) {
+        if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
             // Check quadric shape t0 and t1 for nearest intersection
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return None;
@@ -285,7 +285,7 @@ impl Shape for Sphere {
         let c = ox * ox + oy * oy + oz * oz - EFloat::from(self.radius) * EFloat::from(self.radius);
 
         // Solve quadratic equation for _t_ values
-        if let Some((t0, t1)) = Quadratic::solve(a, b, c) {
+        if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
             // Check quadric shape _t0_ and _t1_ for nearest intersection
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return false;

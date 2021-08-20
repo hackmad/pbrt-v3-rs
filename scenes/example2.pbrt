@@ -6,7 +6,7 @@ Camera "perspective" "float fov" 45
 Sampler "halton" "integer pixelsamples" 128
 Integrator "whitted"
 Film "image" "string filename" "renders/example2.exr"
-     "integer xresolution" [100] "integer yresolution" [100]
+     "integer xresolution" [200] "integer yresolution" [100]
 
 WorldBegin
 

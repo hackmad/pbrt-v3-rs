@@ -5,8 +5,8 @@
 use crate::core::camera::*;
 use crate::core::geometry::*;
 use crate::core::integrator::*;
-use crate::core::light::*;
-use crate::core::material::*;
+//use crate::core::light::*;
+//use crate::core::material::*;
 use crate::core::paramset::*;
 use crate::core::pbrt::*;
 use crate::core::reflection::*;
@@ -336,14 +336,14 @@ impl Integrator for WhittedIntegrator {
                     let current_sample_number = tile_sampler_data.current_sample_number();
                     if l.has_nans() {
                         error!(
-                            "Not-a-number radiance value returned for pixel 
+                            "Not-a-number radiance value returned for pixel
                                 ({}, {}), sample {}. Setting to black.",
                             pixel.x, pixel.y, current_sample_number
                         );
                         l = Spectrum::new(0.0);
                     } else if l.y() < -1e-5 {
                         error!(
-                            "Negative luminance value, {}, returned for pixel 
+                            "Negative luminance value, {}, returned for pixel
                                 ({}, {}), sample {}. Setting to black.",
                             l.y(),
                             pixel.x,
@@ -353,7 +353,7 @@ impl Integrator for WhittedIntegrator {
                         l = Spectrum::new(0.0);
                     } else if l.y().is_infinite() {
                         error!(
-                            "Infinite luminance value returned for pixel 
+                            "Infinite luminance value returned for pixel
                                 ({}, {}), sample {}. Setting to black.",
                             pixel.x, pixel.y, current_sample_number
                         );
@@ -405,66 +405,15 @@ impl Integrator for WhittedIntegrator {
         &self,
         ray: &mut Ray,
         scene: Arc<Scene>,
-        sampler: &mut ArcSampler,
-        depth: usize,
+        _sampler: &mut ArcSampler,
+        _depth: usize,
     ) -> Spectrum {
         let mut l = Spectrum::new(0.0);
 
         // Find closest ray intersection or return background radiance.
-        if let Some(mut isect) = scene.intersect(ray) {
-            // Compute emitted and reflected light at ray intersection point.
-
-            // Initialize common variables for Whitted integrator.
-            let n = isect.shading.n;
-            let wo = isect.hit.wo;
-
-            // Compute scattering functions for surface interaction.
-            isect.compute_scattering_functions(ray, false, TransportMode::Radiance);
-            if isect.bsdf.is_none() {
-                let mut new_ray = isect.hit.spawn_ray(&ray.d);
-                return self.li(&mut new_ray, scene.clone(), sampler, depth);
-            }
-
-            // Compute emitted light if ray hit an area light source.
-            l += isect.le(&wo);
-
-            // Add contribution of each light source.
-            for light in scene.lights.iter() {
-                let sample = Arc::get_mut(sampler).unwrap().get_2d();
-                let Li {
-                    wi,
-                    pdf,
-                    visibility,
-                    value: li,
-                } = light.sample_li(&isect.hit, &sample);
-
-                if li.is_black() || pdf == 0.0 {
-                    continue;
-                }
-
-                let f = isect
-                    .bsdf
-                    .clone()
-                    .unwrap()
-                    .f(&wo, &wi, BxDFType::from(BSDF_ALL));
-
-                // If no visiblity tester, then unoccluded = true.
-                let unoccluded = visibility.map_or(true, |vis| vis.unoccluded(scene.clone()));
-                if !f.is_black() && unoccluded {
-                    l += f * li * wi.abs_dot(&n) / pdf;
-                }
-            }
-            if depth + 1 < self.max_depth {
-                // Trace rays for specular reflection and refraction.
-                l += self.specular_reflect(ray, &isect, Arc::clone(&scene), sampler, depth);
-                l += self.specular_transmit(ray, &isect, Arc::clone(&scene), sampler, depth);
-            }
-        } else {
-            if let Some(rd) = ray.differentials {
-                for light in scene.lights.iter() {
-                    l += light.le(&rd);
-                }
-            }
+        if let Some(isect) = scene.intersect(ray) {
+            let v = (Vector3f::from(isect.hit.p).normalize() + Vector3f::new(1.0, 1.0, 1.0)) / 2.0;
+            l = Spectrum::from_rgb(&[v[0], v[1], v[2]], Some(SpectrumType::Illuminant));
         }
 
         l

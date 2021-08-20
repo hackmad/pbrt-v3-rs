@@ -14,6 +14,9 @@ use crate::core::reflection::*;
 use rayon::prelude::*;
 use std::mem::swap;
 
+/// Number of samples for exit pupil bounds.
+const N_SAMPLES: usize = 64_usize;
+
 /// Realistic camera implements a camera consisting of multiple lens
 /// elements.
 #[derive(Clone)]
@@ -63,7 +66,7 @@ impl RealisticCamera {
         aperture_diameter: Float,
         focus_distance: Float,
         simple_weighting: bool,
-        lens_data: Vec<Float>,
+        lens_data: &[Float],
         film: Film,
         medium: Option<ArcMedium>,
     ) -> Self {
@@ -75,34 +78,68 @@ impl RealisticCamera {
             shutter_open,
             shutter_close,
             film_clone,
-            medium.clone(),
+            medium,
         );
 
-        let element_interfaces: Vec<LensElementInterface> = (0..lens_data.len())
-            .step_by(4)
-            .map(|i| LensElementInterface::from_lens_data(aperture_diameter, &lens_data[i..i + 4]))
-            .collect();
+        let n = lens_data.len();
+        let mut element_interfaces = Vec::<LensElementInterface>::with_capacity(n);
 
-        let n_samples = 64; // Number of samples for exit pupil bounds.
+        for i in (0..n).step_by(4) {
+            let mut diameter: Float = lens_data[i + 3];
 
+            if lens_data[i] == 0.0 {
+                if aperture_diameter > lens_data[i + 3] {
+                    warn!(
+                        "Specified aperture diameter {} is greater than maximum \
+                        possible {}. Clamping it.",
+                        aperture_diameter,
+                        lens_data[i + 3]
+                    );
+                } else {
+                    diameter = aperture_diameter;
+                }
+            }
+
+            element_interfaces.push(LensElementInterface::new(
+                lens_data[i] * 0.001,
+                lens_data[i + 1] * 0.001,
+                lens_data[i + 2],
+                diameter * 0.001 / 2.0,
+            ));
+        }
+
+        // Compute exit pupil bounds at sampled points on the film.
         let mut camera = Self {
             data,
             simple_weighting,
             element_interfaces,
-            exit_pupil_bounds: Vec::with_capacity(n_samples),
+            exit_pupil_bounds: Vec::<Bounds2f>::with_capacity(N_SAMPLES),
         };
 
         // Compute lens-film distance for given focus distance
-        let n_elements = camera.element_interfaces.len();
-        camera.element_interfaces[n_elements - 1].thickness =
-            camera.focus_thick_lens(focus_distance);
+        let fb = camera.focus_binary_search(focus_distance);
+        info!(
+            "Binary search focus: {} -> {}",
+            fb,
+            camera.focus_distance(fb)
+        );
+
+        let thickness = camera.focus_thick_lens(focus_distance);
+        camera.element_interfaces.last_mut().unwrap().thickness = thickness;
+
+        info!(
+            "Thick lens focus: {} -> {}",
+            thickness,
+            camera.focus_distance(thickness)
+        );
 
         // Compute exit pupil bounds at sampled points on the film.
-        camera.exit_pupil_bounds = (0..n_samples)
+        let fac = 1.0 / N_SAMPLES as Float * film_diagonal / 2.0;
+        camera.exit_pupil_bounds = (0..N_SAMPLES)
             .into_par_iter()
             .map(|i| {
-                let r0 = i as Float / n_samples as Float * film_diagonal / 2.0;
-                let r1 = (i + 1) as Float / n_samples as Float * film_diagonal / 2.0;
+                let r0 = i as Float * fac;
+                let r1 = (i + 1) as Float * fac;
                 camera.bound_exit_pupil(r0, r1)
             })
             .collect();
@@ -132,7 +169,8 @@ impl RealisticCamera {
     fn lens_front_z(&self) -> Float {
         self.element_interfaces
             .iter()
-            .fold(0.0, |a, element| a + element.thickness)
+            .map(|element| element.thickness)
+            .sum()
     }
 
     /// Returns the aperture radius of the rear element in meters.
@@ -172,7 +210,7 @@ impl RealisticCamera {
                 // The reflected ray computed in the previous lens element
                 // interface may be pointed towards film plane(+z) in some
                 // extreme situations; in such cases; `t` becomes negative.
-                if r_lens.d.z > 0.0 {
+                if r_lens.d.z >= 0.0 {
                     return None;
                 } else {
                     t = (element_z - r_lens.o.z) / r_lens.d.z;
@@ -266,7 +304,7 @@ impl RealisticCamera {
 
             // Update ray path for element interface interaction.
             if !is_stop {
-                let eta_i = if i == 0 || self.element_interfaces[i - 1].eta != 0.0 {
+                let eta_i = if i == 0 || self.element_interfaces[i - 1].eta == 0.0 {
                     1.0
                 } else {
                     self.element_interfaces[i - 1].eta
@@ -309,8 +347,9 @@ impl RealisticCamera {
             Vector3f::new(0.0, 0.0, -1.0),
             INFINITY,
             0.0,
-            self.data.medium.clone(),
+            None,
         );
+
         let (pz0, fz0) = if let Some(r_film) = self.trace_lenses_from_scene(&r_scene) {
             compute_cardinal_points(&r_scene, &r_film)
         } else {
@@ -326,7 +365,7 @@ impl RealisticCamera {
             Vector3f::new(0.0, 0.0, 1.0),
             INFINITY,
             0.0,
-            self.data.medium.clone(),
+            None,
         );
         let (pz1, fz1) = if let Some(r_scene) = self.trace_lenses_from_film(&r_film) {
             compute_cardinal_points(&r_film, &r_scene)
@@ -347,6 +386,11 @@ impl RealisticCamera {
     fn focus_thick_lens(&self, focus_distance: Float) -> Float {
         // Get the cardinal points.
         let (pz, fz) = self.compute_thick_lens_approximation();
+        info!(
+            "Cardinal points: p' = {} f' = {}, p = {}, f = {}",
+            pz[0], fz[0], pz[1], fz[1]
+        );
+        info!("Effective focal length {}", fz[0] - pz[0]);
 
         // Compute translation of lens `delta` to focus at `focus_distance`.
         let f = fz[0] - pz[0];
@@ -361,6 +405,78 @@ impl RealisticCamera {
 
         let delta = 0.5 * (pz[1] - z + pz[0] - c.sqrt());
         self.lens_rear_z() + delta
+    }
+
+    fn focus_binary_search(&self, focus_distance: Float) -> Float {
+        // Find `film_distance_lower`, `film_distance_upper` that bound focus distance.
+        let mut film_distance_lower = self.focus_thick_lens(focus_distance);
+        let mut film_distance_upper = film_distance_lower;
+
+        while self.focus_distance(film_distance_lower) > focus_distance {
+            film_distance_lower *= 1.005;
+        }
+
+        while self.focus_distance(film_distance_upper) < focus_distance {
+            film_distance_upper /= 1.005;
+        }
+
+        // Do binary search on film distances to focus.
+        for _i in 0..20 {
+            let fmid = 0.5 * (film_distance_lower + film_distance_upper);
+            let mid_focus = self.focus_distance(fmid);
+            if mid_focus < focus_distance {
+                film_distance_lower = fmid;
+            } else {
+                film_distance_upper = fmid;
+            }
+        }
+        0.5 * (film_distance_lower + film_distance_upper)
+    }
+
+    fn focus_distance(&self, film_distance: Float) -> Float {
+        // Find offset ray from film center through lens.
+        let bounds = self.bound_exit_pupil(0.0, 0.001 * self.data.film.diagonal);
+
+        const SCALE_FACTORS: [Float; 3] = [0.1, 0.01, 0.001];
+        let mut lu = 0.0;
+        let mut ray: Option<Ray> = None;
+
+        // Try some different and decreasing scaling factor to find focus ray
+        // more quickly when `aperturediameter` is too small.
+        // (e.g. 2 [mm] for `aperturediameter` with wide.22mm.dat),
+        for scale in SCALE_FACTORS {
+            lu = scale * bounds.p_max[Axis::X];
+
+            ray = self.trace_lenses_from_film(&Ray::new(
+                Point3f::new(0.0, 0.0, self.lens_rear_z() - film_distance),
+                Vector3f::new(lu, 0.0, film_distance),
+                INFINITY,
+                0.0,
+                None,
+            ));
+
+            if ray.is_some() {
+                break;
+            }
+        }
+
+        // Compute distance _zFocus_ where ray intersects the principal axis
+        if let Some(r) = ray {
+            let t_focus = -r.o.x / r.d.x;
+            let z_focus = r.at(t_focus).z;
+            if z_focus < 0.0 {
+                INFINITY
+            } else {
+                z_focus
+            }
+        } else {
+            error!(
+                "Focus ray at lens pos({}, 0) didn't make it through the lenses \
+                with film distance {}!",
+                lu, film_distance
+            );
+            INFINITY
+        }
     }
 
     /// Compute a 2-d bounding box of the exit pupil as seen from a point along
@@ -408,13 +524,7 @@ impl RealisticCamera {
             // Expand pupil bounds if ray makes it through the lens system
             if pupil_bounds.contains(&Point2f::new(p_rear.x, p_rear.y))
                 || self
-                    .trace_lenses_from_film(&Ray::new(
-                        p_film,
-                        p_rear - p_film,
-                        INFINITY,
-                        0.0,
-                        self.data.medium.clone(),
-                    ))
+                    .trace_lenses_from_film(&Ray::new(p_film, p_rear - p_film, INFINITY, 0.0, None))
                     .is_some()
             {
                 pupil_bounds = pupil_bounds.union(&Point2f::new(p_rear.x, p_rear.y));
@@ -425,6 +535,8 @@ impl RealisticCamera {
         // Return the entire element bounds if no rays made it through the
         // lens system.
         if n_exiting_rays == 0 {
+            // NOTE: This should happen a few times when calling focus_binary_search().
+            // Not when computing the actual exit pupil bounds.
             error!(
                 "Unable to find exit pupil in x = [{}, {}] on film.",
                 p_film_x0, p_film_x1
@@ -490,8 +602,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Realisti
         let mut shutter_close = params.find_one_float("shutterclose", 1.0);
         if shutter_close < shutter_open {
             warn!(
-                "Shutter close time [{}] < shutter open [{}]. 
-                Swapping them.",
+                "Shutter close time [{}] < shutter open [{}].  Swapping them.",
                 shutter_close, shutter_open
             );
             swap(&mut shutter_close, &mut shutter_open);
@@ -517,8 +628,8 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Realisti
 
         if lens_data.len() % 4 != 0 {
             panic!(
-                "Excess values in lens specification file '{}'; 
-                must be multiple-of-four values, read {}.",
+                "Excess values in lens specification file '{}'; must be \
+                multiple-of-four values, read {}.",
                 lens_file,
                 lens_data.len()
             );
@@ -531,7 +642,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Realisti
             aperture_diameter,
             focus_distance,
             simple_weighting,
-            lens_data,
+            &lens_data,
             film,
             medium.clone(),
         )
@@ -614,16 +725,6 @@ impl Camera for RealisticCamera {
         }
     }
 
-    /// Returns a main ray and rays shifted one pixel in x and y directions on
-    /// the film plane for corresponding to a given sample. It also returns a
-    /// floating point value that affects how much the radiance arriving at the
-    /// film plane will contribute to final image.
-    ///
-    /// * `sample` - The sample.
-    fn generate_ray_differential(&self, _sample: &CameraSample) -> (Ray, Float) {
-        panic!("NOT IMPLEMENTED");
-    }
-
     /// Return the spatial and directional PDFs, as a tuple, for sampling a
     /// particular ray leaving the camera.
     ///
@@ -688,7 +789,8 @@ impl LensElementInterface {
         let ad = if lens_data[0] == 0.0 {
             if aperture_diameter > lens_data[3] {
                 warn!(
-                    "WARN: Specified aperture_diameter {} > max possible {}. Clamping it to max.",
+                    "WARN: Specified aperture_diameter {} > max possible {}. \
+                    Clamping it to max.",
                     aperture_diameter, lens_data[3]
                 );
                 lens_data[3]
@@ -721,15 +823,12 @@ fn intersect_spherical_element(
 ) -> Option<(Float, Normal3f)> {
     // Compute `t0` and `t1` for ray-element intersection.
     let o = ray.o - Vector3f::new(0.0, 0.0, z_center);
-    let a = EFloat::from(ray.d.x * ray.d.x + ray.d.y * ray.d.y + ray.d.z * ray.d.z);
-    let b = EFloat::from(2.0 * (ray.d.x * o.x + ray.d.y * o.y + ray.d.z * o.z));
-    let c = EFloat::from(o.x * o.x + o.y * o.y + o.z * o.z - radius * radius);
+    let a = ray.d.x * ray.d.x + ray.d.y * ray.d.y + ray.d.z * ray.d.z;
+    let b = 2.0 * (ray.d.x * o.x + ray.d.y * o.y + ray.d.z * o.z);
+    let c = o.x * o.x + o.y * o.y + o.z * o.z - radius * radius;
 
-    if let Some((t0, t1)) = Quadratic::solve(a, b, c) {
+    if let Some((t0, t1)) = Quadratic::solve_float(a, b, c) {
         // Select intersection `t` based on ray direction and element curvature.
-        let t0 = Float::from(t0);
-        let t1 = Float::from(t1);
-
         let use_closer_t = (ray.d.z > 0.0) ^ (radius < 0.0);
         let t = if use_closer_t {
             min(t0, t1)
@@ -741,8 +840,9 @@ fn intersect_spherical_element(
             None
         } else {
             // Compute surface normal of element at ray intersection point
-            let mut n = Normal3f::from(Vector3f::from(o + t * ray.d));
-            n = n.normalize().face_forward(&(-ray.d));
+            let n = Normal3f::from(Vector3f::from(o + t * ray.d))
+                .normalize()
+                .face_forward(&-ray.d);
             Some((t, n))
         }
     } else {

@@ -171,7 +171,7 @@ impl Shape for Hyperboloid {
         let c = self.ah * ox * ox + self.ah * oy * oy - self.ch * oz * oz - 1.0;
 
         // Solve quadratic equation for t values
-        if let Some((t0, t1)) = Quadratic::solve(a, b, c) {
+        if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
             // Check quadric shape t0 and t1 for nearest intersection
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return None;
@@ -327,7 +327,7 @@ impl Shape for Hyperboloid {
         let c = self.ah * ox * ox + self.ah * oy * oy - self.ch * oz * oz - 1.0;
 
         // Solve quadratic equation for t values
-        if let Some((t0, t1)) = Quadratic::solve(a, b, c) {
+        if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
             // Check quadric shape t0 and t1 for nearest intersection
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return false;

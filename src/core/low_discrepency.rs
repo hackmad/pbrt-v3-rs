@@ -410,7 +410,7 @@ fn radical_inverse_specialized(base: u16, a: u64) -> Float {
     let mut inv_base_n = 1.0;
 
     let mut a = a; // Local copy that we can modify.
-    while a > 0 {
+    while a != 0 {
         let next = a / base;
         let digit = a - next * base;
         reversed_digits = reversed_digits * base + digit;
@@ -436,7 +436,7 @@ fn scrambled_radical_inverse_specialized(base: u16, a: u64, perm: &[u16]) -> Flo
     let mut inv_base_n = 1.0;
 
     let mut a = a; // Local copy that we can modify.
-    while a > 0 {
+    while a != 0 {
         let next = a / base;
         let digit = (a - next * base) as usize;
         assert!((perm[digit] as u64) < base);
