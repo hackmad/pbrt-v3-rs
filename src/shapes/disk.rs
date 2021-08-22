@@ -86,13 +86,13 @@ impl Shape for Disk {
         let (ray, _o_err, _d_err) = self
             .data
             .world_to_object
-            .clone()
-            .unwrap()
-            .transform_ray_with_error(r);
+            .as_ref()
+            .map(|w2o| w2o.transform_ray_with_error(r))
+            .unwrap();
 
         // Compute plane intersection for disk.
 
-        // Reject disk intersections for rays parallel to the disk's plane
+        // Reject disk intersections for rays parallel to the disk's plane.
         if ray.d.z == 0.0 {
             return None;
         }
@@ -101,14 +101,14 @@ impl Shape for Disk {
             return None;
         }
 
-        // See if hit point is inside disk radii and phimax
+        // See if hit point is inside disk radii and phimax.
         let mut p_hit = ray.at(t_shape_hit);
         let dist2 = p_hit.x * p_hit.x + p_hit.y * p_hit.y;
         if dist2 > self.radius * self.radius || dist2 < self.inner_radius * self.inner_radius {
             return None;
         }
 
-        // Test disk phi value against phimax
+        // Test disk phi value against phimax.
         let mut phi = p_hit.y.atan2(p_hit.x);
         if phi < 0.0 {
             phi += TWO_PI;
@@ -117,7 +117,7 @@ impl Shape for Disk {
             return None;
         }
 
-        // Find parametric representation of disk hit
+        // Find parametric representation of disk hit.
         let u = phi / self.phi_max;
         let r_hit = dist2.sqrt();
         let v = (self.radius - r_hit) / (self.radius - self.inner_radius);
@@ -126,13 +126,13 @@ impl Shape for Disk {
         let dndu = Normal3::new(0.0, 0.0, 0.0);
         let dndv = Normal3::new(0.0, 0.0, 0.0);
 
-        // Refine disk intersection point
+        // Refine disk intersection point.
         p_hit.z = self.height;
 
-        // Compute error bounds for disk intersection
+        // Compute error bounds for disk intersection.
         let p_error = Vector3::new(0.0, 0.0, 0.0);
 
-        // Initialize SurfaceInteraction from parametric information
+        // Initialize SurfaceInteraction from parametric information.
         let si = SurfaceInteraction::new(
             p_hit,
             p_error,
@@ -143,7 +143,7 @@ impl Shape for Disk {
             dndu,
             dndv,
             ray.time,
-            Some(Arc::new(self.clone())),
+            Some(Arc::new(self.clone())), // TODO: Do not clone self.
         );
 
         // Create hit.
@@ -163,13 +163,13 @@ impl Shape for Disk {
         let (ray, _o_err, _d_err) = self
             .data
             .world_to_object
-            .clone()
-            .unwrap()
-            .transform_ray_with_error(r);
+            .as_ref()
+            .map(|w2o| w2o.transform_ray_with_error(r))
+            .unwrap();
 
         // Compute plane intersection for disk.
 
-        // Reject disk intersections for rays parallel to the disk's plane
+        // Reject disk intersections for rays parallel to the disk's plane.
         if ray.d.z == 0.0 {
             return false;
         }
@@ -178,14 +178,14 @@ impl Shape for Disk {
             return false;
         }
 
-        // See if hit point is inside disk radii and phimax
+        // See if hit point is inside disk radii and phimax.
         let p_hit = ray.at(t_shape_hit);
         let dist2 = p_hit.x * p_hit.x + p_hit.y * p_hit.y;
         if dist2 > self.radius * self.radius || dist2 < self.inner_radius * self.inner_radius {
             return false;
         }
 
-        // Test disk phi value against phimax
+        // Test disk phi value against phimax.
         let mut phi = p_hit.y.atan2(p_hit.x);
         if phi < 0.0 {
             phi += TWO_PI;

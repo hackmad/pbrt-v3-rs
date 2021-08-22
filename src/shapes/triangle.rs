@@ -527,7 +527,7 @@ impl Shape for Triangle {
         let delta_x = gamma(5) * (max_x_t + max_z_t);
         let delta_y = gamma(5) * (max_y_t + max_z_t);
 
-        // Compute delta_e term for triangle `t` error bounds
+        // Compute delta_e term for triangle `t` error bounds.
         let delta_e = 2.0 * (gamma(2) * max_x_t * max_y_t + delta_y * max_x_t + delta_x * max_y_t);
 
         // Compute delta_t term for triangle `t` error bounds and check `t`.
@@ -590,7 +590,7 @@ impl Shape for Triangle {
                 Normal3f::default(),
                 Normal3f::default(),
                 r.time,
-                Some(Arc::new(self.clone())),
+                Some(Arc::new(self.clone())), // TODO: Do not clone self.
             );
 
             let alpha_mask = self.mesh.alpha_mask.clone().unwrap();
@@ -610,7 +610,7 @@ impl Shape for Triangle {
             Normal3f::default(),
             Normal3f::default(),
             r.time,
-            Some(Arc::new(self.clone())),
+            Some(Arc::new(self.clone())), // TODO: Do not clone self.
         );
 
         // Override surface normal in isect for triangle.
@@ -652,7 +652,7 @@ impl Shape for Triangle {
             };
             ss = ss.normalize();
 
-            // Compute shading bitangent ts for triangle and adjust ss
+            // Compute shading bitangent ts for triangle and adjust ss.
             let mut ts = ss.cross(&ns.into());
             if ts.length_squared() > 0.0 {
                 ts = ts.normalize();
@@ -665,7 +665,7 @@ impl Shape for Triangle {
 
             // Compute dndu and dndv for triangle shading geometry.
             let (dndu, dndv) = if has_vertex_normals {
-                // Compute deltas for triangle partial derivatives of normal
+                // Compute deltas for triangle partial derivatives of normal.
                 let n0 = self.mesh.n[self.mesh.vertex_indices[self.v]];
                 let n1 = self.mesh.n[self.mesh.vertex_indices[self.v + 1]];
                 let n2 = self.mesh.n[self.mesh.vertex_indices[self.v + 2]];

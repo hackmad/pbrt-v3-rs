@@ -22,7 +22,7 @@
             "args": [
                 "-t",
                 "1",
-                "./scenes/example3.pbrt"
+                "./scenes/example1.pbrt"
             ],
             "program": "${workspaceFolder}/target/debug/pbr-rust",
             "cwd": "${workspaceFolder}",

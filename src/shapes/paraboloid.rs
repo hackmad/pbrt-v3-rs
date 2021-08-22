@@ -36,6 +36,7 @@ impl Paraboloid {
     /// * `radius`              - Radius of paraboloid.
     /// * `z_min`               - Minimum z-value to truncate paraboloid.
     /// * `z_max`               - Maximum z-value to truncate paraboloid.
+    /// * `phi_max`             - Maximum spherical coordinate for Φ.
     pub fn new(
         object_to_world: ArcTransform,
         world_to_object: ArcTransform,
@@ -83,13 +84,13 @@ impl Shape for Paraboloid {
         let (ray, o_err, d_err) = self
             .data
             .world_to_object
-            .clone()
-            .unwrap()
-            .transform_ray_with_error(r);
+            .as_ref()
+            .map(|w2o| w2o.transform_ray_with_error(r))
+            .unwrap();
 
-        // Compute quadratic paraboloid coefficients
+        // Compute quadratic paraboloid coefficients.
 
-        // Initialize EFloat ray coordinate values
+        // Initialize EFloat ray coordinate values.
         let ox = EFloat::new(ray.o.x, o_err.x);
         let oy = EFloat::new(ray.o.y, o_err.y);
         let oz = EFloat::new(ray.o.z, o_err.z);
@@ -104,9 +105,9 @@ impl Shape for Paraboloid {
         let b = 2.0 * k * (dx * ox + dy * oy) - dz;
         let c = k * (ox * ox + oy * oy) - oz;
 
-        // Solve quadratic equation for t values
+        // Solve quadratic equation for t values.
         if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
-            // Check quadric shape t0 and t1 for nearest intersection
+            // Check quadric shape t0 and t1 for nearest intersection.
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return None;
             }
@@ -119,7 +120,7 @@ impl Shape for Paraboloid {
                 };
             }
 
-            // Compute paraboloid inverse mapping
+            // Compute paraboloid inverse mapping.
             let mut p_hit = ray.at(Float::from(t_shape_hit));
 
             let mut phi = p_hit.y.atan2(p_hit.x);
@@ -127,7 +128,7 @@ impl Shape for Paraboloid {
                 phi += TWO_PI;
             }
 
-            // Test paraboloid intersection against clipping parameters
+            // Test paraboloid intersection against clipping parameters.
             if p_hit.z < self.z_min || p_hit.z > self.z_max || phi > self.phi_max {
                 if t_shape_hit == t1 {
                     return None;
@@ -139,7 +140,7 @@ impl Shape for Paraboloid {
                     return None;
                 }
 
-                // Compute paraboloid inverse mapping
+                // Compute paraboloid inverse mapping.
                 p_hit = ray.at(Float::from(t_shape_hit));
 
                 phi = p_hit.y.atan2(p_hit.x);
@@ -152,16 +153,16 @@ impl Shape for Paraboloid {
                 }
             }
 
-            // Find parametric representation of paraboloid hit
+            // Find parametric representation of paraboloid hit.
             let u = phi / self.phi_max;
             let v = (p_hit.z - self.z_min) / (self.z_max - self.z_min);
 
-            // Compute paraboloid dpdu and dpdv
+            // Compute paraboloid dpdu and dpdv.
             let dpdu = Vector3::new(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
             let dpdv = (self.z_max - self.z_min)
                 * Vector3::new(p_hit.x / (2.0 * p_hit.z), p_hit.y / (2.0 * p_hit.z), 1.0);
 
-            // Compute paraboloid dndu and dndv
+            // Compute paraboloid dndu and dndv.
             let d2p_duu = -self.phi_max * self.phi_max * Vector3::new(p_hit.x, p_hit.y, 0.0);
             let d2p_duv = (self.z_max - self.z_min)
                 * self.phi_max
@@ -174,10 +175,10 @@ impl Shape for Paraboloid {
                     0.0,
                 );
 
-            // Compute normal
+            // Compute normal.
             let n = dpdu.cross(&dpdv).normalize();
 
-            // Compute coefficients for first fundamental form
+            // Compute coefficients for first fundamental form.
             let e1 = dpdu.dot(&dpdu);
             let f1 = dpdu.dot(&dpdv);
             let g1 = dpdv.dot(&dpdv);
@@ -187,17 +188,20 @@ impl Shape for Paraboloid {
             let f2 = n.dot(&d2p_duv);
             let g2 = n.dot(&d2p_dvv);
 
-            // Compute dndu and dndv from fundamental form coefficients
-            let inv_egf_1 = 1.0 / (e1 * g1 - f1 * f1);
+            // Compute dndu and dndv from fundamental form coefficients.
+            let inv_e1g1f1_2 = 1.0 / (e1 * g1 - f1 * f1);
             let dndu = Normal3::from(
-                (f2 * f1 - e2 * g1) * inv_egf_1 * dpdu + (e2 * f1 - f2 * e1) * inv_egf_1 * dpdv,
+                (f2 * f1 - e2 * g1) * inv_e1g1f1_2 * dpdu
+                    + (e2 * f1 - f2 * e1) * inv_e1g1f1_2 * dpdv,
             );
             let dndv = Normal3::from(
-                (g2 * f1 - f2 * g1) * inv_egf_1 * dpdu + (f2 * f1 - g2 * e1) * inv_egf_1 * dpdv,
+                (g2 * f1 - f2 * g1) * inv_e1g1f1_2 * dpdu
+                    + (f2 * f1 - g2 * e1) * inv_e1g1f1_2 * dpdv,
             );
 
-            // Compute error bounds for paraboloid intersection
-            // Compute error bounds for intersection computed with ray equation
+            // Compute error bounds for paraboloid intersection.
+
+            // Compute error bounds for intersection computed with ray equation.
             let px = ox + t_shape_hit * dx;
             let py = oy + t_shape_hit * dy;
             let pz = oz + t_shape_hit * dz;
@@ -207,7 +211,7 @@ impl Shape for Paraboloid {
                 pz.get_absolute_error(),
             );
 
-            // Initialize SurfaceInteraction from parametric information
+            // Initialize SurfaceInteraction from parametric information.
             let si = SurfaceInteraction::new(
                 p_hit,
                 p_error,
@@ -218,7 +222,7 @@ impl Shape for Paraboloid {
                 dndu,
                 dndv,
                 ray.time,
-                Some(Arc::new(self.clone())),
+                Some(Arc::new(self.clone())), // TODO: Do not clone self.
             );
 
             // Create hit.
@@ -239,13 +243,13 @@ impl Shape for Paraboloid {
         let (ray, o_err, d_err) = self
             .data
             .world_to_object
-            .clone()
-            .unwrap()
-            .transform_ray_with_error(r);
+            .as_ref()
+            .map(|w2o| w2o.transform_ray_with_error(r))
+            .unwrap();
 
-        // Compute quadratic paraboloid coefficients
+        // Compute quadratic paraboloid coefficients.
 
-        // Initialize EFloat ray coordinate values
+        // Initialize EFloat ray coordinate values.
         let ox = EFloat::new(ray.o.x, o_err.x);
         let oy = EFloat::new(ray.o.y, o_err.y);
         let oz = EFloat::new(ray.o.z, o_err.z);
@@ -262,7 +266,7 @@ impl Shape for Paraboloid {
 
         // Solve quadratic equation for t values
         if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
-            // Check quadric shape t0 and t1 for nearest intersection
+            // Check quadric shape t0 and t1 for nearest intersection.
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return false;
             }
@@ -275,7 +279,7 @@ impl Shape for Paraboloid {
                 };
             }
 
-            // Compute paraboloid inverse mapping
+            // Compute paraboloid inverse mapping.
             let mut p_hit = ray.at(Float::from(t_shape_hit));
 
             let mut phi = p_hit.y.atan2(p_hit.x);
@@ -283,7 +287,7 @@ impl Shape for Paraboloid {
                 phi += TWO_PI;
             }
 
-            // Test paraboloid intersection against clipping parameters
+            // Test paraboloid intersection against clipping parameters.
             if p_hit.z < self.z_min || p_hit.z > self.z_max || phi > self.phi_max {
                 if t_shape_hit == t1 {
                     return false;
@@ -295,7 +299,7 @@ impl Shape for Paraboloid {
                     return false;
                 }
 
-                // Compute paraboloid inverse mapping
+                // Compute paraboloid inverse mapping.
                 p_hit = ray.at(Float::from(t_shape_hit));
 
                 phi = p_hit.y.atan2(p_hit.x);

@@ -95,13 +95,13 @@ impl Shape for Sphere {
         let (ray, o_err, d_err) = self
             .data
             .world_to_object
-            .clone()
-            .unwrap()
-            .transform_ray_with_error(r);
+            .as_ref()
+            .map(|w2o| w2o.transform_ray_with_error(r))
+            .unwrap();
 
-        // Compute quadratic sphere coefficients
+        // Compute quadratic sphere coefficients.
 
-        // Initialize EFloat ray coordinate values
+        // Initialize EFloat ray coordinate values.
         let ox = EFloat::new(ray.o.x, o_err.x);
         let oy = EFloat::new(ray.o.y, o_err.y);
         let oz = EFloat::new(ray.o.z, o_err.z);
@@ -114,9 +114,9 @@ impl Shape for Sphere {
         let b = 2.0 * (dx * ox + dy * oy + dz * oz);
         let c = ox * ox + oy * oy + oz * oz - EFloat::from(self.radius) * EFloat::from(self.radius);
 
-        // Solve quadratic equation for t values
+        // Solve quadratic equation for t values.
         if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
-            // Check quadric shape t0 and t1 for nearest intersection
+            // Check quadric shape t0 and t1 for nearest intersection.
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return None;
             }
@@ -129,10 +129,10 @@ impl Shape for Sphere {
                 }
             }
 
-            // Compute sphere hit position and phi
+            // Compute sphere hit position and phi.
             let mut p_hit = ray.at(Float::from(t_shape_hit));
 
-            // Refine sphere intersection point
+            // Refine sphere intersection point.
             p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
 
             if p_hit.x == 0.0 && p_hit.y == 0.0 {
@@ -144,7 +144,7 @@ impl Shape for Sphere {
                 phi += TWO_PI;
             }
 
-            // Test sphere intersection against clipping parameters
+            // Test sphere intersection against clipping parameters.
             if (self.z_min > -self.radius && p_hit.z < self.z_min)
                 || (self.z_max < self.radius && p_hit.z > self.z_max)
                 || phi > self.phi_max
@@ -158,10 +158,10 @@ impl Shape for Sphere {
 
                 t_shape_hit = t1;
 
-                // Compute sphere hit position and phi
+                // Compute sphere hit position and phi.
                 p_hit = ray.at(Float::from(t_shape_hit));
 
-                // Refine sphere intersection point
+                // Refine sphere intersection point.
                 p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
                 if p_hit.x == 0.0 && p_hit.y == 0.0 {
                     p_hit.x = 1e-5 * self.radius;
@@ -180,12 +180,12 @@ impl Shape for Sphere {
                 }
             }
 
-            // Find parametric representation of sphere hit
+            // Find parametric representation of sphere hit.
             let u = phi / self.phi_max;
             let theta = clamp(p_hit.z / self.radius, -1.0, 1.0).acos();
             let v = (theta - self.theta_min) / (self.theta_max - self.theta_min);
 
-            // Compute sphere dpdu and dpdv
+            // Compute sphere dpdu and dpdv.
             let z_radius = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
             let inv_z_radius = 1.0 / z_radius;
             let cos_phi = p_hit.x * inv_z_radius;
@@ -208,10 +208,10 @@ impl Shape for Sphere {
                 * (self.theta_max - self.theta_min)
                 * Vector3::new(p_hit.x, p_hit.y, p_hit.z);
 
-            // Compute normal
+            // Compute normal.
             let n = dpdu.cross(&dpdv).normalize();
 
-            // Compute coefficients for first fundamental form
+            // Compute coefficients for first fundamental form.
             let e1 = dpdu.dot(&dpdu);
             let f1 = dpdu.dot(&dpdv);
             let g1 = dpdv.dot(&dpdv);
@@ -221,7 +221,7 @@ impl Shape for Sphere {
             let f2 = n.dot(&d2p_duv);
             let g2 = n.dot(&d2p_dvv);
 
-            // Compute dndu and dndv from fundamental form coefficients
+            // Compute dndu and dndv from fundamental form coefficients.
             let inv_egf_1 = 1.0 / (e1 * g1 - f1 * f1);
             let dndu = Normal3::from(
                 (f2 * f1 - e2 * g1) * inv_egf_1 * dpdu + (e2 * f1 - f2 * e1) * inv_egf_1 * dpdv,
@@ -233,7 +233,7 @@ impl Shape for Sphere {
             // Compute error bounds for sphere intersection
             let p_error = gamma(5) * Vector3::from(p_hit).abs();
 
-            // Initialize SurfaceInteraction from parametric information
+            // Initialize SurfaceInteraction from parametric information.
             let si = SurfaceInteraction::new(
                 p_hit,
                 p_error,
@@ -244,7 +244,7 @@ impl Shape for Sphere {
                 dndu,
                 dndv,
                 ray.time,
-                Some(Arc::new(self.clone())),
+                Some(Arc::new(self.clone())), // TODO: Do not clone self.
             );
 
             // Create hit.
@@ -261,17 +261,17 @@ impl Shape for Sphere {
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
     fn intersect_p(&self, r: &Ray, _test_alpha_texture: bool) -> bool {
-        // Transform ray to object space
+        // Transform ray to object space.
         let (ray, o_err, d_err) = self
             .data
             .world_to_object
-            .clone()
-            .unwrap()
-            .transform_ray_with_error(r);
+            .as_ref()
+            .map(|w2o| w2o.transform_ray_with_error(r))
+            .unwrap();
 
-        // Compute quadratic sphere coefficients
+        // Compute quadratic sphere coefficients.
 
-        // Initialize EFloat ray coordinate values
+        // Initialize EFloat ray coordinate values.
         let ox = EFloat::new(ray.o.x, o_err.x);
         let oy = EFloat::new(ray.o.y, o_err.y);
         let oz = EFloat::new(ray.o.z, o_err.z);
@@ -284,7 +284,7 @@ impl Shape for Sphere {
         let b = 2.0 * (dx * ox + dy * oy + dz * oz);
         let c = ox * ox + oy * oy + oz * oz - EFloat::from(self.radius) * EFloat::from(self.radius);
 
-        // Solve quadratic equation for _t_ values
+        // Solve quadratic equation for `t` values.
         if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
             // Check quadric shape _t0_ and _t1_ for nearest intersection
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
@@ -299,10 +299,10 @@ impl Shape for Sphere {
                 }
             }
 
-            // Compute sphere hit position and phi
+            // Compute sphere hit position and phi.
             let mut p_hit = ray.at(Float::from(t_shape_hit));
 
-            // Refine sphere intersection point
+            // Refine sphere intersection point.
             p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
 
             if p_hit.x == 0.0 && p_hit.y == 0.0 {
@@ -314,7 +314,7 @@ impl Shape for Sphere {
                 phi += TWO_PI;
             }
 
-            // Test sphere intersection against clipping parameters
+            // Test sphere intersection against clipping parameters.
             if (self.z_min > -self.radius && p_hit.z < self.z_min)
                 || (self.z_max < self.radius && p_hit.z > self.z_max)
                 || phi > self.phi_max
@@ -328,10 +328,10 @@ impl Shape for Sphere {
 
                 t_shape_hit = t1;
 
-                // Compute sphere hit position and phi
+                // Compute sphere hit position and phi.
                 p_hit = ray.at(Float::from(t_shape_hit));
 
-                // Refine sphere intersection point
+                // Refine sphere intersection point.
                 p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
                 if p_hit.x == 0.0 && p_hit.y == 0.0 {
                     p_hit.x = 1e-5 * self.radius;
@@ -379,7 +379,7 @@ impl Shape for Sphere {
             n *= -1.0;
         }
 
-        // Reproject _pObj_ to sphere surface and compute _pObjError_
+        // Reproject `p_obj` to sphere surface and compute `p_obj_error`.
         p_obj *= self.radius / p_obj.distance(Point3f::default());
         let p_obj_error = gamma(5) * Vector3f::from(p_obj).abs();
         let p = self.data.object_to_world.transform_point(&p_obj);

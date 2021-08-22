@@ -313,8 +313,7 @@ impl Curve {
     /// * `u0`            - The starting u-parameter.
     /// * `u1`            - The ending u-parameter.
     /// * `depth`         - The recursion depth.
-    /// * `current_hit`   - The current hit found so far. Initialize to `None`
-    ///                     for first call.
+    /// * `is_shadow_ray` - Used to terminate recursion on first hit for shadow rays.
     fn recursive_intersect<'a>(
         &self,
         ray: &Ray,
@@ -323,19 +322,19 @@ impl Curve {
         u0: Float,
         u1: Float,
         depth: u32,
-        current_hit: Option<Intersection<'a>>,
+        is_shadow_ray: bool,
     ) -> Option<Intersection<'a>> {
         let ray_length = ray.d.length();
-        let z_max = ray_length * ray.t_max;
 
         if depth > 0 {
-            // Split curve segment into sub-segments and test for intersection
+            // Split curve segment into sub-segments and test for intersection.
             let cp_split = subdivide_bezier(cp);
 
             // For each of the two segments, see if the ray's bounding box
             // overlaps the segment before recursively checking for
             // intersection with it.
             let u = [u0, (u0 + u1) / 2.0, u1];
+            let hit: Option<Intersection<'a>> = None;
             for seg in 0..2 {
                 // Splice containing the 4 control poitns for the current segment.
                 let cps = &cp_split[seg * 3..seg * 3 + 4];
@@ -359,6 +358,7 @@ impl Curve {
                     continue;
                 }
 
+                let z_max = ray_length * ray.t_max;
                 if max(max(cps[0].z, cps[1].z), max(cps[2].z, cps[3].z)) + 0.5 * max_width < 0.0
                     || min(min(cps[0].z, cps[1].z), min(cps[2].z, cps[3].z)) - 0.5 * max_width
                         > z_max
@@ -366,23 +366,23 @@ impl Curve {
                     continue;
                 }
 
-                let hit = self.recursive_intersect(
+                self.recursive_intersect(
                     ray,
                     cps,
                     ray_to_object.clone(),
                     u[seg],
                     u[seg + 1],
                     depth - 1,
-                    current_hit.clone(),
+                    is_shadow_ray,
                 );
 
-                // If we found an intersection we can exit out immediately.
-                if !hit.is_none() {
-                    return hit;
+                // If we found an intersection and this is a shadow ray,
+                // we can exit out immediately.
+                if hit.is_some() && is_shadow_ray {
+                    break;
                 }
             }
-
-            return current_hit;
+            return hit;
         }
 
         // Intersect ray with curve segment.
@@ -422,17 +422,18 @@ impl Curve {
             hit_width *= n_hit.abs_dot(&ray.d) / ray_length;
         }
 
-        // Test intersection point against curve width
+        // Test intersection point against curve width.
         let (pc, dpcdw) = eval_bezier(cp, clamp(w, 0.0, 1.0));
         let pt_curve_dist2 = pc.x * pc.x + pc.y * pc.y;
         if pt_curve_dist2 > hit_width * hit_width * 0.25 {
             return None;
         }
+        let z_max = ray_length * ray.t_max;
         if pc.z < 0.0 || pc.z > z_max {
             return None;
         }
 
-        // Compute v coordinate of curve intersection point
+        // Compute v coordinate of curve intersection point.
         let pt_curve_dist = pt_curve_dist2.sqrt();
         let edge_func = dpcdw.x * (-pc.y) + pc.x * dpcdw.y;
         let v = if edge_func > 0.0 {
@@ -441,12 +442,12 @@ impl Curve {
             0.5 - pt_curve_dist / hit_width
         };
 
-        // Not sure if this check is even necessary.
-        if current_hit.is_none() {
+        // Compute hit `t` and partial derivatives for curve intersection.
+        if !is_shadow_ray {
             // Compute hit `t` and partial derivatives for curve intersection.
             let t_hit = pc.z / ray_length;
 
-            // Compute error bounds for curve intersection
+            // Compute error bounds for curve intersection.
             let p_error = Vector3::new(2.0 * hit_width, 2.0 * hit_width, 2.0 * hit_width);
 
             // Compute dpdu and dpdv for curve intersection.
@@ -461,7 +462,7 @@ impl Curve {
             let dpdv = if self.common.curve_type == CurveType::Ribbon {
                 Vector3::from(n_hit).cross(&dpdu).normalize() * hit_width
             } else {
-                // Compute curve dpdv for flat and cylinder curves
+                // Compute curve dpdv for flat and cylinder curves.
                 let dpdu_plane = ray_to_object.inverse().transform_vector(&dpdu);
                 let mut dpdv_plane =
                     Vector3::new(-dpdu_plane.y, dpdu_plane.x, 0.0).normalize() * hit_width;
@@ -490,7 +491,7 @@ impl Curve {
 
             Some(Intersection::new(t_hit, isect))
         } else {
-            current_hit
+            None
         }
     }
 
@@ -542,9 +543,9 @@ impl Shape for Curve {
         let (ray, _o_err, _d_err) = self
             .data
             .world_to_object
-            .clone()
-            .unwrap()
-            .transform_ray_with_error(r);
+            .as_ref()
+            .map(|w2o| w2o.transform_ray_with_error(r))
+            .unwrap();
 
         // Compute object-space control points for curve segment, cp_obj.
         let cp_obj = self.blossom_bezier();
@@ -607,7 +608,7 @@ impl Shape for Curve {
             return None;
         }
 
-        // Compute refinement depth for curve, _max_depth_
+        // Compute refinement depth for curve, `max_depth`.
         let l0 = (0..2).fold(0.0, |l, i| {
             max(
                 l,
@@ -634,13 +635,13 @@ impl Shape for Curve {
             self.u_min,
             self.u_max,
             max_depth,
-            None,
+            false,
         )
     }
 
     /// Returns the surface area of the shape in object space.
     fn area(&self) -> Float {
-        // Compute object-space control points for curve segment, cp_obj
+        // Compute object-space control points for curve segment, cp_obj.
         let cp_obj = self.blossom_bezier();
         let width0 = lerp(self.u_min, self.common.width[0], self.common.width[1]);
         let width1 = lerp(self.u_max, self.common.width[0], self.common.width[1]);
@@ -702,7 +703,7 @@ impl CurveData {
         };
 
         let normal_angle = clamp(n[0].dot(&n[1]), 0.0, 1.0).acos();
-        let inv_sin_normal_angle = 1.0 / normal_angle;
+        let inv_sin_normal_angle = 1.0 / normal_angle.sin();
 
         Self {
             curve_type,

@@ -20,30 +20,30 @@ WorldBegin
   
   AttributeBegin
     Material "matte"
-      Translate -5 1 0
-      Shape "sphere" "float radius" 1
-            # "float phimax" 90 "float zmin" -0.5 "float zmax" 0.75
+    Translate -5 1 0
+    Shape "sphere" "float radius" 1
+          #"float phimax" 90 "float zmin" -0.5 "float zmax" 0.75
   AttributeEnd
   
   AttributeBegin
     Material "matte"
-      Translate -3 0 0
-      Rotate 75 1 0 0
-      Shape "cylinder" "float radius" 0.75 "float phimax" 270
+    Translate -3 0 0
+    Rotate 75 1 0 0
+    Shape "cylinder" "float radius" 0.75 "float phimax" 270
   AttributeEnd
   
   AttributeBegin
     Material "matte"
-      Translate -1 0 -0.5
-      Rotate 45 1 0 0
-      Shape "cone" "float radius" 0.75 "float height" 2 "float phimax" 270
+    Translate -1 0 -0.5
+    Rotate 45 1 0 0
+    Shape "cone" "float radius" 0.75 "float height" 2 "float phimax" 270
   AttributeEnd
   
   AttributeBegin
     Material "matte"
-      Translate 0.5 0 -0.5
-      Rotate 65 -1 1 1
-      Shape "paraboloid" "float phimax" 270
+    Translate 0.5 0 -0.5
+    Rotate 65 -1 1 1
+    Shape "paraboloid" "float phimax" 270
   AttributeEnd
 
   AttributeBegin
@@ -77,6 +77,16 @@ WorldBegin
     Shape "disk" "float radius" 1 "float innerradius" 0.25 "float phimax" 270
   AttributeEnd
   
+  AttributeBegin
+    Material "matte"
+    Shape "curve" 
+          "point P" [ -5 0 1   -4 0 2   -4 0 2   -3 0 1 ]
+          "integer degree" 3
+          "float width" 0.5
+          "string basis" "bezier"
+          "string type"	"cylinder"
+  AttributeEnd
+
   AttributeBegin
     Material "matte"
     Translate 0 0 -1

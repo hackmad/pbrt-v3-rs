@@ -86,13 +86,13 @@ impl Shape for Cylinder {
         let (ray, o_err, d_err) = self
             .data
             .world_to_object
-            .clone()
-            .unwrap()
-            .transform_ray_with_error(r);
+            .as_ref()
+            .map(|w2o| w2o.transform_ray_with_error(r))
+            .unwrap();
 
-        // Compute quadratic cylinder coefficients
+        // Compute quadratic cylinder coefficients.
 
-        // Initialize EFloat ray coordinate values
+        // Initialize EFloat ray coordinate values.
         let ox = EFloat::new(ray.o.x, o_err.x);
         let oy = EFloat::new(ray.o.y, o_err.y);
 
@@ -103,9 +103,9 @@ impl Shape for Cylinder {
         let b = 2.0 * (dx * ox + dy * oy);
         let c = ox * ox + oy * oy - EFloat::from(self.radius) * EFloat::from(self.radius);
 
-        // Solve quadratic equation for t values
+        // Solve quadratic equation for t values.
         if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
-            // Check quadric shape t0 and t1 for nearest intersection
+            // Check quadric shape t0 and t1 for nearest intersection.
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return None;
             }
@@ -118,10 +118,10 @@ impl Shape for Cylinder {
                 }
             }
 
-            // Compute cylinder hit position and phi
+            // Compute cylinder hit position and phi.
             let mut p_hit = ray.at(Float::from(t_shape_hit));
 
-            // Refine cylinder intersection point
+            // Refine cylinder intersection point.
             let hit_rad = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
             p_hit.x *= self.radius / hit_rad;
             p_hit.y *= self.radius / hit_rad;
@@ -131,7 +131,7 @@ impl Shape for Cylinder {
                 phi += TWO_PI;
             }
 
-            // Test cylinder intersection against clipping parameters
+            // Test cylinder intersection against clipping parameters.
             if p_hit.z < self.z_min || p_hit.z > self.z_max || phi > self.phi_max {
                 if t_shape_hit == t1 {
                     return None;
@@ -142,10 +142,10 @@ impl Shape for Cylinder {
 
                 t_shape_hit = t1;
 
-                // Compute cylinder hit position and phi
+                // Compute cylinder hit position and phi.
                 p_hit = ray.at(Float::from(t_shape_hit));
 
-                // Refine cylinder intersection point
+                // Refine cylinder intersection point.
                 let hit_rad = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
                 p_hit.x *= self.radius / hit_rad;
                 p_hit.y *= self.radius / hit_rad;
@@ -160,7 +160,7 @@ impl Shape for Cylinder {
                 }
             }
 
-            // Find parametric representation of cylinder hit
+            // Find parametric representation of cylinder hit.
             let u = phi / self.phi_max;
             let v = (p_hit.z - self.z_min) / (self.z_max - self.z_min);
 
@@ -176,7 +176,7 @@ impl Shape for Cylinder {
             // Compute normal
             let n = dpdu.cross(&dpdv).normalize();
 
-            // Compute coefficients for first fundamental form
+            // Compute coefficients for first fundamental form.
             let e1 = dpdu.dot(&dpdu);
             let f1 = dpdu.dot(&dpdv);
             let g1 = dpdv.dot(&dpdv);
@@ -186,7 +186,7 @@ impl Shape for Cylinder {
             let f2 = n.dot(&d2p_duv);
             let g2 = n.dot(&d2p_dvv);
 
-            // Compute dndu and dndv from fundamental form coefficients
+            // Compute dndu and dndv from fundamental form coefficients.
             let inv_egf_1 = 1.0 / (e1 * g1 - f1 * f1);
             let dndu = Normal3::from(
                 (f2 * f1 - e2 * g1) * inv_egf_1 * dpdu + (e2 * f1 - f2 * e1) * inv_egf_1 * dpdv,
@@ -195,10 +195,10 @@ impl Shape for Cylinder {
                 (g2 * f1 - f2 * g1) * inv_egf_1 * dpdu + (f2 * f1 - g2 * e1) * inv_egf_1 * dpdv,
             );
 
-            // Compute error bounds for cylinder intersection
+            // Compute error bounds for cylinder intersection.
             let p_error = gamma(3) * Vector3::new(p_hit.x, p_hit.y, 0.0).abs();
 
-            // Initialize SurfaceInteraction from parametric information
+            // Initialize SurfaceInteraction from parametric information.
             let si = SurfaceInteraction::new(
                 p_hit,
                 p_error,
@@ -209,7 +209,7 @@ impl Shape for Cylinder {
                 dndu,
                 dndv,
                 ray.time,
-                Some(Arc::new(self.clone())),
+                Some(Arc::new(self.clone())), // TODO: Do not clone self.
             );
 
             // Create hit.
@@ -230,13 +230,13 @@ impl Shape for Cylinder {
         let (ray, o_err, d_err) = self
             .data
             .world_to_object
-            .clone()
-            .unwrap()
-            .transform_ray_with_error(r);
+            .as_ref()
+            .map(|w2o| w2o.transform_ray_with_error(r))
+            .unwrap();
 
-        // Compute quadratic cylinder coefficients
+        // Compute quadratic cylinder coefficients.
 
-        // Initialize EFloat ray coordinate values
+        // Initialize EFloat ray coordinate values.
         let ox = EFloat::new(ray.o.x, o_err.x);
         let oy = EFloat::new(ray.o.y, o_err.y);
 
@@ -249,7 +249,7 @@ impl Shape for Cylinder {
 
         // Solve quadratic equation for t values
         if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
-            // Check quadric shape t0 and t1 for nearest intersection
+            // Check quadric shape t0 and t1 for nearest intersection.
             if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
                 return false;
             }
@@ -262,10 +262,10 @@ impl Shape for Cylinder {
                 }
             }
 
-            // Compute cylinder hit position and phi
+            // Compute cylinder hit position and phi.
             let mut p_hit = ray.at(Float::from(t_shape_hit));
 
-            // Refine cylinder intersection point
+            // Refine cylinder intersection point.
             let hit_rad = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
             p_hit.x *= self.radius / hit_rad;
             p_hit.y *= self.radius / hit_rad;
@@ -275,7 +275,7 @@ impl Shape for Cylinder {
                 phi += TWO_PI;
             }
 
-            // Test cylinder intersection against clipping parameters
+            // Test cylinder intersection against clipping parameters.
             if p_hit.z < self.z_min || p_hit.z > self.z_max || phi > self.phi_max {
                 if t_shape_hit == t1 {
                     return false;
@@ -286,10 +286,10 @@ impl Shape for Cylinder {
 
                 t_shape_hit = t1;
 
-                // Compute cylinder hit position and phi
+                // Compute cylinder hit position and phi.
                 p_hit = ray.at(Float::from(t_shape_hit));
 
-                // Refine cylinder intersection point
+                // Refine cylinder intersection point.
                 let hit_rad = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
                 p_hit.x *= self.radius / hit_rad;
                 p_hit.y *= self.radius / hit_rad;
@@ -335,7 +335,7 @@ impl Shape for Cylinder {
             n *= -1.0;
         }
 
-        // Reproject _pObj_ to cylinder surface and compute _pObjError_
+        // Reproject `p_obj` to cylinder surface and compute `p_obj_error`.
         let hit_rad = (p_obj.x * p_obj.x + p_obj.y * p_obj.y).sqrt();
         p_obj.x *= self.radius / hit_rad;
         p_obj.y *= self.radius / hit_rad;
