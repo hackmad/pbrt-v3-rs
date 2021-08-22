@@ -145,20 +145,21 @@ impl Transform {
     /// Create a transformation representing rotation about a vector.
     ///
     /// * `theta` - Angle in degrees.
-    /// * `a`     - Vector.
-    pub fn rotate_axis(theta: Float, a: &Vector3f) -> Self {
+    /// * `axis`  - Axis of rotation.
+    pub fn rotate_axis(theta: Float, axis: &Vector3f) -> Self {
+        let a = axis.normalize();
         let r = theta.to_radians();
         let sin_theta = r.sin();
         let cos_theta = r.cos();
         let mut m = Matrix4x4::default();
 
-        // Compute rotation of first basis vector
+        // Compute rotation of first basis vector.
         m.m[0][0] = a.x * a.x + (1.0 - a.x * a.x) * cos_theta;
         m.m[0][1] = a.x * a.y * (1.0 - cos_theta) - a.z * sin_theta;
         m.m[0][2] = a.x * a.z * (1.0 - cos_theta) + a.y * sin_theta;
         m.m[0][3] = 0.0;
 
-        // Compute rotations of second and third basis vectors
+        // Compute rotations of second and third basis vectors.
         m.m[1][0] = a.x * a.y * (1.0 - cos_theta) + a.z * sin_theta;
         m.m[1][1] = a.y * a.y + (1.0 - a.y * a.y) * cos_theta;
         m.m[1][2] = a.y * a.z * (1.0 - cos_theta) - a.x * sin_theta;
@@ -257,7 +258,7 @@ impl Transform {
         }
     }
 
-    // Returns true if matrix is identity matrix
+    // Returns true if matrix is identity matrix.
     pub fn is_identity(&self) -> bool {
         self.m == IDENTITY_MATRIX
     }
@@ -303,7 +304,7 @@ impl Transform {
     ///
     /// * `p` - The point.
     pub fn transform_point_with_error(&self, p: &Point3f) -> (Point3f, Vector3f) {
-        // Compute absolute error for transformed point
+        // Compute absolute error for transformed point.
         let m = &self.m;
 
         let x_abs_sum = abs(m[0][0] * p.x) + abs(m[0][1] * p.y) + abs(m[0][2] * p.z) + abs(m[0][3]);
@@ -525,7 +526,7 @@ impl Transform {
         // Transform p and p_error in SurfaceInteraction
         let (p, p_error) = self.transform_point_with_error(&si.hit.p);
 
-        // Transform remaining members of SurfaceInteraction
+        // Transform remaining members of SurfaceInteraction.
         let mut si = SurfaceInteraction::new(
             p,
             p_error,
