@@ -256,8 +256,6 @@ impl SAH {
                 if b == N_BUCKETS {
                     b = N_BUCKETS - 1;
                 }
-                debug_assert!(b > 0);
-                debug_assert!(b < N_BUCKETS);
 
                 buckets[b].count += 1;
                 buckets[b].bounds = buckets[b].bounds.union(&info.bounds);
@@ -306,8 +304,6 @@ impl SAH {
                     if b == N_BUCKETS {
                         b = N_BUCKETS - 1;
                     }
-                    debug_assert!(b > 0);
-                    debug_assert!(b < N_BUCKETS);
                     b <= min_cost_split_bucket
                 });
                 let pmid = start + split;
