@@ -10,7 +10,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct Disk {
     /// Common shape data.
-    pub data: ShapeData,
+    pub data: Arc<ShapeData>,
 
     /// Height where disk is located.
     pub height: Float,
@@ -50,19 +50,19 @@ impl Disk {
             radius,
             inner_radius,
             phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-            data: ShapeData::new(
+            data: Arc::new(ShapeData::new(
                 Arc::clone(&object_to_world),
                 Some(Arc::clone(&world_to_object)),
                 reverse_orientation,
-            ),
+            )),
         }
     }
 }
 
 impl Shape for Disk {
     /// Returns the underlying shape data.
-    fn get_data(&self) -> ShapeData {
-        self.data.clone()
+    fn get_data(&self) -> Arc<ShapeData> {
+        Arc::clone(&self.data)
     }
 
     /// Returns a bounding box in the shapes object space.
@@ -143,7 +143,7 @@ impl Shape for Disk {
             dndu,
             dndv,
             ray.time,
-            Some(Arc::new(self.clone())), // TODO: Do not clone self.
+            Arc::clone(&self.data),
         );
 
         // Create hit.

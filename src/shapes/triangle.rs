@@ -15,7 +15,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct TriangleMesh {
     /// Common shape data.
-    pub data: ShapeData,
+    pub data: Arc<ShapeData>,
 
     /// The number of triangles.
     pub num_triangles: usize,
@@ -100,7 +100,11 @@ impl TriangleMesh {
             alpha_mask,
             shadow_alpha_mask,
             face_indices,
-            data: ShapeData::new(Arc::clone(&object_to_world), None, reverse_orientation),
+            data: Arc::new(ShapeData::new(
+                Arc::clone(&object_to_world),
+                None,
+                reverse_orientation,
+            )),
         }
     }
 
@@ -123,7 +127,7 @@ impl TriangleMesh {
     /// * `uv`                  - Paramteric uv-coordinates.
     /// * `alpha_mask`          - Optional alpha mask texture, which can be used to
     ///                           cut away parts of triangle surfaces
-    /// * `shadow_alpha_mask`   - Optional shadow alpha mask texture.
+    /// * `ehadow_alpha_mask`   - Optional shadow alpha mask texture.
     /// * `face_indices`        - Face indices.
     pub fn create(
         object_to_world: ArcTransform,
@@ -340,7 +344,7 @@ impl TriangleMesh {
 #[derive(Clone)]
 pub struct Triangle {
     /// Common shape data.
-    pub data: ShapeData,
+    pub data: Arc<ShapeData>,
 
     /// The mesh.
     pub mesh: Arc<TriangleMesh>,
@@ -369,11 +373,11 @@ impl Triangle {
         Self {
             mesh: Arc::clone(&mesh),
             v: 3 * triangle_index,
-            data: ShapeData::new(
+            data: Arc::new(ShapeData::new(
                 Arc::clone(&object_to_world),
                 Some(Arc::clone(&world_to_object)),
                 reverse_orientation,
-            ),
+            )),
         }
     }
 }
@@ -400,8 +404,8 @@ impl Triangle {
 
 impl Shape for Triangle {
     /// Returns the underlying shape data.
-    fn get_data(&self) -> ShapeData {
-        self.data.clone()
+    fn get_data(&self) -> Arc<ShapeData> {
+        Arc::clone(&self.data)
     }
 
     /// Returns a bounding box in the shapes object space.
@@ -590,7 +594,7 @@ impl Shape for Triangle {
                 Normal3f::default(),
                 Normal3f::default(),
                 r.time,
-                Some(Arc::new(self.clone())), // TODO: Do not clone self.
+                Arc::clone(&self.data),
             );
 
             let alpha_mask = self.mesh.alpha_mask.clone().unwrap();
@@ -610,7 +614,7 @@ impl Shape for Triangle {
             Normal3f::default(),
             Normal3f::default(),
             r.time,
-            Some(Arc::new(self.clone())), // TODO: Do not clone self.
+            Arc::clone(&self.data),
         );
 
         // Override surface normal in isect for triangle.
@@ -870,7 +874,7 @@ impl Shape for Triangle {
                 Normal3f::default(),
                 Normal3f::default(),
                 r.time,
-                Some(Arc::new(self.clone())),
+                Arc::clone(&self.data),
             );
 
             let alpha_mask = self.mesh.alpha_mask.clone().unwrap();

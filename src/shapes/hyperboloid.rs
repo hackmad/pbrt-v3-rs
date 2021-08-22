@@ -24,7 +24,7 @@ macro_rules! quad {
 #[derive(Clone)]
 pub struct Hyperboloid {
     /// Common shape data.
-    pub data: ShapeData,
+    pub data: Arc<ShapeData>,
 
     /// First point defining line segment to revolve.
     pub p1: Point3f,
@@ -118,19 +118,19 @@ impl Hyperboloid {
             ah,
             ch,
             phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-            data: ShapeData::new(
+            data: Arc::new(ShapeData::new(
                 Arc::clone(&object_to_world),
                 Some(Arc::clone(&world_to_object)),
                 reverse_orientation,
-            ),
+            )),
         }
     }
 }
 
 impl Shape for Hyperboloid {
     /// Returns the underlying shape data.
-    fn get_data(&self) -> ShapeData {
-        self.data.clone()
+    fn get_data(&self) -> Arc<ShapeData> {
+        Arc::clone(&self.data)
     }
 
     /// Returns a bounding box in the shapes object space.
@@ -287,7 +287,7 @@ impl Shape for Hyperboloid {
                 dndu,
                 dndv,
                 ray.time,
-                Some(Arc::new(self.clone())), // TODO: Do not clone self.
+                Arc::clone(&self.data),
             );
 
             // Create hit.

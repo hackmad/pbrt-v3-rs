@@ -537,7 +537,7 @@ impl Transform {
             self.transform_normal(&si.dndu),
             self.transform_normal(&si.dndv),
             si.hit.time,
-            si.shape.clone(),
+            Arc::clone(&si.shape_data),
         );
 
         // Transform n in SurfaceInteraction.hit

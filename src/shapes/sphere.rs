@@ -12,7 +12,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct Sphere {
     /// Common shape data.
-    pub data: ShapeData,
+    pub data: Arc<ShapeData>,
 
     /// Radius of sphere.
     pub radius: Float,
@@ -62,19 +62,19 @@ impl Sphere {
             theta_min: clamp(zmin / radius, -1.0, 1.0).acos(),
             theta_max: clamp(zmax / radius, -1.0, 1.0).acos(),
             phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
-            data: ShapeData::new(
+            data: Arc::new(ShapeData::new(
                 Arc::clone(&object_to_world),
                 Some(Arc::clone(&world_to_object)),
                 reverse_orientation,
-            ),
+            )),
         }
     }
 }
 
 impl Shape for Sphere {
     /// Returns the underlying shape data.
-    fn get_data(&self) -> ShapeData {
-        self.data.clone()
+    fn get_data(&self) -> Arc<ShapeData> {
+        Arc::clone(&self.data)
     }
 
     /// Returns a bounding box in the shapes object space.
@@ -244,7 +244,7 @@ impl Shape for Sphere {
                 dndu,
                 dndv,
                 ray.time,
-                Some(Arc::new(self.clone())), // TODO: Do not clone self.
+                Arc::clone(&self.data),
             );
 
             // Create hit.

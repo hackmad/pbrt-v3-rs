@@ -8,6 +8,7 @@ use crate::core::pbrt::*;
 use crate::core::primitive::*;
 use crate::core::reflection::*;
 use crate::core::spectrum::*;
+use std::sync::Arc;
 
 /// SurfaceInteraction represents geometry of a particular point on a surface.
 #[derive(Clone)]
@@ -51,8 +52,8 @@ pub struct SurfaceInteraction<'a> {
     /// Shading geometry used for perturbed values.
     pub shading: Shading,
 
-    /// The shape.
-    pub shape: Option<ArcShape>,
+    /// The shape data.
+    pub shape_data: Arc<ShapeData>,
 
     /// The BSDF.
     pub bsdf: Option<ArcBSDF>,
@@ -67,17 +68,17 @@ pub struct SurfaceInteraction<'a> {
 impl<'a> SurfaceInteraction<'a> {
     /// Create a new surface interaction.
     ///
-    /// * `p`                - Point of interaction.
-    /// * `p_error`          - Floating point error for ray intersection points.
-    /// * `uv`               - The uv coordinates from surface parametrization.
-    /// * `wo`               - The negative ray direction (outgoing direction used
-    ///                        when computing lighting at points).
-    /// * `dpdu`             - Parametric partial derivative of the point ∂p/∂u.
-    /// * `dpdv`             - Parametric partial derivative of the point ∂p/∂v.
-    /// * `dndu`             - Differential change ∂n/∂v in surface normal as we move along u.
-    /// * `dndv`             - Differential change ∂n/∂v in surface normal as we move along v.
-    /// * `time`             - Time when interaction occurred.
-    /// * `shape`            - The shape.
+    /// * `p`          - Point of interaction.
+    /// * `p_error`    - Floating point error for ray intersection points.
+    /// * `uv`         - The uv coordinates from surface parametrization.
+    /// * `wo`         - The negative ray direction (outgoing direction used when
+    ///                  computing lighting at points).
+    /// * `dpdu`       - Parametric partial derivative of the point ∂p/∂u.
+    /// * `dpdv`       - Parametric partial derivative of the point ∂p/∂v.
+    /// * `dndu`       - Differential change ∂n/∂v in surface normal as we move along u.
+    /// * `dndv`       - Differential change ∂n/∂v in surface normal as we move along v.
+    /// * `time`       - Time when interaction occurred.
+    /// * `shape_data` - The shape data.
     pub fn new(
         p: Point3f,
         p_error: Vector3f,
@@ -88,16 +89,14 @@ impl<'a> SurfaceInteraction<'a> {
         dndu: Normal3f,
         dndv: Normal3f,
         time: Float,
-        shape: Option<ArcShape>,
+        shape_data: Arc<ShapeData>,
     ) -> Self {
         // Calculate normal n from the partial derivatives.
         let mut n = Normal3f::from(dpdu.cross(&dpdv).normalize());
 
-        // Adjust normal based on orientation and handedness
-        if let Some(s) = shape.clone() {
-            if s.get_data().reverse_orientation ^ s.get_data().transform_swaps_handedness {
-                n *= -1.0;
-            }
+        // Adjust normal based on orientation and handedness.
+        if shape_data.reverse_orientation ^ shape_data.transform_swaps_handedness {
+            n *= -1.0;
         }
 
         Self {
@@ -113,8 +112,8 @@ impl<'a> SurfaceInteraction<'a> {
             dvdy: 0.0,
             dpdx: Vector3f::default(),
             dpdy: Vector3f::default(),
-            shape: shape.clone(),
             shading: Shading::new(n, dpdu, dpdv, dndu, dndv),
+            shape_data,
             bsdf: None,
             bssrdf: None,
             primitive: None,
@@ -139,14 +138,12 @@ impl<'a> SurfaceInteraction<'a> {
         let mut hit_n = self.hit.n;
         let mut shading_n = Normal3::from(dpdu.cross(&dpdv)).normalize();
 
-        if let Some(s) = self.shape.clone() {
-            if s.get_data().reverse_orientation ^ s.get_data().transform_swaps_handedness {
-                shading_n = -self.shading.n;
-                if orientation_is_authoritative {
-                    hit_n = hit_n.face_forward(&shading_n.into());
-                } else {
-                    shading_n = shading_n.face_forward(&hit_n.into());
-                }
+        if self.shape_data.reverse_orientation ^ self.shape_data.transform_swaps_handedness {
+            shading_n = -self.shading.n;
+            if orientation_is_authoritative {
+                hit_n = hit_n.face_forward(&shading_n.into());
+            } else {
+                shading_n = shading_n.face_forward(&hit_n.into());
             }
         }
 

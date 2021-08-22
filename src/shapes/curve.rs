@@ -25,7 +25,7 @@ pub enum CurveType {
 #[derive(Clone)]
 pub struct Curve {
     /// Common shape data.
-    pub data: ShapeData,
+    pub data: Arc<ShapeData>,
 
     /// Common curve parameters.
     pub common: CurveData,
@@ -55,11 +55,11 @@ impl Curve {
         u_max: Float,
     ) -> Self {
         Self {
-            data: ShapeData::new(
+            data: Arc::new(ShapeData::new(
                 Arc::clone(&object_to_world),
                 Some(Arc::clone(&world_to_object)),
                 reverse_orientation,
-            ),
+            )),
             common,
             u_min,
             u_max,
@@ -334,7 +334,7 @@ impl Curve {
             // overlaps the segment before recursively checking for
             // intersection with it.
             let u = [u0, (u0 + u1) / 2.0, u1];
-            let hit: Option<Intersection<'a>> = None;
+            let mut hit: Option<Intersection<'a>> = None;
             for seg in 0..2 {
                 // Splice containing the 4 control poitns for the current segment.
                 let cps = &cp_split[seg * 3..seg * 3 + 4];
@@ -366,7 +366,7 @@ impl Curve {
                     continue;
                 }
 
-                self.recursive_intersect(
+                hit = self.recursive_intersect(
                     ray,
                     cps,
                     ray_to_object.clone(),
@@ -379,71 +379,68 @@ impl Curve {
                 // If we found an intersection and this is a shadow ray,
                 // we can exit out immediately.
                 if hit.is_some() && is_shadow_ray {
-                    break;
+                    return hit;
                 }
             }
-            return hit;
-        }
-
-        // Intersect ray with curve segment.
-
-        // Test ray against segment endpoint boundaries.
-
-        // Test sample point against tangent perpendicular at curve start.
-        let mut edge = (cp[1].y - cp[0].y) * (-cp[0].y) + cp[0].x * (cp[0].x - cp[1].x);
-        if edge < 0.0 {
-            return None;
-        }
-
-        // Test sample point against tangent perpendicular at curve end.
-        edge = (cp[2].y - cp[3].y) * (-cp[3].y) + cp[3].x * (cp[3].x - cp[2].x);
-        if edge < 0.0 {
-            return None;
-        }
-
-        // Compute line w that gives minimum distance to sample point.
-        let segment_direction = cp[3] - cp[0];
-        let denom = segment_direction.length_squared();
-        if denom == 0.0 {
-            return None;
-        }
-        let w = (-Vector3::from(cp[0])).dot(&segment_direction) / denom;
-
-        // Compute u coordinate of curve intersection point and hit_width.
-        let u = clamp(lerp(w, u0, u1), u0, u1);
-        let mut hit_width = lerp(u, self.common.width[0], self.common.width[1]);
-        let mut n_hit = Normal3f::default();
-        if self.common.curve_type == CurveType::Ribbon {
-            // Scale hit_width based on ribbon orientation.
-            let sin0 =
-                ((1.0 - u) * self.common.normal_angle).sin() * self.common.inv_sin_normal_angle;
-            let sin1 = (u * self.common.normal_angle).sin() * self.common.inv_sin_normal_angle;
-            n_hit = sin0 * self.common.n[0] + sin1 * self.common.n[1];
-            hit_width *= n_hit.abs_dot(&ray.d) / ray_length;
-        }
-
-        // Test intersection point against curve width.
-        let (pc, dpcdw) = eval_bezier(cp, clamp(w, 0.0, 1.0));
-        let pt_curve_dist2 = pc.x * pc.x + pc.y * pc.y;
-        if pt_curve_dist2 > hit_width * hit_width * 0.25 {
-            return None;
-        }
-        let z_max = ray_length * ray.t_max;
-        if pc.z < 0.0 || pc.z > z_max {
-            return None;
-        }
-
-        // Compute v coordinate of curve intersection point.
-        let pt_curve_dist = pt_curve_dist2.sqrt();
-        let edge_func = dpcdw.x * (-pc.y) + pc.x * dpcdw.y;
-        let v = if edge_func > 0.0 {
-            0.5 + pt_curve_dist / hit_width
+            hit
         } else {
-            0.5 - pt_curve_dist / hit_width
-        };
+            // Intersect ray with curve segment.
 
-        // Compute hit `t` and partial derivatives for curve intersection.
-        if !is_shadow_ray {
+            // Test ray against segment endpoint boundaries.
+
+            // Test sample point against tangent perpendicular at curve start.
+            let mut edge = (cp[1].y - cp[0].y) * (-cp[0].y) + cp[0].x * (cp[0].x - cp[1].x);
+            if edge < 0.0 {
+                return None;
+            }
+
+            // Test sample point against tangent perpendicular at curve end.
+            edge = (cp[2].y - cp[3].y) * (-cp[3].y) + cp[3].x * (cp[3].x - cp[2].x);
+            if edge < 0.0 {
+                return None;
+            }
+
+            // Compute line w that gives minimum distance to sample point.
+            let segment_direction = cp[3] - cp[0];
+            let denom = segment_direction.length_squared();
+            if denom == 0.0 {
+                return None;
+            }
+            let w = (-Vector3::from(cp[0])).dot(&segment_direction) / denom;
+
+            // Compute u coordinate of curve intersection point and hit_width.
+            let u = clamp(lerp(w, u0, u1), u0, u1);
+            let mut hit_width = lerp(u, self.common.width[0], self.common.width[1]);
+            let mut n_hit = Normal3f::default();
+            if self.common.curve_type == CurveType::Ribbon {
+                // Scale hit_width based on ribbon orientation.
+                let sin0 =
+                    ((1.0 - u) * self.common.normal_angle).sin() * self.common.inv_sin_normal_angle;
+                let sin1 = (u * self.common.normal_angle).sin() * self.common.inv_sin_normal_angle;
+                n_hit = sin0 * self.common.n[0] + sin1 * self.common.n[1];
+                hit_width *= n_hit.abs_dot(&ray.d) / ray_length;
+            }
+
+            // Test intersection point against curve width.
+            let (pc, dpcdw) = eval_bezier(cp, clamp(w, 0.0, 1.0));
+            let pt_curve_dist2 = pc.x * pc.x + pc.y * pc.y;
+            if pt_curve_dist2 > hit_width * hit_width * 0.25 {
+                return None;
+            }
+            let z_max = ray_length * ray.t_max;
+            if pc.z < 0.0 || pc.z > z_max {
+                return None;
+            }
+
+            // Compute v coordinate of curve intersection point.
+            let pt_curve_dist = pt_curve_dist2.sqrt();
+            let edge_func = dpcdw.x * (-pc.y) + pc.x * dpcdw.y;
+            let v = if edge_func > 0.0 {
+                0.5 + pt_curve_dist / hit_width
+            } else {
+                0.5 - pt_curve_dist / hit_width
+            };
+
             // Compute hit `t` and partial derivatives for curve intersection.
             let t_hit = pc.z / ray_length;
 
@@ -485,13 +482,11 @@ impl Curve {
                 Normal3f::default(),
                 Normal3f::default(),
                 ray.time,
-                Some(Arc::new(self.clone())),
+                Arc::clone(&self.data),
             );
             let isect = Arc::clone(&self.data.object_to_world).transform_surface_interaction(&si);
 
             Some(Intersection::new(t_hit, isect))
-        } else {
-            None
         }
     }
 
@@ -508,8 +503,8 @@ impl Curve {
 
 impl Shape for Curve {
     /// Returns the underlying shape data.
-    fn get_data(&self) -> ShapeData {
-        self.data.clone()
+    fn get_data(&self) -> Arc<ShapeData> {
+        Arc::clone(&self.data)
     }
 
     /// Returns a bounding box in the shapes object space.

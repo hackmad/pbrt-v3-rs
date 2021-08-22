@@ -9,7 +9,7 @@ use std::sync::Arc;
 /// Shape common functions
 pub trait Shape {
     /// Returns the underlying shape data.
-    fn get_data(&self) -> ShapeData;
+    fn get_data(&self) -> Arc<ShapeData>;
 
     /// Returns a bounding box in the shapes object space.
     fn object_bound(&self) -> Bounds3f;
