@@ -45,7 +45,6 @@ impl EFloat {
             high,
             #[cfg(debug_assertions)]
             v_precise: v as f64,
-            ..Default::default()
         };
 
         r.check();
@@ -125,7 +124,6 @@ impl EFloat {
             high: next_float_up(ef.high.sqrt()),
             #[cfg(debug_assertions)]
             v_precise: ef.v_precise.sqrt(),
-            ..Default::default()
         };
 
         r.check();
@@ -145,7 +143,6 @@ impl EFloat {
                 high: -self.low,
                 #[cfg(debug_assertions)]
                 v_precise: -self.v_precise,
-                ..Default::default()
             };
 
             r.check();
@@ -158,7 +155,6 @@ impl EFloat {
                 high: max(-self.low, self.high),
                 #[cfg(debug_assertions)]
                 v_precise: self.v_precise.abs(),
-                ..Default::default()
             };
 
             r.check();
@@ -218,7 +214,6 @@ impl Add for EFloat {
             high: next_float_up(self.high + ef.high),
             #[cfg(debug_assertions)]
             v_precise: self.v_precise + ef.v_precise,
-            ..Default::default()
         };
 
         r.check();
@@ -261,7 +256,6 @@ impl Sub for EFloat {
             high: next_float_up(self.high - ef.low),
             #[cfg(debug_assertions)]
             v_precise: self.v_precise - ef.v_precise,
-            ..Default::default()
         };
 
         r.check();
@@ -313,7 +307,6 @@ impl Mul for EFloat {
             high,
             #[cfg(debug_assertions)]
             v_precise: self.v_precise * ef.v_precise,
-            ..Default::default()
         };
 
         r.check();
@@ -372,7 +365,6 @@ impl Div for EFloat {
             high,
             #[cfg(debug_assertions)]
             v_precise: self.v_precise / ef.v_precise,
-            ..Default::default()
         };
 
         r.check();
@@ -413,7 +405,6 @@ impl Neg for EFloat {
             high: -self.low,
             #[cfg(debug_assertions)]
             v_precise: -self.v_precise,
-            ..Default::default()
         };
 
         r.check();

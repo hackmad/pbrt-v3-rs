@@ -302,6 +302,16 @@ impl Curve {
         curves
     }
 
+    /// Computes the blossom the spline.
+    fn blossom_bezier(&self) -> [Point3f; 4] {
+        [
+            blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_min),
+            blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_max),
+            blossom_bezier(&self.common.cp_obj, self.u_min, self.u_max, self.u_max),
+            blossom_bezier(&self.common.cp_obj, self.u_max, self.u_max, self.u_max),
+        ]
+    }
+
     /// Recursively split curve in 2 sections if there is an intersection to
     /// find the actual intersection.
     ///
@@ -490,47 +500,12 @@ impl Curve {
         }
     }
 
-    /// Computes the blossom the spline.
-    fn blossom_bezier(&self) -> [Point3f; 4] {
-        [
-            blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_min),
-            blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_max),
-            blossom_bezier(&self.common.cp_obj, self.u_min, self.u_max, self.u_max),
-            blossom_bezier(&self.common.cp_obj, self.u_max, self.u_max, self.u_max),
-        ]
-    }
-}
-
-impl Shape for Curve {
-    /// Returns the underlying shape data.
-    fn get_data(&self) -> Arc<ShapeData> {
-        Arc::clone(&self.data)
-    }
-
-    /// Returns a bounding box in the shapes object space.
-    fn object_bound(&self) -> Bounds3f {
-        // Compute object-space control points for curve segment, cp_obj
-        let cp_obj = self.blossom_bezier();
-
-        // Using the convex hull property; i.e. the curve lies within the convex
-        // hull of its control points. Then expand the bounds by half the maximum
-        // width over the entire parameteric extent of the curve.
-        let width = [
-            lerp(self.u_min, self.common.width[0], self.common.width[1]),
-            lerp(self.u_max, self.common.width[0], self.common.width[1]),
-        ];
-
-        Bounds3f::new(cp_obj[0], cp_obj[1])
-            .union(&Bounds3f::new(cp_obj[2], cp_obj[3]))
-            .expand(max(width[0], width[1]) * 0.5)
-    }
-
     /// Returns geometric details if a ray intersects the shape intersection.
     /// If there is no intersection, `None` is returned.
     ///
-    /// * `r`                  - The ray.
-    /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect<'a>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'a>> {
+    /// * `r`             - The ray.
+    /// * `is_shadow_ray` - Used to terminate recursion on first hit for shadow rays.
+    fn intersect<'a>(&self, r: &Ray, is_shadow_ray: bool) -> Option<Intersection<'a>> {
         // Transform ray to object space.
         //
         // We could just use transform_ray() but there is minor adjustment in
@@ -630,8 +605,50 @@ impl Shape for Curve {
             self.u_min,
             self.u_max,
             max_depth,
-            false,
+            is_shadow_ray,
         )
+    }
+}
+
+impl Shape for Curve {
+    /// Returns the underlying shape data.
+    fn get_data(&self) -> Arc<ShapeData> {
+        Arc::clone(&self.data)
+    }
+
+    /// Returns a bounding box in the shapes object space.
+    fn object_bound(&self) -> Bounds3f {
+        // Compute object-space control points for curve segment, cp_obj
+        let cp_obj = self.blossom_bezier();
+
+        // Using the convex hull property; i.e. the curve lies within the convex
+        // hull of its control points. Then expand the bounds by half the maximum
+        // width over the entire parameteric extent of the curve.
+        let width = [
+            lerp(self.u_min, self.common.width[0], self.common.width[1]),
+            lerp(self.u_max, self.common.width[0], self.common.width[1]),
+        ];
+
+        Bounds3f::new(cp_obj[0], cp_obj[1])
+            .union(&Bounds3f::new(cp_obj[2], cp_obj[3]))
+            .expand(max(width[0], width[1]) * 0.5)
+    }
+
+    /// Returns geometric details if a ray intersects the shape intersection.
+    /// If there is no intersection, `None` is returned.
+    ///
+    /// * `r`                  - The ray.
+    /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
+    fn intersect<'a>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'a>> {
+        Self::intersect(self, r, false)
+    }
+
+    /// Returns `true` if a ray-shape intersection succeeds; otherwise `false`.
+    ///
+    /// * `r`                  - The ray.
+    /// * `test_alpha_texture` - Perform alpha texture tests; default to true.
+    fn intersect_p(&self, r: &Ray, _test_alpha_texture: bool) -> bool {
+        Self::intersect(self, r, true).is_some()
     }
 
     /// Returns the surface area of the shape in object space.
