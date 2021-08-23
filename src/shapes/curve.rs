@@ -317,7 +317,7 @@ impl Curve {
     fn recursive_intersect<'a>(
         &self,
         ray: &Ray,
-        cp: &[Point3f],
+        cp: &[Point3f; 4],
         ray_to_object: ArcTransform,
         u0: Float,
         u1: Float,
@@ -368,7 +368,7 @@ impl Curve {
 
                 hit = self.recursive_intersect(
                     ray,
-                    cps,
+                    &[cps[0], cps[1], cps[2], cps[3]],
                     ray_to_object.clone(),
                     u[seg],
                     u[seg + 1],
@@ -389,24 +389,24 @@ impl Curve {
             // Test ray against segment endpoint boundaries.
 
             // Test sample point against tangent perpendicular at curve start.
-            let mut edge = (cp[1].y - cp[0].y) * (-cp[0].y) + cp[0].x * (cp[0].x - cp[1].x);
+            let mut edge = (cp[1].y - cp[0].y) * -cp[0].y + cp[0].x * (cp[0].x - cp[1].x);
             if edge < 0.0 {
                 return None;
             }
 
             // Test sample point against tangent perpendicular at curve end.
-            edge = (cp[2].y - cp[3].y) * (-cp[3].y) + cp[3].x * (cp[3].x - cp[2].x);
+            edge = (cp[2].y - cp[3].y) * -cp[3].y + cp[3].x * (cp[3].x - cp[2].x);
             if edge < 0.0 {
                 return None;
             }
 
             // Compute line w that gives minimum distance to sample point.
-            let segment_direction = cp[3] - cp[0];
+            let segment_direction = Point2f::from(cp[3]) - Point2f::from(cp[0]);
             let denom = segment_direction.length_squared();
             if denom == 0.0 {
                 return None;
             }
-            let w = (-Vector3::from(cp[0])).dot(&segment_direction) / denom;
+            let w = (-Vector2f::from(cp[0])).dot(&segment_direction) / denom;
 
             // Compute u coordinate of curve intersection point and hit_width.
             let u = clamp(lerp(w, u0, u1), u0, u1);
@@ -415,8 +415,8 @@ impl Curve {
             if self.common.curve_type == CurveType::Ribbon {
                 // Scale hit_width based on ribbon orientation.
                 let sin0 =
-                    ((1.0 - u) * self.common.normal_angle).sin() * self.common.inv_sin_normal_angle;
-                let sin1 = (u * self.common.normal_angle).sin() * self.common.inv_sin_normal_angle;
+                    sin((1.0 - u) * self.common.normal_angle) * self.common.inv_sin_normal_angle;
+                let sin1 = sin(u * self.common.normal_angle) * self.common.inv_sin_normal_angle;
                 n_hit = sin0 * self.common.n[0] + sin1 * self.common.n[1];
                 hit_width *= n_hit.abs_dot(&ray.d) / ray_length;
             }
@@ -717,7 +717,7 @@ impl CurveData {
 /// * `u0` - The first u-extent.
 /// * `u1` - The second u-extent.
 /// * `u2` - The third u-extent.
-fn blossom_bezier(p: &[Point3f], u0: Float, u1: Float, u2: Float) -> Point3f {
+fn blossom_bezier(p: &[Point3f; 4], u0: Float, u1: Float, u2: Float) -> Point3f {
     let a = [
         lerp(u0, p[0], p[1]),
         lerp(u0, p[1], p[2]),
@@ -732,7 +732,7 @@ fn blossom_bezier(p: &[Point3f], u0: Float, u1: Float, u2: Float) -> Point3f {
 /// second half of the curve.
 ///
 /// * `cp` - The control points.
-fn subdivide_bezier(cp: &[Point3f]) -> [Point3f; 7] {
+fn subdivide_bezier(cp: &[Point3f; 4]) -> [Point3f; 7] {
     [
         cp[0],
         (cp[0] + cp[1]) / 2.0,
@@ -749,7 +749,7 @@ fn subdivide_bezier(cp: &[Point3f]) -> [Point3f; 7] {
 ///
 /// * `cp` - The control points.
 /// * `u`  - The parameter to evaluate.
-fn eval_bezier(cp: &[Point3f], u: Float) -> (Point3f, Vector3f) {
+fn eval_bezier(cp: &[Point3f; 4], u: Float) -> (Point3f, Vector3f) {
     let cp1 = [
         lerp(u, cp[0], cp[1]),
         lerp(u, cp[1], cp[2]),
@@ -762,8 +762,8 @@ fn eval_bezier(cp: &[Point3f], u: Float) -> (Point3f, Vector3f) {
     } else {
         // For a cubic Bezier, if the first three control points (say) are
         // coincident, then the derivative of the curve is legitimately (0,0,0)
-        // at u=0.  This is problematic for us, though, since we'd like to be
-        // able to compute a surface normal there.  In that case, just punt and
+        // at u=0. This is problematic for us, though, since we'd like to be
+        // able to compute a surface normal there. In that case, just punt and
         // take the difference between the first and last control points, which
         // ain't great, but will hopefully do.
         cp[3] - cp[0]

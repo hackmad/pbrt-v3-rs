@@ -80,11 +80,22 @@ WorldBegin
   AttributeBegin
     Material "matte"
     Shape "curve" 
-          "point P" [ -5 0 1   -4 0 2   -4 0 2   -3 0 1 ]
+          "point P"  [ -7 0 2   -7 0 3   -5 0 2   -5 0 3 ]
           "integer degree" 3
           "float width" 0.5
           "string basis" "bezier"
           "string type"	"cylinder"
+  AttributeEnd
+
+  AttributeBegin
+    Material "matte"
+    Shape "curve" 
+          "point P"  [ -4 0 3   -3 0 2   -2 0 3 ]
+          "normal N" [ -1 1 0   1 -1 0 ]
+          "integer degree" 2
+          "float width" 0.5
+          "string basis" "bezier"
+          "string type"	"ribbon"
   AttributeEnd
 
   AttributeBegin

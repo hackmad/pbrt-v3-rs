@@ -349,6 +349,15 @@ impl<T> From<Point2<T>> for Vector2<T> {
     }
 }
 
+impl<T> From<Point3<T>> for Vector2<T> {
+    /// Convert a 3-D point to a 2-D vector.
+    ///
+    /// * `p` - 2-D point.
+    fn from(p: Point3<T>) -> Self {
+        Self { x: p.x, y: p.y }
+    }
+}
+
 impl<T: fmt::Display> fmt::Display for Vector2<T> {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
