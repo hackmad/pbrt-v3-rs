@@ -18,7 +18,6 @@ extern crate pest;
 extern crate pest_derive;
 extern crate rand;
 extern crate rand_pcg;
-extern crate typed_arena;
 
 mod accelerators;
 mod cameras;
