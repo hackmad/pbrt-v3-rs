@@ -120,7 +120,12 @@ impl FilmTile {
     ///
     /// * `p` - The pixel coordinates with respect to the overall image.
     pub fn get_pixel_offset(&self, p: &Point2i) -> usize {
-        assert!(self.pixel_bounds.contains_exclusive(p));
+        assert!(
+            self.pixel_bounds.contains_exclusive(p),
+            "Pixel p={:} out of pixel_bounds {:}",
+            p,
+            self.pixel_bounds
+        );
         let width = self.pixel_bounds.p_max.x - self.pixel_bounds.p_min.x;
         let offset = (p.x - self.pixel_bounds.p_min.x) + (p.y - self.pixel_bounds.p_min.y) * width;
         offset as usize

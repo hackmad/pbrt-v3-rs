@@ -340,11 +340,18 @@ impl IntoIterator for Bounds2i {
 
     /// Create an iterator for `Bounds2i`.
     fn into_iter(self) -> Self::IntoIter {
+        let max_x = if self.p_min.x == self.p_max.x {
+            self.p_max.x + 1
+        } else {
+            self.p_max.x
+        };
+        let max_y = if self.p_min.y == self.p_max.y {
+            self.p_max.y + 1
+        } else {
+            self.p_max.y
+        };
         Bounds2iIterator {
-            p: iproduct!(
-                self.p_min.y..self.p_max.y + 1,
-                self.p_min.x..self.p_max.x + 1
-            ),
+            p: iproduct!(self.p_min.y..max_y, self.p_min.x..max_x),
         }
     }
 }
@@ -1204,19 +1211,13 @@ mod tests {
             let b = Bounds2::new(p, p + Vector2::new(dx, dy));
             let mut iter = b.into_iter();
 
-            println!("B = {:?}", b);
-
-            for y in 0..dy+1 {
-                for x in 0..dx+1 {
-                    let p1 = iter.next();
-                    println!("P = {:?}", p1);
-                    prop_assert_eq!(p1, Some(Point2::new(p.x + x, p.y + y)));
+            for y in 0..dy {
+                for x in 0..dx {
+                    prop_assert_eq!(iter.next(), Some(Point2::new(p.x + x, p.y + y)));
                 }
             }
 
-            let p1 = iter.next();
-            println!("P = {:?}", p1);
-            prop_assert!(p1.is_none());
+            prop_assert!(iter.next().is_none());
         }
 
         #[test]
@@ -1229,7 +1230,7 @@ mod tests {
             let mut iter1 = b1.into_iter();
             let mut iter2 = b2.into_iter();
 
-            for i in 0..d+1 {
+            for i in 0..d {
                 prop_assert_eq!(iter1.next(), Some(Point2::new(p.x, p.y + i)));
                 prop_assert_eq!(iter2.next(), Some(Point2::new(p.x + i, p.y)));
             }
