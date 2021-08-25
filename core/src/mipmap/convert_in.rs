@@ -2,6 +2,7 @@
 
 use crate::pbrt::*;
 use crate::spectrum::*;
+
 /// Interface to convert texels into type `Tmemory` for MIPMap generation.
 pub trait ConvertIn<Tmemory> {
     /// Convert the texel to the type `M` and apply the scale and inverse
@@ -56,5 +57,27 @@ impl ConvertIn<Float> for RGBSpectrum {
             } else {
                 self.y()
             }
+    }
+}
+
+impl ConvertIn<SampledSpectrum> for SampledSpectrum {
+    /// Convert the texel to the type `Spectrum` and apply the scale and
+    /// inverse gamma correction to texel values.
+    ///
+    /// * `scale` - Scale for the texel values.
+    /// * `gamma` - Do gamma correction for the texel values.
+    fn convert_in(&self, _scale: Float, _gammaa: bool) -> SampledSpectrum {
+        unimplemented!("ConvertIn not supported for SampledSpectrum")
+    }
+}
+
+impl ConvertIn<Float> for SampledSpectrum {
+    /// Convert the texel to the type `Float` and apply the scale and inverse
+    /// gamma correction to texel values.
+    ///
+    /// * `scale` - Scale for the texel values.
+    /// * `gamma` - Do gamma correction for the texel values.
+    fn convert_in(&self, _scale: Float, _gammaa: bool) -> Float {
+        unimplemented!("ConvertIn not supported for SampledSpectrum")
     }
 }

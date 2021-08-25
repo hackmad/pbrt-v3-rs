@@ -18,5 +18,9 @@ pub use sampled_spectrum::*;
 pub type Spectrum = RGBSpectrum;
 
 /// Use `SampledSpectrum` for rendering.
+///
+/// Add the following to use SampledSpetrum in Cargo.toml
+/// [features]
+/// sampled-spectrum = []
 #[cfg(feature = "sampled-spectrum")]
 pub type Spectrum = SampledSpectrum;
