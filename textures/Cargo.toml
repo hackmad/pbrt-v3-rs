@@ -1,0 +1,11 @@
+[package]
+name = "textures"
+version = "0.0.1"
+authors = ["Ahmad Kabani <ahmadkabani@yahoo.com>"]
+edition = "2018"
+
+[dependencies]
+
+core = { path = "../core" }
+
+log = "0.4.14"

@@ -10,12 +10,10 @@ Cargo.lock
 **/*.rs.bk
 
 # Property test regressions
-/proptest-regressions/
+proptest-regressions/
 
 #Added by cargo
 
-/target
-
-renders/
+/renders/
 
 .DS_Store
