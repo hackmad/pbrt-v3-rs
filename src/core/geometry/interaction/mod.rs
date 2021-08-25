@@ -100,19 +100,40 @@ impl Hit {
     ///
     /// * `d` - The new direction.
     pub fn spawn_ray(&self, d: &Vector3f) -> Ray {
-        let o = Ray::offset_origin(&self.p, &self.p_error, &self.n, d);
-        Ray::new(o, *d, INFINITY, self.time, self.get_medium_in_direction(d))
+        let origin = Ray::offset_origin(&self.p, &self.p_error, &self.n, d);
+        Ray::new(
+            origin,
+            *d,
+            INFINITY,
+            self.time,
+            self.get_medium_in_direction(d),
+        )
     }
 
     /// Spawn's a new ray towards another point.
     ///
     /// * `p` - The target point.
-    pub fn spawn_ray_to(&self, p: &Point3f) -> Ray {
-        let dir = *p - self.p;
-        let o = Ray::offset_origin(&self.p, &self.p_error, &self.n, &dir);
-        let d = *p - o;
+    pub fn spawn_ray_to_point(&self, p: &Point3f) -> Ray {
+        let d = *p - self.p;
+        let origin = Ray::offset_origin(&self.p, &self.p_error, &self.n, &d);
         Ray::new(
-            o,
+            origin,
+            d,
+            1.0 - SHADOW_EPSILON,
+            self.time,
+            self.get_medium_in_direction(&d),
+        )
+    }
+
+    /// Spawn's a new ray towards another interaction.
+    ///
+    /// * `hit` - The interaction.
+    pub fn spawn_ray_to_hit(&self, hit: &Hit) -> Ray {
+        let origin = Ray::offset_origin(&self.p, &self.p_error, &self.n, &(hit.p - self.p));
+        let target = Ray::offset_origin(&hit.p, &hit.p_error, &hit.n, &(origin - hit.p));
+        let d = target - origin;
+        Ray::new(
+            origin,
             d,
             1.0 - SHADOW_EPSILON,
             self.time,

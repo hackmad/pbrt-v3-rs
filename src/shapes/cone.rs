@@ -207,6 +207,7 @@ impl Shape for Cone {
                 dndv,
                 ray.time,
                 Arc::clone(&self.data),
+                None,
             );
 
             // Create hit.

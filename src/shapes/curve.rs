@@ -493,6 +493,7 @@ impl Curve {
                 Normal3f::default(),
                 ray.time,
                 Arc::clone(&self.data),
+                None,
             );
             let isect = Arc::clone(&self.data.object_to_world).transform_surface_interaction(&si);
 

@@ -245,6 +245,7 @@ impl Shape for Sphere {
                 dndv,
                 ray.time,
                 Arc::clone(&self.data),
+                None,
             );
 
             // Create hit.
