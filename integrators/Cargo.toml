@@ -8,6 +8,4 @@ edition = "2018"
 
 core = { path = "../core" }
 
-itertools = "0.10.1"
 log = "0.4.14"
-rayon = "1.5.1"
