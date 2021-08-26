@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 
+use core::app::OPTIONS;
 use core::camera::*;
 use core::geometry::*;
 use core::integrator::*;
@@ -258,10 +259,10 @@ impl Integrator for WhittedIntegrator {
             .unwrap()
             .get_film_sample_bounds();
         let sample_extent = sample_bounds.diagonal();
-        const TILE_SIZE: i32 = 16;
+        let tile_size: i32 = OPTIONS.tile_size as i32;
         let n_tiles = Point2::new(
-            ((sample_extent.x + TILE_SIZE - 1) / TILE_SIZE) as usize,
-            ((sample_extent.y + TILE_SIZE - 1) / TILE_SIZE) as usize,
+            ((sample_extent.x + tile_size - 1) / tile_size) as usize,
+            ((sample_extent.y + tile_size - 1) / tile_size) as usize,
         );
 
         info!("Rendering {}x{} tiles", n_tiles.x, n_tiles.y);
@@ -284,10 +285,10 @@ impl Integrator for WhittedIntegrator {
             };
 
             // Compute sample bounds for tile.
-            let x0 = sample_bounds.p_min.x + tile.x as i32 * TILE_SIZE;
-            let x1 = min(x0 + TILE_SIZE, sample_bounds.p_max.x);
-            let y0 = sample_bounds.p_min.y + tile.y as i32 * TILE_SIZE;
-            let y1 = min(y0 + TILE_SIZE, sample_bounds.p_max.y);
+            let x0 = sample_bounds.p_min.x + tile.x as i32 * tile_size;
+            let x1 = min(x0 + tile_size, sample_bounds.p_max.x);
+            let y0 = sample_bounds.p_min.y + tile.y as i32 * tile_size;
+            let y1 = min(y0 + tile_size, sample_bounds.p_max.y);
             let tile_bounds = Bounds2i::new(Point2i::new(x0, y0), Point2i::new(x1, y1));
 
             info!(

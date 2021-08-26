@@ -29,6 +29,9 @@ pub struct Options {
 
     /// Input file paths. Empty vector implies read from stdin.
     pub paths: Vec<String>,
+
+    /// Tile size.
+    pub tile_size: usize,
 }
 
 impl Options {
@@ -54,7 +57,7 @@ impl Options {
             )
             .arg(
                 Arg::with_name("cropwindow")
-                    .short("cw")
+                    .short("c")
                     .long("cropwindow")
                     .value_name("x0 y0 x1 y1")
                     .number_of_values(4)
@@ -83,6 +86,15 @@ impl Options {
                     .required(false)
                     .multiple(true)
                     .help("Input files"),
+            )
+            .arg(
+                Arg::with_name("tilesize")
+                    .short("p")
+                    .long("tilesize")
+                    .value_name("NUM")
+                    .default_value("16")
+                    .takes_value(true)
+                    .help("Size in pixels of square tiles rendered per thread."),
             )
             .get_matches();
 
@@ -143,6 +155,20 @@ impl Options {
             None => vec![],
         };
 
+        let tile_size = match matches.value_of("tilesize") {
+            Some(s) => {
+                let n = s.parse::<usize>().expect("Invalid tilesize");
+
+                if n == 0 {
+                    panic!("Invalid tilesize");
+                }
+
+                n
+            }
+
+            _ => 1,
+        };
+
         Self {
             n_threads,
             quick_render,
@@ -150,6 +176,7 @@ impl Options {
             image_file,
             crop_window,
             paths,
+            tile_size,
         }
     }
 }
