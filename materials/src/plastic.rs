@@ -80,7 +80,7 @@ impl Material for PlasticMaterial {
             Material::bump(self, bump_map, si);
         }
 
-        let mut bsdf = BSDF::new(&si.clone(), None);
+        let mut bsdf = BSDF::new(&si, None);
 
         // Initialize diffuse component of plastic material.
         let kd = self.kd.evaluate(si).clamp_default();
@@ -103,7 +103,7 @@ impl Material for PlasticMaterial {
             bsdf.add(Arc::new(spec));
         }
 
-        si.bsdf = Some(Arc::new(bsdf));
+        si.bsdf = Some(bsdf);
     }
 }
 

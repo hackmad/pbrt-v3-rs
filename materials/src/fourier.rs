@@ -77,7 +77,7 @@ impl Material for FourierMaterial {
             Material::bump(self, bump_map, si);
         }
 
-        let mut bsdf = BSDF::new(&si.clone(), None);
+        let mut bsdf = BSDF::new(&si, None);
 
         // Checking for zero channels works as a proxy for checking whether the
         // table was successfully read from the file.
@@ -88,7 +88,7 @@ impl Material for FourierMaterial {
             )));
         }
 
-        si.bsdf = Some(Arc::new(bsdf));
+        si.bsdf = Some(bsdf);
     }
 }
 

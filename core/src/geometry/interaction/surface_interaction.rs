@@ -56,7 +56,7 @@ pub struct SurfaceInteraction<'a> {
     pub shape_data: Arc<ShapeData>,
 
     /// The BSDF.
-    pub bsdf: Option<ArcBSDF>,
+    pub bsdf: Option<BSDF>,
 
     /// The BSSRDF.
     pub bssrdf: Option<ArcBSSRDF>,

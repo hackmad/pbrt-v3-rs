@@ -8,6 +8,7 @@ use crate::rng::*;
 pub const MAX_BXDFS: usize = 8;
 
 /// BSDF interface represents a collection of BRDFs and BTDFs.
+#[derive(Clone)]
 pub struct BSDF {
     /// The shading normal given by per-vertex normals and/or bump mapping.
     /// It is the first axis in the orthonormal coordinate system and also

@@ -63,7 +63,7 @@ impl Material for MatteMaterial {
             Material::bump(self, bump_map, si);
         }
 
-        let mut bsdf = BSDF::new(&si.clone(), None);
+        let mut bsdf = BSDF::new(&si, None);
 
         // Evaluate textures for `MatteMaterial` material and allocate BRDF
         let r = self.kd.evaluate(si).clamp_default();
@@ -76,7 +76,7 @@ impl Material for MatteMaterial {
             }
         }
 
-        si.bsdf = Some(Arc::new(bsdf));
+        si.bsdf = Some(bsdf);
     }
 }
 

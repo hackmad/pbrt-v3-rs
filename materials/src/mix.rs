@@ -7,8 +7,8 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::spectrum::*;
 use core::texture::*;
-use textures::*;
 use std::sync::Arc;
+use textures::*;
 
 /// Combines two materials with varying weights.
 pub struct MixMaterial {
@@ -65,7 +65,7 @@ impl Material for MixMaterial {
             .compute_scattering_functions(&mut si2, mode, allow_multiple_lobes);
 
         // Initialize `si.bsdf` with weighted mixture of BxDFs.
-        let mut bsdf = BSDF::new(&si.clone(), None);
+        let mut bsdf = BSDF::new(&si, None);
 
         if let Some(si_bsdf) = si.bsdf.as_mut() {
             let n1 = si_bsdf.num_components(BxDFType::from(BSDF_ALL));
@@ -84,7 +84,7 @@ impl Material for MixMaterial {
             }
         }
 
-        si.bsdf = Some(Arc::new(bsdf));
+        si.bsdf = Some(bsdf);
     }
 }
 

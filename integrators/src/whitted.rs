@@ -445,7 +445,7 @@ impl Integrator for WhittedIntegrator {
 
                 let f = isect
                     .bsdf
-                    .clone()
+                    .as_ref()
                     .unwrap()
                     .f(&wo, &wi, BxDFType::from(BSDF_ALL));
 
