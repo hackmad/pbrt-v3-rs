@@ -784,6 +784,7 @@ impl LensElementInterface {
     /// * `lens_data`         - An array [curvature_radius, thickness, index of
     ///                         refraction, aperture_diameter]. The curvature_radius,
     ///                         thickness and aperture_diameter are in millimiters.
+    #[allow(unused)]
     fn from_lens_data(aperture_diameter: Float, lens_data: &[Float]) -> Self {
         let ad = if lens_data[0] == 0.0 {
             if aperture_diameter > lens_data[3] {

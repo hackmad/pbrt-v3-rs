@@ -218,6 +218,7 @@ impl SampleResult {
 
 /// Stores the spatial and directional PDFs for sampling a ray.
 #[derive(Copy, Clone, Default)]
+#[allow(unused)]
 pub struct PDFResult {
     /// Spatial PDF.
     pos: Float,

@@ -21,7 +21,7 @@ impl MediumInteraction {
     ///
     /// * `p`      - The point of interaction.
     /// * `wo`     - The negative ray direction (outgoing direction used
-    /// *            when computing lighting at points).
+    ///              hen computing lighting at points).
     /// * `time`   - Time when interaction occurred.
     /// * `medium` - The medium.
     /// * `phase`  - The phase function.

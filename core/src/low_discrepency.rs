@@ -1872,6 +1872,7 @@ fn sobol_sample_f32(a: u64, dimension: u16, scramble: u64) -> f32 {
 /// * `dimension` - Dimension.
 /// * `scramble`  - Encodes the scrambling as bits of `u32` integeger.
 ///                 Default to 0.
+#[allow(unused)]
 fn sobol_sample_f64(a: u64, dimension: u16, scramble: u64) -> f64 {
     assert!(
         (dimension as usize) < NUM_SOBOL_DIMENSIONS,
