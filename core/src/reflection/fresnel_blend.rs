@@ -28,7 +28,7 @@ impl FresnelBlend {
     /// * `distribution` - Microfacet distribution.
     pub fn new(rd: Spectrum, rs: Spectrum, distribution: ArcMicrofacetDistribution) -> Self {
         Self {
-            bxdf_type: BxDFType::from(BSDF_REFLECTION | BSDF_GLOSSY),
+            bxdf_type: BSDF_REFLECTION | BSDF_GLOSSY,
             rd,
             rs,
             distribution: Arc::clone(&distribution),

@@ -10,7 +10,6 @@ use std::sync::Arc;
 mod bsdf;
 mod bsdf_reader;
 mod bxdf_sample;
-mod bxdf_type;
 mod common;
 mod fourier_bsdf;
 mod fourier_bsdf_table;
@@ -28,7 +27,6 @@ mod specular_transmission;
 // Re-export
 pub use bsdf::*;
 pub use bxdf_sample::*;
-pub use bxdf_type::*;
 pub use common::*;
 pub use fourier_bsdf::*;
 pub use fourier_bsdf_table::*;
@@ -48,11 +46,12 @@ pub trait BxDF {
     /// Returns the BxDF type.
     fn get_type(&self) -> BxDFType;
 
-    /// Returns `true` if the reflection model matches the given BxDF type.
+    /// Returns true if the reflection models match.
     ///
-    /// * `bxdf_type` - Type to compare.
-    fn matches(&self, bxdf_type: BxDFType) -> bool {
-        self.get_type() == bxdf_type
+    /// * `t` - The reflection model to compare.
+    fn matches_flags(&self, t: BxDFType) -> bool {
+        let bxdf_type = self.get_type();
+        bxdf_type & t == bxdf_type
     }
 
     /// Returns the value of the distribution function for the given pair of
@@ -74,7 +73,7 @@ pub trait BxDF {
             wi.z *= -1.0;
         }
         let pdf = self.pdf(wo, &wi);
-        BxDFSample::new(self.f(wo, &wi), pdf, wi, self.get_type())
+        BxDFSample::new(self.f(wo, &wi), pdf, wi, BSDF_NONE)
     }
 
     /// Evaluates the PDF for the sampling method. Default is based on the

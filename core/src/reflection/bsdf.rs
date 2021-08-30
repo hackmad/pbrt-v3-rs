@@ -4,6 +4,19 @@
 use super::*;
 use crate::rng::*;
 
+/// Stores combinations of reflection models.
+pub type BxDFType = u8;
+
+/// Types of BSDF models.
+pub const BSDF_NONE: BxDFType = 0;
+pub const BSDF_REFLECTION: BxDFType = 1 << 0;
+pub const BSDF_TRANSMISSION: BxDFType = 1 << 1;
+pub const BSDF_DIFFUSE: BxDFType = 1 << 2;
+pub const BSDF_GLOSSY: BxDFType = 1 << 3;
+pub const BSDF_SPECULAR: BxDFType = 1 << 4;
+pub const BSDF_ALL: BxDFType =
+    BSDF_DIFFUSE | BSDF_GLOSSY | BSDF_SPECULAR | BSDF_REFLECTION | BSDF_TRANSMISSION;
+
 /// Maximum number of BxDFs that can be stored in `BSDF`.
 pub const MAX_BXDFS: usize = 8;
 
@@ -70,7 +83,10 @@ impl BSDF {
     ///
     /// * `bxdf_type` - The `BxdFType` to match (default to `BSDF_ALL`).
     pub fn num_components(&self, bxdf_type: BxDFType) -> usize {
-        self.bxdfs.iter().filter(|b| b.matches(bxdf_type)).count()
+        self.bxdfs
+            .iter()
+            .filter(|b| b.get_type() == bxdf_type)
+            .count()
     }
 
     /// Transforms a vector from world space to local space.
@@ -104,14 +120,16 @@ impl BSDF {
             Spectrum::new(0.0)
         } else {
             let reflect = wi_w.dot(&self.ng) * wo_w.dot(&self.ng) > 0.0;
-            self.bxdfs
-                .iter()
-                .filter(|bxdf| {
-                    bxdf.matches(bxdf_type)
-                        && ((reflect && bxdf.get_type().matches(BSDF_REFLECTION))
-                            || (!reflect && bxdf.get_type().matches(BSDF_TRANSMISSION)))
-                })
-                .fold(Spectrum::new(0.0), |a, bxdf| a + bxdf.f(&wo, &wi))
+            let mut l = Spectrum::new(0.0);
+            for bxdf in self.bxdfs.iter() {
+                if bxdf.matches_flags(bxdf_type)
+                    && ((reflect && bxdf.get_type() & BSDF_REFLECTION > 0)
+                        || (!reflect && bxdf.get_type() & BSDF_TRANSMISSION > 0))
+                {
+                    l += bxdf.f(&wo, &wi);
+                }
+            }
+            l
         }
     }
 
@@ -136,7 +154,7 @@ impl BSDF {
         let mut count = comp;
         let mut bxdf: Option<ArcBxDF> = None;
         for b in self.bxdfs.iter() {
-            if b.matches(bxdf_type) && count == 0 {
+            if b.matches_flags(bxdf_type) && count == 0 {
                 bxdf = Some(Arc::clone(b));
                 break;
             }
@@ -165,9 +183,9 @@ impl BSDF {
         let wi_world = self.local_to_world(&sample.wi);
 
         // Compute overall PDF with all matching BxDFs.
-        if !(bxdf.get_type().matches(BSDF_SPECULAR) && matching_comps > 1) {
+        if bxdf.get_type() & BSDF_SPECULAR == 0 && matching_comps > 1 {
             for b in self.bxdfs.iter() {
-                if Arc::ptr_eq(&b, &bxdf) && b.matches(bxdf_type) {
+                if Arc::ptr_eq(&b, &bxdf) && b.matches_flags(bxdf_type) {
                     pdf += b.pdf(&wo, &sample.wi);
                 }
             }
@@ -177,19 +195,18 @@ impl BSDF {
         }
 
         // Compute value of BSDF for sampled direction.
-        let f = if !(bxdf.get_type().matches(BSDF_SPECULAR)) {
+        let mut f = Spectrum::new(0.0);
+        if bxdf.get_type() & BSDF_SPECULAR == 0 {
             let reflect = wi_world.dot(&self.ng) * wo_w.dot(&self.ng) > 0.0;
-            self.bxdfs
-                .iter()
-                .filter(|bxdf| {
-                    bxdf.matches(bxdf_type)
-                        && ((reflect && bxdf.get_type().matches(BSDF_REFLECTION))
-                            || (!reflect && bxdf.get_type().matches(BSDF_TRANSMISSION)))
-                })
-                .fold(Spectrum::new(0.0), |a, bxdf| a + bxdf.f(&wo, &sample.wi))
-        } else {
-            Spectrum::new(0.0)
-        };
+            for bxdf in self.bxdfs.iter() {
+                if bxdf.matches_flags(bxdf_type)
+                    && ((reflect && bxdf.get_type() & BSDF_REFLECTION > 0)
+                        || (!reflect && bxdf.get_type() & BSDF_TRANSMISSION > 0))
+                {
+                    f += bxdf.f(&wo, &sample.wi);
+                }
+            }
+        }
         BxDFSample::new(f, pdf, wi_world, sampled_type)
     }
 
@@ -201,10 +218,13 @@ impl BSDF {
     pub fn rho_hd(&self, wo_w: &Vector3f, u: &[Point2f], bxdf_type: BxDFType) -> Spectrum {
         let wo = self.world_to_local(wo_w);
 
-        self.bxdfs
-            .iter()
-            .filter(|bxdf| bxdf.matches(bxdf_type))
-            .fold(Spectrum::new(0.0), |a, bxdf| a + bxdf.rho_hd(&wo, u))
+        let mut l = Spectrum::new(0.0);
+        for bxdf in self.bxdfs.iter() {
+            if bxdf.matches_flags(bxdf_type) {
+                l += bxdf.rho_hd(&wo, u);
+            }
+        }
+        l
     }
 
     /// Computes the hemispherical-hemispherical-directional reflectance function ρ.
@@ -213,10 +233,13 @@ impl BSDF {
     /// * `u2`        - Samples used b Monte Carlo algorithm.
     /// * `bxdf_type` - The `BxdFType` to evaluate.
     pub fn rho_hh(&self, u1: &[Point2f], u2: &[Point2f], bxdf_type: BxDFType) -> Spectrum {
-        self.bxdfs
-            .iter()
-            .filter(|bxdf| bxdf.matches(bxdf_type))
-            .fold(Spectrum::new(0.0), |a, bxdf| a + bxdf.rho_hh(u1, u2))
+        let mut l = Spectrum::new(0.0);
+        for bxdf in self.bxdfs.iter() {
+            if bxdf.matches_flags(bxdf_type) {
+                l += bxdf.rho_hh(u1, u2);
+            }
+        }
+        l
     }
 
     /// Evaluates the PDF for the sampling method. Default is based on the
@@ -237,11 +260,14 @@ impl BSDF {
             return 0.0;
         }
 
-        let (matching_comps, pdf) = self
-            .bxdfs
-            .iter()
-            .filter(|bxdf| bxdf.matches(bxdf_type))
-            .fold((0, 0.0), |(n, a), bxdf| (n + 1, a + bxdf.pdf(&wo, &wi)));
+        let mut matching_comps = 0;
+        let mut pdf = 0.0;
+        for bxdf in self.bxdfs.iter() {
+            if bxdf.matches_flags(bxdf_type) {
+                matching_comps += 1;
+                pdf += bxdf.pdf(&wo, &wi);
+            }
+        }
         if matching_comps > 0 {
             pdf / matching_comps as Float
         } else {

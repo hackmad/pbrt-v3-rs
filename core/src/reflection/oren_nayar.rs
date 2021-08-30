@@ -40,7 +40,7 @@ impl OrenNayar {
         let sigma = sigma.to_radians();
         let sigma2 = sigma * sigma;
         Self {
-            bxdf_type: BxDFType::from(BSDF_REFLECTION | BSDF_DIFFUSE),
+            bxdf_type: BSDF_REFLECTION | BSDF_DIFFUSE,
             r,
             a: 1.0 - (sigma2 / (2.0 * (sigma2 + 0.33))),
             b: 0.45 * sigma2 / (sigma2 + 0.09),

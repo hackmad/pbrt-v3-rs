@@ -148,9 +148,9 @@ pub fn estimate_direct(
     specular: bool,
 ) -> Spectrum {
     let bsdf_flags = if specular {
-        BxDFType::from(BSDF_ALL)
+        BSDF_ALL
     } else {
-        BxDFType::from(BSDF_ALL & !BSDF_SPECULAR)
+        BSDF_ALL & !BSDF_SPECULAR
     };
     let mut ld = Spectrum::new(0.0);
     let hit = it.get_hit();
@@ -227,7 +227,7 @@ pub fn estimate_direct(
                     } = bsdf.sample_f(&hit.wo, u_scattering, bsdf_flags);
                     wi = wi2;
                     f = f1 * wi.abs_dot(&si.shading.n);
-                    sampled_specular = sampled_type.matches(BSDF_SPECULAR);
+                    sampled_specular = (sampled_type & BSDF_SPECULAR) > 0;
                 }
             }
             Interaction::Medium { mi } => {

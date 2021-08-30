@@ -37,7 +37,7 @@ impl SpecularTransmission {
     ///             or from camera.
     pub fn new(t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> Self {
         Self {
-            bxdf_type: BxDFType::from(BSDF_TRANSMISSION | BSDF_SPECULAR),
+            bxdf_type: BSDF_TRANSMISSION | BSDF_SPECULAR,
             fresnel: FresnelDielectric::new(eta_a, eta_b),
             t,
             eta_a,

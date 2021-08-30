@@ -24,7 +24,7 @@ pub struct SamplerIntegratorData {
 
     /// Pixel bounds for the image.
     pub pixel_bounds: Bounds2i,
-    
+
     /// Maximum recursion depth.
     pub max_depth: usize,
 }
@@ -39,7 +39,10 @@ impl SamplerIntegratorData {
     /// * `pixel_bounds` - Pixel bounds for the image.
     pub fn new(
         max_depth: usize,
-        camera: ArcCamera, sampler: ArcSampler, pixel_bounds: Bounds2i) -> Self {
+        camera: ArcCamera,
+        sampler: ArcSampler,
+        pixel_bounds: Bounds2i,
+    ) -> Self {
         Self {
             camera: Arc::new(Mutex::new(Arc::clone(&camera))),
             max_depth,
@@ -77,7 +80,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
             let samp = Arc::get_mut(sampler).unwrap();
             let sample = samp.get_2d();
-            let bxdf_type = BxDFType::from(BSDF_REFLECTION | BSDF_SPECULAR);
+            let bxdf_type = BSDF_REFLECTION | BSDF_SPECULAR;
             let BxDFSample {
                 f,
                 pdf,
@@ -144,7 +147,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
             let samp = Arc::get_mut(sampler).unwrap();
             let sample = samp.get_2d();
-            let bxdf_type = BxDFType::from(BSDF_TRANSMISSION | BSDF_SPECULAR);
+            let bxdf_type = BSDF_TRANSMISSION | BSDF_SPECULAR;
             let BxDFSample {
                 f,
                 pdf,

@@ -34,13 +34,13 @@ impl WhittedIntegrator {
         pixel_bounds: Bounds2i,
     ) -> Self {
         Self {
-            data: SamplerIntegratorData::new(max_depth, camera, sampler, pixel_bounds)
+            data: SamplerIntegratorData::new(max_depth, camera, sampler, pixel_bounds),
         }
     }
 }
 
 impl SamplerIntegrator for WhittedIntegrator {
-   /// Returns the common data.
+    /// Returns the common data.
     fn get_data(&self) -> &SamplerIntegratorData {
         &self.data
     }
@@ -101,11 +101,7 @@ impl Integrator for WhittedIntegrator {
                     continue;
                 }
 
-                let f = isect
-                    .bsdf
-                    .as_ref()
-                    .unwrap()
-                    .f(&wo, &wi, BxDFType::from(BSDF_ALL));
+                let f = isect.bsdf.as_ref().unwrap().f(&wo, &wi, BSDF_ALL);
 
                 // If no visiblity tester, then unoccluded = true.
                 let unoccluded = visibility.map_or(true, |vis| vis.unoccluded(scene.clone()));
@@ -165,4 +161,3 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for WhittedIntegrator {
         )
     }
 }
-

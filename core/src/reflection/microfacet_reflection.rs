@@ -30,7 +30,7 @@ impl MicrofacetReflection {
     /// * `fresnel`      - Fresnel interface for dielectrics and conductors.
     pub fn new(r: Spectrum, distribution: ArcMicrofacetDistribution, fresnel: ArcFresnel) -> Self {
         Self {
-            bxdf_type: BxDFType::from(BSDF_REFLECTION | BSDF_GLOSSY),
+            bxdf_type: BSDF_REFLECTION | BSDF_GLOSSY,
             r,
             distribution: Arc::clone(&distribution),
             fresnel: Arc::clone(&fresnel),
