@@ -8,7 +8,7 @@ use core::pbrt::*;
 use core::sampling::*;
 use core::scene::*;
 use core::spectrum::*;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// Implements a directional light source that deposits illumination from the
 /// same direction at every point in space.
@@ -33,10 +33,10 @@ pub struct DistantLight {
     pub w_light: Vector3f,
 
     /// Center of the world.
-    pub world_center: Point3f,
+    pub world_center: Arc<Mutex<Point3f>>,
 
     /// Radius of the spherical world bounds.
-    pub world_radius: Float,
+    pub world_radius: Arc<Mutex<Float>>,
 }
 
 impl DistantLight {
@@ -58,8 +58,8 @@ impl DistantLight {
             light_to_world: Arc::clone(&light_to_world),
             world_to_light: Arc::new(world_to_light),
             medium_interface: MediumInterface::vacuum(),
-            world_center: Point3f::default(), // Calculated in preprocess().
-            world_radius: 1.0,                // Calculated in preprocess().
+            world_center: Arc::new(Mutex::new(Point3f::default())), // Calculated in preprocess().
+            world_radius: Arc::new(Mutex::new(1.0)),                // Calculated in preprocess().
             w_light,
             emitted_radiance,
         }
@@ -70,10 +70,10 @@ impl Light for DistantLight {
     /// Initialize the light source before rendering begins.
     ///
     /// * `scene` - The scene.
-    fn preprocess(&mut self, scene: &Scene) {
+    fn preprocess(&self, scene: &Scene) {
         let (world_center, world_radius) = scene.world_bound.bounding_sphere();
-        self.world_center = world_center;
-        self.world_radius = world_radius;
+        *self.world_center.lock().unwrap() = world_center;
+        *self.world_radius.lock().unwrap() = world_radius;
     }
 
     /// Returns the type of light.
@@ -86,9 +86,10 @@ impl Light for DistantLight {
     /// * `hit` - The interaction hit point.
     /// * `u`   - Sample value for Monte Carlo integration.
     fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Li {
+        let world_radius = *self.world_radius.lock().unwrap();
         let wi = self.w_light;
         let pdf = 1.0;
-        let p_outside = hit.p + self.w_light * (2.0 * self.world_radius);
+        let p_outside = hit.p + self.w_light * (2.0 * world_radius);
         let visibility = Some(VisibilityTester::new(hit.clone(), p_outside));
         let value = self.emitted_radiance;
         Li::new(wi, pdf, visibility, value)
@@ -96,7 +97,8 @@ impl Light for DistantLight {
 
     /// Return the total emitted power.
     fn power(&self) -> Spectrum {
-        self.emitted_radiance * PI * self.world_radius * self.world_radius
+        let world_radius = *self.world_radius.lock().unwrap();
+        self.emitted_radiance * PI * world_radius * world_radius
     }
 
     /// Returns the probability density with respect to solid angle for the light’s
@@ -114,15 +116,18 @@ impl Light for DistantLight {
     /// * `u2`   - Sample values for Monte Carlo.
     /// * `time` - Time to use for the ray.
     fn sample_le(&self, u1: &Point2f, _u2: &Point2f, time: Float) -> Le {
+        let world_center = *self.world_center.lock().unwrap();
+        let world_radius = *self.world_radius.lock().unwrap();
+
         // Choose point on disk oriented toward infinite light direction.
         let (v1, v2) = coordinate_system(&self.w_light);
         let cd = concentric_sample_disk(u1);
-        let p_disk = self.world_center + self.world_radius * (cd.x * v1 + cd.y * v2);
+        let p_disk = world_center + world_radius * (cd.x * v1 + cd.y * v2);
 
         // Set ray origin and direction for infinite light ray.
         let dir = -self.w_light;
         let ray = Ray::new(
-            p_disk + self.world_radius * self.w_light,
+            p_disk + world_radius * self.w_light,
             dir,
             INFINITY,
             time,
@@ -131,7 +136,7 @@ impl Light for DistantLight {
         Le::new(
             ray,
             Normal3f::from(dir),
-            1.0 / (PI * self.world_radius * self.world_radius),
+            1.0 / (PI * world_radius * world_radius),
             1.0,
             self.emitted_radiance,
         )
@@ -142,7 +147,8 @@ impl Light for DistantLight {
     /// * `ray`     - The ray.
     /// * `n_light` - The normal.
     fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f) -> Pdf {
-        Pdf::new(1.0 / (PI * self.world_radius * self.world_radius), 0.0)
+        let world_radius = *self.world_radius.lock().unwrap();
+        Pdf::new(1.0 / (PI * world_radius * world_radius), 0.0)
     }
 }
 

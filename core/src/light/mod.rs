@@ -123,7 +123,7 @@ pub trait Light {
     /// Initialize the light source before rendering begins.
     ///
     /// * `scene` - The scene.
-    fn preprocess(&mut self, _scene: &Scene) {}
+    fn preprocess(&self, _scene: &Scene) {}
 
     /// Returns the type of light.
     fn get_type(&self) -> LightType;

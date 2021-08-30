@@ -44,6 +44,12 @@ impl SamplerIntegrator for WhittedIntegrator {
     fn get_data(&self) -> &SamplerIntegratorData {
         &self.data
     }
+
+    /// Preprocess the scene.
+    ///
+    /// * `scene`   - The scene
+    /// * `sampler` - The sampler.
+    fn preprocess(&self, _scene: Arc<Scene>, _sampler: &mut ArcSampler) {}
 }
 
 impl Integrator for WhittedIntegrator {

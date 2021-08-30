@@ -29,7 +29,7 @@ impl Scene {
     /// * `aggregate` - An aggregate of all primitives in the scene.
     /// * `lights`    - All light sources in the scene.
     pub fn new(aggregate: ArcPrimitive, lights: Vec<ArcLight>) -> Self {
-        Self {
+        let scene = Self {
             aggregate: Arc::clone(&aggregate),
             world_bound: aggregate.world_bound(),
             lights: lights.iter().map(|l| Arc::clone(&l)).collect(),
@@ -38,7 +38,13 @@ impl Scene {
                 .filter(|l| l.get_type().matches(INFINITE_LIGHT))
                 .map(|l| Arc::clone(&l))
                 .collect(),
+        };
+
+        for light in lights {
+            light.preprocess(&scene);
         }
+
+        scene
     }
 
     /// Traces the ray into the scene and returns the `SurfaceInteraction` if

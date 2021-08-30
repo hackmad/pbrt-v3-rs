@@ -59,6 +59,12 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// Returns the common data.
     fn get_data(&self) -> &SamplerIntegratorData;
 
+    /// Preprocess the scene.
+    ///
+    /// * `scene`   - The scene
+    /// * `sampler` - The sampler.
+    fn preprocess(&self, scene: Arc<Scene>, sampler: &mut ArcSampler);
+
     /// Trace rays for specular reflection.
     ///
     /// * `ray`     - The ray.
@@ -74,12 +80,11 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         sampler: &mut ArcSampler,
         depth: usize,
     ) -> Spectrum {
-        if let Some(bsdf) = isect.bsdf.clone() {
+        if let Some(bsdf) = &isect.bsdf {
             // Compute specular reflection direction `wi` and BSDF value.
             let wo = isect.hit.wo;
 
-            let samp = Arc::get_mut(sampler).unwrap();
-            let sample = samp.get_2d();
+            let sample = Arc::get_mut(sampler).unwrap().get_2d();
             let bxdf_type = BSDF_REFLECTION | BSDF_SPECULAR;
             let BxDFSample {
                 f,
@@ -145,8 +150,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
             let wo = isect.hit.wo;
             let p = isect.hit.p;
 
-            let samp = Arc::get_mut(sampler).unwrap();
-            let sample = samp.get_2d();
+            let sample = Arc::get_mut(sampler).unwrap().get_2d();
             let bxdf_type = BSDF_TRANSMISSION | BSDF_SPECULAR;
             let BxDFSample {
                 f,
@@ -253,13 +257,14 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
     /// Render the scene.
     ///
-    /// NOTE: The integrators that use this function should call their own
-    /// preprocess(scene, sampler) implementation before calling this.
-    ///
     /// * `scene` - The scene.
     fn render(&mut self, scene: Arc<Scene>) {
-        // Compute number of tiles, `n_tiles`, to use for parallel rendering.
         let data = self.get_data();
+
+        let mut sampler = Arc::clone(&data.sampler);
+        self.preprocess(Arc::clone(&scene), &mut sampler);
+
+        // Compute number of tiles, `n_tiles`, to use for parallel rendering.
         let sample_bounds = Arc::clone(&data.camera)
             .lock()
             .unwrap()
