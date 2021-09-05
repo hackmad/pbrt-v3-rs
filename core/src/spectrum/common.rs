@@ -376,21 +376,20 @@ pub fn blackbody(lambda: &[Float], t: Float) -> Vec<Float> {
         return vec![0.0; lambda.len()];
     }
 
-    let c: Float = 299792458.0;
-    let h: Float = 6.62606957e-34;
-    let kb: Float = 1.3806488e-23;
+    const C: Float = 299792458.0;
+    const H: Float = 6.62606957e-34;
+    const KB: Float = 1.3806488e-23;
 
-    lambda
-        .iter()
-        .map(|l| {
-            // Compute emitted radiance for blackbody at wavelength `lambda[i]`.
-            let l = l * 1e-9; // Convert nanometers -> meters.
-            let lambda5 = (l * l) * (l * l) * l;
-            let le = (2.0 * h * c * c) / (lambda5 * (((h * c) / (l * kb * t)).exp() - 1.0));
-            assert!(!le.is_nan());
-            le
-        })
-        .collect()
+    let n = lambda.len();
+    let mut le = vec![0.0; n];
+    for i in 0..n {
+        // Compute emitted radiance for blackbody at wavelength `lambda[i]`.
+        let l = lambda[i] * 1e-9; // Convert nanometers -> meters.
+        let lambda5 = (l * l) * (l * l) * l;
+        le[i] = (2.0 * H * C * C) / (lambda5 * (((H * C) / (l * KB * t)).exp() - 1.0));
+        assert!(!le[i].is_nan());
+    }
+    le
 }
 
 /// Returns the normalized emitted radiance at a given temperature and wavelengths
@@ -399,10 +398,13 @@ pub fn blackbody(lambda: &[Float], t: Float) -> Vec<Float> {
 /// * `lambda` - Wavelengths in nanometers.
 /// * `t`      - Temperature in Kelvin.
 pub fn blackbody_normalized(lambda: &[Float], t: Float) -> Vec<Float> {
-    let le = blackbody(lambda, t);
+    let mut le = blackbody(lambda, t);
 
     // Normalize `Le` values based on maximum blackbody radiance.
     let lambda_max = 2.8977721e-3 / t * 1e9; // Convert to meters -> nanometers.
     let max_l = blackbody(&[lambda_max], t);
-    le.iter().map(|v| v / max_l[0]).collect()
+    for i in 0..le.len() {
+        le[i] /= max_l[0];
+    }
+    le
 }

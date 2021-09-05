@@ -93,21 +93,21 @@ impl From<&Vec<Sample>> for RGBSpectrum {
             sort_spectrum_samples(&mut sorted_samples);
         };
 
-        let xyz = (0..CIE_SAMPLES).fold([0.0; 3], |v, i| {
+        let mut xyz = [0.0; 3];
+        for i in 0..CIE_SAMPLES {
             let val = interpolate_spectrum_samples(samples, (CIE_LAMBDA_START + i) as Float);
-            [
-                v[0] + val * CIE_X[i],
-                v[1] + val * CIE_Y[i],
-                v[2] + val * CIE_Z[i],
-            ]
-        });
+            xyz[0] += val * CIE_X[i];
+            xyz[1] += val * CIE_Y[i];
+            xyz[2] += val * CIE_Z[i];
+        }
 
         let scale =
             (CIE_LAMBDA_END - CIE_LAMBDA_START) as Float / (CIE_Y_INTEGRAL * CIE_SAMPLES as Float);
+        xyz[0] *= scale;
+        xyz[1] *= scale;
+        xyz[2] *= scale;
 
-        Self {
-            c: [xyz[0] * scale, xyz[1] * scale, xyz[2] * scale],
-        }
+        Self::from_xyz(&xyz, None)
     }
 }
 

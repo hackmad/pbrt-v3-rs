@@ -241,23 +241,22 @@ impl ParamSet {
     /// * `name`   - Parameter name.
     /// * `values` - List of (temperature (Kelvin), scale) values in a linear array.
     pub fn add_blackbody_spectrum(&mut self, name: &str, values: &[Float]) {
-        let n = values.len();
+        let mut n = values.len();
         assert!(n % 2 == 0, "Blackbody spectrum values % 2 != 0");
+        n /= 2;
 
         let lambda = CIE::lambda();
-        let spectra: Vec<Spectrum> = (0..n)
-            .step_by(2)
-            .map(|i| {
-                let (temp, scale) = (values[i], values[i + 1]);
-                let values = blackbody_normalized(&lambda, temp);
-                let samples: Vec<Sample> = lambda
-                    .iter()
-                    .zip(values.iter())
-                    .map(|(l, v)| Sample::new(*l, *v))
-                    .collect();
-                scale * Spectrum::from(&samples)
-            })
-            .collect();
+        let mut spectra: Vec<Spectrum> = Vec::with_capacity(n);
+
+        for i in 0..n {
+            let le = blackbody_normalized(&lambda, values[2 * i]);
+            let samples: Vec<Sample> = lambda
+                .iter()
+                .zip(le.iter())
+                .map(|(l, v)| Sample::new(*l, *v))
+                .collect();
+            spectra.push(values[2 * i + 1] * Spectrum::from(&samples));
+        }
 
         self.spectra
             .insert(String::from(name), ParamSetItem::new(spectra));
