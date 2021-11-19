@@ -109,10 +109,14 @@ impl Integrator for WhittedIntegrator {
 
                 let f = isect.bsdf.as_ref().unwrap().f(&wo, &wi, BSDF_ALL);
 
-                // If no visiblity tester, then unoccluded = true.
-                let unoccluded = visibility.map_or(true, |vis| vis.unoccluded(scene.clone()));
-                if !f.is_black() && unoccluded {
-                    l += f * li * wi.abs_dot(&n) / pdf;
+                if !f.is_black() {
+                    // If no visiblity tester, then unoccluded = true.
+                    let unoccluded =
+                        visibility.map_or(true, |vis| vis.unoccluded(Arc::clone(&scene)));
+
+                    if unoccluded {
+                        l += f * li * wi.abs_dot(&n) / pdf;
+                    }
                 }
             }
             if depth + 1 < self.data.max_depth {
