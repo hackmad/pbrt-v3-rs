@@ -54,7 +54,7 @@ impl DistantLight {
         let world_to_light = Arc::clone(&light_to_world).inverse();
 
         Self {
-            light_type: LightType::from(DELTA_DIRECTION_LIGHT),
+            light_type: LightType(DELTA_DIRECTION_LIGHT),
             light_to_world: Arc::clone(&light_to_world),
             world_to_light: Arc::new(world_to_light),
             medium_interface: MediumInterface::vacuum(),
@@ -162,7 +162,7 @@ impl From<(&ParamSet, ArcTransform)> for DistantLight {
         let emitted_radiance = params.find_one_spectrum("L", Spectrum::new(1.0));
         let sc = params.find_one_spectrum("scale", Spectrum::new(1.0));
         let from = params.find_one_point3f("from", Point3f::new(0.0, 0.0, 0.0));
-        let to = params.find_one_point3f("to", Point3f::new(0.0, 0.0, 0.1));
+        let to = params.find_one_point3f("to", Point3f::new(0.0, 0.0, 1.0));
         let dir = from - to;
         Self::new(Arc::clone(&light_to_world), emitted_radiance * sc, dir)
     }

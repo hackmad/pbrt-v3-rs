@@ -1,10 +1,4 @@
 //! Light Types
-/// Stores combination of flags for the light types.
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct LightType {
-    t: u8,
-}
 
 /// Types of lights.
 pub const DELTA_POSITION_LIGHT: u8 = 1;
@@ -12,12 +6,16 @@ pub const DELTA_DIRECTION_LIGHT: u8 = 2;
 pub const AREA_LIGHT: u8 = 4;
 pub const INFINITE_LIGHT: u8 = 8;
 
+/// Stores combination of flags for the light types.
+#[derive(Copy, Clone)]
+pub struct LightType(pub u8);
+
 impl LightType {
     /// Tests a single light type flag and returns whether it is set or not.
     ///
     /// * `flag` - Light type flag.
     pub fn matches(&self, flag: u8) -> bool {
-        self.t & flag > 0
+        self.0 & flag > 0
     }
 
     /// Returns true if the light flags has the DELTA_POSITION_LIGHT or
@@ -25,7 +23,7 @@ impl LightType {
     ///
     /// * `flags` - Light flags to check.
     pub fn is_delta_light(&self) -> bool {
-        self.t & DELTA_POSITION_LIGHT > 0 || self.t & DELTA_DIRECTION_LIGHT > 0
+        self.0 & DELTA_POSITION_LIGHT > 0 || self.0 & DELTA_DIRECTION_LIGHT > 0
     }
 }
 
@@ -34,7 +32,7 @@ impl PartialEq for LightType {
     ///
     /// * `other` - The light type to compare.
     fn eq(&self, other: &Self) -> bool {
-        self.t & other.t == self.t
+        self.0 & other.0 == self.0
     }
 }
 
@@ -50,6 +48,6 @@ impl From<u8> for LightType {
             t,
             t
         );
-        Self { t }
+        Self(t)
     }
 }

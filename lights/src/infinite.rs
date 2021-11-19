@@ -109,7 +109,7 @@ impl InfiniteAreaLight {
         let distribution = Distribution2D::new(img);
 
         Self {
-            light_type: LightType::from(INFINITE_LIGHT),
+            light_type: LightType(INFINITE_LIGHT),
             medium_interface: MediumInterface::vacuum(),
             light_to_world: Arc::clone(&light_to_world),
             world_to_light: Arc::new(world_to_light),
