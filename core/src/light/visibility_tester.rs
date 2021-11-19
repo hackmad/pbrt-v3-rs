@@ -32,7 +32,7 @@ impl VisibilityTester {
     ///
     /// * `scene` - The scene.
     pub fn unoccluded(&self, scene: Arc<Scene>) -> bool {
-        scene.intersect_p(&self.p0.spawn_ray_to_point(&self.p1))
+        !scene.intersect_p(&self.p0.spawn_ray_to_point(&self.p1))
     }
 
     /// Computes the beam transmittance, the fraction of radiance transmitted
