@@ -6,7 +6,7 @@ use clap::*;
 
 lazy_static! {
     /// The global application options.
-    pub static ref OPTIONS: Options = Options::new();
+    pub static ref OPTIONS: Options = Options::default();
 }
 
 /// System wide options.
@@ -34,9 +34,9 @@ pub struct Options {
     pub tile_size: usize,
 }
 
-impl Options {
+impl Default for Options {
     /// Loads the command line options.
-    pub fn new() -> Self {
+    fn default() -> Self {
         let matches = app_from_crate!()
             .arg(
                 Arg::with_name("nthreads")
