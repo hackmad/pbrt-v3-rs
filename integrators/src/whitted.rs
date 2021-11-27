@@ -121,8 +121,9 @@ impl Integrator for WhittedIntegrator {
             }
             if depth + 1 < self.data.max_depth {
                 // Trace rays for specular reflection and refraction.
-                l += self.specular_reflect(ray, &isect, Arc::clone(&scene), sampler, depth);
-                l += self.specular_transmit(ray, &isect, Arc::clone(&scene), sampler, depth);
+                let refl = self.specular_reflect(ray, &isect, Arc::clone(&scene), sampler, depth);
+                let trans = self.specular_transmit(ray, &isect, Arc::clone(&scene), sampler, depth);
+                l += refl + trans;
             }
         } else {
             if let Some(rd) = ray.differentials {

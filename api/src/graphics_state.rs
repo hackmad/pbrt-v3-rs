@@ -267,6 +267,7 @@ impl GraphicsState {
 
                 Ok(Arc::new(MixMaterial::from((mp, mat1, mat2))))
             }
+            "glass" => Ok(Arc::new(GlassMaterial::from(mp))),
             "" => Err(String::from("Unable to create material with no name")),
             "none" => Err(String::from("Unable to create material 'none'.")),
             _ => {

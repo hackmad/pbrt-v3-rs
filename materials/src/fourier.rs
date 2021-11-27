@@ -73,8 +73,8 @@ impl Material for FourierMaterial {
         _allow_multiple_lobes: bool,
     ) {
         // Perform bump mapping with `bump_map`, if present.
-        if let Some(bump_map) = self.bump_map.clone() {
-            Material::bump(self, bump_map, si);
+        if let Some(bump_map) = &self.bump_map {
+            Material::bump(self, Arc::clone(bump_map), si);
         }
 
         let mut bsdf = BSDF::new(&si, None);
