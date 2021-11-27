@@ -340,7 +340,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     // Evaluate radiance along camera ray.
                     let mut l = Spectrum::new(0.0);
                     if ray_weight > 0.0 {
-                        l = self.li(&mut ray, scene.clone(), &mut tile_sampler, 0);
+                        l = self.li(&mut ray, Arc::clone(&scene), &mut tile_sampler, 0);
                     }
 
                     // Issue warning if unexpected radiance value returned.

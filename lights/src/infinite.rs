@@ -190,6 +190,18 @@ impl Light for InfiniteAreaLight {
         PI * world_radius * world_radius * spectrum
     }
 
+    /// Returns emitted radiance due to that light along a ray that escapes the
+    /// scene bounds.
+    ///
+    /// * `ray` - The ray with differentials.
+    fn le(&self, ray: &Ray) -> Spectrum {
+        debug_assert!(ray.differentials.is_some(), "ray.differentials == None");
+
+        let w = self.world_to_light.transform_vector(&ray.d).normalize();
+        let st = Point2f::new(spherical_phi(&w) * INV_TWO_PI, spherical_theta(&w) * INV_PI);
+        self.l_map.lookup_triangle(&st, 0.0) // SpectrumType::Illuminant
+    }
+
     /// Returns the probability density with respect to solid angle for the light’s
     /// `sample_li()`.
     ///

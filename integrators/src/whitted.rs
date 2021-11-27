@@ -126,9 +126,9 @@ impl Integrator for WhittedIntegrator {
                 l += refl + trans;
             }
         } else {
-            if let Some(rd) = ray.differentials {
+            if ray.differentials.is_some() {
                 for light in scene.lights.iter() {
-                    l += light.le(&rd);
+                    l += light.le(&ray);
                 }
             }
         }

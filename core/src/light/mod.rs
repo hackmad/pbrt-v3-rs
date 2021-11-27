@@ -140,8 +140,9 @@ pub trait Light {
     /// Returns emitted radiance due to that light along a ray that escapes the
     /// scene bounds.
     ///
-    /// * `r` - The ray differentials.
-    fn le(&self, _r: &RayDifferential) -> Spectrum {
+    /// * `ray` - The ray with differentials.
+    fn le(&self, ray: &Ray) -> Spectrum {
+        debug_assert!(ray.differentials.is_some(), "ray.differentials == None");
         Spectrum::new(0.0)
     }
 

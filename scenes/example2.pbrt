@@ -7,6 +7,7 @@ Sampler "halton" "integer pixelsamples" 128
 Integrator "whitted"
 Film "image" "string filename" "renders/example2.exr"
      "integer xresolution" [200] "integer yresolution" [100]
+     #"float cropwindow" [0 1 0 0.1]
 
 WorldBegin
 
@@ -14,8 +15,7 @@ WorldBegin
   LightSource "infinite" "rgb L" [.4 .45 .5]
   
   # approximate the sun
-  LightSource "distant"  "point from" [ -30 40  100 ]
-     "blackbody L" [3000 1.5]
+  #LightSource "distant" "point from" [ -30 40  100 ] "blackbody L" [3000 1.5]
   
   AttributeBegin
     Material "glass"

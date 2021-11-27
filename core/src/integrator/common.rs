@@ -278,8 +278,8 @@ pub fn estimate_direct(
                         }
                     }
                 }
-            } else if let Some(rd) = ray.differentials {
-                li = light.le(&rd);
+            } else if ray.differentials.is_some() {
+                li = light.le(&ray);
             }
 
             if !li.is_black() {
