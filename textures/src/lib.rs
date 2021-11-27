@@ -5,6 +5,7 @@ use core::paramset::TextureParams;
 use core::texture::*;
 use std::sync::Arc;
 
+extern crate either;
 #[macro_use]
 extern crate log;
 

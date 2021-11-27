@@ -4,6 +4,7 @@ use super::*;
 use core::geometry::*;
 use core::pbrt::*;
 use core::spectrum::*;
+use either::*;
 use std::ops::Mul;
 
 /// Implements a texture that returns the product of 2 textures.
@@ -52,10 +53,20 @@ macro_rules! from_params {
             fn from(p: (&TextureParams, &Transform)) -> Self {
                 let (tp, _tex2world) = p;
 
-                let tex1 = tp
-                    .$get_texture_or_else_func("tex1", Arc::new(ConstantTexture::new(1.0.into())));
-                let tex2 = tp
-                    .$get_texture_or_else_func("tex2", Arc::new(ConstantTexture::new(1.0.into())));
+                let tex1 = match tp
+                    .$get_texture_or_else_func("tex1", Arc::new(ConstantTexture::new(1.0.into())))
+                {
+                    Left(tex) => tex,
+                    Right(val) => Arc::new(ConstantTexture::new(val.into())),
+                };
+
+                let tex2 = match tp
+                    .$get_texture_or_else_func("tex2", Arc::new(ConstantTexture::new(1.0.into())))
+                {
+                    Left(tex) => tex,
+                    Right(val) => Arc::new(ConstantTexture::new(val.into())),
+                };
+
                 Self::new(tex1, tex2)
             }
         }

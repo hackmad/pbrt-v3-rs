@@ -8,4 +8,5 @@ edition = "2018"
 
 core = { path = "../core" }
 
+either = "1.6.1"
 log = "0.4.14"

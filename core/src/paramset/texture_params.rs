@@ -1,5 +1,7 @@
 //! Texture Parameters
 
+use itertools::Either;
+
 use super::*;
 use crate::texture::{FloatTextureMap, SpectrumTextureMap};
 use std::sync::Arc;
@@ -56,10 +58,13 @@ impl TextureParams {
     ///
     /// * `name` - Parameter name.
     pub fn get_float_texture(&self, name: &str) -> Option<ArcTexture<Float>> {
-        self.float_textures.get(&String::from(name)).cloned()
+        self.float_textures
+            .get(&String::from(name))
+            .map(|tex| Arc::clone(tex))
     }
 
-    /// Returns a floating point texture or a default texture if not found.
+    /// Returns a floating point texture, a floating point value or the given
+    /// default texture if not found.
     ///
     /// * `name`    - Parameter name.
     /// * `default` - Default texture.
@@ -67,20 +72,54 @@ impl TextureParams {
         &self,
         name: &str,
         default: ArcTexture<Float>,
-    ) -> ArcTexture<Float> {
-        self.float_textures
-            .get(&String::from(name))
-            .map_or(Arc::clone(&default), |v| Arc::clone(&v))
+    ) -> Either<ArcTexture<Float>, Float> {
+        // Try to find the texture name in shape parameters by given name.
+        let mut tex_name = self.geom_params.find_one_texture(name, String::new());
+        if tex_name.is_empty() {
+            // Try to find a float value in shape parameters by given name.
+            let s = self.geom_params.find_float(name);
+            if s.len() > 1 {
+                warn!("Ignoring excess values provided with parameter '{}'", name);
+            }
+            if s.len() == 1 {
+                return Either::Right(s[0]);
+            }
+
+            // Try to find the texture name in material parameters by given name.
+            tex_name = self.mat_params.find_one_texture(name, String::new());
+            if tex_name.is_empty() {
+                // Try to find a float value in material parameters by given name.
+                let s = self.mat_params.find_float(name);
+                if s.len() > 1 {
+                    warn!("Ignoring excess values provided with parameter '{}'", name);
+                }
+                if s.len() == 1 {
+                    return Either::Right(s[0]);
+                }
+            }
+
+            return Either::Left(Arc::clone(&default));
+        }
+
+        // We have a texture name from either shape or material parameters.
+        Either::Left(
+            self.float_textures
+                .get(&tex_name)
+                .map_or(Arc::clone(&default), |tex| Arc::clone(tex)),
+        )
     }
 
-    /// Returns a spectrum point texture.
+    /// Returns a spectrum texture.
     ///
     /// * `name` - Parameter name.
     pub fn get_spectrum_texture(&self, name: &str) -> Option<ArcTexture<Spectrum>> {
-        self.spectrum_textures.get(&String::from(name)).cloned()
+        self.spectrum_textures
+            .get(&String::from(name))
+            .map(|tex| Arc::clone(tex))
     }
 
-    /// Returns a spectrum point texture or a default texture if not found.
+    /// Returns a spectrum texture, a spectrum value or the given default
+    /// texture if not found.
     ///
     /// * `name`    - Parameter name.
     /// * `default` - Default texture.
@@ -88,10 +127,41 @@ impl TextureParams {
         &self,
         name: &str,
         default: ArcTexture<Spectrum>,
-    ) -> ArcTexture<Spectrum> {
-        self.spectrum_textures
-            .get(&String::from(name))
-            .map_or(Arc::clone(&default), |v| Arc::clone(&v))
+    ) -> Either<ArcTexture<Spectrum>, Spectrum> {
+        // Try to find the texture name in shape parameters by given name.
+        let mut tex_name = self.geom_params.find_one_texture(name, String::new());
+        if tex_name.is_empty() {
+            // Try to find a spectrum value in shape parameters by given name.
+            let s = self.geom_params.find_spectrum(name);
+            if s.len() > 1 {
+                warn!("Ignoring excess values provided with parameter '{}'", name);
+            }
+            if s.len() == 1 {
+                return Either::Right(s[0]);
+            }
+
+            // Try to find the texture name in material parameters by given name.
+            tex_name = self.mat_params.find_one_texture(name, String::new());
+            if tex_name.is_empty() {
+                // Try to find a spectrum value in material parameters by given name.
+                let s = self.mat_params.find_spectrum(name);
+                if s.len() > 1 {
+                    warn!("Ignoring excess values provided with parameter '{}'", name);
+                }
+                if s.len() == 1 {
+                    return Either::Right(s[0]);
+                }
+            }
+
+            return Either::Left(Arc::clone(&default));
+        }
+
+        // We have a texture name from either shape or material parameters.
+        Either::Left(
+            self.spectrum_textures
+                .get(&tex_name)
+                .map_or(Arc::clone(&default), |tex| Arc::clone(tex)),
+        )
     }
 
     texture_params_find!(find_float, Float, find_one_float);

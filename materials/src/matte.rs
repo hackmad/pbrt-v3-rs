@@ -7,6 +7,7 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::spectrum::*;
 use core::texture::*;
+use either::*;
 use std::sync::Arc;
 use textures::*;
 
@@ -85,10 +86,21 @@ impl From<&TextureParams> for MatteMaterial {
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
-        let kd = tp
-            .get_spectrum_texture_or_else("Kd", Arc::new(ConstantTexture::new(Spectrum::new(0.5))));
-        let sigma = tp.get_float_texture_or_else("sigma", Arc::new(ConstantTexture::new(0.0)));
+        let kd = match tp
+            .get_spectrum_texture_or_else("Kd", Arc::new(ConstantTexture::new(Spectrum::new(0.5))))
+        {
+            Left(tex) => tex,
+            Right(val) => Arc::new(ConstantTexture::new(val)),
+        };
+
+        let sigma = match tp.get_float_texture_or_else("sigma", Arc::new(ConstantTexture::new(0.0)))
+        {
+            Left(tex) => tex,
+            Right(val) => Arc::new(ConstantTexture::new(val)),
+        };
+
         let bump_map = tp.get_float_texture("bumpmap");
+
         Self::new(kd, sigma, bump_map)
     }
 }

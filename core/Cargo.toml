@@ -10,6 +10,7 @@ edition = "2018"
 [dependencies]
 byteorder = "1.3.4"
 clap = "2.33.3"
+either = "1.6.1"
 exr = "1.3.0"
 float-cmp = "0.9.0"
 hexf = "0.2.1"
