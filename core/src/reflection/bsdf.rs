@@ -154,11 +154,13 @@ impl BSDF {
         let mut count = comp;
         let mut bxdf: Option<ArcBxDF> = None;
         for b in self.bxdfs.iter() {
-            if b.matches_flags(bxdf_type) && count == 0 {
-                bxdf = Some(Arc::clone(b));
-                break;
+            if b.matches_flags(bxdf_type) {
+                if count == 0 {
+                    bxdf = Some(Arc::clone(b));
+                    break;
+                }
+                count -= 1;
             }
-            count -= 1;
         }
         let bxdf = bxdf.expect("bsdf::sample_f() did not find matching bxdf");
 
