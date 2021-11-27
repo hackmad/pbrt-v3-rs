@@ -23,6 +23,7 @@ impl KdAccelNode {
         self.node.flags = 3;
 
         // Set the higher 30 bits for n_prims by first shifting `np` by 2 bits.
+        // SAFETY: We are accessing a union field.
         unsafe {
             self.node.n_prims |= np << 2;
         }

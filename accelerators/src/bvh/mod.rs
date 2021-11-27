@@ -12,8 +12,6 @@ mod morton;
 mod sah;
 
 pub use common::*;
-use hlbvh::*;
-use sah::*;
 use std::sync::{Arc, Mutex};
 
 /// Bounding Volume Hierarchy Accelerator.
@@ -67,14 +65,14 @@ impl BVHAccel {
                 Arc::new(Mutex::new(Vec::<ArcPrimitive>::with_capacity(n_primitives)));
 
             let root = match split_method {
-                SplitMethod::HLBVH => HLBVH::build(
+                SplitMethod::HLBVH => hlbvh::build(
                     primitives,
                     max_prims_in_node,
                     &mut primitive_info,
                     &mut total_nodes,
                     Arc::clone(&ordered_prims),
                 ),
-                _ => SAH::recursive_build(
+                _ => sah::build(
                     primitives,
                     split_method,
                     max_prims_in_node,
