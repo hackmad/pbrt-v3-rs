@@ -80,7 +80,6 @@ where
             // Evaluate single check if filter is entirely inside one of them.
             let ds = max(abs(dstdx[0]), abs(dstdy[0]));
             let dt = max(abs(dstdx[1]), abs(dstdy[1]));
-
             let s0 = st[0] - ds;
             let s1 = st[0] + ds;
             let t0 = st[1] - dt;
@@ -94,10 +93,6 @@ where
             }
 
             // Apply box filter to checkerboard region.
-            let bump_int = |x: Float| -> Int {
-                (x / 2.0).floor() as Int + 2 * max(x / 2.0 - (x / 2.0).floor() - 0.5, 0.0) as Int
-            };
-
             let sint = (bump_int(s1) - bump_int(s0)) as Float / (2.0 * ds);
             let tint = (bump_int(t1) - bump_int(t0)) as Float / (2.0 * dt);
             let area2 = if ds > 1.0 || dt > 1.0 {
@@ -105,10 +100,13 @@ where
             } else {
                 sint + tint - 2.0 * sint * tint
             };
-
             self.tex1.evaluate(si) * (1.0 - area2) + self.tex2.evaluate(si) * area2
         }
     }
+}
+
+fn bump_int(x: Float) -> Float {
+    (x / 2.0).floor() + 2.0 * max((x / 2.0) - (x / 2.0).floor() - 0.5, 0.0)
 }
 
 macro_rules! from_params {
@@ -135,7 +133,6 @@ macro_rules! from_params {
                 ) {
                     Left(tex) => tex,
                     Right(val) => Arc::new(ConstantTexture::new(val.into()))
-
                 };
 
                 let tex2 = match tp.$get_texture_or_else_func(
@@ -144,7 +141,6 @@ macro_rules! from_params {
                 ) {
                     Left(tex) => tex,
                     Right(val) => Arc::new(ConstantTexture::new(val.into()))
-
                 };
 
                 // Initialize 2D texture mapping `map` from `tp`.
