@@ -35,7 +35,7 @@ impl Scene {
             lights: lights.iter().map(|l| Arc::clone(&l)).collect(),
             infinite_lights: lights
                 .iter()
-                .filter(|l| l.get_type().matches(INFINITE_LIGHT))
+                .filter(|l| l.get_type().matches(LightType::INFINITE_LIGHT))
                 .map(|l| Arc::clone(&l))
                 .collect(),
         };

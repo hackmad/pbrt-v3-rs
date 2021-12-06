@@ -54,7 +54,7 @@ impl DistantLight {
         let world_to_light = Arc::clone(&light_to_world).inverse();
 
         Self {
-            light_type: LightType(DELTA_DIRECTION_LIGHT),
+            light_type: LightType::DELTA_DIRECTION_LIGHT,
             light_to_world: Arc::clone(&light_to_world),
             world_to_light: Arc::new(world_to_light),
             medium_interface: MediumInterface::vacuum(),

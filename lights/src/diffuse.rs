@@ -65,7 +65,7 @@ impl DiffuseAreaLight {
         let world_to_light = Arc::clone(&light_to_world).inverse();
         let area = shape.area();
         Self {
-            light_type: LightType(AREA_LIGHT),
+            light_type: LightType::AREA_LIGHT,
             medium_interface: medium_interface.clone(),
             light_to_world: Arc::clone(&light_to_world),
             world_to_light: Arc::new(world_to_light),
