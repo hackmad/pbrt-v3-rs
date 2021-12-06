@@ -7,7 +7,6 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::spectrum::*;
 use core::texture::*;
-use either::*;
 use std::sync::Arc;
 use textures::*;
 
@@ -96,13 +95,9 @@ impl From<(&TextureParams, ArcMaterial, ArcMaterial)> for MixMaterial {
     fn from(props: (&TextureParams, ArcMaterial, ArcMaterial)) -> Self {
         let (tp, mat1, mat2) = props;
 
-        let scale = match tp.get_spectrum_texture_or_else(
-            "amount",
-            Arc::new(ConstantTexture::new(Spectrum::new(0.5))),
-        ) {
-            Left(tex) => tex,
-            Right(val) => Arc::new(ConstantTexture::new(val)),
-        };
+        let scale = tp.get_spectrum_texture_or_else("amount", Spectrum::new(0.5), |v| {
+            Arc::new(ConstantTexture::new(v))
+        });
 
         Self::new(Arc::clone(&mat1), Arc::clone(&mat2), scale)
     }

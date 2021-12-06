@@ -4,7 +4,6 @@ use super::*;
 use core::geometry::*;
 use core::pbrt::*;
 use core::spectrum::*;
-use either::*;
 
 /// Implements a checkerboard texture via a 3D mapping.
 #[derive(Clone)]
@@ -69,19 +68,13 @@ macro_rules! from_params {
                     panic!("Cannot create CheckerboardTexture3D for dim = {}", dim);
                 }
                 // Get textures.
-                let tex1 = match tp
-                    .$get_texture_or_else_func("tex1", Arc::new(ConstantTexture::new(1.0.into())))
-                {
-                    Left(tex) => tex,
-                    Right(val) => Arc::new(ConstantTexture::new(val.into())),
-                };
+                let tex1 = tp.$get_texture_or_else_func("tex1", 1.0.into(), |v| {
+                    Arc::new(ConstantTexture::new(v))
+                });
 
-                let tex2 = match tp
-                    .$get_texture_or_else_func("tex2", Arc::new(ConstantTexture::new(0.0.into())))
-                {
-                    Left(tex) => tex,
-                    Right(val) => Arc::new(ConstantTexture::new(val.into())),
-                };
+                let tex2 = tp.$get_texture_or_else_func("tex2", 0.0.into(), |v| {
+                    Arc::new(ConstantTexture::new(v))
+                });
 
                 // Initialize 3D texture mapping `map` from `tex2world`.
                 let map = Arc::new(IdentityMapping3D::new(*tex2world));

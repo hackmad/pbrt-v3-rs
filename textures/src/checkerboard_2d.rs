@@ -4,7 +4,6 @@ use super::*;
 use core::geometry::*;
 use core::pbrt::*;
 use core::spectrum::*;
-use either::*;
 use std::ops::{Add, Mul};
 use std::sync::Arc;
 
@@ -127,21 +126,8 @@ macro_rules! from_params {
                 }
 
                 // Get textures.
-                let tex1 = match tp.$get_texture_or_else_func(
-                    "tex1",
-                    Arc::new(ConstantTexture::new(1.0.into())),
-                ) {
-                    Left(tex) => tex,
-                    Right(val) => Arc::new(ConstantTexture::new(val.into()))
-                };
-
-                let tex2 = match tp.$get_texture_or_else_func(
-                    "tex2",
-                    Arc::new(ConstantTexture::new(0.0.into())),
-                ) {
-                    Left(tex) => tex,
-                    Right(val) => Arc::new(ConstantTexture::new(val.into()))
-                };
+                let tex1 = tp.$get_texture_or_else_func("tex1", 1.0.into(), |v| Arc::new(ConstantTexture::new(v)));
+                let tex2 = tp.$get_texture_or_else_func("tex2", 0.0.into(), |v| Arc::new(ConstantTexture::new(v)));
 
                 // Initialize 2D texture mapping `map` from `tp`.
                 let map = get_texture_mapping(tp, tex2world);

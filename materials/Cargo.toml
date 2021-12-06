@@ -8,6 +8,5 @@ edition = "2018"
 
 core = { path = "../core" }
 textures = { path = "../textures" }
-either = "1.6.1"
 
 lazy_static = "1.4.0"

@@ -8,7 +8,6 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::spectrum::*;
 use core::texture::*;
-use either::*;
 use std::sync::Arc;
 use textures::*;
 
@@ -113,25 +112,16 @@ impl From<&TextureParams> for PlasticMaterial {
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
-        let kd = match tp
-            .get_spectrum_texture_or_else("Kd", Arc::new(ConstantTexture::new(Spectrum::new(0.25))))
-        {
-            Left(tex) => tex,
-            Right(val) => Arc::new(ConstantTexture::new(val)),
-        };
+        let kd = tp.get_spectrum_texture_or_else("Kd", Spectrum::new(0.25), |v| {
+            Arc::new(ConstantTexture::new(v))
+        });
 
-        let ks = match tp
-            .get_spectrum_texture_or_else("Ks", Arc::new(ConstantTexture::new(Spectrum::new(0.25))))
-        {
-            Left(tex) => tex,
-            Right(val) => Arc::new(ConstantTexture::new(val)),
-        };
+        let ks = tp.get_spectrum_texture_or_else("Ks", Spectrum::new(0.25), |v| {
+            Arc::new(ConstantTexture::new(v))
+        });
 
         let roughness =
-            match tp.get_float_texture_or_else("roughness", Arc::new(ConstantTexture::new(0.1))) {
-                Left(tex) => tex,
-                Right(val) => Arc::new(ConstantTexture::new(val)),
-            };
+            tp.get_float_texture_or_else("roughness", 0.1, |v| Arc::new(ConstantTexture::new(v)));
 
         let bump_map = tp.get_float_texture("bumpmap");
         let remap_roughness = tp.find_bool("remaproughness", true);

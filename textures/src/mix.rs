@@ -4,7 +4,6 @@ use super::*;
 use core::geometry::*;
 use core::pbrt::*;
 use core::spectrum::*;
-use either::*;
 use std::ops::{Add, Mul};
 use std::sync::Arc;
 
@@ -64,26 +63,17 @@ macro_rules! from_params {
             fn from(p: (&TextureParams, &Transform)) -> Self {
                 let (tp, _tex2world) = p;
 
-                let tex1 = match tp
-                    .$get_texture_or_else_func("tex1", Arc::new(ConstantTexture::new(0.0.into())))
-                {
-                    Left(tex) => tex,
-                    Right(val) => Arc::new(ConstantTexture::new(val.into())),
-                };
+                let tex1 = tp.$get_texture_or_else_func("tex1", 0.0.into(), |v| {
+                    Arc::new(ConstantTexture::new(v))
+                });
 
-                let tex2 = match tp
-                    .$get_texture_or_else_func("tex2", Arc::new(ConstantTexture::new(1.0.into())))
-                {
-                    Left(tex) => tex,
-                    Right(val) => Arc::new(ConstantTexture::new(val.into())),
-                };
+                let tex2 = tp.$get_texture_or_else_func("tex2", 1.0.into(), |v| {
+                    Arc::new(ConstantTexture::new(v))
+                });
 
-                let amt = match tp
-                    .get_float_texture_or_else("amount", Arc::new(ConstantTexture::new(0.5)))
-                {
-                    Left(tex) => tex,
-                    Right(val) => Arc::new(ConstantTexture::new(val.into())),
-                };
+                let amt = tp.get_float_texture_or_else("amount", 0.5, |v| {
+                    Arc::new(ConstantTexture::new(v))
+                });
 
                 Self::new(tex1, tex2, amt)
             }

@@ -8,7 +8,6 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::spectrum::*;
 use core::texture::*;
-use either::*;
 use std::sync::Arc;
 use textures::*;
 
@@ -153,42 +152,26 @@ impl From<&TextureParams> for GlassMaterial {
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
-        let kr = match tp
-            .get_spectrum_texture_or_else("Kr", Arc::new(ConstantTexture::new(Spectrum::new(1.0))))
-        {
-            Left(tex) => tex,
-            Right(val) => Arc::new(ConstantTexture::new(val)),
-        };
+        let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::new(1.0), |v| {
+            Arc::new(ConstantTexture::new(v))
+        });
 
-        let kt = match tp
-            .get_spectrum_texture_or_else("Kt", Arc::new(ConstantTexture::new(Spectrum::new(1.0))))
-        {
-            Left(tex) => tex,
-            Right(val) => Arc::new(ConstantTexture::new(val)),
-        };
+        let kt = tp.get_spectrum_texture_or_else("Kt", Spectrum::new(1.0), |v| {
+            Arc::new(ConstantTexture::new(v))
+        });
 
-        let index = match tp.get_float_texture_or_else("index", Arc::new(ConstantTexture::new(1.5)))
-        {
-            Left(tex) => tex,
-            Right(val) => Arc::new(ConstantTexture::new(val)),
-        };
-
-        let eta = match tp.get_float_texture_or_else("eta", index) {
-            Left(tex) => tex,
-            Right(val) => Arc::new(ConstantTexture::new(val)),
+        let eta = match tp.get_float_texture("eta") {
+            None => {
+                tp.get_float_texture_or_else("index", 1.5, |v| Arc::new(ConstantTexture::new(v)))
+            }
+            Some(tex) => tex,
         };
 
         let u_roughness =
-            match tp.get_float_texture_or_else("uroughness", Arc::new(ConstantTexture::new(0.0))) {
-                Left(tex) => tex,
-                Right(val) => Arc::new(ConstantTexture::new(val)),
-            };
+            tp.get_float_texture_or_else("uroughness", 0.0, |v| Arc::new(ConstantTexture::new(v)));
 
         let v_roughness =
-            match tp.get_float_texture_or_else("vroughness", Arc::new(ConstantTexture::new(0.0))) {
-                Left(tex) => tex,
-                Right(val) => Arc::new(ConstantTexture::new(val)),
-            };
+            tp.get_float_texture_or_else("vroughness", 0.0, |v| Arc::new(ConstantTexture::new(v)));
 
         let bump_map = tp.get_float_texture("bumpmap");
         let remap_roughness = tp.find_bool("remaproughness", true);

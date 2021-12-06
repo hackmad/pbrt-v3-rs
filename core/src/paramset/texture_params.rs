@@ -1,7 +1,5 @@
 //! Texture Parameters
 
-use itertools::Either;
-
 use super::*;
 use crate::texture::{FloatTextureMap, SpectrumTextureMap};
 use std::sync::Arc;
@@ -66,13 +64,19 @@ impl TextureParams {
     /// Returns a floating point texture, a floating point value or the given
     /// default texture if not found.
     ///
-    /// * `name`    - Parameter name.
-    /// * `default` - Default texture.
-    pub fn get_float_texture_or_else(
+    /// * `name`            - Parameter name.
+    /// * `default`         - Default floating point value.
+    /// * `constant_tex_fn` - Function that will generate specific texture given
+    ///                       a floating point value.
+    pub fn get_float_texture_or_else<F>(
         &self,
         name: &str,
-        default: ArcTexture<Float>,
-    ) -> Either<ArcTexture<Float>, Float> {
+        default: Float,
+        constant_tex_fn: F,
+    ) -> ArcTexture<Float>
+    where
+        F: Fn(Float) -> ArcTexture<Float>,
+    {
         // Try to find the texture name in shape parameters by given name.
         let mut tex_name = self.geom_params.find_one_texture(name, String::new());
         if tex_name.is_empty() {
@@ -82,7 +86,7 @@ impl TextureParams {
                 warn!("Ignoring excess values provided with parameter '{}'", name);
             }
             if s.len() == 1 {
-                return Either::Right(s[0]);
+                return constant_tex_fn(s[0]);
             }
 
             // Try to find the texture name in material parameters by given name.
@@ -94,19 +98,18 @@ impl TextureParams {
                     warn!("Ignoring excess values provided with parameter '{}'", name);
                 }
                 if s.len() == 1 {
-                    return Either::Right(s[0]);
+                    return constant_tex_fn(s[0]);
                 }
             }
 
-            return Either::Left(Arc::clone(&default));
+            return constant_tex_fn(default);
         }
 
         // We have a texture name from either shape or material parameters.
-        Either::Left(
-            self.float_textures
-                .get(&tex_name)
-                .map_or(Arc::clone(&default), |tex| Arc::clone(tex)),
-        )
+        match self.float_textures.get(&tex_name) {
+            Some(tex) => Arc::clone(tex),
+            None => constant_tex_fn(default),
+        }
     }
 
     /// Returns a spectrum texture.
@@ -121,13 +124,19 @@ impl TextureParams {
     /// Returns a spectrum texture, a spectrum value or the given default
     /// texture if not found.
     ///
-    /// * `name`    - Parameter name.
-    /// * `default` - Default texture.
-    pub fn get_spectrum_texture_or_else(
+    /// * `name`            - Parameter name.
+    /// * `default`         - Default spectrum value.
+    /// * `constant_tex_fn` - Function that will generate specific texture given
+    ///                       a spectrum value.
+    pub fn get_spectrum_texture_or_else<F>(
         &self,
         name: &str,
-        default: ArcTexture<Spectrum>,
-    ) -> Either<ArcTexture<Spectrum>, Spectrum> {
+        default: Spectrum,
+        constant_tex_fn: F,
+    ) -> ArcTexture<Spectrum>
+    where
+        F: Fn(Spectrum) -> ArcTexture<Spectrum>,
+    {
         // Try to find the texture name in shape parameters by given name.
         let mut tex_name = self.geom_params.find_one_texture(name, String::new());
         if tex_name.is_empty() {
@@ -137,7 +146,7 @@ impl TextureParams {
                 warn!("Ignoring excess values provided with parameter '{}'", name);
             }
             if s.len() == 1 {
-                return Either::Right(s[0]);
+                return constant_tex_fn(s[0]);
             }
 
             // Try to find the texture name in material parameters by given name.
@@ -149,19 +158,18 @@ impl TextureParams {
                     warn!("Ignoring excess values provided with parameter '{}'", name);
                 }
                 if s.len() == 1 {
-                    return Either::Right(s[0]);
+                    return constant_tex_fn(s[0]);
                 }
             }
 
-            return Either::Left(Arc::clone(&default));
+            return constant_tex_fn(default);
         }
 
         // We have a texture name from either shape or material parameters.
-        Either::Left(
-            self.spectrum_textures
-                .get(&tex_name)
-                .map_or(Arc::clone(&default), |tex| Arc::clone(tex)),
-        )
+        match self.spectrum_textures.get(&tex_name) {
+            Some(tex) => Arc::clone(tex),
+            None => constant_tex_fn(default),
+        }
     }
 
     texture_params_find!(find_float, Float, find_one_float);

@@ -1,6 +1,5 @@
 //! Materials
 
-extern crate either;
 #[macro_use]
 extern crate lazy_static;
 

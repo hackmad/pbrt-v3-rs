@@ -5,7 +5,6 @@ use super::*;
 use core::geometry::*;
 use core::pbrt::*;
 use core::spectrum::*;
-use either::*;
 use std::sync::Arc;
 
 /// Implements a random polka dot texture via a 2D mapping.
@@ -87,20 +86,13 @@ macro_rules! from_params {
                 // Initialize 2D texture mapping `map` from `tp`.
                 let map = get_texture_mapping(tp, tex2world);
 
-                let inside = match tp
-                    .$get_texture_or_else_func("inside", Arc::new(ConstantTexture::new(1.0.into())))
-                {
-                    Left(tex) => tex,
-                    Right(val) => Arc::new(ConstantTexture::new(val.into())),
-                };
+                let inside = tp.$get_texture_or_else_func("inside", 1.0.into(), |v| {
+                    Arc::new(ConstantTexture::new(v))
+                });
 
-                let outside = match tp.$get_texture_or_else_func(
-                    "outside",
-                    Arc::new(ConstantTexture::new(0.0.into())),
-                ) {
-                    Left(tex) => tex,
-                    Right(val) => Arc::new(ConstantTexture::new(val.into())),
-                };
+                let outside = tp.$get_texture_or_else_func("outside", 0.0.into(), |v| {
+                    Arc::new(ConstantTexture::new(v))
+                });
 
                 Self::new(inside, outside, map)
             }
