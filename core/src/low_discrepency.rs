@@ -1514,20 +1514,21 @@ fn base_index_to_prime(base_index: u16) -> u16 {
 /// * `rng` - The random number generator.
 pub fn compute_radical_inverse_permutations(rng: &mut RNG) -> Vec<u16> {
     // Allocate space for radical inverse permutations.
-    let perm_array_size = (0..PRIME_TABLE_SIZE).fold(0, |a, i| a + PRIMES[i]);
+    let mut perm_array_size = 0;
+    for i in 0..PRIME_TABLE_SIZE {
+        perm_array_size += PRIMES[i];
+    }
     let mut perms = vec![0_u16; perm_array_size];
-
-    let mut p = &mut perms[..];
+    let mut p = 0;
     for i in 0..PRIME_TABLE_SIZE {
         // Generate random permutation for i^th prime base.
         for j in 0..PRIMES[i] {
-            p[j] = j as u16;
+            perms[p + j] = j as u16;
         }
 
-        rng.shuffle(&mut p, PRIMES[i], 1);
-        p = &mut p[PRIMES[i]..];
+        rng.shuffle(&mut perms[p..p + PRIMES[i]], PRIMES[i], 1);
+        p += PRIMES[i];
     }
-
     perms
 }
 
