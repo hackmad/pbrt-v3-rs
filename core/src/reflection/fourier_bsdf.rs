@@ -27,7 +27,9 @@ impl FourierBSDF {
     ///                  or from camera.
     pub fn new(bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> Self {
         Self {
-            bxdf_type: BSDF_REFLECTION | BSDF_TRANSMISSION | BSDF_GLOSSY,
+            bxdf_type: BxDFType::BSDF_REFLECTION
+                | BxDFType::BSDF_TRANSMISSION
+                | BxDFType::BSDF_GLOSSY,
             bsdf_table: Arc::clone(&bsdf_table),
             mode,
         }

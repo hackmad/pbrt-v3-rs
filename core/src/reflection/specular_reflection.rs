@@ -22,7 +22,7 @@ impl SpecularReflection {
     /// * `r`       - Spectrum used to scale the reflected colour.
     pub fn new(r: Spectrum, fresnel: ArcFresnel) -> Self {
         Self {
-            bxdf_type: BSDF_REFLECTION | BSDF_SPECULAR,
+            bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_SPECULAR,
             fresnel: Arc::clone(&fresnel),
             r,
         }

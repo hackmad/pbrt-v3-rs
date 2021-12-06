@@ -69,14 +69,14 @@ impl Material for MixMaterial {
         let mut bsdf = BSDF::new(&si, None);
 
         if let Some(si_bsdf) = si.bsdf.as_mut() {
-            let n1 = si_bsdf.num_components(BSDF_ALL);
+            let n1 = si_bsdf.num_components(BxDFType::BSDF_ALL);
             for i in 0..n1 {
                 bsdf.add(Arc::new(ScaledBxDF::new(Arc::clone(&si_bsdf.bxdfs[i]), s1)));
             }
         }
 
         if let Some(si2_bsdf) = si2.bsdf.as_mut() {
-            let n2 = si2_bsdf.num_components(BSDF_ALL);
+            let n2 = si2_bsdf.num_components(BxDFType::BSDF_ALL);
             for i in 0..n2 {
                 bsdf.add(Arc::new(ScaledBxDF::new(
                     Arc::clone(&si2_bsdf.bxdfs[i]),

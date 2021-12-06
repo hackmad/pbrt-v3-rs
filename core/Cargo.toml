@@ -8,6 +8,7 @@ edition = "2018"
 #sampled-spectrum = []
 
 [dependencies]
+bitflags = "1.3.2"
 byteorder = "1.3.4"
 clap = "2.33.3"
 either = "1.6.1"

@@ -73,7 +73,7 @@ pub trait BxDF {
             wi.z *= -1.0;
         }
         let pdf = self.pdf(wo, &wi);
-        BxDFSample::new(self.f(wo, &wi), pdf, wi, BSDF_NONE)
+        BxDFSample::new(self.f(wo, &wi), pdf, wi, BxDFType::BSDF_NONE)
     }
 
     /// Evaluates the PDF for the sampling method. Default is based on the

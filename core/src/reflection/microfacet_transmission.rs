@@ -50,7 +50,7 @@ impl MicrofacetTransmission {
         mode: TransportMode,
     ) -> Self {
         Self {
-            bxdf_type: BSDF_TRANSMISSION | BSDF_GLOSSY,
+            bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_GLOSSY,
             fresnel: FresnelDielectric::new(eta_a, eta_b),
             distribution: distribution.clone(),
             t,

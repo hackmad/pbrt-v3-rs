@@ -3,19 +3,32 @@
 #![allow(dead_code)]
 use super::*;
 use crate::rng::*;
+use bitflags::bitflags;
 
-/// Stores combinations of reflection models.
-pub type BxDFType = u8;
+bitflags! {
+    /// Stores combinations of reflection models.
+    pub struct BxDFType: u8 {
+        const BSDF_NONE = 0;
+        const BSDF_REFLECTION = 1 << 0;
+        const BSDF_TRANSMISSION = 1 << 1;
+        const BSDF_DIFFUSE = 1 << 2;
+        const BSDF_GLOSSY = 1 << 3;
+        const BSDF_SPECULAR = 1 << 4;
+        const BSDF_ALL =
+            Self::BSDF_DIFFUSE.bits |
+            Self::BSDF_GLOSSY.bits  |
+            Self::BSDF_SPECULAR.bits |
+            Self::BSDF_REFLECTION.bits |
+            Self::BSDF_TRANSMISSION.bits;
+    }
+}
 
-/// Types of BSDF models.
-pub const BSDF_NONE: BxDFType = 0;
-pub const BSDF_REFLECTION: BxDFType = 1 << 0;
-pub const BSDF_TRANSMISSION: BxDFType = 1 << 1;
-pub const BSDF_DIFFUSE: BxDFType = 1 << 2;
-pub const BSDF_GLOSSY: BxDFType = 1 << 3;
-pub const BSDF_SPECULAR: BxDFType = 1 << 4;
-pub const BSDF_ALL: BxDFType =
-    BSDF_DIFFUSE | BSDF_GLOSSY | BSDF_SPECULAR | BSDF_REFLECTION | BSDF_TRANSMISSION;
+impl Default for BxDFType {
+    /// Returns the "default value" for a `BxDFType`.
+    fn default() -> Self {
+        Self::BSDF_NONE
+    }
+}
 
 /// Maximum number of BxDFs that can be stored in `BSDF`.
 pub const MAX_BXDFS: usize = 8;
@@ -83,10 +96,13 @@ impl BSDF {
     ///
     /// * `bxdf_type` - The `BxdFType` to match (default to `BSDF_ALL`).
     pub fn num_components(&self, bxdf_type: BxDFType) -> usize {
-        self.bxdfs
-            .iter()
-            .filter(|b| b.get_type() == bxdf_type)
-            .count()
+        let mut num = 0;
+        for bxdf in self.bxdfs.iter() {
+            if bxdf.matches_flags(bxdf_type) {
+                num += 1;
+            }
+        }
+        num
     }
 
     /// Transforms a vector from world space to local space.
@@ -120,29 +136,33 @@ impl BSDF {
             Spectrum::new(0.0)
         } else {
             let reflect = wi_w.dot(&self.ng) * wo_w.dot(&self.ng) > 0.0;
-            let mut l = Spectrum::new(0.0);
+            let mut f = Spectrum::new(0.0);
             for bxdf in self.bxdfs.iter() {
                 if bxdf.matches_flags(bxdf_type)
-                    && ((reflect && bxdf.get_type() & BSDF_REFLECTION > 0)
-                        || (!reflect && bxdf.get_type() & BSDF_TRANSMISSION > 0))
+                    && ((reflect
+                        && bxdf.get_type() & BxDFType::BSDF_REFLECTION != BxDFType::BSDF_NONE)
+                        || (!reflect
+                            && bxdf.get_type() & BxDFType::BSDF_TRANSMISSION
+                                != BxDFType::BSDF_NONE))
                 {
-                    l += bxdf.f(&wo, &wi);
+                    f += bxdf.f(&wo, &wi);
                 }
             }
-            l
+            f
         }
     }
 
     /// Returns the value of the BSDF given the outgpoing direction.
     /// direction.
     ///
-    /// * `wo_w`      - Outgoing direction in world-space.
+    /// * `wo_world`  - Outgoing direction in world-space.
     /// * `u`         - The 2D uniform random values.
     /// * `bxdf_type` - The `BxdFType` to evaluate.
-    pub fn sample_f(&self, wo_w: &Vector3f, u: &Point2f, bxdf_type: BxDFType) -> BxDFSample {
+    pub fn sample_f(&self, wo_world: &Vector3f, u: &Point2f, bxdf_type: BxDFType) -> BxDFSample {
         // Choose which `BxDF` to sample.
         let matching_comps = self.num_components(bxdf_type);
         if matching_comps == 0 {
+            info!("For wo_world = {}, matching_comps = 0", wo_world);
             return BxDFSample::default();
         }
         let comp = min(
@@ -152,74 +172,108 @@ impl BSDF {
 
         // Get BxDF for chosen component.
         let mut count = comp;
-        let mut bxdf: Option<ArcBxDF> = None;
-        for b in self.bxdfs.iter() {
-            if b.matches_flags(bxdf_type) {
+        let mut bxdf_idx: Option<usize> = None;
+        for (i, bxdf) in self.bxdfs.iter().enumerate() {
+            if bxdf.matches_flags(bxdf_type) {
                 if count == 0 {
-                    bxdf = Some(Arc::clone(b));
+                    bxdf_idx = Some(i);
                     break;
                 }
                 count -= 1;
             }
         }
-        let bxdf = bxdf.expect("bsdf::sample_f() did not find matching bxdf");
+        let bxdf_idx = bxdf_idx.expect("bsdf::sample_f() did not find matching bxdf");
+        let matched_bxdf = Arc::clone(&self.bxdfs[bxdf_idx]);
 
         // Remap BxDF sample `u` to `[0,1)^2`.
         let u_remapped = Point2f::new(
-            min(u[0] * (matching_comps - comp) as Float, ONE_MINUS_EPSILON),
+            min(
+                u[0] * matching_comps as Float - comp as Float,
+                ONE_MINUS_EPSILON,
+            ),
             u[1],
         );
 
         // Sample chosen `BxDF`.
-        let wo = self.world_to_local(wo_w);
+        let wo = self.world_to_local(wo_world);
         if wo.z == 0.0 {
+            info!("For wo_world = {}, wo = {}, wo.z = 0", wo_world, wo,);
             return BxDFSample::default();
         }
 
-        let sampled_type = bxdf.get_type();
-        let sample = bxdf.sample_f(&wo, &u_remapped);
-        let mut pdf = sample.pdf;
-        if pdf == 0.0 {
-            return BxDFSample::from(sampled_type);
+        let mut sample = matched_bxdf.sample_f(&wo, &u_remapped);
+        info!(
+            "For wo_world = {}, wo = {}, sampled f = {}, pdf = {}, ratio = {}, wi = {}",
+            wo_world,
+            wo,
+            sample.f,
+            sample.pdf,
+            if sample.pdf > 0.0 {
+                sample.f / sample.pdf // Potential for NaN if sample.pdf == 0
+            } else {
+                Spectrum::new(0.0)
+            },
+            sample.wi
+        );
+
+        if sample.pdf == 0.0 {
+            info!("sample.pdf = 0");
+            return BxDFSample::default();
         }
+        sample.bxdf_type = matched_bxdf.get_type();
+
         let wi_world = self.local_to_world(&sample.wi);
 
         // Compute overall PDF with all matching BxDFs.
-        if bxdf.get_type() & BSDF_SPECULAR == 0 && matching_comps > 1 {
-            for b in self.bxdfs.iter() {
-                if Arc::ptr_eq(&b, &bxdf) && b.matches_flags(bxdf_type) {
-                    pdf += b.pdf(&wo, &sample.wi);
+        if sample.bxdf_type & BxDFType::BSDF_SPECULAR == BxDFType::BSDF_NONE && matching_comps > 1 {
+            for (i, bxdf) in self.bxdfs.iter().enumerate() {
+                if bxdf_idx != i && bxdf.matches_flags(bxdf_type) {
+                    sample.pdf += bxdf.pdf(&wo, &sample.wi);
                 }
             }
         }
         if matching_comps > 1 {
-            pdf /= matching_comps as Float;
+            sample.pdf /= matching_comps as Float;
         }
 
         // Compute value of BSDF for sampled direction.
-        let mut f = Spectrum::new(0.0);
-        if bxdf.get_type() & BSDF_SPECULAR == 0 {
-            let reflect = wi_world.dot(&self.ng) * wo_w.dot(&self.ng) > 0.0;
+        if sample.bxdf_type & BxDFType::BSDF_SPECULAR == BxDFType::BSDF_NONE {
+            let reflect = wi_world.dot(&self.ng) * wo_world.dot(&self.ng) > 0.0;
+            sample.f = Spectrum::new(0.0);
             for bxdf in self.bxdfs.iter() {
                 if bxdf.matches_flags(bxdf_type)
-                    && ((reflect && bxdf.get_type() & BSDF_REFLECTION > 0)
-                        || (!reflect && bxdf.get_type() & BSDF_TRANSMISSION > 0))
+                    && ((reflect
+                        && (bxdf.get_type() & BxDFType::BSDF_REFLECTION != BxDFType::BSDF_NONE))
+                        || (!reflect
+                            && (bxdf.get_type() & BxDFType::BSDF_TRANSMISSION
+                                != BxDFType::BSDF_NONE)))
                 {
-                    f += bxdf.f(&wo, &sample.wi);
+                    sample.f += bxdf.f(&wo, &sample.wi);
                 }
             }
         }
-        BxDFSample::new(f, pdf, wi_world, sampled_type)
+
+        info!(
+            "Overall f = {}, pdf = {}, ratio = {}",
+            sample.f,
+            sample.pdf,
+            if sample.pdf > 0.0 {
+                sample.f / sample.pdf
+            } else {
+                Spectrum::new(0.0)
+            }
+        );
+
+        sample
     }
 
     /// Computes the hemispherical-directional reflectance function ρ.
     ///
-    /// * `wo_w`      - Outgoing direction in world-space.
+    /// * `wo_world`  - Outgoing direction in world-space.
     /// * `u`         - Samples used by Monte Carlo algorithm.
     /// * `bxdf_type` - The `BxdFType` to evaluate.
-    pub fn rho_hd(&self, wo_w: &Vector3f, u: &[Point2f], bxdf_type: BxDFType) -> Spectrum {
-        let wo = self.world_to_local(wo_w);
-
+    pub fn rho_hd(&self, wo_world: &Vector3f, u: &[Point2f], bxdf_type: BxDFType) -> Spectrum {
+        let wo = self.world_to_local(wo_world);
         let mut l = Spectrum::new(0.0);
         for bxdf in self.bxdfs.iter() {
             if bxdf.matches_flags(bxdf_type) {
@@ -247,16 +301,16 @@ impl BSDF {
     /// Evaluates the PDF for the sampling method. Default is based on the
     /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
     ///
-    /// * `wo_w`      - Outgoing direction in world-space.
-    /// * `wi_w`      - Incident direction in world-space.
+    /// * `wo_world`  - Outgoing direction in world-space.
+    /// * `wi_world`  - Incident direction in world-space.
     /// * `bxdf_type` - The `BxdFType` to evaluate.
-    pub fn pdf(&self, wo_w: &Vector3f, wi_w: &Vector3f, bxdf_type: BxDFType) -> Float {
+    pub fn pdf(&self, wo_world: &Vector3f, wi_world: &Vector3f, bxdf_type: BxDFType) -> Float {
         if self.bxdfs.len() == 0 {
             return 0.0;
         }
 
-        let wo = self.world_to_local(wo_w);
-        let wi = self.world_to_local(wi_w);
+        let wo = self.world_to_local(wo_world);
+        let wi = self.world_to_local(wi_world);
 
         if wo.z == 0.0 {
             return 0.0;

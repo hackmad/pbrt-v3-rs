@@ -23,7 +23,7 @@ impl LambertianReflection {
     ///         that is scattered.
     pub fn new(r: Spectrum) -> Self {
         Self {
-            bxdf_type: BSDF_REFLECTION | BSDF_DIFFUSE,
+            bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_DIFFUSE,
             r,
         }
     }

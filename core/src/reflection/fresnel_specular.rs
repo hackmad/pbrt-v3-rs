@@ -41,7 +41,9 @@ impl FresnelSpecular {
     ///             or from camera.
     pub fn new(r: Spectrum, t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> Self {
         Self {
-            bxdf_type: BSDF_REFLECTION | BSDF_TRANSMISSION | BSDF_SPECULAR,
+            bxdf_type: BxDFType::BSDF_REFLECTION
+                | BxDFType::BSDF_TRANSMISSION
+                | BxDFType::BSDF_SPECULAR,
             r,
             t,
             eta_a,
@@ -79,7 +81,7 @@ impl BxDF for FresnelSpecular {
             // Compute specular reflection for `FresnelSpecular`.
             // Compute perfect specular reflection direction.
             let wi = Vector3f::new(-wo.x, -wo.y, wo.z);
-            let sampled_type = BSDF_SPECULAR | BSDF_REFLECTION;
+            let sampled_type = BxDFType::BSDF_SPECULAR | BxDFType::BSDF_REFLECTION;
             let pdf = f;
             BxDFSample::new(f * self.r / abs_cos_theta(&wi), pdf, wi, sampled_type)
         } else {
@@ -90,7 +92,7 @@ impl BxDF for FresnelSpecular {
             let eta_t = if entering { self.eta_b } else { self.eta_a };
 
             // Compute ray direction for specular transmission.
-            let sampled_type = BSDF_SPECULAR | BSDF_TRANSMISSION;
+            let sampled_type = BxDFType::BSDF_SPECULAR | BxDFType::BSDF_TRANSMISSION;
             if let Some(wi) = refract(
                 wo,
                 &Normal3f::new(0.0, 0.0, 1.0).face_forward(wo),

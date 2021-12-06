@@ -1,5 +1,6 @@
 //! Core
 
+extern crate bitflags;
 extern crate either;
 #[macro_use]
 extern crate hexf;
