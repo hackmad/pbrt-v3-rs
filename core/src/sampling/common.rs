@@ -65,9 +65,7 @@ pub fn latin_hypercube(rng: &mut RNG, n_samples: usize, n_dim: usize) -> Vec<Flo
     for i in 0..n_dim {
         for j in 0..n_samples {
             let other = j + rng.bounded_uniform(0, n_samples - j);
-            let t = samples[n_dim * j + i];
-            samples[n_dim * j + i] = samples[n_dim * other + i];
-            samples[n_dim * other + i] = t;
+            samples.swap(n_dim * j + i, n_dim * other + i);
         }
     }
 
@@ -86,9 +84,11 @@ pub fn rejection_sample_disk(rng: &mut RNG) -> Point2f {
         let x = 1.0 - 2.0 * rx;
         let y = 1.0 - 2.0 * ry;
 
-        if x * x + y * y <= 1.0 {
-            return Point2f::new(x, y);
+        if x * x + y * y > 1.0 {
+            continue;
         }
+
+        return Point2f::new(x, y);
     }
 }
 
