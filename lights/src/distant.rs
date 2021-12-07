@@ -81,12 +81,9 @@ impl Light for DistantLight {
     /// * `u`   - Sample value for Monte Carlo integration.
     fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Li {
         let world_radius = *self.world_radius.read().unwrap();
-        let wi = self.w_light;
-        let pdf = 1.0;
         let p_outside = hit.p + self.w_light * (2.0 * world_radius);
         let visibility = Some(VisibilityTester::new(hit.clone(), p_outside));
-        let value = self.emitted_radiance;
-        Li::new(wi, pdf, visibility, value)
+        Li::new(self.w_light, 1.0, visibility, self.emitted_radiance)
     }
 
     /// Return the total emitted power.
