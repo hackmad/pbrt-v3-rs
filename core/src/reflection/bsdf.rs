@@ -4,6 +4,7 @@
 use super::*;
 use crate::rng::*;
 use bitflags::bitflags;
+use std::fmt;
 
 bitflags! {
     /// Stores combinations of reflection models.
@@ -27,6 +28,47 @@ impl Default for BxDFType {
     /// Returns the "default value" for a `BxDFType`.
     fn default() -> Self {
         Self::BSDF_NONE
+    }
+}
+
+impl fmt::Display for BxDFType {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = String::new();
+        if self.bits == Self::BSDF_ALL.bits {
+            s += "BSDF_ALL";
+        } else {
+            if self.bits & Self::BSDF_REFLECTION.bits == Self::BSDF_REFLECTION.bits {
+                s += "BSDF_REFLECTION";
+            }
+            if self.bits & Self::BSDF_TRANSMISSION.bits == Self::BSDF_TRANSMISSION.bits {
+                if s.len() > 0 {
+                    s += " | ";
+                }
+                s += "BSDF_TRANSMISSION";
+            }
+            if self.bits & Self::BSDF_DIFFUSE.bits == Self::BSDF_DIFFUSE.bits {
+                if s.len() > 0 {
+                    s += " | ";
+                }
+                s += "BSDF_DIFFUSE";
+            }
+            if self.bits & Self::BSDF_GLOSSY.bits == Self::BSDF_GLOSSY.bits {
+                if s.len() > 0 {
+                    s += " | ";
+                }
+                s += "BSDF_GLOSSY";
+            }
+            if self.bits & Self::BSDF_SPECULAR.bits == Self::BSDF_SPECULAR.bits {
+                if s.len() > 0 {
+                    s += " | ";
+                }
+                s += "BSDF_SPECULAR";
+            }
+        }
+        write!(f, "{}", s)
     }
 }
 
@@ -184,6 +226,12 @@ impl BSDF {
         }
         let bxdf_idx = bxdf_idx.expect("bsdf::sample_f() did not find matching bxdf");
         let matched_bxdf = Arc::clone(&self.bxdfs[bxdf_idx]);
+        info!(
+            "BSDF::Sample_f chose comp = {} / matching = {}, bxdf: {}",
+            comp,
+            matching_comps,
+            matched_bxdf.get_type()
+        );
 
         // Remap BxDF sample `u` to `[0,1)^2`.
         let u_remapped = Point2f::new(
