@@ -15,12 +15,6 @@ bitflags! {
         const BSDF_DIFFUSE = 1 << 2;
         const BSDF_GLOSSY = 1 << 3;
         const BSDF_SPECULAR = 1 << 4;
-        const BSDF_ALL =
-            Self::BSDF_DIFFUSE.bits |
-            Self::BSDF_GLOSSY.bits  |
-            Self::BSDF_SPECULAR.bits |
-            Self::BSDF_REFLECTION.bits |
-            Self::BSDF_TRANSMISSION.bits;
     }
 }
 
@@ -37,36 +31,32 @@ impl fmt::Display for BxDFType {
     /// * `f` - Formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        if self.bits == Self::BSDF_ALL.bits {
-            s += "BSDF_ALL";
-        } else {
-            if self.bits & Self::BSDF_REFLECTION.bits == Self::BSDF_REFLECTION.bits {
-                s += "BSDF_REFLECTION";
+        if self.bits & Self::BSDF_REFLECTION.bits == Self::BSDF_REFLECTION.bits {
+            s += "BSDF_REFLECTION";
+        }
+        if self.bits & Self::BSDF_TRANSMISSION.bits == Self::BSDF_TRANSMISSION.bits {
+            if s.len() > 0 {
+                s += " | ";
             }
-            if self.bits & Self::BSDF_TRANSMISSION.bits == Self::BSDF_TRANSMISSION.bits {
-                if s.len() > 0 {
-                    s += " | ";
-                }
-                s += "BSDF_TRANSMISSION";
+            s += "BSDF_TRANSMISSION";
+        }
+        if self.bits & Self::BSDF_DIFFUSE.bits == Self::BSDF_DIFFUSE.bits {
+            if s.len() > 0 {
+                s += " | ";
             }
-            if self.bits & Self::BSDF_DIFFUSE.bits == Self::BSDF_DIFFUSE.bits {
-                if s.len() > 0 {
-                    s += " | ";
-                }
-                s += "BSDF_DIFFUSE";
+            s += "BSDF_DIFFUSE";
+        }
+        if self.bits & Self::BSDF_GLOSSY.bits == Self::BSDF_GLOSSY.bits {
+            if s.len() > 0 {
+                s += " | ";
             }
-            if self.bits & Self::BSDF_GLOSSY.bits == Self::BSDF_GLOSSY.bits {
-                if s.len() > 0 {
-                    s += " | ";
-                }
-                s += "BSDF_GLOSSY";
+            s += "BSDF_GLOSSY";
+        }
+        if self.bits & Self::BSDF_SPECULAR.bits == Self::BSDF_SPECULAR.bits {
+            if s.len() > 0 {
+                s += " | ";
             }
-            if self.bits & Self::BSDF_SPECULAR.bits == Self::BSDF_SPECULAR.bits {
-                if s.len() > 0 {
-                    s += " | ";
-                }
-                s += "BSDF_SPECULAR";
-            }
+            s += "BSDF_SPECULAR";
         }
         write!(f, "{}", s)
     }
@@ -136,7 +126,7 @@ impl BSDF {
 
     /// Returns the number of `BxDF`s that match the given type.
     ///
-    /// * `bxdf_type` - The `BxdFType` to match (default to `BSDF_ALL`).
+    /// * `bxdf_type` - The `BxdFType` to match (default to `BxDFType::all()`).
     pub fn num_components(&self, bxdf_type: BxDFType) -> usize {
         let mut num = 0;
         for bxdf in self.bxdfs.iter() {
@@ -180,12 +170,10 @@ impl BSDF {
             let reflect = wi_w.dot(&self.ng) * wo_w.dot(&self.ng) > 0.0;
             let mut f = Spectrum::new(0.0);
             for bxdf in self.bxdfs.iter() {
+                let curr_type = bxdf.get_type();
                 if bxdf.matches_flags(bxdf_type)
-                    && ((reflect
-                        && bxdf.get_type() & BxDFType::BSDF_REFLECTION != BxDFType::BSDF_NONE)
-                        || (!reflect
-                            && bxdf.get_type() & BxDFType::BSDF_TRANSMISSION
-                                != BxDFType::BSDF_NONE))
+                    && ((reflect && curr_type.contains(BxDFType::BSDF_REFLECTION))
+                        || (!reflect && curr_type.contains(BxDFType::BSDF_TRANSMISSION)))
                 {
                     f += bxdf.f(&wo, &wi);
                 }
@@ -245,7 +233,7 @@ impl BSDF {
         // Sample chosen `BxDF`.
         let wo = self.world_to_local(wo_world);
         if wo.z == 0.0 {
-            info!("For wo_world = {}, wo = {}, wo.z = 0", wo_world, wo,);
+            info!("For wo_world = {}, wo = {}, wo.z = 0", wo_world, wo);
             return BxDFSample::default();
         }
 
@@ -312,6 +300,8 @@ impl BSDF {
             }
         );
 
+        // We need to return wi in world-space.
+        sample.wi = wi_world;
         sample
     }
 

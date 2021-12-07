@@ -25,23 +25,6 @@ impl LightType {
     ///
     /// * `flags` - Light flags to check.
     pub fn is_delta_light(&self) -> bool {
-        self.bits & Self::DELTA_POSITION_LIGHT.bits > 0
-            || self.bits & Self::DELTA_DIRECTION_LIGHT.bits > 0
-    }
-}
-
-impl From<u8> for LightType {
-    /// Convert a `u8` value to `LightType`.
-    ///
-    /// * `t` - A `u8` value containing combination of `*_LIGHT` flags combined
-    ///         bitwise OR operator.
-    fn from(t: u8) -> Self {
-        assert!(
-            t <= LightType::INFINITE_LIGHT.bits,
-            "Invalid light flags {}=({:#08b})",
-            t,
-            t
-        );
-        t.into()
+        self.contains(Self::DELTA_POSITION_LIGHT) || self.contains(Self::DELTA_DIRECTION_LIGHT)
     }
 }

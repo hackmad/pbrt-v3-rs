@@ -10,7 +10,7 @@ pub struct BxDFSample {
     /// The value of the PDF.
     pub pdf: Float,
 
-    /// The sampled inbound direction.
+    /// The sampled inbound direction in world-space.
     pub wi: Vector3f,
 
     /// The type of BxDF.
@@ -22,7 +22,7 @@ impl BxDFSample {
     ///
     /// * `f`            - The sample value.
     /// * `pdf`          - The value of the PDF.
-    /// * `wi`           - The sampled inbound direction.
+    /// * `wi`           - The sampled inbound direction in world-space.
     /// * `sampled_type` - The type of BxDF.
     pub fn new(f: Spectrum, pdf: Float, wi: Vector3f, bxdf_type: BxDFType) -> Self {
         Self {

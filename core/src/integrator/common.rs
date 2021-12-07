@@ -148,9 +148,9 @@ pub fn estimate_direct(
     specular: bool,
 ) -> Spectrum {
     let bsdf_flags = if specular {
-        BxDFType::BSDF_ALL
+        BxDFType::all()
     } else {
-        BxDFType::BSDF_ALL & !BxDFType::BSDF_SPECULAR
+        BxDFType::all() & !BxDFType::BSDF_SPECULAR
     };
     let mut ld = Spectrum::new(0.0);
     let hit = it.get_hit();
