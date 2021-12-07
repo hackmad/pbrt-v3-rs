@@ -7,8 +7,7 @@ use core::paramset::*;
 use core::pbrt::*;
 use core::rng::*;
 use core::sampler::*;
-use std::sync::atomic::AtomicUsize;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// Maximum resolution for sampling first 2 dimensions.
 const K_MAX_RESOLUTION: Int = 128;
@@ -45,10 +44,10 @@ pub struct HaltonSampler {
     sample_at_pixel_center: bool,
 
     /// Pixel for the current offset.
-    pixel_for_offset: Arc<Mutex<Point2i>>,
+    pixel_for_offset: Point2i,
 
     /// Sample index for the first Halton sample for `data.sampler.current_pixel`.
-    offset_for_current_pixel: AtomicUsize,
+    offset_for_current_pixel: usize,
 }
 
 impl HaltonSampler {
@@ -102,8 +101,8 @@ impl HaltonSampler {
             data: SamplerData::new(samples_per_pixel),
             gdata: GlobalSamplerData::new(),
             sample_at_pixel_center: sample_at_center,
-            pixel_for_offset: Arc::new(Mutex::new(Point2i::new(Int::MAX, Int::MAX))),
-            offset_for_current_pixel: AtomicUsize::new(0),
+            pixel_for_offset: Point2i::new(Int::MAX, Int::MAX),
+            offset_for_current_pixel: 0,
             sample_bounds,
             radical_inverse_permutations,
             base_scales,
@@ -130,13 +129,9 @@ impl HaltonSampler {
     ///
     /// * `sample_num` - The sample number.
     fn get_index_for_sample(&mut self, sample_num: usize) -> u64 {
-        let pixel = Arc::clone(&self.pixel_for_offset);
-        let mut pixel_for_offset = pixel.lock().unwrap();
-        let offset_for_current_pixel = self.offset_for_current_pixel.get_mut();
-
-        if self.data.current_pixel != *pixel_for_offset {
+        if self.data.current_pixel != self.pixel_for_offset {
             // Compute Halton sample offset for _currentPixel_
-            *offset_for_current_pixel = 0;
+            self.offset_for_current_pixel = 0;
             if self.sample_stride > 1 {
                 let pm = Point2i::new(
                     rem(self.data.current_pixel[0], K_MAX_RESOLUTION),
@@ -151,16 +146,16 @@ impl HaltonSampler {
                     let offset = dim_offset
                         * (self.sample_stride / self.base_scales[i])
                         * self.mult_inverse[i] as u64;
-                    *offset_for_current_pixel += offset as usize;
+                    self.offset_for_current_pixel += offset as usize;
                 }
 
-                *offset_for_current_pixel %= self.sample_stride as usize;
+                self.offset_for_current_pixel %= self.sample_stride as usize;
             }
 
-            *pixel_for_offset = self.data.current_pixel;
+            self.pixel_for_offset = self.data.current_pixel;
         }
 
-        (*offset_for_current_pixel + sample_num * self.sample_stride as usize) as u64
+        (self.offset_for_current_pixel + sample_num * self.sample_stride as usize) as u64
     }
 
     /// Returns the sample value for the given dimension of the index^th sample
@@ -209,6 +204,11 @@ impl Sampler for HaltonSampler {
 
         self.gdata.dimension = 0;
         self.gdata.interval_sample_index = self.get_index_for_sample(0);
+
+        // Compute the `array_end_dim` used for array samples.
+        self.gdata.array_end_dim = self.gdata.array_end_dim
+            + self.data.sample_array_1d.len() as u16
+            + 2 * self.data.sample_array_2d.len() as u16;
 
         // Compute 1D array samples for `GlobalSampler`.
         let len_1d_sizes = self.data.samples_1d_array_sizes.len();
