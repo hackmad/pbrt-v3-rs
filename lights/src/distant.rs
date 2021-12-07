@@ -8,7 +8,7 @@ use core::pbrt::*;
 use core::sampling::*;
 use core::scene::*;
 use core::spectrum::*;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 /// Implements a directional light source that deposits illumination from the
 /// same direction at every point in space.
@@ -23,9 +23,6 @@ pub struct DistantLight {
     /// Transformation from light coordinate system to world coordinate system.
     pub light_to_world: ArcTransform,
 
-    /// Transformation from world coordinate system to light coordinate system.
-    pub world_to_light: ArcTransform,
-
     /// The emitted radiance `L`.
     pub emitted_radiance: Spectrum,
 
@@ -33,10 +30,10 @@ pub struct DistantLight {
     pub w_light: Vector3f,
 
     /// Center of the world.
-    pub world_center: Arc<Mutex<Point3f>>,
+    pub world_center: Arc<RwLock<Point3f>>,
 
     /// Radius of the spherical world bounds.
-    pub world_radius: Arc<Mutex<Float>>,
+    pub world_radius: Arc<RwLock<Float>>,
 }
 
 impl DistantLight {
@@ -51,16 +48,13 @@ impl DistantLight {
         emitted_radiance: Spectrum,
         w_light: Vector3f,
     ) -> Self {
-        let world_to_light = Arc::clone(&light_to_world).inverse();
-
         Self {
             light_type: LightType::DELTA_DIRECTION_LIGHT,
             light_to_world: Arc::clone(&light_to_world),
-            world_to_light: Arc::new(world_to_light),
             medium_interface: MediumInterface::vacuum(),
-            world_center: Arc::new(Mutex::new(Point3f::default())), // Calculated in preprocess().
-            world_radius: Arc::new(Mutex::new(1.0)),                // Calculated in preprocess().
-            w_light,
+            world_center: Arc::new(RwLock::new(Point3f::default())), // Calculated in preprocess().
+            world_radius: Arc::new(RwLock::new(1.0)),                // Calculated in preprocess().
+            w_light: light_to_world.transform_vector(&w_light).normalize(),
             emitted_radiance,
         }
     }
@@ -72,8 +66,8 @@ impl Light for DistantLight {
     /// * `scene` - The scene.
     fn preprocess(&self, scene: &Scene) {
         let (world_center, world_radius) = scene.world_bound.bounding_sphere();
-        *self.world_center.lock().unwrap() = world_center;
-        *self.world_radius.lock().unwrap() = world_radius;
+        *self.world_center.write().unwrap() = world_center;
+        *self.world_radius.write().unwrap() = world_radius;
     }
 
     /// Returns the type of light.
@@ -86,7 +80,7 @@ impl Light for DistantLight {
     /// * `hit` - The interaction hit point.
     /// * `u`   - Sample value for Monte Carlo integration.
     fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Li {
-        let world_radius = *self.world_radius.lock().unwrap();
+        let world_radius = *self.world_radius.read().unwrap();
         let wi = self.w_light;
         let pdf = 1.0;
         let p_outside = hit.p + self.w_light * (2.0 * world_radius);
@@ -97,7 +91,7 @@ impl Light for DistantLight {
 
     /// Return the total emitted power.
     fn power(&self) -> Spectrum {
-        let world_radius = *self.world_radius.lock().unwrap();
+        let world_radius = *self.world_radius.read().unwrap();
         self.emitted_radiance * PI * world_radius * world_radius
     }
 
@@ -116,8 +110,8 @@ impl Light for DistantLight {
     /// * `u2`   - Sample values for Monte Carlo.
     /// * `time` - Time to use for the ray.
     fn sample_le(&self, u1: &Point2f, _u2: &Point2f, time: Float) -> Le {
-        let world_center = *self.world_center.lock().unwrap();
-        let world_radius = *self.world_radius.lock().unwrap();
+        let world_center = *self.world_center.read().unwrap();
+        let world_radius = *self.world_radius.read().unwrap();
 
         // Choose point on disk oriented toward infinite light direction.
         let (v1, v2) = coordinate_system(&self.w_light);
@@ -147,7 +141,7 @@ impl Light for DistantLight {
     /// * `ray`     - The ray.
     /// * `n_light` - The normal.
     fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f) -> Pdf {
-        let world_radius = *self.world_radius.lock().unwrap();
+        let world_radius = *self.world_radius.read().unwrap();
         Pdf::new(1.0 / (PI * world_radius * world_radius), 0.0)
     }
 }
