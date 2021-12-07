@@ -12,7 +12,7 @@ use core::sampling::*;
 use core::scene::*;
 use core::spectrum::*;
 use rayon::prelude::*;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 /// Implements an infinite area light source using a latitude-longitude radiance
 /// map.
@@ -37,10 +37,10 @@ pub struct InfiniteAreaLight {
     pub l_map: MIPMap<RGBSpectrum>,
 
     /// World center.
-    pub world_center: Arc<Mutex<Point3f>>,
+    pub world_center: Arc<RwLock<Point3f>>,
 
     /// World radius.
-    pub world_radius: Arc<Mutex<Float>>,
+    pub world_radius: Arc<RwLock<Float>>,
 
     /// 2-d distribution
     pub distribution: Distribution2D,
@@ -116,8 +116,8 @@ impl InfiniteAreaLight {
             n_samples,
             l_map,
             distribution,
-            world_center: Arc::new(Mutex::new(Point3f::default())), // Calculated in preprocess().
-            world_radius: Arc::new(Mutex::new(1.0)),                // Calculated in preprocess().
+            world_center: Arc::new(RwLock::new(Point3f::default())), // Calculated in preprocess().
+            world_radius: Arc::new(RwLock::new(1.0)),                // Calculated in preprocess().
         }
     }
 }
@@ -128,8 +128,8 @@ impl Light for InfiniteAreaLight {
     /// * `scene` - The scene.
     fn preprocess(&self, scene: &Scene) {
         let (world_center, world_radius) = scene.world_bound.bounding_sphere();
-        *self.world_center.lock().unwrap() = world_center;
-        *self.world_radius.lock().unwrap() = world_radius;
+        *self.world_center.write().unwrap() = world_center;
+        *self.world_radius.write().unwrap() = world_radius;
     }
 
     /// Returns the type of light.
@@ -168,7 +168,7 @@ impl Light for InfiniteAreaLight {
             }
 
             // Return radiance value for infinite light direction
-            let world_radius = *self.world_radius.lock().unwrap();
+            let world_radius = *self.world_radius.read().unwrap();
             let p0 = hit.clone();
             let p1 = hit.p + wi * (2.0 * world_radius);
             let vis = VisibilityTester::new(p0, p1);
@@ -181,7 +181,7 @@ impl Light for InfiniteAreaLight {
 
     /// Return the total emitted power.
     fn power(&self) -> Spectrum {
-        let world_radius = *self.world_radius.lock().unwrap();
+        let world_radius = *self.world_radius.read().unwrap();
         let rgb = self
             .l_map
             .lookup_triangle(&Point2f::new(0.5, 0.5), 0.5)
@@ -241,8 +241,8 @@ impl Light for InfiniteAreaLight {
                 Spectrum::new(0.0),
             )
         } else {
-            let world_center = *self.world_center.lock().unwrap();
-            let world_radius = *self.world_radius.lock().unwrap();
+            let world_center = *self.world_center.read().unwrap();
+            let world_radius = *self.world_radius.read().unwrap();
 
             let theta = uv[1] * PI;
             let phi = uv[0] * TWO_PI;
@@ -282,7 +282,7 @@ impl Light for InfiniteAreaLight {
     /// * `ray`     - The ray.
     /// * `n_light` - The normal.
     fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f) -> Pdf {
-        let world_radius = *self.world_radius.lock().unwrap();
+        let world_radius = *self.world_radius.read().unwrap();
         let d = -self.world_to_light.transform_vector(&ray.d);
         let theta = spherical_theta(&d);
         let phi = spherical_phi(&d);
