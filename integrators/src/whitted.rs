@@ -107,8 +107,10 @@ impl Integrator for WhittedIntegrator {
                     continue;
                 }
 
-                let f = isect.bsdf.as_ref().unwrap().f(&wo, &wi, BxDFType::all());
-
+                let f = isect
+                    .bsdf
+                    .as_ref()
+                    .map_or(Spectrum::new(0.0), |bsdf| bsdf.f(&wo, &wi, BxDFType::all()));
                 if !f.is_black() {
                     // If no visiblity tester, then unoccluded = true.
                     let unoccluded =

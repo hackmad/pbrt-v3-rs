@@ -46,18 +46,15 @@ impl Primitive for TransformedPrimitive {
         let interpolated_prim_to_world = self.primitive_to_world.interpolate(r.time);
         let mut ray = interpolated_prim_to_world.inverse().transform_ray(r);
 
-        if let Some(mut it) = self.primitive.intersect(&mut ray) {
-            r.t_max = ray.t_max;
-            if !interpolated_prim_to_world.is_identity() {
-                it = interpolated_prim_to_world.transform_surface_interaction(&it);
-            }
-
-            debug_assert!(it.hit.n.dot(&it.shading.n) > 0.0);
-
-            Some(it)
-        } else {
-            None
+        let mut it = self.primitive.intersect(&mut ray)?;
+        r.t_max = ray.t_max;
+        if !interpolated_prim_to_world.is_identity() {
+            it = interpolated_prim_to_world.transform_surface_interaction(&it);
         }
+
+        debug_assert!(it.hit.n.dot(&it.shading.n) > 0.0);
+
+        Some(it)
     }
 
     /// Returns `true` if a ray-primitive intersection succeeds; otherwise `false`.

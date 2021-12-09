@@ -798,7 +798,7 @@ impl Api {
                     ));
                     prims[0] = prim;
                 } else {
-                    error!("Error creating TransformedPrimitive in pbrtShape.");
+                    error!("Error creating TransformedPrimitive in pbrt_shape.");
                 }
             }
 

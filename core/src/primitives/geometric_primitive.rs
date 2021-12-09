@@ -61,27 +61,24 @@ impl Primitive for GeometricPrimitive {
     ///
     /// * `r`                  - The ray.
     fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
-        if let Some(mut it) = self.shape.intersect(r, true) {
-            r.t_max = it.t;
-            it.isect.primitive = Some(self);
+        let mut it = self.shape.intersect(r, true)?;
+        r.t_max = it.t;
+        it.isect.primitive = Some(self);
 
-            debug_assert!(it.isect.hit.n.dot(&it.isect.shading.n) > 0.0);
+        debug_assert!(it.isect.hit.n.dot(&it.isect.shading.n) > 0.0);
 
-            // Initialize SurfaceInteraction::mediumInterface after Shape
-            // intersection.
-            let is_medium_transition = self.medium_interface.is_medium_transition();
-            it.isect.hit.medium_interface = if is_medium_transition {
-                Some(self.medium_interface.clone())
-            } else if let Some(medium) = r.medium.clone() {
-                Some(MediumInterface::from(medium))
-            } else {
-                None
-            };
-
-            Some(it.isect)
+        // Initialize SurfaceInteraction::mediumInterface after Shape
+        // intersection.
+        let is_medium_transition = self.medium_interface.is_medium_transition();
+        it.isect.hit.medium_interface = if is_medium_transition {
+            Some(self.medium_interface.clone())
+        } else if let Some(medium) = r.medium.clone() {
+            Some(MediumInterface::from(medium))
         } else {
             None
-        }
+        };
+
+        Some(it.isect)
     }
 
     /// Returns `true` if a ray-primitive intersection succeeds; otherwise `false`.

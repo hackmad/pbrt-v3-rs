@@ -115,146 +115,144 @@ impl Shape for Sphere {
         let c = ox * ox + oy * oy + oz * oz - EFloat::from(self.radius) * EFloat::from(self.radius);
 
         // Solve quadratic equation for t values.
-        if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
-            // Check quadric shape t0 and t1 for nearest intersection.
-            if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
+        let (t0, t1) = Quadratic::solve_efloat(a, b, c)?;
+
+        // Check quadric shape t0 and t1 for nearest intersection.
+        if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
+            return None;
+        }
+
+        let mut t_shape_hit = t0;
+        if t_shape_hit.lower_bound() <= 0.0 {
+            t_shape_hit = t1;
+            if t_shape_hit.upper_bound() > ray.t_max {
+                return None;
+            }
+        }
+
+        // Compute sphere hit position and phi.
+        let mut p_hit = ray.at(Float::from(t_shape_hit));
+
+        // Refine sphere intersection point.
+        p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
+
+        if p_hit.x == 0.0 && p_hit.y == 0.0 {
+            p_hit.x = 1e-5 * self.radius;
+        }
+
+        let mut phi = p_hit.y.atan2(p_hit.x);
+        if phi < 0.0 {
+            phi += TWO_PI;
+        }
+
+        // Test sphere intersection against clipping parameters.
+        if (self.z_min > -self.radius && p_hit.z < self.z_min)
+            || (self.z_max < self.radius && p_hit.z > self.z_max)
+            || phi > self.phi_max
+        {
+            if t_shape_hit == t1 {
+                return None;
+            }
+            if t1.upper_bound() > ray.t_max {
                 return None;
             }
 
-            let mut t_shape_hit = t0;
-            if t_shape_hit.lower_bound() <= 0.0 {
-                t_shape_hit = t1;
-                if t_shape_hit.upper_bound() > ray.t_max {
-                    return None;
-                }
-            }
+            t_shape_hit = t1;
 
             // Compute sphere hit position and phi.
-            let mut p_hit = ray.at(Float::from(t_shape_hit));
+            p_hit = ray.at(Float::from(t_shape_hit));
 
             // Refine sphere intersection point.
             p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
-
             if p_hit.x == 0.0 && p_hit.y == 0.0 {
                 p_hit.x = 1e-5 * self.radius;
             }
 
-            let mut phi = p_hit.y.atan2(p_hit.x);
+            phi = p_hit.y.atan2(p_hit.x);
             if phi < 0.0 {
                 phi += TWO_PI;
             }
 
-            // Test sphere intersection against clipping parameters.
             if (self.z_min > -self.radius && p_hit.z < self.z_min)
                 || (self.z_max < self.radius && p_hit.z > self.z_max)
                 || phi > self.phi_max
             {
-                if t_shape_hit == t1 {
-                    return None;
-                }
-                if t1.upper_bound() > ray.t_max {
-                    return None;
-                }
-
-                t_shape_hit = t1;
-
-                // Compute sphere hit position and phi.
-                p_hit = ray.at(Float::from(t_shape_hit));
-
-                // Refine sphere intersection point.
-                p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
-                if p_hit.x == 0.0 && p_hit.y == 0.0 {
-                    p_hit.x = 1e-5 * self.radius;
-                }
-
-                phi = p_hit.y.atan2(p_hit.x);
-                if phi < 0.0 {
-                    phi += TWO_PI;
-                }
-
-                if (self.z_min > -self.radius && p_hit.z < self.z_min)
-                    || (self.z_max < self.radius && p_hit.z > self.z_max)
-                    || phi > self.phi_max
-                {
-                    return None;
-                }
+                return None;
             }
-
-            // Find parametric representation of sphere hit.
-            let u = phi / self.phi_max;
-            let theta = clamp(p_hit.z / self.radius, -1.0, 1.0).acos();
-            let v = (theta - self.theta_min) / (self.theta_max - self.theta_min);
-
-            // Compute sphere dpdu and dpdv.
-            let z_radius = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
-            let inv_z_radius = 1.0 / z_radius;
-            let cos_phi = p_hit.x * inv_z_radius;
-            let sin_phi = p_hit.y * inv_z_radius;
-            let dpdu = Vector3::new(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
-            let dpdv = (self.theta_max - self.theta_min)
-                * Vector3::new(
-                    p_hit.z * cos_phi,
-                    p_hit.z * sin_phi,
-                    -self.radius * theta.sin(),
-                );
-
-            // Compute sphere dndu and dndv
-            let d2p_duu = -self.phi_max * self.phi_max * Vector3::new(p_hit.x, p_hit.y, 0.0);
-            let d2p_duv = (self.theta_max - self.theta_min)
-                * p_hit.z
-                * self.phi_max
-                * Vector3::new(-sin_phi, cos_phi, 0.0);
-            let d2p_dvv = -(self.theta_max - self.theta_min)
-                * (self.theta_max - self.theta_min)
-                * Vector3::new(p_hit.x, p_hit.y, p_hit.z);
-
-            // Compute normal.
-            let n = dpdu.cross(&dpdv).normalize();
-
-            // Compute coefficients for first fundamental form.
-            let e1 = dpdu.dot(&dpdu);
-            let f1 = dpdu.dot(&dpdv);
-            let g1 = dpdv.dot(&dpdv);
-
-            // Compute coefficients for second fundamental form.
-            let e2 = n.dot(&d2p_duu);
-            let f2 = n.dot(&d2p_duv);
-            let g2 = n.dot(&d2p_dvv);
-
-            // Compute dndu and dndv from fundamental form coefficients.
-            let inv_egf_1 = 1.0 / (e1 * g1 - f1 * f1);
-            let dndu = Normal3::from(
-                (f2 * f1 - e2 * g1) * inv_egf_1 * dpdu + (e2 * f1 - f2 * e1) * inv_egf_1 * dpdv,
-            );
-            let dndv = Normal3::from(
-                (g2 * f1 - f2 * g1) * inv_egf_1 * dpdu + (f2 * f1 - g2 * e1) * inv_egf_1 * dpdv,
-            );
-
-            // Compute error bounds for sphere intersection
-            let p_error = gamma(5) * Vector3::from(p_hit).abs();
-
-            // Initialize SurfaceInteraction from parametric information.
-            let si = SurfaceInteraction::new(
-                p_hit,
-                p_error,
-                Point2::new(u, v),
-                -ray.d,
-                dpdu,
-                dpdv,
-                dndu,
-                dndv,
-                ray.time,
-                Arc::clone(&self.data),
-                None,
-            );
-
-            // Create hit.
-            let isect = self.data.object_to_world.transform_surface_interaction(&si);
-            let t_hit = Float::from(t_shape_hit);
-            Some(Intersection::new(t_hit, isect))
-        } else {
-            None
         }
+
+        // Find parametric representation of sphere hit.
+        let u = phi / self.phi_max;
+        let theta = clamp(p_hit.z / self.radius, -1.0, 1.0).acos();
+        let v = (theta - self.theta_min) / (self.theta_max - self.theta_min);
+
+        // Compute sphere dpdu and dpdv.
+        let z_radius = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
+        let inv_z_radius = 1.0 / z_radius;
+        let cos_phi = p_hit.x * inv_z_radius;
+        let sin_phi = p_hit.y * inv_z_radius;
+        let dpdu = Vector3::new(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
+        let dpdv = (self.theta_max - self.theta_min)
+            * Vector3::new(
+                p_hit.z * cos_phi,
+                p_hit.z * sin_phi,
+                -self.radius * theta.sin(),
+            );
+
+        // Compute sphere dndu and dndv
+        let d2p_duu = -self.phi_max * self.phi_max * Vector3::new(p_hit.x, p_hit.y, 0.0);
+        let d2p_duv = (self.theta_max - self.theta_min)
+            * p_hit.z
+            * self.phi_max
+            * Vector3::new(-sin_phi, cos_phi, 0.0);
+        let d2p_dvv = -(self.theta_max - self.theta_min)
+            * (self.theta_max - self.theta_min)
+            * Vector3::new(p_hit.x, p_hit.y, p_hit.z);
+
+        // Compute normal.
+        let n = dpdu.cross(&dpdv).normalize();
+
+        // Compute coefficients for first fundamental form.
+        let e1 = dpdu.dot(&dpdu);
+        let f1 = dpdu.dot(&dpdv);
+        let g1 = dpdv.dot(&dpdv);
+
+        // Compute coefficients for second fundamental form.
+        let e2 = n.dot(&d2p_duu);
+        let f2 = n.dot(&d2p_duv);
+        let g2 = n.dot(&d2p_dvv);
+
+        // Compute dndu and dndv from fundamental form coefficients.
+        let inv_egf_1 = 1.0 / (e1 * g1 - f1 * f1);
+        let dndu = Normal3::from(
+            (f2 * f1 - e2 * g1) * inv_egf_1 * dpdu + (e2 * f1 - f2 * e1) * inv_egf_1 * dpdv,
+        );
+        let dndv = Normal3::from(
+            (g2 * f1 - f2 * g1) * inv_egf_1 * dpdu + (f2 * f1 - g2 * e1) * inv_egf_1 * dpdv,
+        );
+
+        // Compute error bounds for sphere intersection
+        let p_error = gamma(5) * Vector3::from(p_hit).abs();
+
+        // Initialize SurfaceInteraction from parametric information.
+        let si = SurfaceInteraction::new(
+            p_hit,
+            p_error,
+            Point2::new(u, v),
+            -ray.d,
+            dpdu,
+            dpdv,
+            dndu,
+            dndv,
+            ray.time,
+            Arc::clone(&self.data),
+            None,
+        );
+
+        // Create hit.
+        let isect = self.data.object_to_world.transform_surface_interaction(&si);
+        let t_hit = Float::from(t_shape_hit);
+        Some(Intersection::new(t_hit, isect))
     }
 
     /// Returns `true` if a ray-shape intersection succeeds; otherwise `false`.
@@ -286,72 +284,74 @@ impl Shape for Sphere {
         let c = ox * ox + oy * oy + oz * oz - EFloat::from(self.radius) * EFloat::from(self.radius);
 
         // Solve quadratic equation for `t` values.
-        if let Some((t0, t1)) = Quadratic::solve_efloat(a, b, c) {
-            // Check quadric shape _t0_ and _t1_ for nearest intersection
-            if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
+        let solution = Quadratic::solve_efloat(a, b, c);
+        if solution.is_none() {
+            return false;
+        }
+        let (t0, t1) = solution.unwrap();
+
+        // Check quadric shape _t0_ and _t1_ for nearest intersection
+        if t0.upper_bound() > ray.t_max || t1.lower_bound() <= 0.0 {
+            return false;
+        }
+
+        let mut t_shape_hit = t0;
+        if t_shape_hit.lower_bound() <= 0.0 {
+            t_shape_hit = t1;
+            if t_shape_hit.upper_bound() > ray.t_max {
+                return false;
+            }
+        }
+
+        // Compute sphere hit position and phi.
+        let mut p_hit = ray.at(Float::from(t_shape_hit));
+
+        // Refine sphere intersection point.
+        p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
+
+        if p_hit.x == 0.0 && p_hit.y == 0.0 {
+            p_hit.x = 1e-5 * self.radius;
+        }
+
+        let mut phi = p_hit.y.atan2(p_hit.x);
+        if phi < 0.0 {
+            phi += TWO_PI;
+        }
+
+        // Test sphere intersection against clipping parameters.
+        if (self.z_min > -self.radius && p_hit.z < self.z_min)
+            || (self.z_max < self.radius && p_hit.z > self.z_max)
+            || phi > self.phi_max
+        {
+            if t_shape_hit == t1 {
+                return false;
+            }
+            if t1.upper_bound() > ray.t_max {
                 return false;
             }
 
-            let mut t_shape_hit = t0;
-            if t_shape_hit.lower_bound() <= 0.0 {
-                t_shape_hit = t1;
-                if t_shape_hit.upper_bound() > ray.t_max {
-                    return false;
-                }
-            }
+            t_shape_hit = t1;
 
             // Compute sphere hit position and phi.
-            let mut p_hit = ray.at(Float::from(t_shape_hit));
+            p_hit = ray.at(Float::from(t_shape_hit));
 
             // Refine sphere intersection point.
             p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
-
             if p_hit.x == 0.0 && p_hit.y == 0.0 {
                 p_hit.x = 1e-5 * self.radius;
             }
 
-            let mut phi = p_hit.y.atan2(p_hit.x);
+            phi = p_hit.y.atan2(p_hit.x);
             if phi < 0.0 {
                 phi += TWO_PI;
             }
 
-            // Test sphere intersection against clipping parameters.
             if (self.z_min > -self.radius && p_hit.z < self.z_min)
                 || (self.z_max < self.radius && p_hit.z > self.z_max)
                 || phi > self.phi_max
             {
-                if t_shape_hit == t1 {
-                    return false;
-                }
-                if t1.upper_bound() > ray.t_max {
-                    return false;
-                }
-
-                t_shape_hit = t1;
-
-                // Compute sphere hit position and phi.
-                p_hit = ray.at(Float::from(t_shape_hit));
-
-                // Refine sphere intersection point.
-                p_hit *= self.radius / p_hit.distance(Point3::new(0.0, 0.0, 0.0));
-                if p_hit.x == 0.0 && p_hit.y == 0.0 {
-                    p_hit.x = 1e-5 * self.radius;
-                }
-
-                phi = p_hit.y.atan2(p_hit.x);
-                if phi < 0.0 {
-                    phi += TWO_PI;
-                }
-
-                if (self.z_min > -self.radius && p_hit.z < self.z_min)
-                    || (self.z_max < self.radius && p_hit.z > self.z_max)
-                    || phi > self.phi_max
-                {
-                    return false;
-                }
+                return false;
             }
-        } else {
-            return false;
         }
 
         true

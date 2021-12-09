@@ -192,7 +192,7 @@ impl BSDF {
         // Choose which `BxDF` to sample.
         let matching_comps = self.num_components(bxdf_type);
         if matching_comps == 0 {
-            info!("For wo_world = {}, matching_comps = 0", wo_world);
+            debug!("For wo_world = {}, matching_comps = 0", wo_world);
             return BxDFSample::default();
         }
         let comp = min(
@@ -214,7 +214,7 @@ impl BSDF {
         }
         let bxdf_idx = bxdf_idx.expect("bsdf::sample_f() did not find matching bxdf");
         let matched_bxdf = Arc::clone(&self.bxdfs[bxdf_idx]);
-        info!(
+        debug!(
             "BSDF::Sample_f chose comp = {} / matching = {}, bxdf: {}",
             comp,
             matching_comps,
@@ -233,12 +233,12 @@ impl BSDF {
         // Sample chosen `BxDF`.
         let wo = self.world_to_local(wo_world);
         if wo.z == 0.0 {
-            info!("For wo_world = {}, wo = {}, wo.z = 0", wo_world, wo);
+            debug!("For wo_world = {}, wo = {}, wo.z = 0", wo_world, wo);
             return BxDFSample::default();
         }
 
         let mut sample = matched_bxdf.sample_f(&wo, &u_remapped);
-        info!(
+        debug!(
             "For wo_world = {}, wo = {}, sampled f = {}, pdf = {}, ratio = {}, wi = {}",
             wo_world,
             wo,
@@ -253,7 +253,7 @@ impl BSDF {
         );
 
         if sample.pdf == 0.0 {
-            info!("sample.pdf = 0");
+            debug!("sample.pdf = 0");
             return BxDFSample::default();
         }
         sample.bxdf_type = matched_bxdf.get_type();
@@ -289,7 +289,7 @@ impl BSDF {
             }
         }
 
-        info!(
+        debug!(
             "Overall f = {}, pdf = {}, ratio = {}",
             sample.f,
             sample.pdf,
