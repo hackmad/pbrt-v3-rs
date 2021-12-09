@@ -17,7 +17,8 @@ impl Log2<u32> for Float {
         } else {
             let bits = float_to_bits(self);
             let r = (bits >> 23) - 127;
-            let t = if bits & (1 << 22) == 0 { 0 } else { 1 };
+            let a = if (1 << 22) > 0 { 1 } else { 0 };
+            let t = bits & a;
             r + t
         }
     }
