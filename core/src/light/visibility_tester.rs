@@ -15,7 +15,7 @@ pub struct VisibilityTester {
     pub p0: Hit,
 
     /// Second endpoint of shadow ray.
-    pub p1: Point3f,
+    pub p1: Hit,
 }
 
 impl VisibilityTester {
@@ -23,7 +23,7 @@ impl VisibilityTester {
     ///
     /// * `p0` - One endpoint of shadow ray.
     /// * `p1` - Second endpoint of shadow ray.
-    pub fn new(p0: Hit, p1: Point3f) -> Self {
+    pub fn new(p0: Hit, p1: Hit) -> Self {
         Self { p0, p1 }
     }
 
@@ -32,7 +32,7 @@ impl VisibilityTester {
     ///
     /// * `scene` - The scene.
     pub fn unoccluded(&self, scene: Arc<Scene>) -> bool {
-        !scene.intersect_p(&self.p0.spawn_ray_to_point(&self.p1))
+        !scene.intersect_p(&self.p0.spawn_ray_to_hit(&self.p1))
     }
 
     /// Computes the beam transmittance, the fraction of radiance transmitted
@@ -42,7 +42,7 @@ impl VisibilityTester {
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     pub fn tr(&self, scene: Arc<Scene>, sampler: ArcSampler) -> Spectrum {
-        let mut ray = self.p0.spawn_ray_to_point(&self.p1);
+        let mut ray = self.p0.spawn_ray_to_hit(&self.p1);
         let mut tr = Spectrum::new(1.0);
 
         loop {
@@ -59,7 +59,7 @@ impl VisibilityTester {
                 }
 
                 // Generate next ray segment or return final transmittance.
-                ray = isect.hit.spawn_ray_to_point(&self.p1);
+                ray = isect.hit.spawn_ray_to_hit(&self.p1);
             } else {
                 // Update transmittance for current ray segment.
                 let medium = ray.medium.clone();

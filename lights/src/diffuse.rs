@@ -107,13 +107,15 @@ impl Light for DiffuseAreaLight {
         let wi = p_shape_hit.p - hit.p;
         if pdf == 0.0 || wi.length_squared() == 0.0 {
             let pdf = 0.0;
-            let visibility = None;
+            let vis = None;
             let value = Spectrum::new(0.0);
-            Li::new(wi, pdf, visibility, value)
+            Li::new(wi, pdf, vis, value)
         } else {
-            let visibility = Some(VisibilityTester::new(hit.clone(), p_shape_hit.p));
+            let p0 = hit.clone();
+            let p1 = p_shape_hit.clone();
+            let vis = VisibilityTester::new(p0, p1);
             let value = self.l(&p_shape_hit, &(-wi));
-            Li::new(wi, pdf, visibility, value)
+            Li::new(wi, pdf, Some(vis), value)
         }
     }
 

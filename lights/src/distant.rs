@@ -82,8 +82,19 @@ impl Light for DistantLight {
     fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Li {
         let world_radius = *self.world_radius.read().unwrap();
         let p_outside = hit.p + self.w_light * (2.0 * world_radius);
-        let visibility = Some(VisibilityTester::new(hit.clone(), p_outside));
-        Li::new(self.w_light, 1.0, visibility, self.emitted_radiance)
+
+        let p0 = hit.clone();
+        let p1 = Hit::new(
+            p_outside,
+            hit.time,
+            Vector3f::default(),
+            Vector3f::default(),
+            Normal3f::default(),
+            hit.medium_interface.clone(),
+        );
+        let vis = VisibilityTester::new(p0, p1);
+
+        Li::new(self.w_light, 1.0, Some(vis), self.emitted_radiance)
     }
 
     /// Return the total emitted power.

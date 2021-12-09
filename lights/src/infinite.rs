@@ -170,7 +170,14 @@ impl Light for InfiniteAreaLight {
             // Return radiance value for infinite light direction
             let world_radius = *self.world_radius.read().unwrap();
             let p0 = hit.clone();
-            let p1 = hit.p + wi * (2.0 * world_radius);
+            let p1 = Hit::new(
+                hit.p + wi * (2.0 * world_radius),
+                hit.time,
+                Vector3f::default(),
+                Vector3f::default(),
+                Normal3f::default(),
+                hit.medium_interface.clone(),
+            );
             let vis = VisibilityTester::new(p0, p1);
 
             let rgb = self.l_map.lookup_triangle(&uv, 0.0).to_rgb();

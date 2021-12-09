@@ -70,9 +70,20 @@ impl Light for PointLight {
     fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Li {
         let wi = (self.p_light - hit.p).normalize();
         let pdf = 1.0;
-        let visibility = Some(VisibilityTester::new(hit.clone(), self.p_light));
+
+        let p0 = hit.clone();
+        let p1 = Hit::new(
+            self.p_light,
+            hit.time,
+            Vector3f::default(),
+            Vector3f::default(),
+            Normal3f::default(),
+            hit.medium_interface.clone(),
+        );
+        let vis = VisibilityTester::new(p0, p1);
+
         let value = self.intensity / self.p_light.distance_squared(hit.p);
-        Li::new(wi, pdf, visibility, value)
+        Li::new(wi, pdf, Some(vis), value)
     }
 
     /// Return the total emitted power.
