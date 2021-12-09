@@ -289,7 +289,6 @@ impl Shape for Hyperboloid {
             dndv,
             ray.time,
             Arc::clone(&self.data),
-            None,
         );
 
         // Create hit.

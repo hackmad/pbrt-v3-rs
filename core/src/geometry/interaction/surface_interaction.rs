@@ -79,7 +79,6 @@ impl<'a> SurfaceInteraction<'a> {
     /// * `dndv`       - Differential change ∂n/∂v in surface normal as we move along v.
     /// * `time`       - Time when interaction occurred.
     /// * `shape_data` - The shape data.
-    /// * `primitive`  - The primitive.
     pub fn new(
         p: Point3f,
         p_error: Vector3f,
@@ -91,7 +90,6 @@ impl<'a> SurfaceInteraction<'a> {
         dndv: Normal3f,
         time: Float,
         shape_data: Arc<ShapeData>,
-        primitive: Option<&'a dyn Primitive>,
     ) -> Self {
         // Calculate normal n from the partial derivatives.
         let mut n = Normal3f::from(dpdu.cross(&dpdv).normalize());
@@ -118,7 +116,7 @@ impl<'a> SurfaceInteraction<'a> {
             shape_data,
             bsdf: None,
             bssrdf: None,
-            primitive,
+            primitive: None,
         }
     }
 

@@ -595,7 +595,6 @@ impl Shape for Triangle {
                 Normal3f::default(),
                 r.time,
                 Arc::clone(&self.data),
-                None,
             );
 
             let alpha_mask = self.mesh.alpha_mask.clone().unwrap();
@@ -616,7 +615,6 @@ impl Shape for Triangle {
             Normal3f::default(),
             r.time,
             Arc::clone(&self.data),
-            None,
         );
 
         // Override surface normal in isect for triangle.
@@ -877,7 +875,6 @@ impl Shape for Triangle {
                 Normal3f::default(),
                 r.time,
                 Arc::clone(&self.data),
-                None,
             );
 
             let alpha_mask = self.mesh.alpha_mask.clone().unwrap();

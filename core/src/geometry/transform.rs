@@ -536,10 +536,10 @@ impl Transform {
             self.transform_normal(&si.dndv),
             si.hit.time,
             Arc::clone(&si.shape_data),
-            si.primitive,
         );
 
         // Transform remaining members of SurfaceInteraction.
+        ret.hit.medium_interface = si.hit.medium_interface.clone();
         ret.hit.n = self.transform_normal(&si.hit.n).normalize();
         ret.bsdf = si.bsdf.clone();
         ret.bssrdf = si.bssrdf.as_ref().map(|bssrdf| Arc::clone(&bssrdf));
@@ -549,13 +549,12 @@ impl Transform {
         ret.dvdy = si.dvdy;
         ret.dpdx = self.transform_vector(&si.dpdx);
         ret.dpdy = self.transform_vector(&si.dpdy);
-        ret.shading.n = self.transform_normal(&si.shading.n).normalize();
+        ret.primitive = si.primitive;
         ret.shading.dpdu = self.transform_vector(&si.shading.dpdu);
         ret.shading.dpdv = self.transform_vector(&si.shading.dpdv);
         ret.shading.dndu = self.transform_normal(&si.shading.dndu);
         ret.shading.dndv = self.transform_normal(&si.shading.dndv);
-        
-        // ret.hit.n = ret.hit.n.face_forward(ret.shading.n);
+        ret.shading.n = self.transform_normal(&si.shading.n).normalize();
         ret.shading.n = ret.shading.n.face_forward(&Vector3::from(ret.hit.n));
 
         ret

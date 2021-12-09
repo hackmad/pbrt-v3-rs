@@ -85,7 +85,7 @@ impl Curve {
         c: [Point3f; 4],
         width: [Float; 2],
         norm: Option<&[Normal3f]>,
-        split_depth: i32,
+        split_depth: i32, // Should really be usize.
     ) -> Vec<ArcShape> {
         let common = CurveData::new(curve_type, c, width, norm);
 
@@ -210,7 +210,7 @@ impl Curve {
         let mut curves: Vec<ArcShape> = vec![];
         // Pointer to the first control point for the current segment. This is
         // updated after each loop iteration depending on the current basis.
-        let mut cp_base = &cp[0..];
+        let mut cp_base = 0;
         for seg in 0..n_segments {
             let mut seg_cp_bezier = [Point3f::default(); 4];
 
@@ -222,17 +222,17 @@ impl Curve {
             if basis == "bezier" {
                 if degree == 2 {
                     // Elevate to degree 3.
-                    seg_cp_bezier[0] = cp_base[0];
-                    seg_cp_bezier[1] = lerp(2.0 / 3.0, cp_base[0], cp_base[1]);
-                    seg_cp_bezier[2] = lerp(1.0 / 3.0, cp_base[1], cp_base[2]);
-                    seg_cp_bezier[3] = cp_base[2];
+                    seg_cp_bezier[0] = cp[cp_base + 0];
+                    seg_cp_bezier[1] = lerp(2.0 / 3.0, cp[cp_base + 0], cp[cp_base + 1]);
+                    seg_cp_bezier[2] = lerp(1.0 / 3.0, cp[cp_base + 1], cp[cp_base + 2]);
+                    seg_cp_bezier[3] = cp[cp_base + 2];
                 } else {
                     // Allset.
                     for i in 0..4 {
-                        seg_cp_bezier[i] = cp_base[i];
+                        seg_cp_bezier[i] = cp[cp_base + i];
                     }
                 }
-                cp_base = &cp_base[degree..];
+                cp_base += degree;
             } else {
                 // Uniform b-spline.
                 if degree == 2 {
@@ -241,9 +241,9 @@ impl Curve {
                     // knot vector; we'll label the points p01, p12, and p23.
                     // We want the Bezier control points of the equivalent
                     // curve, which are p11, p12, and p22.
-                    let p01 = cp_base[0];
-                    let p12 = cp_base[1];
-                    let p23 = cp_base[2];
+                    let p01 = cp[cp_base + 0];
+                    let p12 = cp[cp_base + 1];
+                    let p23 = cp[cp_base + 2];
 
                     // We already have p12.
                     let p11 = lerp(0.5, p01, p12);
@@ -255,13 +255,13 @@ impl Curve {
                     seg_cp_bezier[2] = lerp(1.0 / 3.0, p12, p22);
                     seg_cp_bezier[3] = p22;
                 } else {
-                    // Otherwise we will blossom from p012, p123, p234, and p345
+                    // Otherwise we will blossom from p011, p123, p234, and p345
                     // to the Bezier control points p222, p223, p233, and p333.
                     // https://people.eecs.berkeley.edu/~sequin/CS284/IMGS/cubicbsplinepoints.gif
-                    let p012 = cp_base[0];
-                    let p123 = cp_base[1];
-                    let p234 = cp_base[2];
-                    let p345 = cp_base[3];
+                    let p012 = cp[cp_base + 0];
+                    let p123 = cp[cp_base + 1];
+                    let p234 = cp[cp_base + 2];
+                    let p345 = cp[cp_base + 3];
 
                     let p122 = lerp(2.0 / 3.0, p012, p123);
                     let p223 = lerp(1.0 / 3.0, p123, p234);
@@ -276,7 +276,7 @@ impl Curve {
                     seg_cp_bezier[2] = p233;
                     seg_cp_bezier[3] = p333;
                 }
-                cp_base = &cp_base[1..];
+                cp_base += 1;
             }
 
             let width = [
@@ -328,7 +328,7 @@ impl Curve {
         &self,
         ray: &Ray,
         cp: &[Point3f; 4],
-        ray_to_object: ArcTransform,
+        ray_to_object: &Transform,
         u0: Float,
         u1: Float,
         depth: u32,
@@ -345,9 +345,10 @@ impl Curve {
             // intersection with it.
             let u = [u0, (u0 + u1) / 2.0, u1];
             let mut hit: Option<Intersection<'a>> = None;
+            let mut cps = 0;
             for seg in 0..2 {
                 // Splice containing the 4 control poitns for the current segment.
-                let cps = &cp_split[seg * 3..seg * 3 + 4];
+                //let cps = &cp_split[seg * 3..seg * 3 + 4];
 
                 let max_width = max(
                     lerp(u[seg], self.common.width[0], self.common.width[1]),
@@ -356,21 +357,44 @@ impl Curve {
 
                 // As above, check y first, since it most commonly lets us exit
                 // out early.
-                if max(max(cps[0].y, cps[1].y), max(cps[2].y, cps[3].y)) + 0.5 * max_width < 0.0
-                    || min(min(cps[0].y, cps[1].y), min(cps[2].y, cps[3].y)) - 0.5 * max_width > 0.0
+                if max(
+                    max(cp_split[cps + 0].y, cp_split[cps + 1].y),
+                    max(cp_split[cps + 2].y, cp_split[cps + 3].y),
+                ) + 0.5 * max_width
+                    < 0.0
+                    || min(
+                        min(cp_split[cps + 0].y, cp_split[cps + 1].y),
+                        min(cp_split[cps + 2].y, cp_split[cps + 3].y),
+                    ) - 0.5 * max_width
+                        > 0.0
                 {
                     continue;
                 }
 
-                if max(max(cps[0].x, cps[1].x), max(cps[2].x, cps[3].x)) + 0.5 * max_width < 0.0
-                    || min(min(cps[0].x, cps[1].x), min(cps[2].x, cps[3].x)) - 0.5 * max_width > 0.0
+                if max(
+                    max(cp_split[cps + 0].x, cp_split[cps + 1].x),
+                    max(cp_split[cps + 2].x, cp_split[cps + 3].x),
+                ) + 0.5 * max_width
+                    < 0.0
+                    || min(
+                        min(cp_split[cps + 0].x, cp_split[cps + 1].x),
+                        min(cp_split[cps + 2].x, cp_split[cps + 3].x),
+                    ) - 0.5 * max_width
+                        > 0.0
                 {
                     continue;
                 }
 
                 let z_max = ray_length * ray.t_max;
-                if max(max(cps[0].z, cps[1].z), max(cps[2].z, cps[3].z)) + 0.5 * max_width < 0.0
-                    || min(min(cps[0].z, cps[1].z), min(cps[2].z, cps[3].z)) - 0.5 * max_width
+                if max(
+                    max(cp_split[cps + 0].z, cp_split[cps + 1].z),
+                    max(cp_split[cps + 2].z, cp_split[cps + 3].z),
+                ) + 0.5 * max_width
+                    < 0.0
+                    || min(
+                        min(cp_split[cps + 0].z, cp_split[cps + 1].z),
+                        min(cp_split[cps + 2].z, cp_split[cps + 3].z),
+                    ) - 0.5 * max_width
                         > z_max
                 {
                     continue;
@@ -378,8 +402,13 @@ impl Curve {
 
                 hit = self.recursive_intersect(
                     ray,
-                    &[cps[0], cps[1], cps[2], cps[3]],
-                    ray_to_object.clone(),
+                    &[
+                        cp_split[cps + 0],
+                        cp_split[cps + 1],
+                        cp_split[cps + 2],
+                        cp_split[cps + 3],
+                    ],
+                    ray_to_object,
                     u[seg],
                     u[seg + 1],
                     depth - 1,
@@ -391,6 +420,8 @@ impl Curve {
                 if hit.is_some() && is_shadow_ray {
                     return hit;
                 }
+
+                cps += 3;
             }
             hit
         } else {
@@ -493,7 +524,6 @@ impl Curve {
                 Normal3f::default(),
                 ray.time,
                 Arc::clone(&self.data),
-                None,
             );
             let isect = Arc::clone(&self.data.object_to_world).transform_surface_interaction(&si);
 
@@ -602,7 +632,7 @@ impl Curve {
         self.recursive_intersect(
             &ray,
             &cp,
-            Arc::new(object_to_ray.inverse()),
+            &object_to_ray.inverse(),
             self.u_min,
             self.u_max,
             max_depth,

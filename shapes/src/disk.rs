@@ -144,7 +144,6 @@ impl Shape for Disk {
             dndv,
             ray.time,
             Arc::clone(&self.data),
-            None,
         );
 
         // Create hit.

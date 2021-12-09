@@ -72,8 +72,8 @@ impl Primitive for GeometricPrimitive {
         let is_medium_transition = self.medium_interface.is_medium_transition();
         it.isect.hit.medium_interface = if is_medium_transition {
             Some(self.medium_interface.clone())
-        } else if let Some(medium) = r.medium.clone() {
-            Some(MediumInterface::from(medium))
+        } else if let Some(medium) = r.medium.as_ref() {
+            Some(MediumInterface::from(Arc::clone(&medium)))
         } else {
             None
         };

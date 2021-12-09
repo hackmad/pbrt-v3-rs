@@ -26,13 +26,22 @@ pub trait Medium {
 pub type ArcMedium = Arc<dyn Medium + Send + Sync>;
 
 /// MediumInterface represents the boundary interface between two media.
-#[derive(Clone)]
 pub struct MediumInterface {
     /// Represent the interior of a geometric primitive.
     pub inside: Option<ArcMedium>,
 
     /// Represent the exterior of a geometric primitive.
     pub outside: Option<ArcMedium>,
+}
+
+impl Clone for MediumInterface {
+    /// Returns a copy of the value.
+    fn clone(&self) -> Self {
+        Self {
+            inside: self.inside.as_ref().map(|m| Arc::clone(&m)),
+            outside: self.outside.as_ref().map(|m| Arc::clone(&m)),
+        }
+    }
 }
 
 impl MediumInterface {
@@ -42,8 +51,8 @@ impl MediumInterface {
     /// * `outside` - The exterior medium.
     pub fn new(inside: Option<ArcMedium>, outside: Option<ArcMedium>) -> Self {
         Self {
-            inside: inside.clone(),
-            outside: outside.clone(),
+            inside: inside.as_ref().map(|m| Arc::clone(&m)),
+            outside: outside.as_ref().map(|m| Arc::clone(&m)),
         }
     }
 
@@ -85,8 +94,8 @@ impl From<Option<ArcMedium>> for MediumInterface {
     /// * `medium` - The medium on either side of the interface.
     fn from(medium: Option<ArcMedium>) -> Self {
         Self {
-            inside: medium.clone(),
-            outside: medium.clone(),
+            inside: medium.as_ref().map(|m| Arc::clone(&m)),
+            outside: medium.as_ref().map(|m| Arc::clone(&m)),
         }
     }
 }

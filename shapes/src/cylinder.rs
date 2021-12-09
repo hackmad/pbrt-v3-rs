@@ -211,7 +211,6 @@ impl Shape for Cylinder {
             dndv,
             ray.time,
             Arc::clone(&self.data),
-            None,
         );
 
         // Create hit.
