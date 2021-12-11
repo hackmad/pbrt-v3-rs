@@ -142,15 +142,24 @@ fn get_extension_from_filename(path: &str) -> Option<&str> {
 fn write_exr(path: &str, rgb: &[Float], res_x: u32, res_y: u32) -> Result<(), String> {
     info!("Writing image {} with resolution {}x{}", path, res_x, res_y);
 
-    match write_rgb_file(
-        String::from(path),
-        res_x as usize,
-        res_y as usize,
-        |x, y| {
-            let offset = 3 * (y * (res_x as usize) + x);
+    let size = Vec2(res_x as usize, res_y as usize);
+
+    let layer1 = Layer::new(
+        size,
+        LayerAttributes::named("render"),
+        Encoding::SMALL_LOSSLESS,
+        SpecificChannels::rgb(|pos: Vec2<usize>| {
+            let offset = 3 * (pos.1 * (res_x as usize) + pos.0);
             (rgb[offset], rgb[offset + 1], rgb[offset + 2])
-        },
-    ) {
+        }),
+    );
+
+    let attributes = ImageAttributes::new(IntegerBounds::from_dimensions(size));
+    match Image::empty(attributes)
+        .with_layer(layer1)
+        .write()
+        .to_file(path)
+    {
         Ok(()) => Ok(()),
         Err(err) => Err(format!("Error saving output image {}. {:}.", path, err)),
     }
