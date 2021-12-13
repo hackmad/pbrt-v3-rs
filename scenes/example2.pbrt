@@ -7,7 +7,7 @@ Sampler "halton" "integer pixelsamples" 128
 Integrator "whitted"
 Film "image" "string filename" "renders/example2.exr"
      "integer xresolution" [200] "integer yresolution" [100]
-     "float cropwindow" [0 1 0 1]
+     #"float cropwindow" [0.47 0.6 0.35 0.6]
 
 WorldBegin
 

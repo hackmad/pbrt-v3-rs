@@ -210,8 +210,8 @@ impl Add for EFloat {
         // the value r.v in order to be conservative.
         let r = Self {
             v: self.v + ef.v,
-            low: next_float_down(self.low + ef.low),
-            high: next_float_up(self.high + ef.high),
+            low: next_float_down(self.lower_bound() + ef.lower_bound()),
+            high: next_float_up(self.upper_bound() + ef.lower_bound()),
             #[cfg(debug_assertions)]
             v_precise: self.v_precise + ef.v_precise,
         };
@@ -252,8 +252,8 @@ impl Sub for EFloat {
     fn sub(self, ef: EFloat) -> Self::Output {
         let r = Self {
             v: self.v - ef.v,
-            low: next_float_down(self.low - ef.high),
-            high: next_float_up(self.high - ef.low),
+            low: next_float_down(self.lower_bound() - ef.upper_bound()),
+            high: next_float_up(self.upper_bound() - ef.lower_bound()),
             #[cfg(debug_assertions)]
             v_precise: self.v_precise - ef.v_precise,
         };
@@ -293,13 +293,13 @@ impl Mul for EFloat {
     /// * `ef` - The value to multiply.
     fn mul(self, ef: EFloat) -> Self::Output {
         let prod = [
-            self.low * ef.low,
-            self.high * ef.low,
-            self.low * ef.high,
-            self.high * ef.high,
+            self.lower_bound() * ef.lower_bound(),
+            self.upper_bound() * ef.lower_bound(),
+            self.lower_bound() * ef.upper_bound(),
+            self.upper_bound() * ef.upper_bound(),
         ];
-        let low = next_float_down(min(min(prod[0], prod[1]), min(prod[2], prod[3])));
-        let high = next_float_up(max(max(prod[0], prod[1]), max(prod[2], prod[3])));
+        let low = next_float_down(prod[0].min(prod[1]).min(prod[2].min(prod[3])));
+        let high = next_float_up(prod[0].max(prod[1]).max(prod[2].max(prod[3])));
 
         let r = Self {
             v: self.v * ef.v,
@@ -349,14 +349,14 @@ impl Div for EFloat {
             (f32::NEG_INFINITY, f32::INFINITY)
         } else {
             let div = [
-                self.low / ef.low,
-                self.high / ef.low,
-                self.low / ef.high,
-                self.high / ef.high,
+                self.lower_bound() / ef.lower_bound(),
+                self.upper_bound() / ef.lower_bound(),
+                self.lower_bound() / ef.upper_bound(),
+                self.upper_bound() / ef.upper_bound(),
             ];
             (
-                next_float_down(min(min(div[0], div[1]), min(div[2], div[3]))),
-                next_float_up(max(max(div[0], div[1]), max(div[2], div[3]))),
+                next_float_down(div[0].min(div[1]).min(div[2].min(div[3]))),
+                next_float_up(div[0].max(div[1]).max(div[2].max(div[3]))),
             )
         };
         let r = Self {

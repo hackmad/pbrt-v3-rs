@@ -340,11 +340,10 @@ impl Shape for Cylinder {
         p_obj.x *= self.radius / hit_rad;
         p_obj.y *= self.radius / hit_rad;
         let p_obj_error = gamma(3) * Vector3f::new(p_obj.x, p_obj.y, 0.0).abs();
-        let p = self.data.object_to_world.transform_point(&p_obj);
-        let p_error = self
+        let (p, p_error) = self
             .data
             .object_to_world
-            .transform_point_abs_error(&p_obj, &p_obj_error);
+            .transform_point_with_abs_error(&p_obj, &p_obj_error);
         let it = Hit::new(p, 0.0, p_error, Vector3f::default(), n, None);
         let pdf = 1.0 / self.area();
         (it, pdf)

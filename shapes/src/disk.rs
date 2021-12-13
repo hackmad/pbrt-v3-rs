@@ -221,11 +221,10 @@ impl Shape for Disk {
             n *= -1.0;
         }
 
-        let p = self.data.object_to_world.transform_point(&p_obj);
-        let p_error = self
+        let (p, p_error) = self
             .data
             .object_to_world
-            .transform_point_abs_error(&p_obj, &Vector3f::default());
+            .transform_point_with_abs_error(&p_obj, &Vector3f::default());
         let it = Hit::new(p, 0.0, p_error, Vector3f::default(), n, None);
         let pdf = 1.0 / self.area();
         (it, pdf)

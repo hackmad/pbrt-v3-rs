@@ -304,17 +304,29 @@ impl Transform {
     ///
     /// * `p` - The point.
     pub fn transform_point_with_error(&self, p: &Point3f) -> (Point3f, Vector3f) {
-        // Compute absolute error for transformed point.
         let m = &self.m;
+        let (x, y, z) = (p.x,  p.y,  p.z);
 
-        let x_abs_sum = abs(m[0][0] * p.x) + abs(m[0][1] * p.y) + abs(m[0][2] * p.z) + abs(m[0][3]);
-        let y_abs_sum = abs(m[1][0] * p.x) + abs(m[1][1] * p.y) + abs(m[1][2] * p.z) + abs(m[1][3]);
-        let z_abs_sum = abs(m[2][0] * p.x) + abs(m[2][1] * p.y) + abs(m[2][2] * p.z) + abs(m[2][3]);
+        // Compute transformed coordinates from point _pt_
+        let xp = (m.m[0][0] * x + m.m[0][1] * y) + (m.m[0][2] * z + m.m[0][3]);
+        let yp = (m.m[1][0] * x + m.m[1][1] * y) + (m.m[1][2] * z + m.m[1][3]);
+        let zp = (m.m[2][0] * x + m.m[2][1] * y) + (m.m[2][2] * z + m.m[2][3]);
+        let wp = (m.m[3][0] * x + m.m[3][1] * y) + (m.m[3][2] * z + m.m[3][3]);
+        assert!(wp != 0.0);
+        
+        // Compute absolute error for transformed point
+        let x_abs_sum = abs(m[0][0] * x) + abs(m[0][1] * y) + abs(m[0][2] * z) + abs(m[0][3]);
+        let y_abs_sum = abs(m[1][0] * x) + abs(m[1][1] * y) + abs(m[1][2] * z) + abs(m[1][3]);
+        let z_abs_sum = abs(m[2][0] * x) + abs(m[2][1] * y) + abs(m[2][2] * z) + abs(m[2][3]);
+        let p_error = gamma(3) * Vector3::new(x_abs_sum, y_abs_sum, z_abs_sum);
 
-        (
-            self.transform_point(p),
-            gamma(3) * Vector3::new(x_abs_sum, y_abs_sum, z_abs_sum),
-        )
+        let p2 = if wp == 1.0 {
+            Point3::new(xp, yp, zp)
+        } else {
+            Point3::new(xp, yp, zp) / wp
+        };
+        
+        (p2, p_error)
     }
 
     /// Using the original point passed to `transform_point` and the error
@@ -322,28 +334,37 @@ impl Transform {
     /// result.
     ///
     /// * `p`       - The point passed to `transform_point_with_error`.
-    /// * `p_error` - The absolute error computed in `transform_point_with_error`.
-    pub fn transform_point_abs_error(&self, p: &Point3f, p_error: &Vector3f) -> Vector3f {
-        // Calculate the absolute error in the result based on its own error.
+    /// * `p_error` - The error computed in `transform_point_with_error`.
+    pub fn transform_point_with_abs_error(&self, p: &Point3f, p_error: &Vector3f) -> (Point3f, Vector3f) {
         let m = &self.m;
+        let (x, y, z) = (p.x, p.y, p.z);
+
+        let xp = (m[0][0] * x + m[0][1] * y) + (m[0][2] * z + m[0][3]);
+        let yp = (m[1][0] * x + m[1][1] * y) + (m[1][2] * z + m[1][3]);
+        let zp = (m[2][0] * x + m[2][1] * y) + (m[2][2] * z + m[2][3]);
+        let wp = (m[3][0] * x + m[3][1] * y) + (m[3][2] * z + m[3][3]);
+        assert!(wp != 0.0);
+
         let gamma_3 = gamma(3);
 
-        let abs_error_x = (gamma_3 + 1.0)
-            * (abs(m[0][0]) * p_error.x + abs(m[0][1]) * p_error.y + abs(m[0][2]) * p_error.z)
-            + gamma_3
-                * (abs(m[0][0] * p.x) + abs(m[0][1] * p.y) + abs(m[0][2] * p.z) + abs(m[0][3]));
+        let abs_error = Vector3::new(
+            (gamma_3 + 1.0) * (abs(m[0][0]) * p_error.x + abs(m[0][1]) * p_error.y + abs(m[0][2]) * p_error.z) +
+            gamma_3 * (abs(m[0][0] * x) + abs(m[0][1] * y) + abs(m[0][2] * z) + abs(m[0][3])),
 
-        let abs_error_y = (gamma_3 + 1.0)
-            * (abs(m[1][0]) * p_error.x + abs(m[1][1]) * p_error.y + abs(m[1][2]) * p_error.z)
-            + gamma_3
-                * (abs(m[1][0] * p.x) + abs(m[1][1] * p.y) + abs(m[1][2] * p.z) + abs(m[1][3]));
+            (gamma_3 + 1.0) * (abs(m[1][0]) * p_error.x + abs(m[1][1]) * p_error.y + abs(m[1][2]) * p_error.z) +
+            gamma_3 * (abs(m[1][0] * x) + abs(m[1][1] * y) + abs(m[1][2] * z) + abs(m[1][3])),
 
-        let abs_error_z = (gamma_3 + 1.0)
-            * (abs(m[2][0]) * p_error.x + abs(m[2][1]) * p_error.y + abs(m[2][2]) * p_error.z)
-            + gamma_3
-                * (abs(m[2][0] * p.x) + abs(m[2][1] * p.y) + abs(m[2][2] * p.z) + abs(m[2][3]));
+            (gamma_3 + 1.0) * (abs(m[2][0]) * p_error.x + abs(m[2][1]) * p_error.y + abs(m[2][2]) * p_error.z) +
+            gamma_3 * (abs(m.m[2][0] * x) + abs(m.m[2][1] * y) + abs(m.m[2][2] * z) + abs(m.m[2][3])),
+        );
+        
+        let p2 = if wp == 1.0 {
+            Point3::new(xp, yp, zp)
+        } else {
+            Point3::new(xp, yp, zp) / wp
+        };
 
-        Vector3::new(abs_error_x, abs_error_y, abs_error_z)
+        (p2, abs_error)
     }
 
     /// Applies transformation to a given vector.
@@ -363,17 +384,23 @@ impl Transform {
     ///
     /// * `v` - The vector.
     pub fn transform_vector_with_error(&self, v: &Vector3f) -> (Vector3f, Vector3f) {
-        // Compute absolute error for transformed vector
         let m = &self.m;
+        let (x, y, z) = (v.x, v.y, v.z);
+        let gamma_3 = gamma(3);
+        
+        let abs_error = Vector3::new(
+            gamma_3 * (abs(m[0][0] * v.x) + abs(m[0][1] * v.y) + abs(m[0][2] * v.z)),
+            gamma_3 * (abs(m[1][0] * v.x) + abs(m[1][1] * v.y) + abs(m[1][2] * v.z)),
+            gamma_3 * (abs(m[2][0] * v.x) + abs(m[2][1] * v.y) + abs(m[2][2] * v.z)),
+        );
 
-        let x_abs_err = abs(m[0][0] * v.x) + abs(m[0][1] * v.y) + abs(m[0][2] * v.z);
-        let y_abs_err = abs(m[1][0] * v.x) + abs(m[1][1] * v.y) + abs(m[1][2] * v.z);
-        let z_abs_err = abs(m[2][0] * v.x) + abs(m[2][1] * v.y) + abs(m[2][2] * v.z);
+        let v2 = Vector3::new(
+            m[0][0] * x + m[0][1] * y + m[0][2] * z,
+            m[1][0] * x + m[1][1] * y + m[1][2] * z,
+            m[2][0] * x + m[2][1] * y + m[2][2] * z
+        );
 
-        (
-            self.transform_vector(v),
-            gamma(3) * Vector3::new(x_abs_err, y_abs_err, z_abs_err),
-        )
+        (v2, abs_error)
     }
 
     /// Using the original vector passed to `transform_vector` and the error
@@ -381,25 +408,31 @@ impl Transform {
     /// result.
     ///
     /// * `v`       - The vector passed to `transform_vector_with_error`.
-    /// * `v_error` - The absolute error computed in `transform_vector_with_error`.
-    pub fn transform_vector_abs_error(&self, v: &Vector3f, v_error: &Vector3f) -> Vector3f {
+    /// * `v_error` - The error computed in `transform_vector_with_error`.
+    pub fn transform_vector_with_abs_error(&self, v: &Vector3f, v_error: &Vector3f) -> (Vector3f, Vector3f) {
         // Calculate the absolute error in the result based on its own error.
         let m = &self.m;
+        let (x, y, z) = (v.x, v.y, v.z);
         let gamma_3 = gamma(3);
 
-        let abs_error_x = (gamma_3 + 1.0)
-            * (abs(m[0][0]) * v_error.x + abs(m[0][1]) * v_error.y + abs(m[0][2]) * v_error.z)
-            + gamma_3 * (abs(m[0][0] * v.x) + abs(m[0][1] * v.y) + abs(m[0][2] * v.z));
+        let abs_error = Vector3::new(
+            (gamma_3 + 1.0) * (abs(m[0][0]) * v_error.x + abs(m[0][1]) * v_error.y + abs(m[0][2]) * v_error.z) +
+             gamma_3 * (abs(m[0][0] * v.x) + abs(m[0][1] * v.y) + abs(m[0][2] * v.z)),
+    
+            (gamma_3 + 1.0) * (abs(m[1][0]) * v_error.x + abs(m[1][1]) * v_error.y + abs(m[1][2]) * v_error.z) +
+             gamma_3 * (abs(m[1][0] * v.x) + abs(m[1][1] * v.y) + abs(m[1][2] * v.z)),
 
-        let abs_error_y = (gamma_3 + 1.0)
-            * (abs(m[1][0]) * v_error.x + abs(m[1][1]) * v_error.y + abs(m[1][2]) * v_error.z)
-            + gamma_3 * (abs(m[1][0] * v.x) + abs(m[1][1] * v.y) + abs(m[1][2] * v.z));
+            (gamma_3 + 1.0) * (abs(m[2][0]) * v_error.x + abs(m[2][1]) * v_error.y + abs(m[2][2]) * v_error.z) +
+             gamma_3 * (abs(m[2][0] * v.x) + abs(m[2][1] * v.y) + abs(m[2][2] * v.z)),
+        );
 
-        let abs_error_z = (gamma_3 + 1.0)
-            * (abs(m[2][0]) * v_error.x + abs(m[2][1]) * v_error.y + abs(m[2][2]) * v_error.z)
-            + gamma_3 * (abs(m[2][0] * v.x) + abs(m[2][1] * v.y) + abs(m[2][2] * v.z));
-
-        Vector3::new(abs_error_x, abs_error_y, abs_error_z)
+        let v2 = Vector3::new(
+            m[0][0] * x + m[0][1] * y + m[0][2] * z,
+            m[1][0] * x + m[1][1] * y + m[1][2] * z,
+            m[2][0] * x + m[2][1] * y + m[2][2] * z
+        );
+        
+        (v2, abs_error)
     }
 
     /// Applies transformation to a given normal.
@@ -469,13 +502,13 @@ impl Transform {
             );
 
             (
-                Ray::new_with_differentials(o, d, r.t_max, r.time, td, r.medium.clone()),
+                Ray::new_with_differentials(o, d, r.t_max, r.time, td, r.medium.as_ref().map(|m| Arc::clone(m))),
                 o_error,
                 d_error,
             )
         } else {
             (
-                Ray::new(o, d, r.t_max, r.time, r.medium.clone()),
+                Ray::new(o, d, r.t_max, r.time, r.medium.as_ref().map(|m| Arc::clone(m))),
                 o_error,
                 d_error,
             )
@@ -486,20 +519,34 @@ impl Transform {
     /// transformation to its origin and direction.
     ///
     /// * `r` - The ray.
-    pub fn transform_ray_with_abs_error(&self, r: &Ray) -> (Ray, Vector3f, Vector3f) {
-        let (mut tr, o_error_in, d_error_in) = self.transform_ray_with_error(r);
-
+    pub fn transform_ray_with_abs_error(&self, r: &Ray, o_error_in: &Vector3f, d_error_in: &Vector3f) -> (Ray, Vector3f, Vector3f) {
         // Calculate error in result for origin and direction.
-        let o_error_out = self.transform_point_abs_error(&tr.o, &o_error_in);
-        let d_error_out = self.transform_vector_abs_error(&tr.d, &d_error_in);
+        let (mut o, o_error_out) = self.transform_point_with_abs_error(&r.o, o_error_in);
+        let (d, d_error_out) = self.transform_vector_with_abs_error(&r.d, d_error_in);
+
         // Offset ray origin to edge of error bounds.
-        let length_sqquared = tr.d.length_squared();
-        if length_sqquared > 0.0 {
-            let dt = tr.d.abs().dot(&o_error_out) / length_sqquared;
-            tr.o += tr.d * dt;
+        let t_max = r.t_max;
+        let length_squared = d.length_squared();
+        if length_squared > 0.0 {
+            let dt = d.abs().dot(&o_error_out) / length_squared;
+            o += d * dt;
+            // t_max -= dt;
         }
 
-        (tr, o_error_out, d_error_out)
+        // Handle differentials.
+        let r2 = if let Some(diff) = r.differentials {
+            let r2d = RayDifferential::new(
+                self.transform_point(&diff.rx_origin),
+                self.transform_point(&diff.ry_origin),
+                self.transform_vector(&diff.rx_direction),
+                self.transform_vector(&diff.ry_direction),
+            );
+            Ray::new_with_differentials(o, d, t_max, r.time, r2d, r.medium.as_ref().map(|m| Arc::clone(m)))
+        } else {
+            Ray::new(o, d, t_max, r.time, r.medium.as_ref().map(|m| Arc::clone(m)))
+        };
+
+        (r2, o_error_out, d_error_out)
     }
 
     /// Applies transformation to a given bounding box.
@@ -524,7 +571,7 @@ impl Transform {
         si: &SurfaceInteraction<'a>,
     ) -> SurfaceInteraction<'a> {
         // Transform p and p_error in SurfaceInteraction.
-        let (p, p_error) = self.transform_point_with_error(&si.hit.p);
+        let (p, p_error) = self.transform_point_with_abs_error(&si.hit.p, &si.hit.p_error);
         let mut ret = SurfaceInteraction::new(
             p,
             p_error,

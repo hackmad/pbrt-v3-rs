@@ -382,11 +382,10 @@ impl Shape for Sphere {
         // Reproject `p_obj` to sphere surface and compute `p_obj_error`.
         p_obj *= self.radius / p_obj.distance(Point3f::default());
         let p_obj_error = gamma(5) * Vector3f::from(p_obj).abs();
-        let p = self.data.object_to_world.transform_point(&p_obj);
-        let p_error = self
+        let (p, p_error) = self
             .data
             .object_to_world
-            .transform_point_abs_error(&p_obj, &p_obj_error);
+            .transform_point_with_abs_error(&p_obj, &p_obj_error);
         let it = Hit::new(p, 0.0, p_error, Vector3f::default(), n, None);
         let pdf = 1.0 / self.area();
         (it, pdf)
