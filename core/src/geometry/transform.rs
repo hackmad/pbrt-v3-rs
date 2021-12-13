@@ -389,9 +389,9 @@ impl Transform {
         let gamma_3 = gamma(3);
         
         let abs_error = Vector3::new(
-            gamma_3 * (abs(m[0][0] * v.x) + abs(m[0][1] * v.y) + abs(m[0][2] * v.z)),
-            gamma_3 * (abs(m[1][0] * v.x) + abs(m[1][1] * v.y) + abs(m[1][2] * v.z)),
-            gamma_3 * (abs(m[2][0] * v.x) + abs(m[2][1] * v.y) + abs(m[2][2] * v.z)),
+            gamma_3 * (abs(m[0][0] * x) + abs(m[0][1] * y) + abs(m[0][2] * z)),
+            gamma_3 * (abs(m[1][0] * x) + abs(m[1][1] * y) + abs(m[1][2] * z)),
+            gamma_3 * (abs(m[2][0] * x) + abs(m[2][1] * y) + abs(m[2][2] * z)),
         );
 
         let v2 = Vector3::new(
@@ -417,13 +417,13 @@ impl Transform {
 
         let abs_error = Vector3::new(
             (gamma_3 + 1.0) * (abs(m[0][0]) * v_error.x + abs(m[0][1]) * v_error.y + abs(m[0][2]) * v_error.z) +
-             gamma_3 * (abs(m[0][0] * v.x) + abs(m[0][1] * v.y) + abs(m[0][2] * v.z)),
+             gamma_3 * (abs(m[0][0] * x) + abs(m[0][1] * y) + abs(m[0][2] * z)),
     
             (gamma_3 + 1.0) * (abs(m[1][0]) * v_error.x + abs(m[1][1]) * v_error.y + abs(m[1][2]) * v_error.z) +
-             gamma_3 * (abs(m[1][0] * v.x) + abs(m[1][1] * v.y) + abs(m[1][2] * v.z)),
+             gamma_3 * (abs(m[1][0] * x) + abs(m[1][1] * y) + abs(m[1][2] * z)),
 
             (gamma_3 + 1.0) * (abs(m[2][0]) * v_error.x + abs(m[2][1]) * v_error.y + abs(m[2][2]) * v_error.z) +
-             gamma_3 * (abs(m[2][0] * v.x) + abs(m[2][1] * v.y) + abs(m[2][2] * v.z)),
+             gamma_3 * (abs(m[2][0] * x) + abs(m[2][1] * y) + abs(m[2][2] * z)),
         );
 
         let v2 = Vector3::new(
