@@ -107,7 +107,7 @@ impl PbrtFileParser {
                 let mut path = self.parse_quoted_str(&mut inner_rules);
                 debug!("Include: '{}'", path);
 
-                if is_relative_path(&path) {
+                if is_relative_path(&path) && self.parent_path.len() > 0 {
                     // Path is relative to the parent path of the file being parsed.
                     path = self.parent_path.clone() + "/" + &path;
                 }
@@ -250,6 +250,8 @@ impl PbrtFileParser {
                 match stmt_type {
                     "NamedMaterial" => api.pbrt_named_material(name),
                     "ObjectInstance" => api.pbrt_object_instance(name),
+                    "CoordinateSystem" => api.pbrt_coordinate_system(name),
+                    "CoordSysTransform" => api.pbrt_coord_sys_transform(name),
                     _ => unreachable!(),
                 }
             }
@@ -312,15 +314,11 @@ impl PbrtFileParser {
             }
             Rule::coordinate_system_stmt => {
                 let mut inner_rules = next_pair.into_inner();
-                let name = self.parse_quoted_ident(&mut inner_rules);
-                debug!("CoordinateSystem: '{}'", name);
-                api.pbrt_coordinate_system(name);
+                self.parse_named_stmt(&mut inner_rules, api, "CoordinateSystem");
             }
             Rule::coord_sys_transform_stmt => {
                 let mut inner_rules = next_pair.into_inner();
-                let name = self.parse_quoted_ident(&mut inner_rules);
-                debug!("CoordSysTransform: '{}'", name);
-                api.pbrt_coord_sys_transform(name);
+                self.parse_named_stmt(&mut inner_rules, api, "CoordSysTransform");
             }
             Rule::transform_stmt => {
                 let tr = self.parse_float_list(next_pair.into_inner());
@@ -952,6 +950,6 @@ impl PbrtFileParser {
 fn file_to_string(path: &str) -> Result<String, String> {
     match fs::read_to_string(path) {
         Ok(s) => Ok(s),
-        _ => Err(format!("Error reading file '{}'", path)),
+        Err(e) => Err(format!("Error reading file '{}': {}", path, e)),
     }
 }

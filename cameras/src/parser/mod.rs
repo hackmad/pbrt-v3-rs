@@ -58,7 +58,7 @@ pub fn parse_float_file(path: &str) -> Result<Vec<Float>, String> {
 fn file_to_string(path: &str) -> Result<String, String> {
     match fs::read_to_string(path) {
         Ok(s) => Ok(s),
-        _ => Err(format!("Error reading file '{}'", path)),
+        Err(e) => Err(format!("Error reading file '{}': {}", path, e)),
     }
 }
 
