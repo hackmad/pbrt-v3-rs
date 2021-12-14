@@ -19,7 +19,7 @@ pub struct PbrtFileParser {
     /// Path to the file to parse.
     file_path: String,
 
-    /// Parent path for navigating to includes.
+    /// Parent path for navigating to includes and image files.
     parent_path: String,
 }
 
@@ -45,6 +45,10 @@ impl PbrtFileParser {
     pub fn parse(&self, api: &mut Api) -> Result<(), String> {
         // Load the file and parse the `file` rule.
         let unparsed_file = file_to_string(&self.file_path)?;
+
+        let cwd = parent_path(&self.file_path).unwrap();
+        api.set_current_working_dir(&cwd);
+
         let pbrt = self.parse_pbrt_rule(&unparsed_file)?;
 
         // Parse all the `stmt` rules.
@@ -197,15 +201,15 @@ impl PbrtFileParser {
             Rule::texture_stmt => {
                 let name = self.parse_quoted_str(&mut inner_rules);
                 let texture_type = self.parse_quoted_str(&mut inner_rules);
-                let texture_name = self.parse_quoted_str(&mut inner_rules);
+                let texture_class = self.parse_quoted_str(&mut inner_rules);
                 let params = inner_rules.next().map_or(ParamSet::new(), |param_list| {
                     self.parse_param_list(param_list.into_inner())
                 });
                 debug!(
                     "Texture: '{}', '{}', '{}' {:}",
-                    name, texture_type, texture_name, params
+                    name, texture_type, texture_class, params
                 );
-                api.pbrt_texture(name, texture_type, texture_name, &params)
+                api.pbrt_texture(name, texture_type, texture_class, &params)
             }
             Rule::named_material_stmt => {
                 self.parse_named_stmt(&mut inner_rules, api, "NamedMaterial")

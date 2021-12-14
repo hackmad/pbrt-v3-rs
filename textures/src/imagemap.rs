@@ -117,14 +117,15 @@ impl Texture<Float> for ImageTexture<Float> {
 
 macro_rules! from_params {
     ($t: ty) => {
-        impl From<(&TextureParams, &Transform)> for ImageTexture<$t> {
-            /// Create a `ImageTexture<$t>` from given parameter set and
-            /// transformation from texture space to world space.
+        impl From<(&TextureParams, &Transform, &str)> for ImageTexture<$t> {
+            /// Create a `ImageTexture<$t>` from given parameter set,
+            /// transformation from texture space to world space and current
+            /// working directory.
             ///
-            /// * `p` - Tuple containing texture parameters and texture space
-            ///         to world space transform.
-            fn from(p: (&TextureParams, &Transform)) -> Self {
-                let (tp, tex2world) = p;
+            /// * `p` - Tuple containing texture parameters, texture space
+            ///         to world space transform and current working directory.
+            fn from(p: (&TextureParams, &Transform, &str)) -> Self {
+                let (tp, tex2world, cwd) = p;
 
                 // Initialize 2D texture mapping `map` from `tp`.
                 let map = get_texture_mapping(tp, tex2world);
@@ -143,7 +144,7 @@ macro_rules! from_params {
                     _ => ImageWrap::Repeat,
                 };
                 let scale = tp.find_float("scale", 1.0);
-                let path = tp.find_filename("filename", String::from(""));
+                let path = tp.find_filename("filename", String::from(""), cwd);
                 let gamma = tp.find_bool("gamma", path.ends_with(".tga") || path.ends_with(".png"));
                 Self::new(
                     map,

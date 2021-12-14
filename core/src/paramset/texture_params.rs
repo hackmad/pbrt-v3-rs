@@ -174,13 +174,22 @@ impl TextureParams {
 
     texture_params_find!(find_float, Float, find_one_float);
     texture_params_find!(find_string, String, find_one_string);
-    texture_params_find!(find_filename, String, find_one_filename);
     texture_params_find!(find_int, Int, find_one_int);
     texture_params_find!(find_bool, bool, find_one_bool);
     texture_params_find!(find_point3f, Point3f, find_one_point3f);
     texture_params_find!(find_vector3f, Vector3f, find_one_vector3f);
     texture_params_find!(find_normal3f, Normal3f, find_one_normal3f);
     texture_params_find!(find_spectrum, Spectrum, find_one_spectrum);
+
+    pub fn find_filename(&self, name: &str, mat_default: String, cwd: &str) -> String {
+        let default = self.mat_params.find_one_string(name, mat_default);
+        let mut path = self.geom_params.find_one_string(name, default);
+        if is_relative_path(&path) && cwd.len() > 0 {
+            // Path is relative to the parent path of the file being parsed.
+            path = cwd.to_string() + "/" + &path;
+        }
+        path
+    }
 }
 
 impl Default for TextureParams {

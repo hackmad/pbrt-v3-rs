@@ -75,27 +75,46 @@ pub struct Api {
 
     /// Caches the transforms.
     transform_cache: Arc<Mutex<TransformCache>>,
+
+    /// Current working directory. Used to resolve relative paths.
+    cwd: String,
 }
 
 impl Api {
     /// Returns a newly initialized API.
     pub fn new() -> Self {
         let transform_cache = Arc::new(Mutex::new(TransformCache::default()));
+        let cwd = std::env::current_dir()
+            .unwrap()
+            .as_path()
+            .to_str()
+            .unwrap()
+            .to_string();
+
         Self {
             current_api_state: ApiState::Uninitialized,
             current_transforms: TransformSet::default(),
             active_transform_bits: ALL_TRANSFORM_BITS,
             named_coordinate_systems: HashMap::new(),
             render_options: RenderOptions::new(),
-            graphics_state: GraphicsState::new(Arc::clone(&transform_cache)),
+            graphics_state: GraphicsState::new(Arc::clone(&transform_cache), &cwd),
             pushed_graphics_states: vec![],
             pushed_transforms: vec![],
             pushed_active_transform_bits: vec![],
             transform_cache: Arc::clone(&transform_cache),
+            cwd,
         }
     }
 
     /* API Methods */
+
+    /// Set current working directory.
+    ///
+    /// * `path` - The path.
+    pub fn set_current_working_dir(&mut self, path: &str) {
+        self.cwd = path.to_string();
+        self.graphics_state.set_current_working_dir(path);
+    }
 
     /// API Initialization.
     pub fn pbrt_init(&mut self) {
@@ -445,7 +464,7 @@ impl Api {
             let mut transform_cache = self.transform_cache.lock().unwrap();
             transform_cache.clear();
 
-            self.graphics_state = GraphicsState::new(Arc::clone(&self.transform_cache));
+            self.graphics_state = GraphicsState::new(Arc::clone(&self.transform_cache), &self.cwd);
             self.current_api_state = ApiState::OptionsBlock;
             self.current_transforms.reset();
 
@@ -523,8 +542,8 @@ impl Api {
     pub fn pbrt_texture(
         &mut self,
         name: String,
-        texture_type: String,
-        tex_name: String,
+        tex_type: String,
+        tex_class: String,
         params: &ParamSet,
     ) {
         if self.verify_world("Texture") {
@@ -535,7 +554,7 @@ impl Api {
                 self.graphics_state.spectrum_textures.clone(),
             );
 
-            if texture_type == "float" {
+            if tex_type == "float" {
                 // Create `Float` texture and store in `float_textures`.
                 if self.graphics_state.float_textures.contains_key(&name) {
                     warn!("Texture '{}' being redefined.", name);
@@ -543,9 +562,11 @@ impl Api {
 
                 self.warn_if_animated_transform("Texture");
 
-                if let Ok(ft) =
-                    GraphicsState::make_float_texture(&tex_name, &*self.current_transforms[0], &tp)
-                {
+                if let Ok(ft) = self.graphics_state.make_float_texture(
+                    &tex_class,
+                    &*self.current_transforms[0],
+                    &tp,
+                ) {
                     if self.graphics_state.float_textures_shared {
                         let ftm = self.graphics_state.float_textures.clone();
                         self.graphics_state.float_textures = ftm;
@@ -553,7 +574,7 @@ impl Api {
                     }
                     self.graphics_state.float_textures.insert(name, ft);
                 }
-            } else if texture_type == "color" || texture_type == "spectrum" {
+            } else if tex_type == "color" || tex_type == "spectrum" {
                 // Create `colour` texture and store in `spectrum_textures`.
                 if self.graphics_state.spectrum_textures.contains_key(&name) {
                     warn!("Texture '{}' being redefined.", name);
@@ -561,8 +582,8 @@ impl Api {
 
                 self.warn_if_animated_transform("Texture");
 
-                if let Ok(st) = GraphicsState::make_spectrum_texture(
-                    &tex_name,
+                if let Ok(st) = self.graphics_state.make_spectrum_texture(
+                    &tex_class,
                     &*self.current_transforms[0],
                     &tp,
                 ) {
@@ -574,7 +595,7 @@ impl Api {
                     self.graphics_state.spectrum_textures.insert(name, st);
                 }
             } else {
-                error!("Texture type '{}' unknown.", texture_type);
+                error!("Texture type '{}' unknown.", tex_type);
             }
         }
     }

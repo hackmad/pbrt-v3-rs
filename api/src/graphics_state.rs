@@ -67,13 +67,17 @@ pub struct GraphicsState {
 
     /// Reverse surface normal direction for current shape/material.
     pub reverse_orientation: bool,
+
+    /// Current working directory. Used to resolve relative paths.
+    pub cwd: String,
 }
 
 impl GraphicsState {
     /// Initializes a new `GraphicsState`.
     ///
     /// * `transform_cache` - The `TransformCache`.
-    pub fn new(transform_cache: Arc<Mutex<TransformCache>>) -> Self {
+    /// * `cwd`             - Current working directory.
+    pub fn new(transform_cache: Arc<Mutex<TransformCache>>, cwd: &str) -> Self {
         // Create a default material.
         let mp = TextureParams::default();
         let matte = Arc::new(MatteMaterial::from(&mp));
@@ -93,7 +97,15 @@ impl GraphicsState {
             area_light_params: ParamSet::new(),
             area_light: None,
             reverse_orientation: false,
+            cwd: cwd.to_string(),
         }
+    }
+
+    /// Set current working directory.
+    ///
+    /// * `path` - The path.
+    pub fn set_current_working_dir(&mut self, path: &str) {
+        self.cwd = path.to_string();
     }
 
     /// Returns a material for given shape parameters.
@@ -245,7 +257,7 @@ impl GraphicsState {
         match name {
             "matte" => Ok(Arc::new(MatteMaterial::from(mp))),
             "plastic" => Ok(Arc::new(PlasticMaterial::from(mp))),
-            "fourier" => Ok(Arc::new(FourierMaterial::from(mp))),
+            "fourier" => Ok(Arc::new(FourierMaterial::from((mp, &self.cwd[..])))),
             "mix" => {
                 let m1 = mp.find_string("namedmaterial1", String::from(""));
                 let mat1 = match self.named_materials.get(&m1) {
@@ -283,6 +295,7 @@ impl GraphicsState {
     /// * `tex2world` - Texture space to world space transform.
     /// * `tp`        - Parameter set.
     pub fn make_float_texture(
+        &self,
         name: &str,
         tex2world: &Transform,
         tp: &TextureParams,
@@ -306,7 +319,10 @@ impl GraphicsState {
             "constant" => Ok(Arc::new(ConstantTexture::<Float>::from(p))),
             "dots" => Ok(Arc::new(DotsTexture::<Float>::from(p))),
             "fbm" => Ok(Arc::new(FBmTexture::<Float>::from(p))),
-            "imagemap" => Ok(Arc::new(ImageTexture::<Float>::from(p))),
+            "imagemap" => {
+                let p = (tp, tex2world, &self.cwd[..]);
+                Ok(Arc::new(ImageTexture::<Float>::from(p)))
+            }
             "mix" => Ok(Arc::new(MixTexture::<Float>::from(p))),
             "scale" => Ok(Arc::new(ScaleTexture::<Float>::from(p))),
             "windy" => Ok(Arc::new(WindyTexture::<Float>::from(p))),
@@ -320,6 +336,7 @@ impl GraphicsState {
     /// * `tex2world` - Texture space to world space transform.
     /// * `tp`        - Parameter set.
     pub fn make_spectrum_texture(
+        &self,
         name: &str,
         tex2world: &Transform,
         tp: &TextureParams,
@@ -343,7 +360,10 @@ impl GraphicsState {
             "constant" => Ok(Arc::new(ConstantTexture::<Spectrum>::from(p))),
             "dots" => Ok(Arc::new(DotsTexture::<Spectrum>::from(p))),
             "fbm" => Ok(Arc::new(FBmTexture::<Spectrum>::from(p))),
-            "imagemap" => Ok(Arc::new(ImageTexture::<Spectrum>::from(p))),
+            "imagemap" => {
+                let p = (tp, tex2world, &self.cwd[..]);
+                Ok(Arc::new(ImageTexture::<Spectrum>::from(p)))
+            }
             "marble" => Ok(Arc::new(MarbleTexture::from(p))),
             "mix" => Ok(Arc::new(MixTexture::<Spectrum>::from(p))),
             "scale" => Ok(Arc::new(ScaleTexture::<Spectrum>::from(p))),
