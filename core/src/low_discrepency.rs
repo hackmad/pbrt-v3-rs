@@ -1773,49 +1773,39 @@ pub fn sobol_2d(
 /// * `p`     - Pixel.
 pub fn sobol_interval_to_index(m: u32, frame: u64, p: &Point2i) -> u64 {
     if m == 0 {
-        0
-    } else {
-        let m2 = m << 1;
-        let mut index = frame << m2;
-
-        let mut delta = 0;
-        let mut c = 0;
-        let mut frame = frame;
-
-        loop {
-            if frame == 0 {
-                break;
-            }
-
-            if (frame & 1) > 0 {
-                // Add flipped column m + c + 1.
-                delta ^= VD_C_SOBOL_MATRICES[m as usize - 1][c];
-            }
-
-            frame >>= 1;
-            c += 1;
-        }
-
-        // Flipped b
-        let mut b = (((p.x as u32) << m) as u64 | (p.y as u64)) ^ delta;
-
-        c = 0;
-        loop {
-            if b == 0 {
-                break;
-            }
-
-            if (b & 1) > 0 {
-                // Add column 2 * m - c.
-                index ^= VD_C_SOBOL_MATRICES_INV[m as usize - 1][c];
-            }
-
-            b >>= 1;
-            c += 1;
-        }
-
-        index
+        return 0;
     }
+
+    let m2 = m << 1;
+    let mut index = frame << m2;
+
+    let mut delta = 0;
+    let mut c = 0;
+    let mut frame = frame;
+
+    while frame > 0 {
+        if frame & 1 > 0 {
+            // Add flipped column m + c + 1.
+            delta ^= VD_C_SOBOL_MATRICES[(m - 1) as usize][c];
+        }
+        frame >>= 1;
+        c += 1;
+    }
+
+    // Flipped b
+    let mut b = (((p.x as u32) << m) as u64 | (p.y as u64)) ^ delta;
+
+    c = 0;
+    while b > 0 {
+        if b & 1 > 0 {
+            // Add column 2 * m - c.
+            index ^= VD_C_SOBOL_MATRICES_INV[(m - 1) as usize][c];
+        }
+        b >>= 1;
+        c += 1;
+    }
+
+    index
 }
 
 /// Returns the sample value for a given sample index and dimension.

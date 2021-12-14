@@ -35,7 +35,19 @@ impl SobolSampler {
     /// * `samples_per_pixel` - Number of samples per pixel.
     /// * `sample_bounds`     - Sample bounds.
     fn new(samples_per_pixel: usize, sample_bounds: Bounds2i) -> Self {
-        let resolution = max(sample_bounds.diagonal().x, sample_bounds.diagonal().y);
+        let samples_per_pixel = if !samples_per_pixel.is_power_of_two() {
+            warn!(
+                "WARNING: Non power-of-two sample count rounded up to {} for SobolSampler.",
+                samples_per_pixel
+            );
+
+            samples_per_pixel.next_power_of_two()
+        } else {
+            samples_per_pixel
+        };
+
+        let resolution = (max(sample_bounds.diagonal().x, sample_bounds.diagonal().y) as u32)
+            .next_power_of_two() as i32;
 
         Self {
             data: SamplerData::new(samples_per_pixel),
