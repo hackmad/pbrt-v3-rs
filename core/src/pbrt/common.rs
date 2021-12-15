@@ -381,3 +381,17 @@ pub fn erf_inv(x: Float) -> Float {
         p * x
     }
 }
+
+/// Deconstructs a floating point value as a (mantissa, exponent, sign) tuple
+/// so it can be used in data structures that require hashing.
+#[derive(Hash, Eq, PartialEq)]
+pub struct HashableFloat(u64, i16, i8);
+impl HashableFloat {
+    /// Create a new `HashableFloat` from a floating point value.
+    /// 
+    /// * `val` - The floating point value.
+    pub fn new(val: Float) -> Self {
+        let (mantissa, exponent, sign) = num_traits::Float::integer_decode(val);
+        Self(mantissa, exponent, sign)
+    }
+}
