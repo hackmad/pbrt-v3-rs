@@ -242,7 +242,7 @@ impl SDFace {
     /// * `vert` - The vertex index.
     pub fn vnum(&self, vert: i64) -> i64 {
         for i in 0..3 {
-            if self.v[i] == (vert as i64) {
+            if self.v[i] == vert {
                 return i as i64;
             }
         }
@@ -387,12 +387,21 @@ impl LoopSubDiv {
         for i in 0..verts.len() {
             let v = Arc::get_mut(&mut verts[i]).unwrap();
             let mut f = v.start_face;
+
+            if f == -1 {
+                panic!(
+                    "Start face for vertex {} is not set. Check input mesh to ensure all vertices used.",
+                    i
+                );
+            }
+
             loop {
                 f = faces[f as usize].next_face(i as i64);
                 if f == -1 || f == v.start_face {
                     break;
                 }
             }
+
             let valence = v.valence(i as i64, &faces);
             v.boundary = f == -1;
             if !v.boundary && valence == 6 {
