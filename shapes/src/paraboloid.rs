@@ -222,6 +222,7 @@ impl Shape for Paraboloid {
             dndv,
             ray.time,
             Arc::clone(&self.data),
+            0,
         );
 
         // Create hit.

@@ -82,13 +82,13 @@ impl TriangleMesh {
         assert!(num_triangles == 0);
 
         // Transform mesh vertices to world space.
-        let tp = p.iter().map(|v| object_to_world.transform_point(&v));
+        let tp = p.iter().map(|v| object_to_world.transform_point(v));
 
         // Transform normals to world space.
-        let tn = n.iter().map(|v| object_to_world.transform_normal(&v));
+        let tn = n.iter().map(|v| object_to_world.transform_normal(v));
 
         // Transform tangent vectors to world space.
-        let ts = s.iter().map(|v| object_to_world.transform_vector(&v));
+        let ts = s.iter().map(|v| object_to_world.transform_vector(v));
 
         Self {
             num_triangles,
@@ -133,6 +133,7 @@ impl TriangleMesh {
         object_to_world: ArcTransform,
         world_to_object: ArcTransform,
         reverse_orientation: bool,
+        num_triangles: usize,
         vertex_indices: Vec<usize>,
         p: Vec<Point3f>,
         n: Vec<Normal3f>,
@@ -143,9 +144,8 @@ impl TriangleMesh {
         face_indices: Vec<usize>,
     ) -> Vec<ArcShape> {
         let n_vertices = vertex_indices.len();
-        assert!(n_vertices % 3 == 0);
+        assert!(n_vertices / 3 == num_triangles);
 
-        let num_triangles = n_vertices / 3;
         let mesh = Self::new(
             Arc::clone(&object_to_world),
             reverse_orientation,
@@ -175,7 +175,7 @@ impl TriangleMesh {
         tris
     }
 
-    /// Create a triangel mesh from given parameter set, object to world transform,
+    /// Create a triangle mesh from given parameter set, object to world transform,
     /// world to object transform and whether or not surface normal orientation
     /// is reversed.
     ///
@@ -328,6 +328,7 @@ impl TriangleMesh {
             Arc::clone(&o2w),
             Arc::clone(&w2o),
             reverse_orientation,
+            nvi / 3,
             vi,
             p,
             n,
@@ -352,6 +353,9 @@ pub struct Triangle {
     /// The index of the first vertex in the triangle. The other two are
     /// calculated as v + 1 and v + 2.
     pub v: usize,
+
+    /// Face index to which this vertex belongs.
+    pub face_index: usize,
 }
 
 impl Triangle {
@@ -370,9 +374,16 @@ impl Triangle {
         mesh: Arc<TriangleMesh>,
         triangle_index: usize,
     ) -> Self {
+        let face_index = if mesh.face_indices.len() > 0 {
+            mesh.face_indices[triangle_index]
+        } else {
+            0
+        };
+
         Self {
             mesh: Arc::clone(&mesh),
             v: 3 * triangle_index,
+            face_index,
             data: Arc::new(ShapeData::new(
                 Arc::clone(&object_to_world),
                 Some(Arc::clone(&world_to_object)),
@@ -595,6 +606,7 @@ impl Shape for Triangle {
                 Normal3f::default(),
                 r.time,
                 Arc::clone(&self.data),
+                0,
             );
 
             let alpha_mask = self.mesh.alpha_mask.clone().unwrap();
@@ -615,6 +627,7 @@ impl Shape for Triangle {
             Normal3f::default(),
             r.time,
             Arc::clone(&self.data),
+            self.face_index,
         );
 
         // Override surface normal in isect for triangle.
@@ -875,6 +888,7 @@ impl Shape for Triangle {
                 Normal3f::default(),
                 r.time,
                 Arc::clone(&self.data),
+                0,
             );
 
             let alpha_mask = self.mesh.alpha_mask.clone().unwrap();

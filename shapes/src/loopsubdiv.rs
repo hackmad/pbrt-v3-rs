@@ -626,8 +626,7 @@ impl LoopSubDiv {
 
         // Compute vertex tangents on limit surface.
         let mut ns: Vec<Normal3f> = Vec::with_capacity(verts.len());
-        for i in 0..verts.len() {
-            let vertex = Arc::clone(&verts[i]);
+        for (i, vertex) in verts.iter().enumerate() {
             let mut s = Vector3f::default();
             let mut t = Vector3f::default();
             let valence = vertex.valence(i as i64, &faces);
@@ -679,6 +678,7 @@ impl LoopSubDiv {
             Arc::clone(&object_to_world),
             Arc::clone(&world_to_object),
             reverse_orientation,
+            n_tris,
             vertex_indices,
             p_limit,
             ns,

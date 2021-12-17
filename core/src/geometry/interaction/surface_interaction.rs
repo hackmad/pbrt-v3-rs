@@ -63,6 +63,9 @@ pub struct SurfaceInteraction<'a> {
 
     /// The primitive.
     pub primitive: Option<&'a dyn Primitive>,
+
+    /// Face index in a triangle mesh where hit occurred.
+    pub face_index: usize,
 }
 
 impl<'a> SurfaceInteraction<'a> {
@@ -79,6 +82,8 @@ impl<'a> SurfaceInteraction<'a> {
     /// * `dndv`       - Differential change ∂n/∂v in surface normal as we move along v.
     /// * `time`       - Time when interaction occurred.
     /// * `shape_data` - The shape data.
+    /// * `face_index` - The face index in a triangle mesh where hit occurred.
+    ///                  Use 0 if not triangel mesh.
     pub fn new(
         p: Point3f,
         p_error: Vector3f,
@@ -90,6 +95,7 @@ impl<'a> SurfaceInteraction<'a> {
         dndv: Normal3f,
         time: Float,
         shape_data: Arc<ShapeData>,
+        face_index: usize,
     ) -> Self {
         // Calculate normal n from the partial derivatives.
         let mut n = Normal3f::from(dpdu.cross(&dpdv).normalize());
@@ -117,6 +123,7 @@ impl<'a> SurfaceInteraction<'a> {
             bsdf: None,
             bssrdf: None,
             primitive: None,
+            face_index,
         }
     }
 

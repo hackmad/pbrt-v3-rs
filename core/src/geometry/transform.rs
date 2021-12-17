@@ -583,6 +583,7 @@ impl Transform {
             self.transform_normal(&si.dndv),
             si.hit.time,
             Arc::clone(&si.shape_data),
+            si.face_index,
         );
 
         // Transform remaining members of SurfaceInteraction.
