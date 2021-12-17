@@ -89,7 +89,7 @@ impl InfiniteAreaLight {
         // Compute scalar-valued image `img` from environment map.
         let width = 2 * l_map.width();
         let height = 2 * l_map.height();
-        let fwidth = 0.5 / min(width as Float, height as Float);
+        let fwidth = 0.5 / min(width, height) as Float;
 
         let img: Vec<Vec<Float>> = (0..height)
             .into_par_iter()
@@ -189,11 +189,13 @@ impl Light for InfiniteAreaLight {
     /// Return the total emitted power.
     fn power(&self) -> Spectrum {
         let world_radius = *self.world_radius.read().unwrap();
-        let rgb = self
-            .l_map
-            .lookup_triangle(&Point2f::new(0.5, 0.5), 0.5)
-            .to_rgb();
-        let spectrum = Spectrum::from_rgb(&rgb, Some(SpectrumType::Illuminant));
+        let spectrum = Spectrum::from_rgb(
+            &self
+                .l_map
+                .lookup_triangle(&Point2f::new(0.5, 0.5), 0.5)
+                .to_rgb(),
+            Some(SpectrumType::Illuminant),
+        );
         PI * world_radius * world_radius * spectrum
     }
 
@@ -206,7 +208,10 @@ impl Light for InfiniteAreaLight {
 
         let w = self.world_to_light.transform_vector(&ray.d).normalize();
         let st = Point2f::new(spherical_phi(&w) * INV_TWO_PI, spherical_theta(&w) * INV_PI);
-        self.l_map.lookup_triangle(&st, 0.0) // SpectrumType::Illuminant
+        Spectrum::from_rgb(
+            &self.l_map.lookup_triangle(&st, 0.0).to_rgb(),
+            Some(SpectrumType::Illuminant),
+        )
     }
 
     /// Returns the probability density with respect to solid angle for the light’s
