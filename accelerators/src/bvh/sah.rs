@@ -5,6 +5,7 @@ use core::geometry::*;
 use core::pbrt::*;
 use core::primitive::*;
 use order_stat::kth_by;
+use shared_arena::{ArenaArc, SharedArena};
 use std::cmp::Ordering;
 use std::sync::{Arc, Mutex};
 
@@ -13,6 +14,7 @@ const N_BUCKETS: usize = 12;
 /// Recursively build the BVH structure for either Middle, EqualCounts or SAH
 /// algorithm.
 ///
+/// * `arena`             - Shared arena for memory allocations.
 /// * `primitives`        - The primitives in the node.
 /// * `split_method`      - Middle|EqualCounts|SAH
 /// * `max_prims_in_node` - Maximum number of primitives in the node.
@@ -25,6 +27,7 @@ const N_BUCKETS: usize = 12;
 ///                         primitives in leaf nodes occupy contiguous ranges in
 ///                         the vector.
 pub fn build(
+    arena: &SharedArena<BVHBuildNode>,
     primitives: &[ArcPrimitive],
     split_method: SplitMethod,
     max_prims_in_node: u8,
@@ -33,7 +36,7 @@ pub fn build(
     end: usize,
     total_nodes: &mut usize,
     ordered_prims: Arc<Mutex<Vec<ArcPrimitive>>>,
-) -> Arc<BVHBuildNode> {
+) -> ArenaArc<BVHBuildNode> {
     // Compute bounds of all primitives in BVH node.
     let mut bounds = Bounds3f::empty();
     for info in primitive_info.iter().take(end).skip(start) {
@@ -94,6 +97,7 @@ pub fn build(
     if let Some(mid) = interior_midpoint {
         // Create interior BVHBuildNode.
         let c0 = build(
+            arena,
             primitives,
             split_method,
             max_prims_in_node,
@@ -104,6 +108,7 @@ pub fn build(
             Arc::clone(&ordered_prims),
         );
         let c1 = build(
+            arena,
             primitives,
             split_method,
             max_prims_in_node,
@@ -113,7 +118,7 @@ pub fn build(
             total_nodes,
             Arc::clone(&ordered_prims),
         );
-        BVHBuildNode::new_interior_node(dim, c0, c1)
+        arena.alloc_arc(BVHBuildNode::new_interior_node(dim, c0, c1))
     } else {
         // Create leaf BVHBuildNode.
         let prims = Arc::clone(&ordered_prims);
@@ -122,7 +127,11 @@ pub fn build(
         for info in primitive_info.iter().take(end).skip(start) {
             prims2.push(Arc::clone(&primitives[info.primitive_number]));
         }
-        BVHBuildNode::new_leaf_node(first_prim_offset, n_primitives, bounds)
+        arena.alloc_arc(BVHBuildNode::new_leaf_node(
+            first_prim_offset,
+            n_primitives,
+            bounds,
+        ))
     }
 }
 

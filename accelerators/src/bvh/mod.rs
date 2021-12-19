@@ -12,6 +12,7 @@ mod morton;
 mod sah;
 
 pub use common::*;
+use shared_arena::{ArenaArc, SharedArena};
 use std::sync::{Arc, Mutex};
 
 /// Bounding Volume Hierarchy Accelerator.
@@ -60,12 +61,14 @@ impl BVHAccel {
             }
 
             // Build BVH tree for primitives using primitive_info.
+            let arena = SharedArena::<BVHBuildNode>::with_capacity(1024 * 1024);
             let mut total_nodes = 0;
             let ordered_prims =
                 Arc::new(Mutex::new(Vec::<ArcPrimitive>::with_capacity(n_primitives)));
 
             let root = match split_method {
                 SplitMethod::HLBVH => hlbvh::build(
+                    &arena,
                     primitives,
                     max_prims_in_node,
                     &mut primitive_info,
@@ -73,6 +76,7 @@ impl BVHAccel {
                     Arc::clone(&ordered_prims),
                 ),
                 _ => sah::build(
+                    &arena,
                     primitives,
                     split_method,
                     max_prims_in_node,
@@ -107,7 +111,7 @@ impl BVHAccel {
     /// * `node`   - The node.
     /// * `offset` - Tracks current offset into `BVHAccel::nodes`.
     fn flatten_bvh_tree(
-        node: Arc<BVHBuildNode>,
+        node: ArenaArc<BVHBuildNode>,
         nodes: &mut Vec<LinearBVHNode>,
         offset: &mut u32,
     ) -> u32 {

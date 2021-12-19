@@ -6,6 +6,7 @@ use core::geometry::*;
 use core::pbrt::*;
 use core::primitive::*;
 use rayon::prelude::*;
+use shared_arena::{ArenaArc, SharedArena};
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -17,6 +18,7 @@ const MORTON_SCALE: u32 = 1 << MORTON_BITS;
 
 /// Build the BVH structure using HLBVH algorithm.
 ///
+/// * `arena`             - Shared arena for memory allocations.
 /// * `primitives`        - The primitives in the node.
 /// * `max_prims_in_node` - Maximum number of primitives in the node.
 /// * `primitive_info`    - Primitive information.
@@ -25,12 +27,13 @@ const MORTON_SCALE: u32 = 1 << MORTON_BITS;
 ///                         primitives in leaf nodes occupy contiguous ranges in
 ///                         the vector.
 pub fn build(
+    arena: &SharedArena<BVHBuildNode>,
     primitives: &[ArcPrimitive],
     max_prims_in_node: u8,
     primitive_info: &mut Vec<BVHPrimitiveInfo>,
     total_nodes: &mut usize,
     ordered_prims: Arc<Mutex<Vec<ArcPrimitive>>>,
-) -> Arc<BVHBuildNode> {
+) -> ArenaArc<BVHBuildNode> {
     // Compute bounds of all primitives in BVH node.
     let bounds = primitive_info
         .iter()
@@ -69,12 +72,13 @@ pub fn build(
     // Create LBVHs for treelets in parallel.
     let atomic_total = AtomicUsize::new(0);
     let ordered_prims_offset = AtomicUsize::new(0);
-    let mut treelets: Vec<Arc<BVHBuildNode>> = treelets_to_build
+    let mut treelets: Vec<ArenaArc<BVHBuildNode>> = treelets_to_build
         .par_iter()
         .map(|&(start_index, n_primitives)| {
             // Generate i^th LBVH treelet.
             let mut nodes_created = 0;
             let build_node = emit_lbvh(
+                arena,
                 primitives,
                 max_prims_in_node as usize,
                 primitive_info,
@@ -93,7 +97,13 @@ pub fn build(
     *total_nodes = atomic_total.into_inner();
 
     // Create and return SAH BVH from LBVH treelets.
-    build_upper_sah(&mut treelets, 0, treelets_to_build.len(), total_nodes)
+    build_upper_sah(
+        arena,
+        &mut treelets,
+        0,
+        treelets_to_build.len(),
+        total_nodes,
+    )
 }
 
 /// Builds a treelet by taking primitives with centroids in some region of space
@@ -101,6 +111,7 @@ pub fn build(
 /// region of space into two halves along the center of the region along one of
 /// the three axes.
 ///
+/// * `arena`                - Shared arena for memory allocations.
 /// * `primitives`           - The primitives.
 /// * `max_prims_in_node`    - Maximum number of primitives in the node.
 /// * `primitive_info`       - Primitive information.
@@ -113,6 +124,7 @@ pub fn build(
 /// * `ordered_prims_offset  - Index in `ordered_prims` for start of this node.
 /// * `bit_index`            - The bit index.
 fn emit_lbvh(
+    arena: &SharedArena<BVHBuildNode>,
     primitives: &[ArcPrimitive],
     max_prims_in_node: usize,
     primitive_info: &[BVHPrimitiveInfo],
@@ -122,7 +134,7 @@ fn emit_lbvh(
     ordered_prims: Arc<Mutex<Vec<ArcPrimitive>>>,
     ordered_prims_offset: &AtomicUsize,
     bit_index: Option<usize>,
-) -> Arc<BVHBuildNode> {
+) -> ArenaArc<BVHBuildNode> {
     debug_assert!(n_primitives > 0);
 
     if bit_index.is_none() || n_primitives < max_prims_in_node {
@@ -139,7 +151,11 @@ fn emit_lbvh(
         }
 
         *total_nodes += 1;
-        BVHBuildNode::new_leaf_node(first_prim_offset, n_primitives, bounds)
+        arena.alloc_arc(BVHBuildNode::new_leaf_node(
+            first_prim_offset,
+            n_primitives,
+            bounds,
+        ))
     } else if let Some(bit_idx) = bit_index {
         let mask = 1 << bit_idx;
         // Advance to next subtree level if there's no LBVH split for this bit
@@ -147,6 +163,7 @@ fn emit_lbvh(
             == (morton_prims[n_primitives - 1].morton_code & mask)
         {
             return emit_lbvh(
+                arena,
                 primitives,
                 max_prims_in_node,
                 primitive_info,
@@ -186,6 +203,7 @@ fn emit_lbvh(
 
         // Create and return interior LBVH node
         let c0 = emit_lbvh(
+            arena,
             primitives,
             max_prims_in_node,
             primitive_info,
@@ -197,6 +215,7 @@ fn emit_lbvh(
             Some(bit_idx - 1),
         );
         let c1 = emit_lbvh(
+            arena,
             primitives,
             max_prims_in_node,
             primitive_info,
@@ -208,7 +227,11 @@ fn emit_lbvh(
             Some(bit_idx - 1),
         );
 
-        BVHBuildNode::new_interior_node(Axis::from(bit_idx % 3), c0, c1)
+        arena.alloc_arc(BVHBuildNode::new_interior_node(
+            Axis::from(bit_idx % 3),
+            c0,
+            c1,
+        ))
     } else {
         panic!("HLBVH::emit_lbvh(): bit_index is none");
     }
@@ -216,21 +239,23 @@ fn emit_lbvh(
 
 /// Creates a BVH of all the treelets.
 ///
+/// * `arena`         - Shared arena for memory allocations.
 /// * `treelet_roots` - Treelet roots.
 /// * `start`         - Starting index. For first call it should be 0.
 /// * `end`           - Ending index + 1. For first call it should be # of nodes.
 /// * `total_nodes`   - Total number of nodes.
 fn build_upper_sah(
-    treelet_roots: &mut Vec<Arc<BVHBuildNode>>,
+    arena: &SharedArena<BVHBuildNode>,
+    treelet_roots: &mut Vec<ArenaArc<BVHBuildNode>>,
     start: usize,
     end: usize,
     total_nodes: &mut usize,
-) -> Arc<BVHBuildNode> {
+) -> ArenaArc<BVHBuildNode> {
     debug_assert!(start < end);
 
     let n_nodes = end - start;
     if n_nodes == 1 {
-        return Arc::clone(&treelet_roots[start]);
+        return ArenaArc::clone(&treelet_roots[start]);
     }
     *total_nodes += 1;
 
@@ -319,13 +344,14 @@ fn build_upper_sah(
         debug_assert!(b < N_BUCKETS);
         b <= min_cost_split_bucket
     });
+
     let mid = start + split;
     debug_assert!(mid > start);
     debug_assert!(mid < end);
 
-    BVHBuildNode::new_interior_node(
+    arena.alloc_arc(BVHBuildNode::new_interior_node(
         dim,
-        build_upper_sah(treelet_roots, start, mid, total_nodes),
-        build_upper_sah(treelet_roots, mid, end, total_nodes),
-    )
+        build_upper_sah(arena, treelet_roots, start, mid, total_nodes),
+        build_upper_sah(arena, treelet_roots, mid, end, total_nodes),
+    ))
 }

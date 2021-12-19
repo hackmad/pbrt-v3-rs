@@ -2,7 +2,7 @@
 
 use core::geometry::*;
 use core::pbrt::*;
-use std::sync::Arc;
+use shared_arena::ArenaArc;
 
 /// Splitting method to use to subdivide primitives.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -70,7 +70,7 @@ pub struct BVHBuildNode {
     pub bounds: Bounds3f,
 
     /// Children of this node.
-    pub children: [Option<Arc<BVHBuildNode>>; 2],
+    pub children: [Option<ArenaArc<BVHBuildNode>>; 2],
 
     /// Coordinate axis along which primitives are partitioned between the
     /// two children.
@@ -93,14 +93,14 @@ impl BVHBuildNode {
     /// * `n`      - Number of primitives stored from `BVHAccel::primitives` stored
     ///              at this node` starting at `first` but not including `first` + `n`.
     /// * `bounds` - Bounding box.
-    pub fn new_leaf_node(first: usize, n: usize, bounds: Bounds3f) -> Arc<Self> {
-        Arc::new(Self {
+    pub fn new_leaf_node(first: usize, n: usize, bounds: Bounds3f) -> Self {
+        Self {
             first_prim_offset: first,
             n_primitives: n,
             bounds,
             children: [None, None],
             split_axis: Axis::default(),
-        })
+        }
     }
 
     /// Allocates an interior BVH node.
@@ -110,16 +110,16 @@ impl BVHBuildNode {
     /// * `c1`   - Second child.
     pub fn new_interior_node(
         axis: Axis,
-        c0: Arc<BVHBuildNode>,
-        c1: Arc<BVHBuildNode>,
-    ) -> Arc<Self> {
-        Arc::new(Self {
+        c0: ArenaArc<BVHBuildNode>,
+        c1: ArenaArc<BVHBuildNode>,
+    ) -> Self {
+        Self {
             first_prim_offset: 0,
             n_primitives: 0,
             bounds: c0.bounds.union(&c1.bounds),
             children: [Some(c0), Some(c1)],
             split_axis: axis,
-        })
+        }
     }
 }
 
