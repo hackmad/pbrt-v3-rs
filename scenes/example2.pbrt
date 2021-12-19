@@ -26,7 +26,7 @@ WorldBegin
   #AttributeEnd
 
   AttributeBegin
-    Material "glass" "rgb Kt" [0 0 0] "integer nlevels" [1]
+    Material "glass"
     Scale 4 4 4
     Rotate 45 0 0 1
     Rotate 90 1 0 0
