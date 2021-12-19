@@ -84,14 +84,7 @@ impl Light for DistantLight {
         let p_outside = hit.p + self.w_light * (2.0 * world_radius);
 
         let p0 = hit.clone();
-        let p1 = Hit::new(
-            p_outside,
-            hit.time,
-            Vector3f::default(),
-            Vector3f::default(),
-            Normal3f::default(),
-            hit.medium_interface.clone(),
-        );
+        let p1 = Hit::new_minimal(p_outside, hit.time, hit.medium_interface.clone());
         let vis = VisibilityTester::new(p0, p1);
 
         Li::new(self.w_light, 1.0, Some(vis), self.emitted_radiance)

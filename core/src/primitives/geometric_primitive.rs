@@ -61,24 +61,34 @@ impl Primitive for GeometricPrimitive {
     ///
     /// * `r`                  - The ray.
     fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
-        let mut it = self.shape.intersect(r, true)?;
-        r.t_max = it.t;
-        it.isect.primitive = Some(self);
+        let shape = Arc::clone(&self.shape);
+        debug!(
+            "GeometricPrimitive::intersect(): Shape: {}",
+            shape.get_type()
+        );
 
-        debug_assert!(it.isect.hit.n.dot(&it.isect.shading.n) > 0.0);
+        if let Some(mut it) = shape.intersect(r, true) {
+            r.t_max = it.t;
+            it.isect.primitive = Some(self);
 
-        // Initialize SurfaceInteraction::mediumInterface after Shape
-        // intersection.
-        let is_medium_transition = self.medium_interface.is_medium_transition();
-        it.isect.hit.medium_interface = if is_medium_transition {
-            Some(self.medium_interface.clone())
-        } else if let Some(medium) = r.medium.as_ref() {
-            Some(MediumInterface::from(Arc::clone(&medium)))
+            let dot = it.isect.hit.n.dot(&it.isect.shading.n);
+            debug_assert!(dot > 0.0);
+
+            // Initialize SurfaceInteraction::mediumInterface after Shape
+            // intersection.
+            let is_medium_transition = self.medium_interface.is_medium_transition();
+            it.isect.hit.medium_interface = if is_medium_transition {
+                Some(self.medium_interface.clone())
+            } else if let Some(medium) = r.medium.as_ref() {
+                Some(MediumInterface::from(Arc::clone(&medium)))
+            } else {
+                None
+            };
+
+            Some(it.isect)
         } else {
             None
-        };
-
-        Some(it.isect)
+        }
     }
 
     /// Returns `true` if a ray-primitive intersection succeeds; otherwise `false`.

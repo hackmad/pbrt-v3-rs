@@ -63,6 +63,12 @@ impl Cylinder {
 }
 
 impl Shape for Cylinder {
+    /// Returns the shape type. Usually these are behind ArcShape and harder to
+    /// debug. So this will be helpful.
+    fn get_type(&self) -> &'static str {
+        "cylinder"
+    }
+
     /// Returns the underlying shape data.
     fn get_data(&self) -> Arc<ShapeData> {
         Arc::clone(&self.data)

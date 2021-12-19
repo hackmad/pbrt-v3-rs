@@ -142,21 +142,18 @@ impl<'a> SurfaceInteraction<'a> {
         orientation_is_authoritative: bool,
     ) {
         // Compute normal.
-        let mut hit_n = self.hit.n;
-        let mut shading_n = Normal3::from(dpdu.cross(&dpdv)).normalize();
-
-        if self.shape_data.reverse_orientation ^ self.shape_data.transform_swaps_handedness {
-            shading_n = -self.shading.n;
-            if orientation_is_authoritative {
-                hit_n = hit_n.face_forward(&shading_n.into());
-            } else {
-                shading_n = shading_n.face_forward(&hit_n.into());
-            }
+        self.shading.n = Normal3::from(dpdu.cross(&dpdv)).normalize();
+        if orientation_is_authoritative {
+            self.hit.n = self.hit.n.face_forward(&self.shading.n.into());
+        } else {
+            self.shading.n = self.shading.n.face_forward(&self.hit.n.into());
         }
 
         // Initialize shading partial derivative values.
-        self.hit.n = hit_n;
-        self.shading = Shading::new(shading_n, dpdu, dpdv, dndu, dndv);
+        self.shading.dpdu = dpdu;
+        self.shading.dpdv = dpdv;
+        self.shading.dndu = dndu;
+        self.shading.dndv = dndv;
     }
 
     /// Initializes representations of the light-scattering properties of the

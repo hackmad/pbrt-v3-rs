@@ -61,6 +61,10 @@ type ArcHit = Arc<Hit>;
 impl Hit {
     /// Create a new hit.
     ///
+    /// NOTE: If you need to contruct a new `Hit` without `wo`, `n` and `p_error`
+    /// use `Hit::new_minimal()`. This function calls `wo.normalize()` and will
+    /// generate weird values for zero vectors.
+    ///
     /// `p`                - Point of interaction.
     /// `time`             - Time when interaction occurred.
     /// `p_error`          - Floating point error for ray intersection points.
@@ -80,8 +84,24 @@ impl Hit {
             p,
             time,
             p_error,
-            wo,
+            wo: wo.normalize(),
             n,
+            medium_interface,
+        }
+    }
+
+    /// Create a new hit from minimal fields.
+    ///
+    /// `p`                - Point of interaction.
+    /// `time`             - Time when interaction occurred.
+    /// `medium_interface` - The medium interface used for scattering media.
+    pub fn new_minimal(p: Point3f, time: Float, medium_interface: Option<MediumInterface>) -> Self {
+        Self {
+            p,
+            time,
+            p_error: Vector3f::default(),
+            wo: Vector3f::default(),
+            n: Normal3f::default(),
             medium_interface,
         }
     }

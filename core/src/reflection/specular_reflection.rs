@@ -57,4 +57,13 @@ impl BxDF for SpecularReflection {
         let s = self.fresnel.evaluate(cos_theta(&wi)) * self.r / abs_cos_theta(&wi);
         BxDFSample::new(s, pdf, wi, self.bxdf_type)
     }
+
+    /// Evaluates the PDF for the sampling method. Default is based on the
+    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    ///
+    /// * `wo` - Outgoing direction.
+    /// * `wi` - Incident direction.
+    fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
+        0.0
+    }
 }

@@ -78,6 +78,9 @@ pub trait BxDF {
 
     /// Evaluates the PDF for the sampling method. Default is based on the
     /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    ///
+    /// * `wo` - Outgoing direction.
+    /// * `wi` - Incident direction.
     fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if same_hemisphere(wo, wi) {
             abs_cos_theta(wi) * INV_PI

@@ -391,9 +391,7 @@ impl Triangle {
             )),
         }
     }
-}
 
-impl Triangle {
     /// Returns the uv-coordinates for the triangle. If there are no uv
     /// coordinates, then default ones [(0,0), (1,0), (1,1)] are returned.
     fn get_uvs(&self) -> [Point2f; 3] {
@@ -414,6 +412,12 @@ impl Triangle {
 }
 
 impl Shape for Triangle {
+    /// Returns the shape type. Usually these are behind ArcShape and harder to
+    /// debug. So this will be helpful.
+    fn get_type(&self) -> &'static str {
+        "triangle"
+    }
+
     /// Returns the underlying shape data.
     fn get_data(&self) -> Arc<ShapeData> {
         Arc::clone(&self.data)
@@ -424,11 +428,14 @@ impl Shape for Triangle {
         // We can unwrap safely because the factory methods guarantee world_to_object
         // is passed. If it is constructed without that, then tough luck!
         let world_to_object = self.data.world_to_object.clone().unwrap();
-        Bounds3f::from(
-            world_to_object.transform_point(&self.mesh.p[self.mesh.vertex_indices[self.v]]),
-        )
-        .union(&world_to_object.transform_point(&self.mesh.p[self.mesh.vertex_indices[self.v + 1]]))
-        .union(&world_to_object.transform_point(&self.mesh.p[self.mesh.vertex_indices[self.v + 2]]))
+
+        let p0 = &self.mesh.p[self.mesh.vertex_indices[self.v]];
+        let p1 = &self.mesh.p[self.mesh.vertex_indices[self.v + 1]];
+        let p2 = &self.mesh.p[self.mesh.vertex_indices[self.v + 2]];
+
+        Bounds3f::from(world_to_object.transform_point(p0))
+            .union(&world_to_object.transform_point(p1))
+            .union(&world_to_object.transform_point(p2))
     }
 
     /// Returns a bounding box in the world space.
@@ -464,8 +471,9 @@ impl Shape for Triangle {
 
         // Permute components of triangle vertices and ray direction.
         let kz = r.d.abs().max_dimension();
-        let kx = kz + 1;
+        let kx = kz + 1; // impl std::ops:Add for Axis handles modulo 3.
         let ky = kx + 1;
+
         let d = r.d.permute(kx, ky, kz);
         p0t = p0t.permute(kx, ky, kz);
         p1t = p1t.permute(kx, ky, kz);
@@ -482,7 +490,7 @@ impl Shape for Triangle {
         p2t.x += sx * p2t.z;
         p2t.y += sy * p2t.z;
 
-        // Compute edge function coefficients e0, e1, e2.
+        // Compute edge function coefficients `e0`, `e1`, `e2`.
         let mut e0 = p1t.x * p2t.y - p1t.y * p2t.x;
         let mut e1 = p2t.x * p0t.y - p2t.y * p0t.x;
         let mut e2 = p0t.x * p1t.y - p0t.y * p1t.x;
@@ -536,16 +544,16 @@ impl Shape for Triangle {
         let max_z_t = Vector3::new(p0t.z, p1t.z, p2t.z).abs().max_component();
         let delta_z = gamma(3) * max_z_t;
 
-        // Compute delta_x and delta_y terms for triangle `t` error bounds.
+        // Compute `delta_x` and `delta_y` terms for triangle `t` error bounds.
         let max_x_t = Vector3::new(p0t.x, p1t.x, p2t.x).abs().max_component();
         let max_y_t = Vector3::new(p0t.y, p1t.y, p2t.y).abs().max_component();
         let delta_x = gamma(5) * (max_x_t + max_z_t);
         let delta_y = gamma(5) * (max_y_t + max_z_t);
 
-        // Compute delta_e term for triangle `t` error bounds.
+        // Compute `delta_e` term for triangle `t` error bounds.
         let delta_e = 2.0 * (gamma(2) * max_x_t * max_y_t + delta_y * max_x_t + delta_x * max_y_t);
 
-        // Compute delta_t term for triangle `t` error bounds and check `t`.
+        // Compute `delta_t` term for triangle `t` error bounds and check `t`.
         let max_e = Vector3::new(e0, e1, e2).abs().max_component();
         let delta_t = 3.0
             * (gamma(3) * max_e * max_z_t + delta_e * max_z_t + delta_z * max_e)
@@ -630,7 +638,7 @@ impl Shape for Triangle {
             self.face_index,
         );
 
-        // Override surface normal in isect for triangle.
+        // Override surface normal in `isect` for triangle.
         isect.hit.n = Normal3::from(dp02.cross(&dp12).normalize());
         if self.get_data().reverse_orientation ^ self.get_data().transform_swaps_handedness {
             isect.hit.n = -isect.hit.n;
@@ -642,34 +650,39 @@ impl Shape for Triangle {
         if has_vertex_normals || has_vertex_tangents {
             // Initialize triangle shading geometry.
 
-            // Compute shading normal ns for triangle.
-            let mut ns = isect.hit.n;
-            if has_vertex_normals {
+            // Compute shading normal `ns` for triangle.
+            let ns = if has_vertex_normals {
                 let n0 = self.mesh.n[self.mesh.vertex_indices[self.v]];
                 let n1 = self.mesh.n[self.mesh.vertex_indices[self.v + 1]];
                 let n2 = self.mesh.n[self.mesh.vertex_indices[self.v + 2]];
 
                 let ns2 = b0 * n0 + b1 * n1 + b2 * n2;
                 if ns2.length_squared() > 0.0 {
-                    ns = ns2.normalize();
+                    ns2.normalize()
+                } else {
+                    isect.hit.n
                 }
+            } else {
+                isect.hit.n
             };
 
-            // Compute shading tangent ss for triangle.
-            let mut ss = isect.dpdu;
-            if has_vertex_tangents {
+            // Compute shading tangent `ss` for triangle.
+            let mut ss = if has_vertex_tangents {
                 let s0 = self.mesh.s[self.mesh.vertex_indices[self.v]];
                 let s1 = self.mesh.s[self.mesh.vertex_indices[self.v + 1]];
                 let s2 = self.mesh.s[self.mesh.vertex_indices[self.v + 2]];
 
                 let ss2 = b0 * s0 + b1 * s1 + b2 * s2;
                 if ss2.length_squared() > 0.0 {
-                    ss = ss2;
+                    ss2.normalize()
+                } else {
+                    isect.dpdu.normalize()
                 }
+            } else {
+                isect.dpdu.normalize()
             };
-            ss = ss.normalize();
 
-            // Compute shading bitangent ts for triangle and adjust ss.
+            // Compute shading bitangent `ts` for triangle and adjust `ss`.
             let mut ts = ss.cross(&ns.into());
             if ts.length_squared() > 0.0 {
                 ts = ts.normalize();
@@ -680,7 +693,7 @@ impl Shape for Triangle {
                 ts = ts_new;
             }
 
-            // Compute dndu and dndv for triangle shading geometry.
+            // Compute `dndu` and `dndv` for triangle shading geometry.
             let (dndu, dndv) = if has_vertex_normals {
                 // Compute deltas for triangle partial derivatives of normal.
                 let n0 = self.mesh.n[self.mesh.vertex_indices[self.v]];
@@ -695,9 +708,9 @@ impl Shape for Triangle {
                 let determinant = duv02[0] * duv12[1] - duv02[1] * duv12[0];
                 let degenerate_uv = determinant.abs() < 1e-8;
                 if degenerate_uv {
-                    // We can still compute dndu and dndv, with respect to the
-                    // same arbitrary coordinate system we use to compute dpdu
-                    // and dpdv when this happens. It's important to do this
+                    // We can still compute `dndu` and `dndv`, with respect to the
+                    // same arbitrary coordinate system we use to compute `dpdu`
+                    // and `dpdv` when this happens. It's important to do this
                     // (rather than giving up) so that ray differentials for
                     // rays reflected from triangles with degenerate
                     // parameterizations are still reasonable.
@@ -769,7 +782,7 @@ impl Shape for Triangle {
         p2t.x += sx * p2t.z;
         p2t.y += sy * p2t.z;
 
-        // Compute edge function coefficients e0, e1, e2.
+        // Compute edge function coefficients `e0`, `e1`, `e2`.
         let mut e0 = p1t.x * p2t.y - p1t.y * p2t.x;
         let mut e1 = p2t.x * p0t.y - p2t.y * p0t.x;
         let mut e2 = p0t.x * p1t.y - p0t.y * p1t.x;
@@ -819,20 +832,20 @@ impl Shape for Triangle {
 
         // Ensure that computed triangle is conservatively greater than zero.
 
-        // Compute delta_z term for triangle `t` error bounds.
+        // Compute `delta_z` term for triangle `t` error bounds.
         let max_z_t = Vector3::new(p0t.z, p1t.z, p2t.z).abs().max_component();
         let delta_z = gamma(3) * max_z_t;
 
-        // Compute delta_x and delta_y terms for triangle `t` error bounds.
+        // Compute `delta_x` and `delta_y` terms for triangle `t` error bounds.
         let max_x_t = Vector3::new(p0t.x, p1t.x, p2t.x).abs().max_component();
         let max_y_t = Vector3::new(p0t.y, p1t.y, p2t.y).abs().max_component();
         let delta_x = gamma(5) * (max_x_t + max_z_t);
         let delta_y = gamma(5) * (max_y_t + max_z_t);
 
-        // Compute delta_e term for triangle `t` error bounds
+        // Compute `delta_e` term for triangle `t` error bounds
         let delta_e = 2.0 * (gamma(2) * max_x_t * max_y_t + delta_y * max_x_t + delta_x * max_y_t);
 
-        // Compute delta_t term for triangle `t` error bounds and check `t`.
+        // Compute `delta_t` term for triangle `t` error bounds and check `t`.
         let max_e = Vector3::new(e0, e1, e2).abs().max_component();
         let delta_t = 3.0
             * (gamma(3) * max_e * max_z_t + delta_e * max_z_t + delta_z * max_e)

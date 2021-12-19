@@ -72,14 +72,7 @@ impl Light for PointLight {
         let pdf = 1.0;
 
         let p0 = hit.clone();
-        let p1 = Hit::new(
-            self.p_light,
-            hit.time,
-            Vector3f::default(),
-            Vector3f::default(),
-            Normal3f::default(),
-            hit.medium_interface.clone(),
-        );
+        let p1 = Hit::new_minimal(self.p_light, hit.time, hit.medium_interface.clone());
         let vis = VisibilityTester::new(p0, p1);
 
         let value = self.intensity / self.p_light.distance_squared(hit.p);

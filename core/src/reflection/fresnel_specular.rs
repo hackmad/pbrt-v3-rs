@@ -112,4 +112,13 @@ impl BxDF for FresnelSpecular {
             }
         }
     }
+
+    /// Evaluates the PDF for the sampling method. Default is based on the
+    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    ///
+    /// * `wo` - Outgoing direction.
+    /// * `wi` - Incident direction.
+    fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
+        0.0
+    }
 }

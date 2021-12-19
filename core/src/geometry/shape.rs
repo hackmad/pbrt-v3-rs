@@ -8,6 +8,10 @@ use std::sync::Arc;
 
 /// Shape common functions
 pub trait Shape {
+    /// Returns the shape type. Usually these are behind ArcShape and harder to
+    /// debug. So this will be helpful.
+    fn get_type(&self) -> &'static str;
+
     /// Returns the underlying shape data.
     fn get_data(&self) -> Arc<ShapeData>;
 

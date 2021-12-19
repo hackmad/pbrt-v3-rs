@@ -60,6 +60,12 @@ impl Disk {
 }
 
 impl Shape for Disk {
+    /// Returns the shape type. Usually these are behind ArcShape and harder to
+    /// debug. So this will be helpful.
+    fn get_type(&self) -> &'static str {
+        "disk"
+    }
+
     /// Returns the underlying shape data.
     fn get_data(&self) -> Arc<ShapeData> {
         Arc::clone(&self.data)

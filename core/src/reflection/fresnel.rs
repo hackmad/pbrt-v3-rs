@@ -104,7 +104,7 @@ impl Fresnel for FresnelNoOp {
     }
 }
 
-/// returns the fresnel reflection for dielectric materials and unpolarized light.
+/// Returns the fresnel reflection for dielectric materials and unpolarized light.
 ///
 /// * `cos_theta_i` - cos(θi) for angle between incident direction and geometric
 ///                   surface normal.

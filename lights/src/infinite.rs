@@ -147,7 +147,7 @@ impl Light for InfiniteAreaLight {
         if map_pdf == 0.0 {
             Li::new(Vector3f::default(), 0.0, None, Spectrum::new(0.0))
         } else {
-            // Convert infinite light sample point to direction
+            // Convert infinite light sample point to direction.
             let theta = uv[1] * PI;
             let phi = uv[0] * TWO_PI;
             let cos_theta = cos(theta);
@@ -161,21 +161,18 @@ impl Light for InfiniteAreaLight {
                 cos_theta,
             ));
 
-            // Compute PDF for sampled infinite light direction
+            // Compute PDF for sampled infinite light direction.
             let mut pdf = map_pdf / (TWO_PI * PI * sin_theta);
             if sin_theta == 0.0 {
                 pdf = 0.0;
             }
 
-            // Return radiance value for infinite light direction
+            // Return radiance value for infinite light direction.
             let world_radius = *self.world_radius.read().unwrap();
             let p0 = hit.clone();
-            let p1 = Hit::new(
+            let p1 = Hit::new_minimal(
                 hit.p + wi * (2.0 * world_radius),
                 hit.time,
-                Vector3f::default(),
-                Vector3f::default(),
-                Normal3f::default(),
                 hit.medium_interface.clone(),
             );
             let vis = VisibilityTester::new(p0, p1);

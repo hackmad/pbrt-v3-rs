@@ -55,6 +55,12 @@ impl Cone {
 }
 
 impl Shape for Cone {
+    /// Returns the shape type. Usually these are behind ArcShape and harder to
+    /// debug. So this will be helpful.
+    fn get_type(&self) -> &'static str {
+        "cone"
+    }
+
     /// Returns the underlying shape data.
     fn get_data(&self) -> Arc<ShapeData> {
         Arc::clone(&self.data)
@@ -208,7 +214,7 @@ impl Shape for Cone {
             dndv,
             ray.time,
             Arc::clone(&self.data),
-            0
+            0,
         );
 
         // Create hit.
