@@ -83,8 +83,13 @@ impl EFloat {
         #[cfg(debug_assertions)]
         {
             if self.v.is_finite() && !self.v.is_nan() {
-                assert!((self.low as f64) <= self.v_precise);
-                assert!(self.v_precise <= (self.high as f64));
+                if self.lower_bound() as f64 > self.precise_value() {
+                    panic!("lower bound > v_precise, {:?}", self);
+                }
+
+                if self.precise_value() > self.upper_bound() as f64 {
+                    panic!("v_precise > upper bound {:?}", self);
+                }
             }
         }
     }
@@ -211,7 +216,7 @@ impl Add for EFloat {
         let r = Self {
             v: self.v + ef.v,
             low: next_float_down(self.lower_bound() + ef.lower_bound()),
-            high: next_float_up(self.upper_bound() + ef.lower_bound()),
+            high: next_float_up(self.upper_bound() + ef.upper_bound()),
             #[cfg(debug_assertions)]
             v_precise: self.v_precise + ef.v_precise,
         };
