@@ -53,10 +53,12 @@ where
 {
     /// Evaluate the texture at surface interaction.
     ///
-    /// * `si` - Surface interaction.
-    fn evaluate(&self, si: &SurfaceInteraction) -> T {
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> T {
         // Get the (s, t) mapping for the intersection.
-        let TextureMap2DResult { p: st, .. } = self.mapping.map(si);
+        let TextureMap2DResult { p: st, .. } = self.mapping.map(hit, uv, der);
 
         // Calculate the weights for the 4 points.
         let s00 = (1.0 - st[0]) * (1.0 - st[1]);

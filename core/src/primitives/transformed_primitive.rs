@@ -49,7 +49,7 @@ impl Primitive for TransformedPrimitive {
         let mut it = self.primitive.intersect(&mut ray)?;
         r.t_max = ray.t_max;
         if !interpolated_prim_to_world.is_identity() {
-            it = interpolated_prim_to_world.transform_surface_interaction(&it);
+            interpolated_prim_to_world.transform_surface_interaction(&mut it);
         }
 
         debug_assert!(it.hit.n.dot(&it.shading.n) >= 0.0);

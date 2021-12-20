@@ -45,10 +45,12 @@ where
 {
     /// Evaluate the texture at surface interaction.
     ///
-    /// * `si` - Surface interaction.
-    fn evaluate(&self, si: &SurfaceInteraction) -> T {
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> T {
         // Get the (s, t) mapping for the intersection.
-        let TextureMap2DResult { p: st, .. } = self.mapping.map(si);
+        let TextureMap2DResult { p: st, .. } = self.mapping.map(hit, uv, der);
 
         let s_cell = (st[0] + 0.5).floor();
         let t_cell = (st[1] + 0.5).floor();
@@ -65,10 +67,10 @@ where
 
             let dst = st - Point2f::new(s_center, t_center);
             if dst.length_squared() < radius * radius {
-                return self.inside_dot.evaluate(si);
+                return self.inside_dot.evaluate(hit, uv, der);
             }
         }
-        self.outside_dot.evaluate(si)
+        self.outside_dot.evaluate(hit, uv, der)
     }
 }
 

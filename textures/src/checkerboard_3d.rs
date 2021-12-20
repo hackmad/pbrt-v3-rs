@@ -39,14 +39,16 @@ where
 {
     /// Evaluate the texture at surface interaction.
     ///
-    /// * `si` - Surface interaction.
-    fn evaluate(&self, si: &SurfaceInteraction) -> T {
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> T {
         // Get the (s, t) mapping for the intersection.
-        let TextureMap3DResult { p, .. } = self.mapping.map(si);
+        let TextureMap3DResult { p, .. } = self.mapping.map(hit, uv, der);
         if (p.x.floor() as Int + p.y.floor() as Int + p.z.floor() as Int) % 2 == 0 {
-            self.tex1.evaluate(si)
+            self.tex1.evaluate(hit, uv, der)
         } else {
-            self.tex2.evaluate(si)
+            self.tex2.evaluate(hit, uv, der)
         }
     }
 }

@@ -148,7 +148,6 @@ pub trait Shape {
 pub type ArcShape = Arc<dyn Shape + Send + Sync>;
 
 /// Stores geometric information about a single ray-shape intersection.
-#[derive(Clone)]
 pub struct Intersection<'a> {
     /// The parameter along the ray where intersection occurred.
     pub t: Float,

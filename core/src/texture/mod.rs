@@ -11,8 +11,10 @@ use std::sync::Arc;
 pub trait Texture<T: Copy> {
     /// Evaluate the texture at surface interaction.
     ///
-    /// * `si` - Surface interaction.
-    fn evaluate(&self, si: &SurfaceInteraction) -> T;
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> T;
 }
 
 /// Atomic reference counted `Texture`.

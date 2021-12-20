@@ -21,11 +21,13 @@ impl IdentityMapping3D {
 impl TextureMapping3D for IdentityMapping3D {
     /// Returns the (s, t) texture coordinates and partial derivitives.
     ///
-    /// * `si` - The surface interaction.
-    fn map(&self, si: &SurfaceInteraction) -> TextureMap3DResult {
-        let dpdx = self.world_to_texture.transform_vector(&si.dpdx);
-        let dpdy = self.world_to_texture.transform_vector(&si.dpdy);
-        let p = self.world_to_texture.transform_point(&si.hit.p);
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn map(&self, hit: &Hit, _uv: &Point2f, der: &Derivatives) -> TextureMap3DResult {
+        let dpdx = self.world_to_texture.transform_vector(&der.dpdx);
+        let dpdy = self.world_to_texture.transform_vector(&der.dpdy);
+        let p = self.world_to_texture.transform_point(&hit.p);
         TextureMap3DResult::new(p, dpdx, dpdy)
     }
 }

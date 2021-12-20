@@ -176,19 +176,19 @@ impl fmt::Display for CameraSample {
 #[derive(Clone)]
 pub struct SampleResult {
     /// The sample value.
-    spectrum: Spectrum,
+    pub spectrum: Spectrum,
 
     /// Direction from lens to interaction point.
-    wi: Vector3f,
+    pub wi: Vector3f,
 
     /// The PDF value.
-    pdf: Float,
+    pub pdf: Float,
 
     /// Raster position.
-    p_raster: Option<Point2f>,
+    pub p_raster: Option<Point2f>,
 
     /// Visibility tester.
-    vis: VisibilityTester,
+    pub vis: VisibilityTester,
 }
 
 impl SampleResult {

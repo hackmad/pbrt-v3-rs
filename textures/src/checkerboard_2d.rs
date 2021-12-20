@@ -58,21 +58,23 @@ where
 {
     /// Evaluate the texture at surface interaction.
     ///
-    /// * `si` - Surface interaction.
-    fn evaluate(&self, si: &SurfaceInteraction) -> T {
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> T {
         // Get the (s, t) mapping for the intersection.
         let TextureMap2DResult {
             p: st,
             dstdx,
             dstdy,
-        } = self.mapping.map(si);
+        } = self.mapping.map(hit, uv, der);
 
         if self.aa_method == AAMethod::None {
             // Point sample `Checkerboard2DTexture2D`.
             if (st[0].floor() as Int + st[1].floor() as Int) % 2 == 0 {
-                return self.tex1.evaluate(si);
+                return self.tex1.evaluate(hit, uv, der);
             }
-            return self.tex2.evaluate(si);
+            return self.tex2.evaluate(hit, uv, der);
         } else {
             // Compute closed-form box-filtered `Checkerboard2DTexture2D` value.
 
@@ -86,9 +88,9 @@ where
             if s0.floor() == s1.floor() && t0.floor() == t1.floor() {
                 // Point sample `Checkerboard2DTexture2D`.
                 if (st[0].floor() as Int + st[1].floor() as Int) % 2 == 0 {
-                    return self.tex1.evaluate(si);
+                    return self.tex1.evaluate(hit, uv, der);
                 }
-                return self.tex2.evaluate(si);
+                return self.tex2.evaluate(hit, uv, der);
             }
 
             // Apply box filter to checkerboard region.
@@ -99,7 +101,8 @@ where
             } else {
                 sint + tint - 2.0 * sint * tint
             };
-            self.tex1.evaluate(si) * (1.0 - area2) + self.tex2.evaluate(si) * area2
+            self.tex1.evaluate(hit, uv, der) * (1.0 - area2)
+                + self.tex2.evaluate(hit, uv, der) * area2
         }
     }
 }

@@ -1,7 +1,7 @@
 //! Integrator
 
-mod sampler_integrator;
 mod common;
+mod sampler_integrator;
 
 use crate::geometry::*;
 use crate::sampler::*;
@@ -22,6 +22,7 @@ pub trait Integrator {
 
     /// Returns the incident radiance at the origin of a given ray.
     ///
+    /// * `arena`   - The memory arena for allocations.
     /// * `ray`     - The ray.
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.

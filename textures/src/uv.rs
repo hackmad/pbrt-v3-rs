@@ -29,10 +29,12 @@ impl UVTexture {
 impl Texture<Spectrum> for UVTexture {
     /// Evaluate the texture at surface interaction.
     ///
-    /// * `si` - Surface interaction.
-    fn evaluate(&self, si: &SurfaceInteraction) -> Spectrum {
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> Spectrum {
         // Get the (s, t) mapping for the intersection.
-        let TextureMap2DResult { p: st, .. } = self.mapping.map(si);
+        let TextureMap2DResult { p: st, .. } = self.mapping.map(hit, uv, der);
 
         let rgb = [st[0] - st[0].floor(), st[1] - st[1].floor(), 0.0];
         Spectrum::from_rgb(&rgb, None)

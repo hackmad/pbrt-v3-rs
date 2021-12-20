@@ -79,14 +79,16 @@ new_image_texture!(Float);
 impl Texture<Spectrum> for ImageTexture<RGBSpectrum> {
     /// Evaluate the texture at surface interaction.
     ///
-    /// * `si` - Surface interaction.
-    fn evaluate(&self, si: &SurfaceInteraction) -> Spectrum {
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> Spectrum {
         // Get the (s, t) mapping for the intersection.
         let TextureMap2DResult {
             p: st,
             dstdx,
             dstdy,
-        } = self.mapping.map(si);
+        } = self.mapping.map(hit, uv, der);
 
         let mem = self.mipmap.lookup(&st, &dstdx, &dstdy);
 
@@ -101,14 +103,16 @@ impl Texture<Spectrum> for ImageTexture<RGBSpectrum> {
 impl Texture<Float> for ImageTexture<Float> {
     /// Evaluate the texture at surface interaction.
     ///
-    /// * `si` - Surface interaction.
-    fn evaluate(&self, si: &SurfaceInteraction) -> Float {
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> Float {
         // Get the (s, t) mapping for the intersection.
         let TextureMap2DResult {
             p: st,
             dstdx,
             dstdy,
-        } = self.mapping.map(si);
+        } = self.mapping.map(hit, uv, der);
 
         // Convert out to `Float`.
         self.mipmap.lookup(&st, &dstdx, &dstdy)

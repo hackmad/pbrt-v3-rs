@@ -19,35 +19,8 @@ pub struct SurfaceInteraction<'a> {
     /// The uv coordinates from surface parametrization.
     pub uv: Point2f,
 
-    /// Parametric partial derivative of the point ∂p/∂u.
-    pub dpdu: Vector3f,
-
-    /// Parametric partial derivative of the point ∂p/∂v.
-    pub dpdv: Vector3f,
-
-    /// Differential change ∂n/∂u in surface normal as we move along u.
-    pub dndu: Normal3f,
-
-    /// Differential change ∂n/∂v in surface normal as we move along v.
-    pub dndv: Normal3f,
-
-    /// Differential change ∂u/∂x in parameteric coordinate u as we move along x.
-    pub dudx: Float,
-
-    /// Differential change ∂u/∂y in parameteric coordinate u as we move along y.
-    pub dudy: Float,
-
-    /// Differential change ∂v/∂x in parameteric coordinate v as we move along x.
-    pub dvdx: Float,
-
-    /// Differential change ∂v/∂y in parameteric coordinate v as we move along y.
-    pub dvdy: Float,
-
-    /// Partial derivative of the point ∂p/∂x in world space.
-    pub dpdx: Vector3f,
-
-    /// Partial derivative of the point ∂p/∂y in world space.
-    pub dpdy: Vector3f,
+    /// Derivatives.
+    pub der: Derivatives,
 
     /// Shading geometry used for perturbed values.
     pub shading: Shading,
@@ -108,16 +81,18 @@ impl<'a> SurfaceInteraction<'a> {
         Self {
             hit: Hit::new(p, time, p_error, wo, n, None),
             uv,
-            dpdu,
-            dpdv,
-            dndu,
-            dndv,
-            dudx: 0.0,
-            dudy: 0.0,
-            dvdx: 0.0,
-            dvdy: 0.0,
-            dpdx: Vector3f::default(),
-            dpdy: Vector3f::default(),
+            der: Derivatives::new(
+                dpdu,
+                dpdv,
+                dndu,
+                dndv,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                Vector3f::default(),
+                Vector3f::default(),
+            ),
             shading: Shading::new(n, dpdu, dpdv, dndu, dndv),
             shape_data,
             bsdf: None,
@@ -193,30 +168,30 @@ impl<'a> SurfaceInteraction<'a> {
             let d = n.dot(&Vector3f::from(p));
             let tx = -(n.dot(&Vector3f::from(rd.rx_origin)) - d) / n.dot(&rd.rx_direction);
             if tx.is_infinite() || tx.is_nan() {
-                self.dudx = 0.0;
-                self.dvdx = 0.0;
-                self.dudy = 0.0;
-                self.dvdy = 0.0;
-                self.dpdx = Vector3f::new(0.0, 0.0, 0.0);
-                self.dpdy = Vector3f::new(0.0, 0.0, 0.0);
+                self.der.dudx = 0.0;
+                self.der.dvdx = 0.0;
+                self.der.dudy = 0.0;
+                self.der.dvdy = 0.0;
+                self.der.dpdx = Vector3f::new(0.0, 0.0, 0.0);
+                self.der.dpdy = Vector3f::new(0.0, 0.0, 0.0);
                 return;
             }
             let px = rd.rx_origin + tx * rd.rx_direction;
 
             let ty = -(n.dot(&Vector3f::from(rd.ry_origin)) - d) / n.dot(&rd.ry_direction);
             if ty.is_infinite() || ty.is_nan() {
-                self.dudx = 0.0;
-                self.dvdx = 0.0;
-                self.dudy = 0.0;
-                self.dvdy = 0.0;
-                self.dpdx = Vector3f::new(0.0, 0.0, 0.0);
-                self.dpdy = Vector3f::new(0.0, 0.0, 0.0);
+                self.der.dudx = 0.0;
+                self.der.dvdx = 0.0;
+                self.der.dudy = 0.0;
+                self.der.dvdy = 0.0;
+                self.der.dpdx = Vector3f::new(0.0, 0.0, 0.0);
+                self.der.dpdy = Vector3f::new(0.0, 0.0, 0.0);
                 return;
             }
             let py = rd.ry_origin + ty * rd.ry_direction;
 
-            self.dpdx = px - p;
-            self.dpdy = py - p;
+            self.der.dpdx = px - p;
+            self.der.dpdy = py - p;
 
             // Compute `(u,v)` offsets at auxiliary points.
 
@@ -231,32 +206,32 @@ impl<'a> SurfaceInteraction<'a> {
 
             // Initialize `A`, `Bx`, and `By` matrices for offset computation.
             let a = [
-                [self.dpdu[dim[0]], self.dpdv[dim[0]]],
-                [self.dpdu[dim[1]], self.dpdv[dim[1]]],
+                [self.der.dpdu[dim[0]], self.der.dpdv[dim[0]]],
+                [self.der.dpdu[dim[1]], self.der.dpdv[dim[1]]],
             ];
             let bx = [px[dim[0]] - p[dim[0]], px[dim[1]] - p[dim[1]]];
             let by = [py[dim[0]] - p[dim[0]], py[dim[1]] - p[dim[1]]];
             if let Some((dudx, dvdx)) = solve_linear_system_2x2(&a, &bx) {
-                self.dudx = dudx;
-                self.dvdx = dvdx;
+                self.der.dudx = dudx;
+                self.der.dvdx = dvdx;
             } else {
-                self.dudx = 0.0;
-                self.dvdx = 0.0;
+                self.der.dudx = 0.0;
+                self.der.dvdx = 0.0;
             }
             if let Some((dudy, dvdy)) = solve_linear_system_2x2(&a, &by) {
-                self.dudy = dudy;
-                self.dvdy = dvdy;
+                self.der.dudy = dudy;
+                self.der.dvdy = dvdy;
             } else {
-                self.dudy = 0.0;
-                self.dvdy = 0.0;
+                self.der.dudy = 0.0;
+                self.der.dvdy = 0.0;
             }
         } else {
-            self.dudx = 0.0;
-            self.dvdx = 0.0;
-            self.dudy = 0.0;
-            self.dvdy = 0.0;
-            self.dpdx = Vector3f::new(0.0, 0.0, 0.0);
-            self.dpdy = Vector3f::new(0.0, 0.0, 0.0);
+            self.der.dudx = 0.0;
+            self.der.dvdx = 0.0;
+            self.der.dudy = 0.0;
+            self.der.dvdy = 0.0;
+            self.der.dpdx = Vector3f::new(0.0, 0.0, 0.0);
+            self.der.dpdy = Vector3f::new(0.0, 0.0, 0.0);
         }
     }
 
@@ -294,6 +269,7 @@ pub struct Shading {
 
 impl Shading {
     /// Create a new shading struct.
+    ///
     /// * `n`    - Surface normal.
     /// * `dpdu` - Parametric partial derivative of the point ∂p/∂u.
     /// * `dpdv` - Parametric partial derivative of the point ∂p/∂v.
@@ -312,6 +288,80 @@ impl Shading {
             dpdv,
             dndu,
             dndv,
+        }
+    }
+}
+
+/// Surface interaction derivatives.
+#[derive(Clone)]
+pub struct Derivatives {
+    /// Parametric partial derivative of the point ∂p/∂u.
+    pub dpdu: Vector3f,
+
+    /// Parametric partial derivative of the point ∂p/∂v.
+    pub dpdv: Vector3f,
+
+    /// Differential change ∂n/∂u in surface normal as we move along u.
+    pub dndu: Normal3f,
+
+    /// Differential change ∂n/∂v in surface normal as we move along v.
+    pub dndv: Normal3f,
+
+    /// Differential change ∂u/∂x in parameteric coordinate u as we move along x.
+    pub dudx: Float,
+
+    /// Differential change ∂u/∂y in parameteric coordinate u as we move along y.
+    pub dudy: Float,
+
+    /// Differential change ∂v/∂x in parameteric coordinate v as we move along x.
+    pub dvdx: Float,
+
+    /// Differential change ∂v/∂y in parameteric coordinate v as we move along y.
+    pub dvdy: Float,
+
+    /// Partial derivative of the point ∂p/∂x in world space.
+    pub dpdx: Vector3f,
+
+    /// Partial derivative of the point ∂p/∂y in world space.
+    pub dpdy: Vector3f,
+}
+
+impl Derivatives {
+    /// Create a new shading struct.
+    ///
+    /// * `dpdu` - Parametric partial derivative of the point ∂p/∂u.
+    /// * `dpdv` - Parametric partial derivative of the point ∂p/∂v.
+    /// * `dndu` - Differential change ∂n/∂v in surface normal as we move along u.
+    /// * `dndv` - Differential change ∂n/∂v in surface normal as we move along v.
+    /// * `dudx` - Differential change ∂u/∂x in parameteric coordinate u as we move along x.
+    /// * `dudy` - Differential change ∂u/∂y in parameteric coordinate u as we move along y.
+    /// * `dvdx` - Differential change ∂v/∂x in parameteric coordinate v as we move along x.
+    /// * `dvdy` - Differential change ∂v/∂y in parameteric coordinate v as we move along y.
+    /// * `dpdx` - Partial derivative of the point ∂p/∂x in world space.
+    /// * `dpdy` - Partial derivative of the point ∂p/∂y in world space.
+    pub fn new(
+        dpdu: Vector3f,
+        dpdv: Vector3f,
+        dndu: Normal3f,
+        dndv: Normal3f,
+        dudx: Float,
+        dudy: Float,
+        dvdx: Float,
+        dvdy: Float,
+        dpdx: Vector3f,
+        dpdy: Vector3f,
+    ) -> Self {
+        Self {
+            dpdu,
+            dpdv,
+            dndu,
+            dndv,
+            dudx,
+            dudy,
+            dvdx,
+            dvdy,
+            dpdx,
+            dpdy,
         }
     }
 }

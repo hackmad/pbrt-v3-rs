@@ -42,7 +42,7 @@ pub fn uniform_sample_all_lights(
             let u_light = Arc::get_mut(sampler).unwrap().get_2d();
             let u_scattering = Arc::get_mut(sampler).unwrap().get_2d();
             l += estimate_direct(
-                &(*it).clone(),
+                it,
                 &u_scattering,
                 Arc::clone(light),
                 &u_light,
@@ -56,7 +56,7 @@ pub fn uniform_sample_all_lights(
             let mut ld = Spectrum::new(0.0);
             for k in 0..n_samples {
                 ld += estimate_direct(
-                    &(*it).clone(),
+                    it,
                     &u_scattering_array[k],
                     Arc::clone(light),
                     &u_light_array[k],
@@ -169,7 +169,7 @@ pub fn estimate_direct(
         match it {
             Interaction::Surface { si } => {
                 // Evaluate BSDF for light sampling strategy.
-                if let Some(bsdf) = si.bsdf.clone() {
+                if let Some(bsdf) = &si.bsdf {
                     f = bsdf.f(&hit.wo, &wi, bsdf_flags) * wi.abs_dot(&si.shading.n);
                     scattering_pdf = bsdf.pdf(&hit.wo, &wi, bsdf_flags);
                     info!("  surf f*dot : {:}, scatteringPdf: {}", f, scattering_pdf);
@@ -218,7 +218,7 @@ pub fn estimate_direct(
         match it {
             Interaction::Surface { si } => {
                 // Sample scattered direction for surface interactions.
-                if let Some(bsdf) = si.bsdf.clone() {
+                if let Some(bsdf) = &si.bsdf {
                     let BxDFSample {
                         f: f1,
                         pdf: _scattering_pdf,

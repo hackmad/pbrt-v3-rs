@@ -27,7 +27,7 @@ pub trait Material {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available.
-    fn compute_scattering_functions(
+    fn compute_scattering_functions<'a>(
         &self,
         si: &mut SurfaceInteraction,
         mode: TransportMode,
@@ -40,10 +40,10 @@ pub trait Material {
     /// * `si` - Surface interaction.
     fn bump(&self, d: ArcTexture<Float>, si: &mut SurfaceInteraction) {
         // Compute offset positions and evaluate displacement texture.
-        let mut si_eval: SurfaceInteraction = si.clone();
+        let mut si_eval_hit = si.hit.clone();
 
         // Shift `si_eval` `du` in the `u` direction.
-        let mut du = 0.5 * (abs(si.dudx) + abs(si.dudy));
+        let mut du = 0.5 * (abs(si.der.dudx) + abs(si.der.dudy));
 
         // The most common reason for du to be zero is for ray that start from
         // light sources, where no differentials are available. In this case,
@@ -52,23 +52,26 @@ pub trait Material {
         if du == 0.0 {
             du = 0.0005;
         }
-        si_eval.hit.p = si.hit.p + du * si.shading.dpdu;
-        si_eval.uv = si.uv + Vector2f::new(du, 0.0);
-        si_eval.hit.n =
-            (Normal3f::from(si.shading.dpdu.cross(&si.shading.dpdv)) + du * si.dndu).normalize();
-        let u_displace = d.evaluate(&si_eval);
+
+        si_eval_hit.p += du * si.shading.dpdu;
+        let mut si_eval_uv = si.uv + Vector2f::new(du, 0.0);
+        si_eval_hit.n = (Normal3f::from(si.shading.dpdu.cross(&si.shading.dpdv))
+            + du * si.der.dndu)
+            .normalize();
+        let u_displace = d.evaluate(&si_eval_hit, &si_eval_uv, &si.der);
 
         // Shift `si_eval` `dv` in the `v` direction.
-        let mut dv = 0.5 * (abs(si.dvdx) + abs(si.dvdy));
+        let mut dv = 0.5 * (abs(si.der.dvdx) + abs(si.der.dvdy));
         if dv == 0.0 {
             dv = 0.0005;
         }
-        si_eval.hit.p = si.hit.p + dv * si.shading.dpdv;
-        si_eval.uv = si.uv + Vector2f::new(0.0, dv);
-        si_eval.hit.n =
-            (Normal3f::from(si.shading.dpdu.cross(&si.shading.dpdv)) + dv * si.dndv).normalize();
-        let v_displace = d.evaluate(&si_eval);
-        let displace = d.evaluate(&si);
+        si_eval_hit.p = si.hit.p + dv * si.shading.dpdv;
+        si_eval_uv = si.uv + Vector2f::new(0.0, dv);
+        si_eval_hit.n = (Normal3f::from(si.shading.dpdu.cross(&si.shading.dpdv))
+            + dv * si.der.dndv)
+            .normalize();
+        let v_displace = d.evaluate(&si_eval_hit, &si_eval_uv, &si.der);
+        let displace = d.evaluate(&si.hit, &si.uv, &si.der);
 
         // Compute bump-mapped differential geometry.
         let dpdu = si.shading.dpdu

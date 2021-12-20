@@ -40,12 +40,14 @@ impl Default for UVMapping2D {
 impl TextureMapping2D for UVMapping2D {
     /// Returns the (s, t) texture coordinates and texture differentials.
     ///
-    /// * `si` - The surface interaction.
-    fn map(&self, si: &SurfaceInteraction) -> TextureMap2DResult {
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn map(&self, _hit: &Hit, uv: &Point2f, der: &Derivatives) -> TextureMap2DResult {
         // Compute texture differentials for 2D identity mapping.
-        let dstdx = Vector2f::new(self.su * si.dudx, self.sv * si.dvdx);
-        let dstdy = Vector2f::new(self.su * si.dudy, self.sv * si.dvdy);
-        let p = Point2f::new(self.su * si.uv[0] + self.du, self.sv * si.uv[1] + self.dv);
+        let dstdx = Vector2f::new(self.su * der.dudx, self.sv * der.dvdx);
+        let dstdy = Vector2f::new(self.su * der.dudy, self.sv * der.dvdy);
+        let p = Point2f::new(self.su * uv[0] + self.du, self.sv * uv[1] + self.dv);
         TextureMap2DResult::new(p, dstdx, dstdy)
     }
 }

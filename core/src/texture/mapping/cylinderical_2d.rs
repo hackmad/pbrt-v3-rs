@@ -30,14 +30,16 @@ impl CylindericalMapping2D {
 impl TextureMapping2D for CylindericalMapping2D {
     /// Returns the (s, t) texture coordinates and texture differentials.
     ///
-    /// * `si` - The surface interaction.
-    fn map(&self, si: &SurfaceInteraction) -> TextureMap2DResult {
-        let st = self.cylinder(&si.hit.p);
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn map(&self, hit: &Hit, _uv: &Point2f, der: &Derivatives) -> TextureMap2DResult {
+        let st = self.cylinder(&hit.p);
 
         // Compute texture coordinate differentials for cylinder (u, v) mapping.
         let delta = 0.01;
 
-        let st_delta_x = self.cylinder(&(si.hit.p + delta * si.dpdx));
+        let st_delta_x = self.cylinder(&(hit.p + delta * der.dpdx));
         let mut dstdx = (st_delta_x - st) / delta;
         if dstdx[1] > 0.5 {
             dstdx[1] = 1.0 - dstdx[1];
@@ -45,7 +47,7 @@ impl TextureMapping2D for CylindericalMapping2D {
             dstdx[1] = -(dstdx[1] + 1.0);
         }
 
-        let st_delta_y = self.cylinder(&(si.hit.p + delta * si.dpdy));
+        let st_delta_y = self.cylinder(&(hit.p + delta * der.dpdy));
         let mut dstdy = (st_delta_y - st) / delta;
         if dstdy[1] > 0.5 {
             dstdy[1] = 1.0 - dstdy[1];

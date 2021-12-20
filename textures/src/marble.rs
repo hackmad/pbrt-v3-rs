@@ -54,10 +54,12 @@ impl MarbleTexture {
 impl Texture<Spectrum> for MarbleTexture {
     /// Evaluate the texture at surface interaction.
     ///
-    /// * `si` - Surface interaction.
-    fn evaluate(&self, si: &SurfaceInteraction) -> Spectrum {
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> Spectrum {
         // Get the (s, t) mapping for the intersection.
-        let TextureMap3DResult { p, dpdx, dpdy } = self.mapping.map(si);
+        let TextureMap3DResult { p, dpdx, dpdy } = self.mapping.map(hit, uv, der);
         let p = p * self.scale;
 
         let marble = p.y

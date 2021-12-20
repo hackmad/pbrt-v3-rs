@@ -513,7 +513,7 @@ impl Curve {
                 ray_to_object.transform_vector(&dpdv_plane)
             };
 
-            let si = SurfaceInteraction::new(
+            let mut si = SurfaceInteraction::new(
                 ray.at(t_hit),
                 p_error,
                 Point2f::new(u, v),
@@ -526,9 +526,11 @@ impl Curve {
                 Arc::clone(&self.data),
                 0,
             );
-            let isect = Arc::clone(&self.data.object_to_world).transform_surface_interaction(&si);
+            self.data
+                .object_to_world
+                .transform_surface_interaction(&mut si);
 
-            Some(Intersection::new(t_hit, isect))
+            Some(Intersection::new(t_hit, si))
         }
     }
 
@@ -648,7 +650,7 @@ impl Shape for Curve {
     fn get_type(&self) -> &'static str {
         "curve"
     }
-    
+
     /// Returns the underlying shape data.
     fn get_data(&self) -> Arc<ShapeData> {
         Arc::clone(&self.data)

@@ -43,11 +43,13 @@ where
 {
     /// Evaluate the texture at surface interaction.
     ///
-    /// * `si` - Surface interaction.
-    fn evaluate(&self, si: &SurfaceInteraction) -> T {
-        let t1 = self.tex1.evaluate(si);
-        let t2 = self.tex2.evaluate(si);
-        let amt = self.amount.evaluate(si);
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> T {
+        let t1 = self.tex1.evaluate(hit, uv, der);
+        let t2 = self.tex2.evaluate(hit, uv, der);
+        let amt = self.amount.evaluate(hit, uv, der);
         (1.0 - amt) * t1 + amt * t2
     }
 }

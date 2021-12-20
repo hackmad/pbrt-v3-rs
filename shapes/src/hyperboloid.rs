@@ -284,7 +284,7 @@ impl Shape for Hyperboloid {
         );
 
         // Initialize SurfaceInteraction from parametric information.
-        let si = SurfaceInteraction::new(
+        let mut si = SurfaceInteraction::new(
             p_hit,
             p_error,
             Point2f::new(u, v),
@@ -297,11 +297,11 @@ impl Shape for Hyperboloid {
             Arc::clone(&self.data),
             0,
         );
+        self.data
+            .object_to_world
+            .transform_surface_interaction(&mut si);
 
-        // Create hit.
-        let isect = self.data.object_to_world.transform_surface_interaction(&si);
-        let t_hit = Float::from(t_shape_hit);
-        Some(Intersection::new(t_hit, isect))
+        Some(Intersection::new(Float::from(t_shape_hit), si))
     }
 
     /// Returns `true` if a ray-shape intersection succeeds; otherwise `false`.

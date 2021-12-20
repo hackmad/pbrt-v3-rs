@@ -27,8 +27,10 @@ where
 {
     /// Evaluate the texture at surface interaction.
     ///
-    /// * `si` - Surface interaction.
-    fn evaluate(&self, _si: &SurfaceInteraction) -> T {
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn evaluate(&self, _hit: &Hit, _uv: &Point2f, _der: &Derivatives) -> T {
         self.value
     }
 }

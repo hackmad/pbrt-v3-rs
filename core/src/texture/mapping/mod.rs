@@ -31,8 +31,10 @@ impl TextureMap2DResult {
 pub trait TextureMapping2D {
     /// Returns the (s, t) texture coordinates and texture differentials.
     ///
-    /// * `si` - The surface interaction.
-    fn map(&self, si: &SurfaceInteraction) -> TextureMap2DResult;
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn map(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> TextureMap2DResult;
 }
 
 /// Atomic reference counted `TextureMapping2D`.
@@ -65,8 +67,10 @@ impl TextureMap3DResult {
 pub trait TextureMapping3D {
     /// Returns the (s, t) texture coordinates and partial derivitives.
     ///
-    /// * `si` - The surface interaction.
-    fn map(&self, si: &SurfaceInteraction) -> TextureMap3DResult;
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn map(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> TextureMap3DResult;
 }
 
 /// Atomic reference counted `TextureMapping3D`.

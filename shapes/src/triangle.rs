@@ -618,7 +618,7 @@ impl Shape for Triangle {
             );
 
             let alpha_mask = self.mesh.alpha_mask.clone().unwrap();
-            if alpha_mask.evaluate(&isect_local) == 0.0 {
+            if alpha_mask.evaluate(&isect_local.hit, &isect_local.uv, &isect_local.der) == 0.0 {
                 return None;
             }
         }
@@ -676,10 +676,10 @@ impl Shape for Triangle {
                 if ss2.length_squared() > 0.0 {
                     ss2.normalize()
                 } else {
-                    isect.dpdu.normalize()
+                    isect.der.dpdu.normalize()
                 }
             } else {
-                isect.dpdu.normalize()
+                isect.der.dpdu.normalize()
             };
 
             // Compute shading bitangent `ts` for triangle and adjust `ss`.
@@ -905,7 +905,7 @@ impl Shape for Triangle {
             );
 
             let alpha_mask = self.mesh.alpha_mask.clone().unwrap();
-            if alpha_mask.evaluate(&isect_local) == 0.0 {
+            if alpha_mask.evaluate(&isect_local.hit, &isect_local.uv, &isect_local.der) == 0.0 {
                 return false;
             }
         }

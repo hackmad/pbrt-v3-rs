@@ -88,11 +88,11 @@ impl Material for GlassMaterial {
             Material::bump(self, Arc::clone(bump_map), si);
         }
 
-        let eta = self.index.evaluate(si);
-        let mut urough = self.u_roughness.evaluate(si);
-        let mut vrough = self.v_roughness.evaluate(si);
-        let r = self.kr.evaluate(si).clamp_default();
-        let t = self.kt.evaluate(si).clamp_default();
+        let eta = self.index.evaluate(&si.hit, &si.uv, &si.der);
+        let mut urough = self.u_roughness.evaluate(&si.hit, &si.uv, &si.der);
+        let mut vrough = self.v_roughness.evaluate(&si.hit, &si.uv, &si.der);
+        let r = self.kr.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
+        let t = self.kt.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
 
         // Initialize bsdf for smooth or rough dielectric.
         let mut bsdf = BSDF::new(&si, Some(eta));

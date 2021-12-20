@@ -13,7 +13,6 @@ pub use medium_interaction::*;
 pub use surface_interaction::*;
 
 /// Interaction enumeration.
-#[derive(Clone)]
 pub enum Interaction<'a> {
     /// Represents geometry of a particular point on a surface.
     Surface { si: SurfaceInteraction<'a> },

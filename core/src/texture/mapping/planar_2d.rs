@@ -33,11 +33,13 @@ impl PlanarMapping2D {
 impl TextureMapping2D for PlanarMapping2D {
     /// Returns the (s, t) texture coordinates and texture differentials.
     ///
-    /// * `si` - The surface interaction.
-    fn map(&self, si: &SurfaceInteraction) -> TextureMap2DResult {
-        let vec = Vector3f::from(si.hit.p);
-        let dstdx = Vector2f::new(si.dpdx.dot(&self.vs), si.dpdx.dot(&self.vt));
-        let dstdy = Vector2f::new(si.dpdy.dot(&self.vs), si.dpdy.dot(&self.vt));
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn map(&self, hit: &Hit, _uv: &Point2f, der: &Derivatives) -> TextureMap2DResult {
+        let vec = Vector3f::from(hit.p);
+        let dstdx = Vector2f::new(der.dpdx.dot(&self.vs), der.dpdx.dot(&self.vt));
+        let dstdy = Vector2f::new(der.dpdy.dot(&self.vs), der.dpdy.dot(&self.vt));
         let p = Point2f::new(self.ds + vec.dot(&self.vs), self.dt + vec.dot(&self.vt));
 
         TextureMap2DResult::new(p, dstdx, dstdy)

@@ -33,17 +33,19 @@ impl SphericalMapping2D {
 impl TextureMapping2D for SphericalMapping2D {
     /// Returns the (s, t) texture coordinates and texture differentials.
     ///
-    /// * `si` - The surface interaction.
-    fn map(&self, si: &SurfaceInteraction) -> TextureMap2DResult {
-        let st = self.sphere(&si.hit.p);
+    /// * `hit` - Surface interaction hit.
+    /// * `uv`  - Surface interaction uv.
+    /// * `der` - Surface interaction derivatives.
+    fn map(&self, hit: &Hit, _uv: &Point2f, der: &Derivatives) -> TextureMap2DResult {
+        let st = self.sphere(&hit.p);
 
         // Compute texture coordinate differentials for sphere (u, v) mapping.
         let delta = 0.1;
 
-        let st_delta_x = self.sphere(&(si.hit.p + delta * si.dpdx));
+        let st_delta_x = self.sphere(&(hit.p + delta * der.dpdx));
         let mut dstdx = (st_delta_x - st) / delta;
 
-        let st_delta_y = self.sphere(&(si.hit.p + delta * si.dpdy));
+        let st_delta_y = self.sphere(&(hit.p + delta * der.dpdy));
         let mut dstdy = (st_delta_y - st) / delta;
 
         // Handle sphere mapping discontinuity for coordinate differentials.

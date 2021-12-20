@@ -99,12 +99,14 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                 // Compute ray differential `rd` for specular reflection.
                 let mut rd = isect.hit.spawn_ray(&wi);
                 if let Some(differentials) = ray.differentials {
-                    let rx_origin = isect.hit.p + isect.dpdx;
-                    let ry_origin = isect.hit.p + isect.dpdy;
+                    let rx_origin = isect.hit.p + isect.der.dpdx;
+                    let ry_origin = isect.hit.p + isect.der.dpdy;
 
                     // Compute differential reflected directions.
-                    let dndx = isect.shading.dndu * isect.dudx + isect.shading.dndv * isect.dvdx;
-                    let dndy = isect.shading.dndu * isect.dudy + isect.shading.dndv * isect.dvdy;
+                    let dndx =
+                        isect.shading.dndu * isect.der.dudx + isect.shading.dndv * isect.der.dvdx;
+                    let dndy =
+                        isect.shading.dndu * isect.der.dudy + isect.shading.dndv * isect.der.dvdy;
                     let dwodx = -differentials.rx_direction - wo;
                     let dwody = -differentials.ry_direction - wo;
                     let ddndx = dwodx.dot(&ns) + wo.dot(&dndx);
@@ -164,13 +166,13 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                 // Compute ray differential _rd_ for specular transmission
                 let mut rd = isect.hit.spawn_ray(&wi);
                 if let Some(differentials) = ray.differentials {
-                    let rx_origin = p + isect.dpdx;
-                    let ry_origin = p + isect.dpdy;
+                    let rx_origin = p + isect.der.dpdx;
+                    let ry_origin = p + isect.der.dpdy;
 
                     let mut dndx =
-                        isect.shading.dndu * isect.dudx + isect.shading.dndv * isect.dvdx;
+                        isect.shading.dndu * isect.der.dudx + isect.shading.dndv * isect.der.dvdx;
                     let mut dndy =
-                        isect.shading.dndu * isect.dudy + isect.shading.dndv * isect.dvdy;
+                        isect.shading.dndu * isect.der.dudy + isect.shading.dndv * isect.der.dvdy;
 
                     // The BSDF stores the IOR of the interior of the object being
                     // intersected. Compute the relative IOR by first out by assuming

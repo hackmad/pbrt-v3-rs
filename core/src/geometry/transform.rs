@@ -568,44 +568,28 @@ impl Transform {
     /// * `si` - The surface interaction.
     pub fn transform_surface_interaction<'a>(
         &self,
-        si: &SurfaceInteraction<'a>,
-    ) -> SurfaceInteraction<'a> {
+        si: &mut SurfaceInteraction<'a>,
+    ) {
         // Transform p and p_error in SurfaceInteraction.
         let (p, p_error) = self.transform_point_with_abs_error(&si.hit.p, &si.hit.p_error);
-        let mut ret = SurfaceInteraction::new(
-            p,
-            p_error,
-            si.uv,
-            self.transform_vector(&si.hit.wo).normalize(),
-            self.transform_vector(&si.dpdu),
-            self.transform_vector(&si.dpdv),
-            self.transform_normal(&si.dndu),
-            self.transform_normal(&si.dndv),
-            si.hit.time,
-            Arc::clone(&si.shape_data),
-            si.face_index,
-        );
+        si.hit.p = p;
+        si.hit.p_error = p_error;
+        si.hit.wo = self.transform_vector(&si.hit.wo).normalize();
+        si.der.dpdu = self.transform_vector(&si.der.dpdu);
+        si.der.dpdv = self.transform_vector(&si.der.dpdv);
+        si.der.dndu = self.transform_normal(&si.der.dndu);
+        si.der.dndv = self.transform_normal(&si.der.dndv);
 
         // Transform remaining members of SurfaceInteraction.
-        ret.hit.medium_interface = si.hit.medium_interface.clone();
-        ret.hit.n = self.transform_normal(&si.hit.n).normalize();
-        ret.bsdf = si.bsdf.clone();
-        ret.bssrdf = si.bssrdf.as_ref().map(|bssrdf| Arc::clone(&bssrdf));
-        ret.dudx = si.dudx;
-        ret.dvdx = si.dvdx;
-        ret.dudy = si.dudy;
-        ret.dvdy = si.dvdy;
-        ret.dpdx = self.transform_vector(&si.dpdx);
-        ret.dpdy = self.transform_vector(&si.dpdy);
-        ret.primitive = si.primitive;
-        ret.shading.dpdu = self.transform_vector(&si.shading.dpdu);
-        ret.shading.dpdv = self.transform_vector(&si.shading.dpdv);
-        ret.shading.dndu = self.transform_normal(&si.shading.dndu);
-        ret.shading.dndv = self.transform_normal(&si.shading.dndv);
-        ret.shading.n = self.transform_normal(&si.shading.n).normalize();
-        ret.shading.n = ret.shading.n.face_forward(&Vector3::from(ret.hit.n));
-
-        ret
+        si.hit.n = self.transform_normal(&si.hit.n).normalize();
+        si.der.dpdx = self.transform_vector(&si.der.dpdx);
+        si.der.dpdy = self.transform_vector(&si.der.dpdy);
+        si.shading.dpdu = self.transform_vector(&si.shading.dpdu);
+        si.shading.dpdv = self.transform_vector(&si.shading.dpdv);
+        si.shading.dndu = self.transform_normal(&si.shading.dndu);
+        si.shading.dndv = self.transform_normal(&si.shading.dndv);
+        si.shading.n = self.transform_normal(&si.shading.n).normalize();
+        si.shading.n = si.shading.n.face_forward(&Vector3::from(si.hit.n));
     }
 
     /// Returns `true` if the transformation changes the handedness of the
