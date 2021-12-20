@@ -297,10 +297,10 @@ impl GraphicsState {
     pub fn make_float_texture(
         &self,
         name: &str,
-        tex2world: &Transform,
+        tex2world: ArcTransform,
         tp: &TextureParams,
     ) -> Result<ArcTexture<Float>, String> {
-        let p = (tp, tex2world);
+        let p = (tp, Arc::clone(&tex2world));
         match name {
             "bilerp" => Ok(Arc::new(BilerpTexture::<Float>::from(p))),
             "checkerboard" => {
@@ -320,7 +320,7 @@ impl GraphicsState {
             "dots" => Ok(Arc::new(DotsTexture::<Float>::from(p))),
             "fbm" => Ok(Arc::new(FBmTexture::<Float>::from(p))),
             "imagemap" => {
-                let p = (tp, tex2world, &self.cwd[..]);
+                let p = (tp, Arc::clone(&tex2world), &self.cwd[..]);
                 Ok(Arc::new(ImageTexture::<Float>::from(p)))
             }
             "mix" => Ok(Arc::new(MixTexture::<Float>::from(p))),
@@ -338,10 +338,10 @@ impl GraphicsState {
     pub fn make_spectrum_texture(
         &self,
         name: &str,
-        tex2world: &Transform,
+        tex2world: ArcTransform,
         tp: &TextureParams,
     ) -> Result<ArcTexture<Spectrum>, String> {
-        let p = (tp, tex2world);
+        let p = (tp, Arc::clone(&tex2world));
         match name {
             "bilerp" => Ok(Arc::new(BilerpTexture::<Spectrum>::from(p))),
             "checkerboard" => {
@@ -361,7 +361,7 @@ impl GraphicsState {
             "dots" => Ok(Arc::new(DotsTexture::<Spectrum>::from(p))),
             "fbm" => Ok(Arc::new(FBmTexture::<Spectrum>::from(p))),
             "imagemap" => {
-                let p = (tp, tex2world, &self.cwd[..]);
+                let p = (tp, Arc::clone(&tex2world), &self.cwd[..]);
                 Ok(Arc::new(ImageTexture::<Spectrum>::from(p)))
             }
             "marble" => Ok(Arc::new(MarbleTexture::from(p))),
@@ -492,8 +492,8 @@ impl GraphicsState {
     ) -> Result<ArcCamera, String> {
         let mut transform_cache = self.transform_cache.lock().unwrap();
 
-        let cam2world_start = transform_cache.lookup(cam2world_set[0].clone());
-        let cam2world_end = transform_cache.lookup(cam2world_set[1].clone());
+        let cam2world_start = transform_cache.lookup(&cam2world_set[0]);
+        let cam2world_end = transform_cache.lookup(&cam2world_set[1]);
 
         let animated_cam2world = AnimatedTransform::new(
             cam2world_start,

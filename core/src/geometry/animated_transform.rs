@@ -1240,7 +1240,7 @@ impl AnimatedTransform {
         }
 
         // Compute interpolated matrix as product of interpolated components
-        Arc::new(Transform::translate(&trans) * Transform::from(rotate) * Transform::from(scale))
+        Arc::new(Transform::translate(&trans) * &Transform::from(rotate) * &Transform::from(scale))
     }
 
     /// Applies animated transformation to a given ray.

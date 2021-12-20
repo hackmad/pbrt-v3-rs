@@ -83,7 +83,7 @@ pub struct Api {
 impl Api {
     /// Returns a newly initialized API.
     pub fn new() -> Self {
-        let transform_cache = Arc::new(Mutex::new(TransformCache::default()));
+        let transform_cache = Arc::new(Mutex::new(TransformCache::new()));
         let cwd = std::env::current_dir()
             .unwrap()
             .as_path()
@@ -155,7 +155,7 @@ impl Api {
             let transform = Transform::translate(&Vector3f::new(dx, dy, dz));
             for i in 0..MAX_TRANSFORMS {
                 if self.active_transform_bits & (1 << i) > 0 {
-                    let t = *self.current_transforms[i] * transform;
+                    let t = self.current_transforms[i].as_ref() * &transform;
                     self.current_transforms[i] = Arc::new(t);
                 }
             }
@@ -195,7 +195,7 @@ impl Api {
                 tr[14], tr[3], tr[7], tr[11], tr[15],
             ));
             for i in 0..MAX_TRANSFORMS {
-                let t = *self.current_transforms[i] * transform;
+                let t = self.current_transforms[i].as_ref() * &transform;
                 self.current_transforms[i] = Arc::new(t);
             }
         }
@@ -212,7 +212,7 @@ impl Api {
             let transform = Transform::rotate_axis(angle, &Vector3f::new(dx, dy, dz));
             for i in 0..MAX_TRANSFORMS {
                 if self.active_transform_bits & (1 << i) > 0 {
-                    let t = *self.current_transforms[i] * transform;
+                    let t = self.current_transforms[i].as_ref() * &transform;
                     self.current_transforms[i] = Arc::new(t);
                 }
             }
@@ -229,7 +229,7 @@ impl Api {
             let transform = Transform::scale(sx, sy, sz);
             for i in 0..MAX_TRANSFORMS {
                 if self.active_transform_bits & (1 << i) > 0 {
-                    let t = *self.current_transforms[i] * transform;
+                    let t = self.current_transforms[i].as_ref() * &transform;
                     self.current_transforms[i] = Arc::new(t);
                 }
             }
@@ -268,7 +268,7 @@ impl Api {
             );
             for i in 0..MAX_TRANSFORMS {
                 if self.active_transform_bits & (1 << i) > 0 {
-                    let t = *self.current_transforms[i] * transform;
+                    let t = self.current_transforms[i].as_ref() * &transform;
                     self.current_transforms[i] = Arc::new(t);
                 }
             }
@@ -564,7 +564,7 @@ impl Api {
 
                 if let Ok(ft) = self.graphics_state.make_float_texture(
                     &tex_class,
-                    &*self.current_transforms[0],
+                    Arc::clone(&self.current_transforms[0]),
                     &tp,
                 ) {
                     if self.graphics_state.float_textures_shared {
@@ -584,7 +584,7 @@ impl Api {
 
                 if let Ok(st) = self.graphics_state.make_spectrum_texture(
                     &tex_class,
-                    &*self.current_transforms[0],
+                    Arc::clone(&self.current_transforms[0]),
                     &tp,
                 ) {
                     if self.graphics_state.spectrum_textures_shared {
@@ -713,9 +713,9 @@ impl Api {
                 // Create shapes for shape `name`.
                 let mut transform_cache = self.transform_cache.lock().unwrap();
                 let tr = self.current_transforms[0].clone();
-                let tr_inv = Arc::new(tr.inverse());
-                let obj2world = transform_cache.lookup(Arc::clone(&tr));
-                let world2obj = transform_cache.lookup(tr_inv);
+                let tr_inv = tr.inverse();
+                let obj2world = transform_cache.lookup(&tr);
+                let world2obj = transform_cache.lookup(&tr_inv);
                 let shapes = self
                     .graphics_state
                     .make_shape(
@@ -765,7 +765,7 @@ impl Api {
                 }
 
                 let mut transform_cache = self.transform_cache.lock().unwrap();
-                let identity = transform_cache.lookup(Arc::new(Transform::default()));
+                let identity = transform_cache.lookup(&Transform::default());
                 let shapes = self
                     .graphics_state
                     .make_shape(
@@ -799,8 +799,8 @@ impl Api {
 
                 // Get `animated_object_to_world` transform for shape.
                 let obj2world = [
-                    transform_cache.lookup(Arc::clone(&self.current_transforms[0])),
-                    transform_cache.lookup(Arc::clone(&self.current_transforms[1])),
+                    transform_cache.lookup(&self.current_transforms[0]),
+                    transform_cache.lookup(&self.current_transforms[1]),
                 ];
                 let animated_object2world = AnimatedTransform::new(
                     Arc::clone(&obj2world[0]),
@@ -917,8 +917,8 @@ impl Api {
                 // Create `animated_instance_to_world` transform for instance.
                 let mut transform_cache = self.transform_cache.lock().unwrap();
                 let instance2world = [
-                    transform_cache.lookup(self.current_transforms[0].clone()),
-                    transform_cache.lookup(self.current_transforms[1].clone()),
+                    transform_cache.lookup(&self.current_transforms[0]),
+                    transform_cache.lookup(&self.current_transforms[1]),
                 ];
                 let animated_instance2world = AnimatedTransform::new(
                     Arc::clone(&instance2world[0]),

@@ -1,7 +1,9 @@
 //! Transform Cache
 
-use core::geometry::ArcTransform;
+use core::geometry::{ArcTransform, Transform};
+use shared_arena::SharedArena;
 use std::collections::HashSet;
+use std::mem::MaybeUninit;
 use std::sync::Arc;
 
 /// Allocates and stores a single `Transform` reference for each unique
@@ -9,19 +11,32 @@ use std::sync::Arc;
 pub struct TransformCache {
     /// Caches the transformations.
     transforms: HashSet<ArcTransform>,
+
+    /// Arena for memory allocations.
+    arena: SharedArena<Transform>,
 }
 
 impl TransformCache {
+    /// Creates a new `TransformCache`.
+    pub fn new() -> Self {
+        Self {
+            transforms: HashSet::new(),
+            arena: SharedArena::new(),
+        }
+    }
+
     /// Lookup a reference to a `Transform`. If it is cached, return a
     /// reference to it. Otherwise, insert it and return the cloned reference.
     ///
     /// * `t` - Reference to a transform to lookup.
-    pub fn lookup(&mut self, t: ArcTransform) -> ArcTransform {
-        match self.transforms.get(&t) {
+    pub fn lookup(&mut self, t: &Transform) -> ArcTransform {
+        match self.transforms.get(t) {
             Some(transform) => Arc::clone(transform),
             None => {
-                self.transforms.insert(Arc::clone(&t));
-                Arc::clone(&t)
+                let boxed_t = self.arena.alloc_with(|uninit| initialize_data(uninit, t));
+                let ret = Arc::new(boxed_t.to_owned());
+                self.transforms.insert(Arc::clone(&ret));
+                ret
             }
         }
     }
@@ -29,14 +44,17 @@ impl TransformCache {
     /// Clear the cached transformations.
     pub fn clear(&mut self) {
         self.transforms.clear();
+        self.arena = SharedArena::new(); // no reset. so drop and make new.
     }
 }
 
-impl Default for TransformCache {
-    /// Returns an empty `TransformCache`.
-    fn default() -> Self {
-        Self {
-            transforms: HashSet::new(),
-        }
+fn initialize_data<'a>(
+    uninit: &'a mut MaybeUninit<Transform>,
+    source: &Transform,
+) -> &'a Transform {
+    unsafe {
+        let ptr = uninit.as_mut_ptr();
+        std::ptr::copy(source, ptr, 1);
+        &*ptr
     }
 }

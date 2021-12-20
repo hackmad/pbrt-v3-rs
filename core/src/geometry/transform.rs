@@ -9,7 +9,7 @@ use std::ops::Mul;
 use std::sync::Arc;
 
 /// A transformation for mapping from points to points and vectors to vectors.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Transform {
     /// The transformation matrix.
     pub m: Matrix4x4,
@@ -217,7 +217,7 @@ impl Transform {
     #[rustfmt::skip]
     pub fn orthographic(z_near: Float, z_far: Float) -> Self {
         Self::scale(1.0, 1.0, 1.0 / (z_far - z_near)) *
-            Self::translate(&Vector3f::new(0.0, 0.0,-z_near))
+            &Self::translate(&Vector3f::new(0.0, 0.0,-z_near))
     }
 
     /// Generate a transformation for perspective projection where points in
@@ -239,7 +239,7 @@ impl Transform {
 
         // Scale canonical perspective view to specified field of view
         let inv_tan_ang = 1.0 / tan(fov.to_radians() / 2.0);
-        Self::scale(inv_tan_ang, inv_tan_ang, 1.0) * Self::from(persp)
+        Self::scale(inv_tan_ang, inv_tan_ang, 1.0) * &Self::from(persp)
     }
 
     // Returns the inverse transformation.
@@ -661,14 +661,29 @@ impl PartialEq for Transform {
 
 impl Eq for Transform {}
 
-impl Mul<Transform> for Transform {
+impl Mul<&Transform> for Transform {
     type Output = Self;
 
     /// Composes this transformation with another one. The resulting transform
     /// is the same as applying `self` then `rhs`.
     ///
     /// * `rhs` - The transformation to compose.
-    fn mul(self, rhs: Self) -> Self::Output {
+    fn mul(self, rhs: &Transform) -> Self::Output {
+        Self::Output {
+            m: self.m * rhs.m,
+            m_inv: rhs.m_inv * self.m_inv,
+        }
+    }
+}
+
+impl Mul<&Transform> for &Transform {
+    type Output = Transform;
+
+    /// Composes this transformation with another one. The resulting transform
+    /// is the same as applying `self` then `rhs`.
+    ///
+    /// * `rhs` - The transformation to compose.
+    fn mul(self, rhs: &Transform) -> Self::Output {
         Self::Output {
             m: self.m * rhs.m,
             m_inv: rhs.m_inv * self.m_inv,

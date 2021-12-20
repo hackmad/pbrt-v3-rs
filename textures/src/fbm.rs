@@ -53,15 +53,15 @@ where
     }
 }
 
-impl<T> From<(&TextureParams, &Transform)> for FBmTexture<T> {
+impl<T> From<(&TextureParams, ArcTransform)> for FBmTexture<T> {
     /// Create a `FBmTexture<T>` from given parameter set and
     /// transformation from texture space to world space.
     ///
     /// * `p` - Tuple containing texture parameters and texture space
     ///         to world space transform.
-    fn from(p: (&TextureParams, &Transform)) -> Self {
+    fn from(p: (&TextureParams, ArcTransform)) -> Self {
         let (tp, tex2world) = p;
-        let map = Arc::new(IdentityMapping3D::new(*tex2world));
+        let map = Arc::new(IdentityMapping3D::new(tex2world));
         Self::new(
             map,
             tp.find_float("roughness", 0.5),

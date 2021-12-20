@@ -1,6 +1,6 @@
 //! Textures
 
-use core::geometry::{Transform, Vector3f};
+use core::geometry::{ArcTransform, Vector3f};
 use core::paramset::TextureParams;
 use core::texture::*;
 use std::sync::Arc;
@@ -39,7 +39,7 @@ pub use windy::*;
 ///
 /// * `tp`        - Texture parameters.
 /// * `tex2world` - Texture space to world space transform.
-fn get_texture_mapping(tp: &TextureParams, tex2world: &Transform) -> ArcTextureMapping2D {
+fn get_texture_mapping(tp: &TextureParams, tex2world: ArcTransform) -> ArcTextureMapping2D {
     let map_type = tp.find_string("mapping", String::from("uv"));
     match &map_type[..] {
         "uv" => {

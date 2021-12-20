@@ -93,15 +93,15 @@ impl Texture<Spectrum> for MarbleTexture {
     }
 }
 
-impl From<(&TextureParams, &Transform)> for MarbleTexture {
+impl From<(&TextureParams, ArcTransform)> for MarbleTexture {
     /// Create a `MarbleTexture<T>` from given parameter set and
     /// transformation from texture space to world space.
     ///
     /// * `p` - Tuple containing texture parameters and texture space
     ///         to world space transform.
-    fn from(p: (&TextureParams, &Transform)) -> Self {
+    fn from(p: (&TextureParams, ArcTransform)) -> Self {
         let (tp, tex2world) = p;
-        let map = Arc::new(IdentityMapping3D::new(*tex2world));
+        let map = Arc::new(IdentityMapping3D::new(tex2world));
         Self::new(
             map,
             tp.find_float("roughness", 0.5),

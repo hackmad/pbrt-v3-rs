@@ -117,14 +117,14 @@ impl Texture<Float> for ImageTexture<Float> {
 
 macro_rules! from_params {
     ($t: ty) => {
-        impl From<(&TextureParams, &Transform, &str)> for ImageTexture<$t> {
+        impl From<(&TextureParams, ArcTransform, &str)> for ImageTexture<$t> {
             /// Create a `ImageTexture<$t>` from given parameter set,
             /// transformation from texture space to world space and current
             /// working directory.
             ///
             /// * `p` - Tuple containing texture parameters, texture space
             ///         to world space transform and current working directory.
-            fn from(p: (&TextureParams, &Transform, &str)) -> Self {
+            fn from(p: (&TextureParams, ArcTransform, &str)) -> Self {
                 let (tp, tex2world, cwd) = p;
 
                 // Initialize 2D texture mapping `map` from `tp`.

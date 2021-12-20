@@ -6,14 +6,14 @@ use super::*;
 /// partials from world space to texture space.
 pub struct IdentityMapping3D {
     /// Transformation from world space to texture space.
-    world_to_texture: Transform,
+    world_to_texture: ArcTransform,
 }
 
 impl IdentityMapping3D {
     /// Create a new `IdentityMapping3D`.
     ///
     /// * `world_to_texture` - Transformation from world space to texture space.
-    pub fn new(world_to_texture: Transform) -> Self {
+    pub fn new(world_to_texture: ArcTransform) -> Self {
         Self { world_to_texture }
     }
 }

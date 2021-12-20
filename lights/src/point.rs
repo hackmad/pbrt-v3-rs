@@ -137,7 +137,7 @@ impl From<(&ParamSet, ArcTransform, Option<ArcMedium>)> for PointLight {
         let intensity = params.find_one_spectrum("I", Spectrum::new(1.0));
         let sc = params.find_one_spectrum("scale", Spectrum::new(1.0));
         let p = params.find_one_point3f("from", Point3f::default());
-        let l2w = Transform::translate(&Vector3f::new(p.x, p.y, p.z)) * *light_to_world;
+        let l2w = Transform::translate(&Vector3f::new(p.x, p.y, p.z)) * light_to_world.as_ref();
         Self::new(Arc::new(l2w), MediumInterface::from(medium), intensity * sc)
     }
 }
