@@ -1,6 +1,6 @@
 //! Plastic Material
 
-use core::geometry::*;
+use core::interaction::*;
 use core::material::*;
 use core::microfacet::*;
 use core::paramset::*;

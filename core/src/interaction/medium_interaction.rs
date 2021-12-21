@@ -1,6 +1,7 @@
 //! Medium Interactions
 
 #![allow(dead_code)]
+use super::Hit;
 use crate::geometry::*;
 use crate::medium::*;
 use crate::pbrt::*;

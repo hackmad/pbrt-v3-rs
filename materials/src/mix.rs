@@ -1,6 +1,6 @@
 //! Mix Material
 
-use core::geometry::*;
+use core::interaction::*;
 use core::material::*;
 use core::paramset::*;
 use core::pbrt::*;

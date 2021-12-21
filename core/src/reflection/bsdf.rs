@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 use super::*;
+use crate::interaction::*;
 use crate::rng::*;
 use bitflags::bitflags;
 use std::fmt;

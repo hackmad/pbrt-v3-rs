@@ -2,6 +2,7 @@
 
 use super::*;
 use core::geometry::*;
+use core::interaction::*;
 use core::mipmap::*;
 use core::pbrt::*;
 use core::spectrum::*;

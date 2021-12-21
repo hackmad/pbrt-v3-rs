@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 use crate::geometry::*;
+use crate::interaction::*;
 use crate::pbrt::*;
 use crate::scene::*;
 use crate::spectrum::*;

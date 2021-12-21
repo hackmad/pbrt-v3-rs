@@ -3,6 +3,7 @@
 use core::app::OPTIONS;
 use core::geometry::*;
 use core::image_io::*;
+use core::interaction::*;
 use core::light::*;
 use core::medium::*;
 use core::mipmap::*;

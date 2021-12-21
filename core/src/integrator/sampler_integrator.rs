@@ -4,6 +4,7 @@ use super::*;
 use crate::app::OPTIONS;
 use crate::camera::*;
 use crate::geometry::*;
+use crate::interaction::*;
 use crate::pbrt::*;
 use crate::reflection::*;
 use crate::sampler::*;

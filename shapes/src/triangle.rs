@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 use core::geometry::*;
+use core::interaction::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::sampling::*;

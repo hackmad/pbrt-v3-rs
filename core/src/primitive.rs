@@ -1,6 +1,7 @@
 //! Primitives
 
 use crate::geometry::*;
+use crate::interaction::*;
 use crate::light::*;
 use crate::material::*;
 use std::sync::Arc;

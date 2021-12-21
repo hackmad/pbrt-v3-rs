@@ -1,6 +1,7 @@
 //! Surface Interactions
 
 #![allow(dead_code)]
+use super::Hit;
 use crate::bssrdf::*;
 use crate::geometry::*;
 use crate::material::*;

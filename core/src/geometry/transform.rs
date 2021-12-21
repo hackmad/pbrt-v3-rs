@@ -7,6 +7,7 @@ use std::cmp::{Eq, Ord, Ordering, PartialOrd};
 use std::hash::{Hash, Hasher};
 use std::ops::Mul;
 use std::sync::Arc;
+use crate::interaction::*;
 
 /// A transformation for mapping from points to points and vectors to vectors.
 #[derive(Clone, Debug, Default)]

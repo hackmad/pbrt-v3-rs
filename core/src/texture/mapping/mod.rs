@@ -2,6 +2,7 @@
 
 use crate::geometry::*;
 use std::sync::Arc;
+use crate::interaction::*;
 
 /// Stores the result of 2D texture mapping.
 #[derive(Copy, Clone, Default)]

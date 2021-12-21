@@ -1,6 +1,7 @@
 //! Disks
 
 #![allow(dead_code)]
+use core::interaction::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::{geometry::*, sampling::concentric_sample_disk};

@@ -1,6 +1,7 @@
 //! Scene
 
 use crate::geometry::*;
+use crate::interaction::*;
 use crate::light::*;
 use crate::primitive::*;
 use crate::sampler::*;

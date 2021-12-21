@@ -3,6 +3,7 @@
 use super::get_texture_mapping;
 use super::*;
 use core::geometry::*;
+use core::interaction::*;
 use core::pbrt::*;
 use core::spectrum::*;
 use std::sync::Arc;

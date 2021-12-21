@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 use crate::geometry::*;
+use crate::interaction::*;
 use crate::low_discrepency::radical_inverse;
 use crate::pbrt::*;
 use std::sync::Arc;

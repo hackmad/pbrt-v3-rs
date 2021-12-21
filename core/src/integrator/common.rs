@@ -1,6 +1,7 @@
 //! Common
 
 use crate::geometry::*;
+use crate::interaction::*;
 use crate::light::*;
 use crate::pbrt::*;
 use crate::reflection::*;

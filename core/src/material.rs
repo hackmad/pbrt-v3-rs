@@ -1,6 +1,7 @@
 //! Material
 
 use crate::geometry::*;
+use crate::interaction::*;
 use crate::pbrt::*;
 use crate::texture::*;
 use std::sync::Arc;

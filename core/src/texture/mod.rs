@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 use crate::geometry::*;
+use crate::interaction::*;
 use crate::pbrt::Float;
 use crate::spectrum::Spectrum;
 use std::collections::HashMap;

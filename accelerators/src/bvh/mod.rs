@@ -1,6 +1,7 @@
 //! Bounding Volume Hierarchy.
 
 use core::geometry::*;
+use core::interaction::*;
 use core::light::*;
 use core::material::*;
 use core::paramset::*;

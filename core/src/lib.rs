@@ -20,6 +20,7 @@ pub mod filter;
 pub mod geometry;
 pub mod image_io;
 pub mod integrator;
+pub mod interaction;
 pub mod interpolation;
 pub mod light;
 pub mod low_discrepency;

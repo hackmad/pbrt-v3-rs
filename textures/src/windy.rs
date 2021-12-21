@@ -1,6 +1,7 @@
 //! Windy Waves Texture
 
 use core::geometry::*;
+use core::interaction::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::texture::*;

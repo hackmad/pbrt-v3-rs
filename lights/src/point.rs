@@ -1,6 +1,7 @@
 //! Point Light Source
 
 use core::geometry::*;
+use core::interaction::*;
 use core::light::*;
 use core::medium::*;
 use core::paramset::*;

@@ -1,6 +1,6 @@
 //! Visibility Tester
 
-use crate::geometry::*;
+use crate::interaction::*;
 use crate::sampler::*;
 use crate::scene::*;
 use crate::spectrum::*;
