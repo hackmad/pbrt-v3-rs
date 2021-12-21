@@ -1,5 +1,6 @@
 //! Mix Material
 
+use bumpalo::Bump;
 use core::interaction::*;
 use core::material::*;
 use core::paramset::*;
@@ -42,6 +43,7 @@ impl Material for MixMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
+    /// * `arena`                - The memory arena for allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -50,6 +52,7 @@ impl Material for MixMaterial {
     ///                            are available.
     fn compute_scattering_functions(
         &self,
+        arena: &Bump,
         si: &mut SurfaceInteraction,
         mode: TransportMode,
         allow_multiple_lobes: bool,
@@ -63,27 +66,24 @@ impl Material for MixMaterial {
         let mut si2 = si.clone();
 
         self.m1
-            .compute_scattering_functions(si, mode, allow_multiple_lobes);
+            .compute_scattering_functions(arena, si, mode, allow_multiple_lobes);
         self.m2
-            .compute_scattering_functions(&mut si2, mode, allow_multiple_lobes);
+            .compute_scattering_functions(arena, &mut si2, mode, allow_multiple_lobes);
 
         // Initialize `si.bsdf` with weighted mixture of BxDFs.
         let mut bsdf = BSDF::new(&si, None);
 
-        if let Some(si_bsdf) = si.bsdf.as_mut() {
+        if let Some(si_bsdf) = si.bsdf.as_ref() {
             let n1 = si_bsdf.num_components(BxDFType::all());
             for i in 0..n1 {
-                bsdf.add(Arc::new(ScaledBxDF::new(Arc::clone(&si_bsdf.bxdfs[i]), s1)));
+                bsdf.add(ScaledBxDF::alloc(arena, si_bsdf.bxdfs[i].clone(), s1));
             }
         }
 
-        if let Some(si2_bsdf) = si2.bsdf.as_mut() {
+        if let Some(si2_bsdf) = si2.bsdf {
             let n2 = si2_bsdf.num_components(BxDFType::all());
             for i in 0..n2 {
-                bsdf.add(Arc::new(ScaledBxDF::new(
-                    Arc::clone(&si2_bsdf.bxdfs[i]),
-                    s2,
-                )));
+                bsdf.add(ScaledBxDF::alloc(arena, si2_bsdf.bxdfs[i].clone(), s2));
             }
         }
 

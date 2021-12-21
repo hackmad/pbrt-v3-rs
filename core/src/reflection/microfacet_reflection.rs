@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 use super::*;
 use crate::microfacet::*;
+use bumpalo::Bump;
 
 /// BRDF for modeling metallic surfaces using a microfacet distribution.
 #[derive(Clone)]
@@ -36,11 +37,30 @@ impl MicrofacetReflection {
             fresnel: Arc::clone(&fresnel),
         }
     }
-}
 
-impl BxDF for MicrofacetReflection {
+    /// Allocate a new instance of `MicrofacetReflection`.
+    ///
+    /// * `allocator`    - The allocator.
+    /// * `r`            - Reflectance spectrum which gives the fraction of incident
+    ///                    light that is scattered.
+    /// * `distribution` - Microfacet distribution.
+    /// * `fresnel`      - Fresnel interface for dielectrics and conductors.
+    pub fn alloc(
+        allocator: &Bump,
+        r: Spectrum,
+        distribution: ArcMicrofacetDistribution,
+        fresnel: ArcFresnel,
+    ) -> BxDF {
+        let model = allocator
+            .alloc(Self::new(r, distribution, fresnel))
+            .to_owned();
+        allocator
+            .alloc(BxDF::MicrofacetReflection(model))
+            .to_owned()
+    }
+
     /// Returns the BxDF type.
-    fn get_type(&self) -> BxDFType {
+    pub fn get_type(&self) -> BxDFType {
         self.bxdf_type
     }
 
@@ -49,7 +69,7 @@ impl BxDF for MicrofacetReflection {
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let cos_theta_o = abs_cos_theta(wo);
         let cos_theta_i = abs_cos_theta(wi);
         let wh = *wi + *wo;
@@ -78,7 +98,7 @@ impl BxDF for MicrofacetReflection {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
         // Sample microfacet orientation `wh` and reflected direction `wi`.
         if wo.z == 0.0 {
             BxDFSample::from(self.bxdf_type)
@@ -102,7 +122,7 @@ impl BxDF for MicrofacetReflection {
 
     /// Evaluates the PDF for the sampling method. Default is based on the
     /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if same_hemisphere(wo, wi) {
             let wh = (*wo + *wi).normalize();
             self.distribution.pdf(wo, &wh) / (4.0 * wo.dot(&wh))

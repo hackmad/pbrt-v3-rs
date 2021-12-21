@@ -85,7 +85,7 @@ pub struct BSDF {
     pub ts: Vector3f,
 
     /// The `BxDFs`.
-    pub bxdfs: Vec<ArcBxDF>,
+    pub bxdfs: Vec<BxDF>,
 
     /// Relative index of refraction over the surfaceboundary.
     pub eta: Float,
@@ -116,13 +116,13 @@ impl BSDF {
     /// Add a `BxDF`.
     ///
     /// * `bxdf` - The `BxDF`.
-    pub fn add(&mut self, bxdf: ArcBxDF) {
+    pub fn add(&mut self, bxdf: BxDF) {
         assert!(
             self.bxdfs.len() < MAX_BXDFS,
             "Cannot add BxDFs. BSDF maximum limit {} reached.",
             MAX_BXDFS
         );
-        self.bxdfs.push(Arc::clone(&bxdf));
+        self.bxdfs.push(bxdf);
     }
 
     /// Returns the number of `BxDF`s that match the given type.
@@ -214,7 +214,7 @@ impl BSDF {
             }
         }
         let bxdf_idx = bxdf_idx.expect("bsdf::sample_f() did not find matching bxdf");
-        let matched_bxdf = Arc::clone(&self.bxdfs[bxdf_idx]);
+        let matched_bxdf = &self.bxdfs[bxdf_idx];
         debug!(
             "BSDF::Sample_f chose comp = {} / matching = {}, bxdf: {}",
             comp,
@@ -370,6 +370,3 @@ impl BSDF {
         }
     }
 }
-
-/// Atomic reference counted `BSDF`.
-pub type ArcBSDF = Arc<BSDF>;

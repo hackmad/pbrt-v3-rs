@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 
+use bumpalo::Bump;
 use core::camera::*;
 use core::geometry::*;
 use core::integrator::*;
@@ -62,12 +63,14 @@ impl Integrator for WhittedIntegrator {
 
     /// Returns the incident radiance at the origin of a given ray.
     ///
+    /// * `arena`   - The memory arena for allocations.
     /// * `ray`     - The ray.
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
     fn li(
         &self,
+        arena: &Bump,
         ray: &mut Ray,
         scene: Arc<Scene>,
         sampler: &mut ArcSampler,
@@ -84,10 +87,10 @@ impl Integrator for WhittedIntegrator {
             let wo = isect.hit.wo;
 
             // Compute scattering functions for surface interaction.
-            isect.compute_scattering_functions(ray, false, TransportMode::Radiance);
+            isect.compute_scattering_functions(arena, ray, false, TransportMode::Radiance);
             if isect.bsdf.is_none() {
                 let mut new_ray = isect.hit.spawn_ray(&ray.d);
-                return self.li(&mut new_ray, scene.clone(), sampler, depth);
+                return self.li(arena, &mut new_ray, scene.clone(), sampler, depth);
             }
 
             // Compute emitted light if ray hit an area light source.
@@ -123,8 +126,10 @@ impl Integrator for WhittedIntegrator {
             }
             if depth + 1 < self.data.max_depth {
                 // Trace rays for specular reflection and refraction.
-                let refl = self.specular_reflect(ray, &isect, Arc::clone(&scene), sampler, depth);
-                let trans = self.specular_transmit(ray, &isect, Arc::clone(&scene), sampler, depth);
+                let refl =
+                    self.specular_reflect(arena, ray, &isect, Arc::clone(&scene), sampler, depth);
+                let trans =
+                    self.specular_transmit(arena, ray, &isect, Arc::clone(&scene), sampler, depth);
                 l += refl + trans;
             }
         } else {

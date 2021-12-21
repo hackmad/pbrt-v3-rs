@@ -1,6 +1,7 @@
 //! Specular Reflection
 
 use super::*;
+use bumpalo::Bump;
 
 /// BRDF for physically plausible specular reflection using Fresnel interface.
 #[derive(Clone)]
@@ -27,11 +28,19 @@ impl SpecularReflection {
             r,
         }
     }
-}
 
-impl BxDF for SpecularReflection {
+    /// Allocate a new instance of `SpecularReflection`.
+    ///
+    /// * `allocator` - The allocator.
+    /// * `fresnel`   - Fresnel interface for dielectrics and conductors.
+    /// * `r`         - Spectrum used to scale the reflected colour.
+    pub fn alloc(allocator: &Bump, r: Spectrum, fresnel: ArcFresnel) -> BxDF {
+        let model = allocator.alloc(Self::new(r, fresnel)).to_owned();
+        allocator.alloc(BxDF::SpecularReflection(model)).to_owned()
+    }
+
     /// Returns the BxDF type.
-    fn get_type(&self) -> BxDFType {
+    pub fn get_type(&self) -> BxDFType {
         self.bxdf_type
     }
 
@@ -40,7 +49,7 @@ impl BxDF for SpecularReflection {
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
-    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         // No scattering is returned.
         Spectrum::new(0.0)
     }
@@ -50,7 +59,7 @@ impl BxDF for SpecularReflection {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, _u: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector3f, _u: &Point2f) -> BxDFSample {
         // Compute perfect specular reflection direction.
         let wi = Vector3f::new(-wo.x, -wo.y, wo.z);
         let pdf = 1.0;
@@ -63,7 +72,7 @@ impl BxDF for SpecularReflection {
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
-    fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
+    pub fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0
     }
 }

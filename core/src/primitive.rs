@@ -1,5 +1,6 @@
 //! Primitives
 
+use bumpalo::Bump;
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::light::*;
@@ -38,6 +39,7 @@ pub trait Primitive {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
+    /// * `arena`                - The memory arena for allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -46,6 +48,7 @@ pub trait Primitive {
     ///                            are available.
     fn compute_scattering_functions(
         &self,
+        arena: &Bump,
         si: &mut SurfaceInteraction,
         mode: TransportMode,
         allow_multiple_lobes: bool,

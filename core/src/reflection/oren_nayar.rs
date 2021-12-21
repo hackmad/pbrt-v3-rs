@@ -1,6 +1,7 @@
 //! Oren-Nayar Microfacet Model
 
 use super::*;
+use bumpalo::Bump;
 
 /// BRDF for the Oren-Nayar model for modeling rough surfaces using a microfacet
 /// model.
@@ -46,11 +47,21 @@ impl OrenNayar {
             b: 0.45 * sigma2 / (sigma2 + 0.09),
         }
     }
-}
 
-impl BxDF for OrenNayar {
+    /// Allocator a new instance of `OrenNayar`.
+    ///
+    /// * `allocator` - The allocator.
+    /// * `r`         - Reflectance spectrum which gives the fraction of incident
+    ///                 light that is scattered.
+    /// * `sigma`     - The Gaussian distribution parameter, the standard deviation
+    ///                 of the microfacet orientation angle (in degrees).
+    pub fn alloc(allocator: &Bump, r: Spectrum, sigma: Float) -> BxDF {
+        let model = allocator.alloc(Self::new(r, sigma)).to_owned();
+        allocator.alloc(BxDF::OrenNayar(model)).to_owned()
+    }
+
     /// Returns the BxDF type.
-    fn get_type(&self) -> BxDFType {
+    pub fn get_type(&self) -> BxDFType {
         self.bxdf_type
     }
 
@@ -59,7 +70,7 @@ impl BxDF for OrenNayar {
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let sin_theta_i = sin_theta(wi);
         let sin_theta_o = sin_theta(wo);
 

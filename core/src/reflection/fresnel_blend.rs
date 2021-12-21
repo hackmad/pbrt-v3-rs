@@ -3,6 +3,7 @@
 use super::*;
 use crate::microfacet::*;
 use crate::rng::*;
+use bumpalo::Bump;
 
 /// BRDF for modeling layered surfaces such as wood using Ashikhmin-Shirley model.
 #[derive(Clone)]
@@ -35,6 +36,21 @@ impl FresnelBlend {
         }
     }
 
+    /// Allocate a new instance of `FresnelBlend`.
+    ///
+    /// * `allocator`    - The allocator.
+    /// * `rd`           - Reflectance spectrum for diffuse scattering.
+    /// * `rs`           - Reflectance spectrum for specular scattering.
+    /// * `distribution` - Microfacet distribution.
+    pub fn alloc(
+        allocator: &Bump,
+        rd: Spectrum,
+        rs: Spectrum,
+        distribution: ArcMicrofacetDistribution,
+    ) -> Self {
+        allocator.alloc(Self::new(rd, rs, distribution)).to_owned()
+    }
+
     /// Returns the Schlick approximation to the Fresnel reflection equations:
     ///
     /// Fr(cosθ) = R + (1 - R)(1 - cosθ)^5
@@ -43,11 +59,9 @@ impl FresnelBlend {
     fn schlick_fresnel(&self, cos_theta: Float) -> Spectrum {
         return self.rs + (Spectrum::new(1.0) - self.rs) * pow5(1.0 - cos_theta);
     }
-}
 
-impl BxDF for FresnelBlend {
     /// Returns the BxDF type.
-    fn get_type(&self) -> BxDFType {
+    pub fn get_type(&self) -> BxDFType {
         self.bxdf_type
     }
 
@@ -56,7 +70,7 @@ impl BxDF for FresnelBlend {
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let diffuse = (28.0 / (23.0 * PI))
             * self.rd
             * (Spectrum::new(1.0) - self.rs)
@@ -79,7 +93,7 @@ impl BxDF for FresnelBlend {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
         let mut u = *u; // Make local copy.
 
         let wi = if u[0] < 0.5 {
@@ -109,7 +123,7 @@ impl BxDF for FresnelBlend {
 
     /// Evaluates the PDF for the sampling method. Default is based on the
     /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if !same_hemisphere(wo, wi) {
             0.0
         } else {

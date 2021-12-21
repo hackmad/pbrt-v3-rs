@@ -9,6 +9,7 @@ use crate::pbrt::*;
 use crate::primitive::*;
 use crate::reflection::*;
 use crate::spectrum::*;
+use bumpalo::Bump;
 use std::sync::Arc;
 
 /// SurfaceInteraction represents geometry of a particular point on a surface.
@@ -135,6 +136,7 @@ impl<'a> SurfaceInteraction<'a> {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the primtive's surface.
     ///
+    /// * `arena`                - The memory arena for allocations.
     /// * `ray`                  - The ray.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -143,13 +145,14 @@ impl<'a> SurfaceInteraction<'a> {
     ///                            are available.
     pub fn compute_scattering_functions(
         &mut self,
+        arena: &Bump,
         ray: &Ray,
         allow_multiple_lobes: bool,
         mode: TransportMode,
     ) {
         self.compute_differentials(ray);
         if let Some(primitive) = self.primitive {
-            primitive.compute_scattering_functions(self, mode, allow_multiple_lobes);
+            primitive.compute_scattering_functions(arena, self, mode, allow_multiple_lobes);
         }
     }
 

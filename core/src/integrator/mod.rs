@@ -7,6 +7,7 @@ use crate::geometry::*;
 use crate::sampler::*;
 use crate::scene::Scene;
 use crate::spectrum::*;
+use bumpalo::Bump;
 use std::sync::Arc;
 
 // Re-export.
@@ -29,6 +30,7 @@ pub trait Integrator {
     /// * `depth`   - The recursion depth.
     fn li(
         &self,
+        _arena: &Bump,
         _ray: &mut Ray,
         _scene: Arc<Scene>,
         _sampler: &mut ArcSampler,

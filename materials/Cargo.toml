@@ -9,4 +9,5 @@ edition = "2018"
 core = { path = "../core" }
 textures = { path = "../textures" }
 
+bumpalo = "3.8.0"
 lazy_static = "1.4.0"

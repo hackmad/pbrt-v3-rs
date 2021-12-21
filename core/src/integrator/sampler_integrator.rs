@@ -10,6 +10,7 @@ use crate::reflection::*;
 use crate::sampler::*;
 use crate::scene::*;
 use crate::spectrum::*;
+use bumpalo::Bump;
 use itertools::iproduct;
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
@@ -68,6 +69,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
     /// Trace rays for specular reflection.
     ///
+    /// * `arena`   - The memory arena for allocations.
     /// * `ray`     - The ray.
     /// * `isect`   - The surface interaction.
     /// * `scene`   - The scene.
@@ -75,6 +77,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// * `depth`   - The recursive depth.
     fn specular_reflect(
         &self,
+        arena: &Bump,
         ray: &mut Ray,
         isect: &SurfaceInteraction,
         scene: Arc<Scene>,
@@ -125,7 +128,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                 }
 
                 return f
-                    * self.li(&mut rd, Arc::clone(&scene), sampler, depth + 1)
+                    * self.li(arena, &mut rd, Arc::clone(&scene), sampler, depth + 1)
                     * wi.abs_dot(&ns)
                     / pdf;
             }
@@ -136,6 +139,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
     /// Trace rays for specular refraction.
     ///
+    /// * `arena`   - The memory arena for allocations.
     /// * `ray`     - The ray.
     /// * `isect`   - The surface interaction.
     /// * `scene`   - The scene.
@@ -143,6 +147,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// * `depth`   - The recursive depth.
     fn specular_transmit(
         &self,
+        arena: &Bump,
         ray: &mut Ray,
         isect: &SurfaceInteraction,
         scene: Arc<Scene>,
@@ -249,7 +254,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                 }
 
                 return f
-                    * self.li(&mut rd, Arc::clone(&scene), sampler, depth + 1)
+                    * self.li(arena, &mut rd, Arc::clone(&scene), sampler, depth + 1)
                     * wi.abs_dot(&ns)
                     / pdf;
             }
@@ -284,6 +289,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         // Parallelize.
         let tiles = iproduct!(0..n_tiles.x, 0..n_tiles.y).par_bridge();
         tiles.for_each(|(tile_x, tile_y)| {
+            let arena = Bump::with_capacity(262144); // 256 KiB
             let camera_clone = Arc::clone(&data.camera);
 
             // Render section of image corresponding to `tile`.
@@ -343,7 +349,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     // Evaluate radiance along camera ray.
                     let mut l = Spectrum::new(0.0);
                     if ray_weight > 0.0 {
-                        l = self.li(&mut ray, Arc::clone(&scene), &mut tile_sampler, 0);
+                        l = self.li(&arena, &mut ray, Arc::clone(&scene), &mut tile_sampler, 0);
                     }
 
                     // Issue warning if unexpected radiance value returned.

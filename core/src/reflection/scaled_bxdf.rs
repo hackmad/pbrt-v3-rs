@@ -1,6 +1,7 @@
 //! Scaled BxDF
 
 use super::*;
+use bumpalo::Bump;
 
 /// BxDF scaling adapter scales a BxDF's contribution with a `Spectrum`.
 #[derive(Clone)]
@@ -9,7 +10,7 @@ pub struct ScaledBxDF {
     bxdf_type: BxDFType,
 
     /// The BxDF to scale.
-    bxdf: ArcBxDF,
+    bxdf: Box<BxDF>,
 
     /// Scaling value.
     scale: Spectrum,
@@ -20,18 +21,26 @@ impl ScaledBxDF {
     ///
     /// * `bxdf`  - The BxDF to scale.
     /// * `scale` - Scaling value.
-    pub fn new(bxdf: ArcBxDF, scale: Spectrum) -> Self {
+    pub fn new(bxdf: BxDF, scale: Spectrum) -> Self {
         Self {
             bxdf_type: bxdf.get_type(),
-            bxdf: Arc::clone(&bxdf),
+            bxdf: Box::new(bxdf),
             scale,
         }
     }
-}
 
-impl BxDF for ScaledBxDF {
+    /// Allocate a new instance of `ScaledBxDF`.
+    ///
+    /// * `allocator` - The allocator.
+    /// * `bxdf`      - The BxDF to scale.
+    /// * `scale`     - Scaling value.
+    pub fn alloc(allocator: &Bump, bxdf: BxDF, scale: Spectrum) -> BxDF {
+        let model = allocator.alloc(Self::new(bxdf, scale)).to_owned();
+        allocator.alloc(BxDF::ScaledBxDF(model)).to_owned()
+    }
+
     /// Returns the BxDF type.
-    fn get_type(&self) -> BxDFType {
+    pub fn get_type(&self) -> BxDFType {
         self.bxdf_type
     }
 
@@ -40,7 +49,7 @@ impl BxDF for ScaledBxDF {
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         self.scale * self.bxdf.f(wo, wi)
     }
 
@@ -49,14 +58,14 @@ impl BxDF for ScaledBxDF {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
         let mut sample = self.bxdf.sample_f(wo, u);
         sample.f = self.scale * sample.f;
         sample
     }
 
     /// Evaluates the PDF for the sampling method.
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         self.bxdf.pdf(wo, wi)
     }
 
@@ -64,7 +73,7 @@ impl BxDF for ScaledBxDF {
     ///
     /// * `wo`      - Outgoing direction.
     /// * `samples` - Samples used b Monte Carlo algorithm.
-    fn rho_hd(&self, wo: &Vector3f, samples: &[Point2f]) -> Spectrum {
+    pub fn rho_hd(&self, wo: &Vector3f, samples: &[Point2f]) -> Spectrum {
         self.scale * self.bxdf.rho_hd(wo, samples)
     }
 
@@ -72,7 +81,7 @@ impl BxDF for ScaledBxDF {
     ///
     /// * `samples1` - Samples used b Monte Carlo algorithm.
     /// * `samples2` - Samples used b Monte Carlo algorithm.
-    fn rho_hh(&self, samples1: &[Point2f], samples2: &[Point2f]) -> Spectrum {
+    pub fn rho_hh(&self, samples1: &[Point2f], samples2: &[Point2f]) -> Spectrum {
         self.scale * self.bxdf.rho_hh(samples1, samples2)
     }
 }

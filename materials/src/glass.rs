@@ -1,5 +1,6 @@
 //! Glass Material
 
+use bumpalo::Bump;
 use core::interaction::*;
 use core::material::*;
 use core::microfacet::*;
@@ -71,6 +72,7 @@ impl Material for GlassMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
+    /// * `arena`                - The memory arena for allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -79,6 +81,7 @@ impl Material for GlassMaterial {
     ///                            are available (ignored).
     fn compute_scattering_functions(
         &self,
+        arena: &Bump,
         si: &mut SurfaceInteraction,
         mode: TransportMode,
         allow_multiple_lobes: bool,
@@ -101,7 +104,7 @@ impl Material for GlassMaterial {
         if !(r.is_black() && t.is_black()) {
             let is_specular = urough == 0.0 && vrough == 0.0;
             if is_specular && allow_multiple_lobes {
-                bsdf.add(Arc::new(FresnelSpecular::new(r, t, 1.0, eta, mode)));
+                bsdf.add(FresnelSpecular::alloc(arena, r, t, 1.0, eta, mode));
             } else {
                 if self.remap_roughness {
                     urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
@@ -111,11 +114,11 @@ impl Material for GlassMaterial {
                 if is_specular {
                     if !r.is_black() {
                         let fresnel = Arc::new(FresnelDielectric::new(1.0, eta));
-                        bsdf.add(Arc::new(SpecularReflection::new(r, fresnel)));
+                        bsdf.add(SpecularReflection::alloc(arena, r, fresnel));
                     }
 
                     if !t.is_black() {
-                        bsdf.add(Arc::new(SpecularTransmission::new(t, 1.0, eta, mode)));
+                        bsdf.add(SpecularTransmission::alloc(arena, t, 1.0, eta, mode));
                     }
                 } else {
                     let distrib: ArcMicrofacetDistribution =
@@ -123,21 +126,23 @@ impl Material for GlassMaterial {
 
                     if !r.is_black() {
                         let fresnel = Arc::new(FresnelDielectric::new(1.0, eta));
-                        bsdf.add(Arc::new(MicrofacetReflection::new(
+                        bsdf.add(MicrofacetReflection::alloc(
+                            arena,
                             r,
                             Arc::clone(&distrib),
                             fresnel,
-                        )));
+                        ));
                     }
 
                     if !t.is_black() {
-                        bsdf.add(Arc::new(MicrofacetTransmission::new(
+                        bsdf.add(MicrofacetTransmission::alloc(
+                            arena,
                             t,
                             Arc::clone(&distrib),
                             1.0,
                             eta,
                             mode,
-                        )));
+                        ));
                     }
                 };
             }

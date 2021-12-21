@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::material::*;
+use bumpalo::Bump;
 
 /// BTDF for physically plausible specular transmission using Fresnel interface.
 #[derive(Copy, Clone)]
@@ -45,11 +46,32 @@ impl SpecularTransmission {
             mode,
         }
     }
-}
 
-impl BxDF for SpecularTransmission {
+    /// Allocate a new instance of `SpecularTransmission`.
+    ///
+    /// * `allocator` - The allocator.
+    /// * `t`         - Spectrum used to scale the transmitted colour.
+    /// * `eta_a`     - Index of refraction above the surface (same side as
+    ///                 surface normal).
+    /// * `eta_b`     - Index of refraction below the surface (opposite side as
+    ///                 surface normal).
+    /// * `mode`      - Indicates whether incident ray started from a light
+    ///                 source or from camera.
+    pub fn alloc(
+        allocator: &Bump,
+        t: Spectrum,
+        eta_a: Float,
+        eta_b: Float,
+        mode: TransportMode,
+    ) -> BxDF {
+        let model = allocator.alloc(Self::new(t, eta_a, eta_b, mode)).to_owned();
+        allocator
+            .alloc(BxDF::SpecularTransmission(model))
+            .to_owned()
+    }
+
     /// Returns the BxDF type.
-    fn get_type(&self) -> BxDFType {
+    pub fn get_type(&self) -> BxDFType {
         self.bxdf_type
     }
 
@@ -58,7 +80,7 @@ impl BxDF for SpecularTransmission {
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
-    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         // No scattering is returned.
         Spectrum::new(0.0)
     }
@@ -68,7 +90,7 @@ impl BxDF for SpecularTransmission {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, _u: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector3f, _u: &Point2f) -> BxDFSample {
         // Figure out which $\eta$ is incident and which is transmitted.
         let entering = cos_theta(wo) > 0.0;
         let eta_i = if entering { self.eta_a } else { self.eta_b };
@@ -99,7 +121,7 @@ impl BxDF for SpecularTransmission {
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
-    fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
+    pub fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0
     }
 }

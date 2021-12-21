@@ -1,5 +1,6 @@
 //! Fourier Material
 
+use bumpalo::Bump;
 use core::interaction::*;
 use core::material::*;
 use core::paramset::*;
@@ -60,6 +61,7 @@ impl Material for FourierMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
+    /// * `arena`                - The memory arena for allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -68,6 +70,7 @@ impl Material for FourierMaterial {
     ///                            are available (ignored).
     fn compute_scattering_functions(
         &self,
+        arena: &Bump,
         si: &mut SurfaceInteraction,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
@@ -82,10 +85,11 @@ impl Material for FourierMaterial {
         // Checking for zero channels works as a proxy for checking whether the
         // table was successfully read from the file.
         if self.bsdf_table.n_channels > 0 {
-            bsdf.add(Arc::new(FourierBSDF::new(
+            bsdf.add(FourierBSDF::alloc(
+                arena,
                 Arc::clone(&self.bsdf_table),
                 mode,
-            )));
+            ));
         }
 
         si.bsdf = Some(bsdf);

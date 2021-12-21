@@ -4,6 +4,7 @@ use crate::geometry::*;
 use crate::interaction::*;
 use crate::pbrt::*;
 use crate::texture::*;
+use bumpalo::Bump;
 use std::sync::Arc;
 
 // TransportMode enumeration.
@@ -22,6 +23,7 @@ pub trait Material {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
+    /// * `arena`                - The memory arena for allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -30,6 +32,7 @@ pub trait Material {
     ///                            are available.
     fn compute_scattering_functions<'a>(
         &self,
+        arena: &Bump,
         si: &mut SurfaceInteraction,
         mode: TransportMode,
         allow_multiple_lobes: bool,

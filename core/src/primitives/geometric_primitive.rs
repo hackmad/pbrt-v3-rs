@@ -6,6 +6,7 @@ use crate::light::*;
 use crate::material::*;
 use crate::medium::*;
 use crate::primitive::*;
+use bumpalo::Bump;
 use std::sync::Arc;
 
 /// GeometricPrimitive represents a single shape in a scene.
@@ -117,17 +118,19 @@ impl Primitive for GeometricPrimitive {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
+    /// * `arena`                - The memory arena for allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Allow multiple lobes.
     fn compute_scattering_functions(
         &self,
+        arena: &Bump,
         si: &mut SurfaceInteraction,
         mode: TransportMode,
         allow_multiple_lobes: bool,
     ) {
         if let Some(material) = self.material.clone() {
-            material.compute_scattering_functions(si, mode, allow_multiple_lobes);
+            material.compute_scattering_functions(arena, si, mode, allow_multiple_lobes);
         }
     }
 }

@@ -1,5 +1,6 @@
 //! Plastic Material
 
+use bumpalo::Bump;
 use core::interaction::*;
 use core::material::*;
 use core::microfacet::*;
@@ -63,6 +64,7 @@ impl Material for PlasticMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
+    /// * `arena`                - The memory arena for allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -71,6 +73,7 @@ impl Material for PlasticMaterial {
     ///                            are available (ignored).
     fn compute_scattering_functions(
         &self,
+        arena: &Bump,
         si: &mut SurfaceInteraction,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
@@ -85,7 +88,7 @@ impl Material for PlasticMaterial {
         // Initialize diffuse component of plastic material.
         let kd = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kd.is_black() {
-            bsdf.add(Arc::new(LambertianReflection::new(kd)));
+            bsdf.add(LambertianReflection::alloc(arena, kd));
         }
 
         // Initialize specular component of plastic material.
@@ -99,8 +102,7 @@ impl Material for PlasticMaterial {
                 rough = TrowbridgeReitzDistribution::roughness_to_alpha(rough);
             }
             let distrib = Arc::new(TrowbridgeReitzDistribution::new(rough, rough, true));
-            let spec = MicrofacetReflection::new(ks, distrib, fresnel);
-            bsdf.add(Arc::new(spec));
+            bsdf.add(MicrofacetReflection::alloc(arena, ks, distrib, fresnel));
         }
 
         si.bsdf = Some(bsdf);

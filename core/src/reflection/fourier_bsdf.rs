@@ -3,6 +3,7 @@
 use super::*;
 use crate::interpolation::*;
 use crate::material::*;
+use bumpalo::Bump;
 use std::sync::Arc;
 
 /// BSDF for modeling materials like metals with smooth or rough coatings and
@@ -34,11 +35,20 @@ impl FourierBSDF {
             mode,
         }
     }
-}
 
-impl BxDF for FourierBSDF {
+    /// Allocate a new instance of `FourierBSDF`.
+    ///
+    /// * `allocator`  - The allocator.
+    /// * `bsdf_table` - The BSDF data.
+    /// * `mode`       - Indicates whether incident ray started from a light source
+    ///                  or from camera.
+    pub fn alloc(arena: &Bump, bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> BxDF {
+        let model = arena.alloc(Self::new(bsdf_table, mode)).to_owned();
+        arena.alloc(BxDF::FourierBSDF(model)).to_owned()
+    }
+
     /// Returns the BxDF type.
-    fn get_type(&self) -> BxDFType {
+    pub fn get_type(&self) -> BxDFType {
         self.bxdf_type
     }
 
@@ -47,7 +57,7 @@ impl BxDF for FourierBSDF {
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         // Find the zenith angle cosines and azimuth difference angle.
         let mu_i = cos_theta(&(-*wi));
         let mu_o = cos_theta(wo);
@@ -124,7 +134,7 @@ impl BxDF for FourierBSDF {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
         // Sample zenith angle component for _FourierBSDF_
         let mu_o = cos_theta(wo);
         let (mu_i, _, pdf_mu) = sample_catmull_rom_2d(
@@ -231,7 +241,7 @@ impl BxDF for FourierBSDF {
 
     /// Evaluates the PDF for the sampling method. Default is based on the
     /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         // Find the zenith angle cosines and azimuth difference angle.
         let mu_i = cos_theta(&(-(*wi)));
         let mu_o = cos_theta(wo);

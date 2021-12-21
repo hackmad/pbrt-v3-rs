@@ -5,6 +5,7 @@
 use super::*;
 use crate::material::*;
 use crate::microfacet::*;
+use bumpalo::Bump;
 
 /// BTDF for modeling glossy transmissive surfaces using a microfacet distribution.
 #[derive(Clone)]
@@ -59,11 +60,35 @@ impl MicrofacetTransmission {
             mode,
         }
     }
-}
+    /// Allocate a new instance of `MicrofacetTransmission`.
+    ///
+    /// * `allocator`    - The allocator.
+    /// * `t`            - Spectrum used to scale the transmitted colour.
+    /// * `distribution` - Microfacet distribution.
+    /// * `eta_a`        - Index of refraction above the surface (same side as
+    ///                    surface normal).
+    /// * `eta_b`        - Index of refraction below the surface (opposite side
+    ///                    as surface normal).
+    /// * `mode`         - Indicates whether incident ray started from a light
+    ///                    source or from camera.
+    pub fn alloc(
+        allocator: &Bump,
+        t: Spectrum,
+        distribution: ArcMicrofacetDistribution,
+        eta_a: Float,
+        eta_b: Float,
+        mode: TransportMode,
+    ) -> BxDF {
+        let model = allocator
+            .alloc(Self::new(t, distribution, eta_a, eta_b, mode))
+            .to_owned();
+        allocator
+            .alloc(BxDF::MicrofacetTransmission(model))
+            .to_owned()
+    }
 
-impl BxDF for MicrofacetTransmission {
     /// Returns the BxDF type.
-    fn get_type(&self) -> BxDFType {
+    pub fn get_type(&self) -> BxDFType {
         self.bxdf_type
     }
 
@@ -72,7 +97,7 @@ impl BxDF for MicrofacetTransmission {
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         if same_hemisphere(wo, wi) {
             Spectrum::new(0.0) // transmission only
         } else {
@@ -126,7 +151,7 @@ impl BxDF for MicrofacetTransmission {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
-    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> BxDFSample {
         if wo.z == 0.0 {
             BxDFSample::from(self.bxdf_type)
         } else {
@@ -152,7 +177,7 @@ impl BxDF for MicrofacetTransmission {
 
     /// Evaluates the PDF for the sampling method. Default is based on the
     /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if same_hemisphere(wo, wi) {
             0.0
         } else {

@@ -8,4 +8,5 @@ edition = "2018"
 
 core = { path = "../core" }
 
+bumpalo = "3.8.0"
 log = "0.4.14"

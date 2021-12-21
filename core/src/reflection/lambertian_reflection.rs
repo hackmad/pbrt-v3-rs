@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 
 use super::*;
+use bumpalo::Bump;
 
 /// BRDF for the Lambertian model for perfect diffuse surfaces that scatters
 /// incident illumination equally in all directions.
@@ -27,11 +28,21 @@ impl LambertianReflection {
             r,
         }
     }
-}
 
-impl BxDF for LambertianReflection {
+    /// Allocate a new instance of `LambertianReflection`.
+    ///
+    /// * `allocator` - The allocator.
+    /// * `r`         - Reflectance spectrum which gives the fraction of incident
+    ///                 light that is scattered.
+    pub fn alloc(allocator: &Bump, r: Spectrum) -> BxDF {
+        let model = allocator.alloc(Self::new(r)).to_owned();
+        allocator
+            .alloc(BxDF::LambertianReflection(model))
+            .to_owned()
+    }
+
     /// Returns the BxDF type.
-    fn get_type(&self) -> BxDFType {
+    pub fn get_type(&self) -> BxDFType {
         self.bxdf_type
     }
 
@@ -40,7 +51,7 @@ impl BxDF for LambertianReflection {
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
-    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         self.r * INV_PI
     }
 
@@ -48,7 +59,7 @@ impl BxDF for LambertianReflection {
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - Samples used by Monte Carlo algorithm.
-    fn rho_hd(&self, _wo: &Vector3f, _u: &[Point2f]) -> Spectrum {
+    pub fn rho_hd(&self, _wo: &Vector3f, _u: &[Point2f]) -> Spectrum {
         self.r
     }
 
@@ -56,7 +67,7 @@ impl BxDF for LambertianReflection {
     ///
     /// * `u1` - Samples used b Monte Carlo algorithm.
     /// * `u2` - Samples used b Monte Carlo algorithm.
-    fn rho_hh(&self, u1: &[Point2f], u2: &[Point2f]) -> Spectrum {
+    pub fn rho_hh(&self, u1: &[Point2f], u2: &[Point2f]) -> Spectrum {
         assert!(u1.len() == u2.len());
         self.r
     }
