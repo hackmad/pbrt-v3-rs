@@ -113,7 +113,7 @@ impl Material for GlassMaterial {
 
                 if is_specular {
                     if !r.is_black() {
-                        let fresnel = Arc::new(FresnelDielectric::new(1.0, eta));
+                        let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
                         bsdf.add(SpecularReflection::alloc(arena, r, fresnel));
                     }
 
@@ -125,7 +125,7 @@ impl Material for GlassMaterial {
                         Arc::new(TrowbridgeReitzDistribution::new(urough, vrough, true));
 
                     if !r.is_black() {
-                        let fresnel = Arc::new(FresnelDielectric::new(1.0, eta));
+                        let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
                         bsdf.add(MicrofacetReflection::alloc(
                             arena,
                             r,

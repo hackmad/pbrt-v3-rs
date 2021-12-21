@@ -12,7 +12,7 @@ pub struct MicrofacetReflection {
     bxdf_type: BxDFType,
 
     /// Fresnel interface for dielectrics and conductors.
-    fresnel: ArcFresnel,
+    fresnel: Fresnel,
 
     /// Reflectance spectrum which gives the fraction of incident light that
     /// is scattered.
@@ -29,12 +29,12 @@ impl MicrofacetReflection {
     ///                    light that is scattered.
     /// * `distribution` - Microfacet distribution.
     /// * `fresnel`      - Fresnel interface for dielectrics and conductors.
-    pub fn new(r: Spectrum, distribution: ArcMicrofacetDistribution, fresnel: ArcFresnel) -> Self {
+    pub fn new(r: Spectrum, distribution: ArcMicrofacetDistribution, fresnel: Fresnel) -> Self {
         Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_GLOSSY,
             r,
             distribution: Arc::clone(&distribution),
-            fresnel: Arc::clone(&fresnel),
+            fresnel,
         }
     }
 
@@ -49,7 +49,7 @@ impl MicrofacetReflection {
         allocator: &Bump,
         r: Spectrum,
         distribution: ArcMicrofacetDistribution,
-        fresnel: ArcFresnel,
+        fresnel: Fresnel,
     ) -> BxDF {
         let model = allocator
             .alloc(Self::new(r, distribution, fresnel))

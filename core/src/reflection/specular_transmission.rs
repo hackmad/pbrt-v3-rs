@@ -5,7 +5,7 @@ use crate::material::*;
 use bumpalo::Bump;
 
 /// BTDF for physically plausible specular transmission using Fresnel interface.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct SpecularTransmission {
     /// BxDF type.
     bxdf_type: BxDFType,
@@ -64,7 +64,21 @@ impl SpecularTransmission {
         eta_b: Float,
         mode: TransportMode,
     ) -> BxDF {
-        let model = allocator.alloc(Self::new(t, eta_a, eta_b, mode)).to_owned();
+        let fresnel = allocator
+            .alloc(FresnelDielectric::new(eta_a, eta_b))
+            .to_owned();
+
+        let model = allocator
+            .alloc(Self {
+                bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_SPECULAR,
+                fresnel,
+                t,
+                eta_a,
+                eta_b,
+                mode,
+            })
+            .to_owned();
+
         allocator
             .alloc(BxDF::SpecularTransmission(model))
             .to_owned()

@@ -3,23 +3,33 @@
 #![allow(dead_code)]
 
 use super::*;
+use bumpalo::Bump;
 use std::mem::swap;
-use std::sync::Arc;
 
 /// Interface for computing Fresnel reflection coefficients.
-pub trait Fresnel {
+#[derive(Clone)]
+pub enum Fresnel {
+    NoOp(FresnelNoOp),
+    Dielectric(FresnelDielectric),
+    Conductor(FresnelConductor),
+}
+
+impl Fresnel {
     /// Returns the amount of light reflected by the surface.
     ///
     /// * `cos_thata_i` - Cosine of the angle made by incident direction and
     ///                   surface normal.
-    fn evaluate(&self, cos_theta_i: Float) -> Spectrum;
+    pub fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
+        match self {
+            Self::NoOp(f) => f.evaluate(cos_theta_i),
+            Self::Dielectric(f) => f.evaluate(cos_theta_i),
+            Self::Conductor(f) => f.evaluate(cos_theta_i),
+        }
+    }
 }
 
-/// Atomic reference counted `Fresnel`.
-pub type ArcFresnel = Arc<dyn Fresnel + Send + Sync>;
-
 /// Implements `Fresnel` for dielectric materials.
-#[derive(Copy, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct FresnelDielectric {
     /// Index of refraction for exterior side of the surface.
     eta_i: Float,
@@ -36,20 +46,28 @@ impl FresnelDielectric {
     pub fn new(eta_i: Float, eta_t: Float) -> Self {
         Self { eta_i, eta_t }
     }
-}
 
-impl Fresnel for FresnelDielectric {
+    /// Allocate a new `FresnelDielectric`.
+    ///
+    /// * `allocator` - The allocator.
+    /// * `eta_i`     - Index of refraction for exterior side of the surface.
+    /// * `eta_t`     - Index of refraction for interior side of the surface.
+    pub fn alloc(allocator: &Bump, eta_i: Float, eta_t: Float) -> Fresnel {
+        let f = allocator.alloc(Self::new(eta_i, eta_t)).to_owned();
+        allocator.alloc(Fresnel::Dielectric(f)).to_owned()
+    }
+
     /// Returns the amount of light reflected by the surface.
     ///
     /// * `cos_thata_i` - Cosine of the angle made by incident direction and
     ///                   surface normal.
-    fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
+    pub fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         Spectrum::new(fr_dielectric(cos_theta_i, self.eta_i, self.eta_t))
     }
 }
 
 /// Implements `Fresnel` for conductors materials.
-#[derive(Copy, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct FresnelConductor {
     /// Index of refraction for exterior side of the surface.
     eta_i: Spectrum,
@@ -70,14 +88,23 @@ impl FresnelConductor {
     pub fn new(eta_i: Spectrum, eta_t: Spectrum, k: Spectrum) -> Self {
         Self { eta_i, eta_t, k }
     }
-}
 
-impl Fresnel for FresnelConductor {
+    /// Allocate a new `FresnelDielectric`.
+    ///
+    /// * `allocator` - The allocator.
+    /// * `eta_i`     - Index of refraction for exterior side of the surface.
+    /// * `eta_t`     - Index of refraction for interior side of the surface.
+    /// * `k`         - Absorption coefficient.
+    pub fn alloc(allocator: &Bump, eta_i: Spectrum, eta_t: Spectrum, k: Spectrum) -> Fresnel {
+        let f = allocator.alloc(Self::new(eta_i, eta_t, k)).to_owned();
+        allocator.alloc(Fresnel::Conductor(f)).to_owned()
+    }
+
     /// Returns the amount of light reflected by the surface.
     ///
     /// * `cos_thata_i` - Cosine of the angle made by incident direction and
     ///                   surface normal.
-    fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
+    pub fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         // Need to take abs(cos_theta_i)) so angle is measured on same side as
         // normal.
         fr_conductor(abs(cos_theta_i), self.eta_i, self.eta_t, self.k)
@@ -85,21 +112,27 @@ impl Fresnel for FresnelConductor {
 }
 
 /// Implements `Fresnel` for materials that reflect 100% of all incoming light.
-#[derive(Copy, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct FresnelNoOp {}
 impl FresnelNoOp {
     /// Create a new `FresnelNoOp`.
     pub fn new() -> Self {
         Self {}
     }
-}
 
-impl Fresnel for FresnelNoOp {
+    /// Allocator a new `FresnelNoOp`.
+    ///
+    /// * `allocator` - The allocator.
+    pub fn alloc(allocator: &Bump) -> Fresnel {
+        let f = allocator.alloc(Self::new()).to_owned();
+        allocator.alloc(Fresnel::NoOp(f)).to_owned()
+    }
+
     /// Returns the amount of light reflected by the surface.
     ///
     /// * `cos_thata_i` - Cosine of the angle made by incident direction and
     ///                   surface normal.
-    fn evaluate(&self, _cos_theta_i: Float) -> Spectrum {
+    pub fn evaluate(&self, _cos_theta_i: Float) -> Spectrum {
         Spectrum::new(1.0)
     }
 }

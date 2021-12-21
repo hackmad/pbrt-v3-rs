@@ -94,7 +94,7 @@ impl Material for PlasticMaterial {
         // Initialize specular component of plastic material.
         let ks = self.ks.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !ks.is_black() {
-            let fresnel = Arc::new(FresnelDielectric::new(1.5, 1.0));
+            let fresnel = FresnelDielectric::alloc(arena, 1.5, 1.0);
 
             // Create microfacet distribution for plastic material.
             let mut rough = self.roughness.evaluate(&si.hit, &si.uv, &si.der);

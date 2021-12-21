@@ -10,7 +10,7 @@ pub struct SpecularReflection {
     bxdf_type: BxDFType,
 
     /// Fresnel interface for dielectrics and conductors.
-    fresnel: ArcFresnel,
+    fresnel: Fresnel,
 
     /// Spectrum used to scale the reflected colour.
     r: Spectrum,
@@ -21,10 +21,10 @@ impl SpecularReflection {
     ///
     /// * `fresnel` - Fresnel interface for dielectrics and conductors.
     /// * `r`       - Spectrum used to scale the reflected colour.
-    pub fn new(r: Spectrum, fresnel: ArcFresnel) -> Self {
+    pub fn new(r: Spectrum, fresnel: Fresnel) -> Self {
         Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_SPECULAR,
-            fresnel: Arc::clone(&fresnel),
+            fresnel,
             r,
         }
     }
@@ -34,7 +34,7 @@ impl SpecularReflection {
     /// * `allocator` - The allocator.
     /// * `fresnel`   - Fresnel interface for dielectrics and conductors.
     /// * `r`         - Spectrum used to scale the reflected colour.
-    pub fn alloc(allocator: &Bump, r: Spectrum, fresnel: ArcFresnel) -> BxDF {
+    pub fn alloc(allocator: &Bump, r: Spectrum, fresnel: Fresnel) -> BxDF {
         let model = allocator.alloc(Self::new(r, fresnel)).to_owned();
         allocator.alloc(BxDF::SpecularReflection(model)).to_owned()
     }
