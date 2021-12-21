@@ -104,7 +104,7 @@ impl From<(&TextureParams, &str)> for FourierMaterial {
     fn from(p: (&TextureParams, &str)) -> Self {
         let (tp, cwd) = p;
         let bump_map = tp.get_float_texture("bumpmap");
-        let path = tp.find_filename("bsdfffile", String::from(""), cwd);
+        let path = tp.find_filename("bsdffile", String::from(""), cwd);
         Self::new(&path, bump_map)
     }
 }
