@@ -18,7 +18,7 @@ pub struct FresnelBlend {
     rs: Spectrum,
 
     /// The microfacet distribution model.
-    distribution: ArcMicrofacetDistribution,
+    distribution: MicrofacetDistribution,
 }
 
 impl FresnelBlend {
@@ -27,12 +27,12 @@ impl FresnelBlend {
     /// * `rd`           - Reflectance spectrum for diffuse scattering.
     /// * `rs`           - Reflectance spectrum for specular scattering.
     /// * `distribution` - Microfacet distribution.
-    pub fn new(rd: Spectrum, rs: Spectrum, distribution: ArcMicrofacetDistribution) -> Self {
+    pub fn new(rd: Spectrum, rs: Spectrum, distribution: MicrofacetDistribution) -> Self {
         Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_GLOSSY,
             rd,
             rs,
-            distribution: Arc::clone(&distribution),
+            distribution,
         }
     }
 
@@ -46,7 +46,7 @@ impl FresnelBlend {
         allocator: &Bump,
         rd: Spectrum,
         rs: Spectrum,
-        distribution: ArcMicrofacetDistribution,
+        distribution: MicrofacetDistribution,
     ) -> Self {
         allocator.alloc(Self::new(rd, rs, distribution)).to_owned()
     }

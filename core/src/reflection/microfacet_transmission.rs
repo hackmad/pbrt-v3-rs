@@ -6,6 +6,7 @@ use super::*;
 use crate::material::*;
 use crate::microfacet::*;
 use bumpalo::Bump;
+use std::rc::Rc;
 
 /// BTDF for modeling glossy transmissive surfaces using a microfacet distribution.
 #[derive(Clone)]
@@ -29,7 +30,7 @@ pub struct MicrofacetTransmission {
     mode: TransportMode,
 
     /// The microfacet distribution model.
-    distribution: ArcMicrofacetDistribution,
+    distribution: Rc<MicrofacetDistribution>,
 }
 
 impl MicrofacetTransmission {
@@ -45,7 +46,7 @@ impl MicrofacetTransmission {
     ///                    source or from camera.
     pub fn new(
         t: Spectrum,
-        distribution: ArcMicrofacetDistribution,
+        distribution: Rc<MicrofacetDistribution>,
         eta_a: Float,
         eta_b: Float,
         mode: TransportMode,
@@ -53,7 +54,7 @@ impl MicrofacetTransmission {
         Self {
             bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_GLOSSY,
             fresnel: FresnelDielectric::new(eta_a, eta_b),
-            distribution: distribution.clone(),
+            distribution,
             t,
             eta_a,
             eta_b,
@@ -74,7 +75,7 @@ impl MicrofacetTransmission {
     pub fn alloc(
         allocator: &Bump,
         t: Spectrum,
-        distribution: ArcMicrofacetDistribution,
+        distribution: Rc<MicrofacetDistribution>,
         eta_a: Float,
         eta_b: Float,
         mode: TransportMode,

@@ -9,6 +9,7 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::spectrum::*;
 use core::texture::*;
+use std::rc::Rc;
 use std::sync::Arc;
 use textures::*;
 
@@ -101,7 +102,9 @@ impl Material for PlasticMaterial {
             if self.remap_roughness {
                 rough = TrowbridgeReitzDistribution::roughness_to_alpha(rough);
             }
-            let distrib = Arc::new(TrowbridgeReitzDistribution::new(rough, rough, true));
+            let distrib = Rc::new(TrowbridgeReitzDistribution::alloc(
+                arena, rough, rough, true,
+            ));
             bsdf.add(MicrofacetReflection::alloc(arena, ks, distrib, fresnel));
         }
 

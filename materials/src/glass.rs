@@ -9,6 +9,7 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::spectrum::*;
 use core::texture::*;
+use std::rc::Rc;
 use std::sync::Arc;
 use textures::*;
 
@@ -121,27 +122,23 @@ impl Material for GlassMaterial {
                         bsdf.add(SpecularTransmission::alloc(arena, t, 1.0, eta, mode));
                     }
                 } else {
-                    let distrib: ArcMicrofacetDistribution =
-                        Arc::new(TrowbridgeReitzDistribution::new(urough, vrough, true));
+                    let distrib = Rc::new(TrowbridgeReitzDistribution::alloc(
+                        arena, urough, vrough, true,
+                    ));
 
                     if !r.is_black() {
                         let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
                         bsdf.add(MicrofacetReflection::alloc(
                             arena,
                             r,
-                            Arc::clone(&distrib),
+                            Rc::clone(&distrib),
                             fresnel,
                         ));
                     }
 
                     if !t.is_black() {
                         bsdf.add(MicrofacetTransmission::alloc(
-                            arena,
-                            t,
-                            Arc::clone(&distrib),
-                            1.0,
-                            eta,
-                            mode,
+                            arena, t, distrib, 1.0, eta, mode,
                         ));
                     }
                 };

@@ -4,10 +4,11 @@
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::reflection::*;
+use bumpalo::Bump;
 use super::MicrofacetDistribution;
 
 /// Implements the anisotropic variant of the Trowbridge-Reitz distribution.
-#[derive(Copy, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct TrowbridgeReitzDistribution {
     /// Indicates whether or not the visible area is sampled or not.
     sample_visible_area: bool,
@@ -40,6 +41,22 @@ impl TrowbridgeReitzDistribution {
         }
     }
 
+    /// Allocate a new `TrowbridgeReitzDistribution`.
+    ///
+    /// * `allocator`           - The allocator.
+    /// * `alpha_x`             - For microfacets oriented perpendicular to the
+    ///                           x-axis and where α = sqrt(2) * σ and σ is the
+    ///                           RMS slope of microfacets.
+    /// * `alpha_y`             - For microfacets oriented perpendicular to the
+    ///                           y-axis and where α = sqrt(2) * σ and σ is the
+    ///                           RMS slope of microfacets.
+    /// * `sample_visible_area` - Indicates whether or not the visible area is
+    ///                           sampled or not (default to `true`).
+    pub fn alloc(allocator: &Bump, alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> MicrofacetDistribution {
+        let dist = allocator.alloc(Self::new(alpha_x, alpha_y, sample_visible_area)).to_owned();
+        allocator.alloc(MicrofacetDistribution::TrowBridgeReitz(dist)).to_owned()
+    }
+
     /// Maps scalar roughness parameter in [0, 1] to alpha values where
     /// values close to 0 are near-perfect specular reflection.
     ///
@@ -53,11 +70,9 @@ impl TrowbridgeReitzDistribution {
             + 0.0171201 * x * x * x
             + 0.000640711 * x * x * x * x
     }
-}
 
-impl MicrofacetDistribution for TrowbridgeReitzDistribution {
     /// Returns whether or not the visible area is sampled or not.
-    fn get_sample_visible_area(&self) -> bool {
+    pub fn get_sample_visible_area(&self) -> bool {
         self.sample_visible_area
     }
 
@@ -66,7 +81,7 @@ impl MicrofacetDistribution for TrowbridgeReitzDistribution {
     ///
     /// * `wh` - A sample normal from the distrubition of normal vectors.
     #[rustfmt::skip]
-    fn d(&self, wh: &Vector3f) -> Float {
+    pub fn d(&self, wh: &Vector3f) -> Float {
         let tan2_theta = tan_2_theta(wh);
         if tan2_theta.is_infinite() {
             0.0
@@ -84,7 +99,7 @@ impl MicrofacetDistribution for TrowbridgeReitzDistribution {
     ///
     /// * `w` - The direction from camera/viewer.
     #[rustfmt::skip]
-    fn lambda(&self, w: &Vector3f) -> Float {
+    pub fn lambda(&self, w: &Vector3f) -> Float {
         let abs_tan_theta = abs(tan_theta(w));
         if abs_tan_theta.is_infinite() { 
             0.0 
@@ -102,7 +117,7 @@ impl MicrofacetDistribution for TrowbridgeReitzDistribution {
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
     #[rustfmt::skip]
-    fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
+    pub fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
         if !self.sample_visible_area {
             let mut phi = TWO_PI * u[1];
             let cos_theta = if self.alpha_x == self.alpha_y {

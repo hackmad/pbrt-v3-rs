@@ -5,7 +5,6 @@ use crate::geometry::*;
 use crate::pbrt::*;
 use crate::sampling::*;
 use crate::spectrum::*;
-use std::sync::Arc;
 
 mod bsdf;
 mod bsdf_reader;

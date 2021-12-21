@@ -4,6 +4,7 @@
 use super::*;
 use crate::microfacet::*;
 use bumpalo::Bump;
+use std::rc::Rc;
 
 /// BRDF for modeling metallic surfaces using a microfacet distribution.
 #[derive(Clone)]
@@ -19,7 +20,7 @@ pub struct MicrofacetReflection {
     r: Spectrum,
 
     /// The microfacet distribution model.
-    distribution: ArcMicrofacetDistribution,
+    distribution: Rc<MicrofacetDistribution>,
 }
 
 impl MicrofacetReflection {
@@ -29,11 +30,11 @@ impl MicrofacetReflection {
     ///                    light that is scattered.
     /// * `distribution` - Microfacet distribution.
     /// * `fresnel`      - Fresnel interface for dielectrics and conductors.
-    pub fn new(r: Spectrum, distribution: ArcMicrofacetDistribution, fresnel: Fresnel) -> Self {
+    pub fn new(r: Spectrum, distribution: Rc<MicrofacetDistribution>, fresnel: Fresnel) -> Self {
         Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_GLOSSY,
             r,
-            distribution: Arc::clone(&distribution),
+            distribution,
             fresnel,
         }
     }
@@ -48,7 +49,7 @@ impl MicrofacetReflection {
     pub fn alloc(
         allocator: &Bump,
         r: Spectrum,
-        distribution: ArcMicrofacetDistribution,
+        distribution: Rc<MicrofacetDistribution>,
         fresnel: Fresnel,
     ) -> BxDF {
         let model = allocator

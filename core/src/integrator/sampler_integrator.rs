@@ -289,7 +289,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         // Parallelize.
         let tiles = iproduct!(0..n_tiles.x, 0..n_tiles.y).par_bridge();
         tiles.for_each(|(tile_x, tile_y)| {
-            let arena = Bump::with_capacity(262144); // 256 KiB
+            let mut arena = Bump::with_capacity(262144); // 256 KiB
             let camera_clone = Arc::clone(&data.camera);
 
             // Render section of image corresponding to `tile`.
@@ -405,6 +405,9 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
             Arc::get_mut(&mut *camera)
                 .unwrap()
                 .merge_film_tile(&film_tile);
+
+            // Free memory arena.
+            arena.reset();
         });
 
         info!("Rendering finished.");
