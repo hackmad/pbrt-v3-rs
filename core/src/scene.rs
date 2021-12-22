@@ -9,7 +9,6 @@ use crate::spectrum::*;
 use std::sync::Arc;
 
 /// Scene.
-#[derive(Clone)]
 pub struct Scene {
     /// An aggregate of all primitives in the scene.
     pub aggregate: ArcPrimitive,

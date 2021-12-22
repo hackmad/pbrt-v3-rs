@@ -113,18 +113,18 @@ impl RenderOptions {
     /// Returns an `Integrator` based on the render options.
     ///
     /// * `gs` - The `GraphicsState`.
-    pub fn make_integrator(&self, gs: &GraphicsState) -> Result<ArcIntegrator, String> {
+    pub fn make_integrator(&self, gs: &GraphicsState) -> Result<Box<dyn Integrator>, String> {
         let camera = self.make_camera(gs);
         let sampler = GraphicsState::make_sampler(
             &self.sampler_name,
             &self.sampler_params,
-            camera.get_film_sample_bounds(),
+            camera.get_data().film.get_sample_bounds(),
         )?;
 
-        let integrator: Result<ArcIntegrator, String> = match self.integrator_name.as_str() {
+        let integrator: Result<Box<dyn Integrator>, String> = match self.integrator_name.as_str() {
             "whitted" => {
                 let p = (&self.integrator_params, sampler, camera);
-                Ok(Arc::new(WhittedIntegrator::from(p)))
+                Ok(Box::new(WhittedIntegrator::from(p)))
             }
             _ => Err(format!("Integrator '{}' unknown.", self.integrator_name)),
         };
@@ -152,17 +152,17 @@ impl RenderOptions {
     }
 
     /// Returns a `Scene` based on the render options.
-    pub fn make_scene(&mut self) -> Arc<Scene> {
+    pub fn make_scene(&mut self) -> Scene {
         let scene = match GraphicsState::make_accelerator(
             &self.accelerator_name,
             &self.primitives,
             &self.accelerator_params,
         ) {
-            Ok(accelerator) => Arc::new(Scene::new(accelerator, self.lights.clone())),
+            Ok(accelerator) => Scene::new(accelerator, self.lights.clone()),
             Err(err) => {
                 warn!("Error: {}. Using BVH.", err);
                 let accelerator = Arc::new(BVHAccel::new(&self.primitives, 1, SplitMethod::SAH));
-                Arc::new(Scene::new(accelerator, self.lights.clone()))
+                Scene::new(accelerator, self.lights.clone())
             }
         };
         self.primitives.clear();

@@ -26,7 +26,13 @@ WorldBegin
   #AttributeEnd
 
   AttributeBegin
-    Material "glass"
+    MakeNamedMaterial "one" "string type" [ "glass" ] 
+    MakeNamedMaterial "two" "string type" [ "matte" ] 
+    Material "mix" 
+      "string namedmaterial1" [ "one" ] 
+      "string namedmaterial2" [ "two" ] 
+      "rgb amount" [ 0.4 0.4 0.4 ] 
+
     Scale 4 4 4
     Rotate 45 0 0 1
     Rotate 90 1 0 0

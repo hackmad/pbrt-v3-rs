@@ -13,7 +13,7 @@ use crate::spectrum::*;
 use bumpalo::Bump;
 use itertools::iproduct;
 use rayon::prelude::*;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// Common data for sampler integrators.
 pub struct SamplerIntegratorData {
@@ -22,7 +22,7 @@ pub struct SamplerIntegratorData {
     pub sampler: ArcSampler,
 
     /// The camera.
-    pub camera: Arc<Mutex<ArcCamera>>,
+    pub camera: ArcCamera,
 
     /// Pixel bounds for the image.
     pub pixel_bounds: Bounds2i,
@@ -46,7 +46,7 @@ impl SamplerIntegratorData {
         pixel_bounds: Bounds2i,
     ) -> Self {
         Self {
-            camera: Arc::new(Mutex::new(Arc::clone(&camera))),
+            camera: Arc::clone(&camera),
             max_depth,
             sampler,
             pixel_bounds,
@@ -65,7 +65,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     ///
     /// * `scene`   - The scene
     /// * `sampler` - The sampler.
-    fn preprocess(&self, scene: Arc<Scene>, sampler: &mut ArcSampler);
+    fn preprocess(&self, scene: &Scene, sampler: &mut ArcSampler);
 
     /// Trace rays for specular reflection.
     ///
@@ -80,7 +80,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         arena: &Bump,
         ray: &mut Ray,
         isect: &SurfaceInteraction,
-        scene: Arc<Scene>,
+        scene: &Scene,
         sampler: &mut ArcSampler,
         depth: usize,
     ) -> Spectrum {
@@ -127,9 +127,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     ));
                 }
 
-                return f
-                    * self.li(arena, &mut rd, Arc::clone(&scene), sampler, depth + 1)
-                    * wi.abs_dot(&ns)
+                return f * self.li(arena, &mut rd, scene, sampler, depth + 1) * wi.abs_dot(&ns)
                     / pdf;
             }
         }
@@ -150,7 +148,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         arena: &Bump,
         ray: &mut Ray,
         isect: &SurfaceInteraction,
-        scene: Arc<Scene>,
+        scene: &Scene,
         sampler: &mut ArcSampler,
         depth: usize,
     ) -> Spectrum {
@@ -253,9 +251,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     ));
                 }
 
-                return f
-                    * self.li(arena, &mut rd, Arc::clone(&scene), sampler, depth + 1)
-                    * wi.abs_dot(&ns)
+                return f * self.li(arena, &mut rd, scene, sampler, depth + 1) * wi.abs_dot(&ns)
                     / pdf;
             }
         }
@@ -266,17 +262,15 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&mut self, scene: Arc<Scene>) {
+    fn render(&mut self, scene: &Scene) {
         let data = self.get_data();
+        let cam = data.camera.get_data();
 
         let mut sampler = Arc::clone(&data.sampler);
-        self.preprocess(Arc::clone(&scene), &mut sampler);
+        self.preprocess(scene, &mut sampler);
 
         // Compute number of tiles, `n_tiles`, to use for parallel rendering.
-        let sample_bounds = Arc::clone(&data.camera)
-            .lock()
-            .unwrap()
-            .get_film_sample_bounds();
+        let sample_bounds = cam.film.get_sample_bounds();
         let sample_extent = sample_bounds.diagonal();
         let tile_size: i32 = OPTIONS.tile_size as i32;
         let n_tiles = Point2::new(
@@ -290,7 +284,6 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         let tiles = iproduct!(0..n_tiles.x, 0..n_tiles.y).par_bridge();
         tiles.for_each(|(tile_x, tile_y)| {
             let mut arena = Bump::with_capacity(262144); // 256 KiB
-            let camera_clone = Arc::clone(&data.camera);
 
             // Render section of image corresponding to `tile`.
             let tile = Point2::new(tile_x, tile_y);
@@ -317,10 +310,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
             );
 
             // Get `FilmTile` for tile.
-            let mut film_tile = {
-                let camera = camera_clone.lock().unwrap();
-                camera.get_film_tile(tile_bounds)
-            };
+            let mut film_tile = cam.film.get_film_tile(tile_bounds);
 
             // Loop over pixels in tile to render them.
             for pixel in tile_bounds {
@@ -340,16 +330,14 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                         .get_camera_sample(&pixel);
 
                     // Generate camera ray for current sample.
-                    let (mut ray, ray_weight) = {
-                        let camera = camera_clone.lock().unwrap();
-                        camera.generate_ray_differential(&camera_sample)
-                    };
+                    let (mut ray, ray_weight) =
+                        { data.camera.generate_ray_differential(&camera_sample) };
                     ray.scale_differentials(1.0 / (samples_per_pixel as Float).sqrt());
 
                     // Evaluate radiance along camera ray.
                     let mut l = Spectrum::new(0.0);
                     if ray_weight > 0.0 {
-                        l = self.li(&arena, &mut ray, Arc::clone(&scene), &mut tile_sampler, 0);
+                        l = self.li(&arena, &mut ray, scene, &mut tile_sampler, 0);
                     }
 
                     // Issue warning if unexpected radiance value returned.
@@ -401,10 +389,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
             );
 
             // Merge image tile into `Film`.
-            let mut camera = camera_clone.lock().unwrap();
-            Arc::get_mut(&mut *camera)
-                .unwrap()
-                .merge_film_tile(&film_tile);
+            cam.film.merge_film_tile(&film_tile);
 
             // Free memory arena.
             arena.reset();
@@ -413,9 +398,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         info!("Rendering finished.");
 
         // Save final image after rendering.
-        let camera_clone = Arc::clone(&data.camera);
-        let mut camera = camera_clone.lock().unwrap();
-        Arc::get_mut(&mut *camera).unwrap().write_image(1.0);
+        cam.film.write_image(1.0);
         info!("Output image written.");
     }
 }

@@ -50,14 +50,14 @@ impl SamplerIntegrator for WhittedIntegrator {
     ///
     /// * `scene`   - The scene
     /// * `sampler` - The sampler.
-    fn preprocess(&self, _scene: Arc<Scene>, _sampler: &mut ArcSampler) {}
+    fn preprocess(&self, _scene: &Scene, _sampler: &mut ArcSampler) {}
 }
 
 impl Integrator for WhittedIntegrator {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&mut self, scene: Arc<Scene>) {
+    fn render(&mut self, scene: &Scene) {
         SamplerIntegrator::render(self, scene);
     }
 
@@ -72,7 +72,7 @@ impl Integrator for WhittedIntegrator {
         &self,
         arena: &Bump,
         ray: &mut Ray,
-        scene: Arc<Scene>,
+        scene: &Scene,
         sampler: &mut ArcSampler,
         depth: usize,
     ) -> Spectrum {
@@ -90,7 +90,7 @@ impl Integrator for WhittedIntegrator {
             isect.compute_scattering_functions(arena, ray, false, TransportMode::Radiance);
             if isect.bsdf.is_none() {
                 let mut new_ray = isect.hit.spawn_ray(&ray.d);
-                return self.li(arena, &mut new_ray, scene.clone(), sampler, depth);
+                return self.li(arena, &mut new_ray, scene, sampler, depth);
             }
 
             // Compute emitted light if ray hit an area light source.
@@ -116,8 +116,7 @@ impl Integrator for WhittedIntegrator {
                     .map_or(Spectrum::new(0.0), |bsdf| bsdf.f(&wo, &wi, BxDFType::all()));
                 if !f.is_black() {
                     // If no visiblity tester, then unoccluded = true.
-                    let unoccluded =
-                        visibility.map_or(true, |vis| vis.unoccluded(Arc::clone(&scene)));
+                    let unoccluded = visibility.map_or(true, |vis| vis.unoccluded(scene));
 
                     if unoccluded {
                         l += f * li * wi.abs_dot(&n) / pdf;
@@ -126,10 +125,8 @@ impl Integrator for WhittedIntegrator {
             }
             if depth + 1 < self.data.max_depth {
                 // Trace rays for specular reflection and refraction.
-                let refl =
-                    self.specular_reflect(arena, ray, &isect, Arc::clone(&scene), sampler, depth);
-                let trans =
-                    self.specular_transmit(arena, ray, &isect, Arc::clone(&scene), sampler, depth);
+                let refl = self.specular_reflect(arena, ray, &isect, scene, sampler, depth);
+                let trans = self.specular_transmit(arena, ray, &isect, scene, sampler, depth);
                 l += refl + trans;
             }
         } else {
@@ -156,7 +153,7 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for WhittedIntegrator {
         let pb = params.find_int("pixelbounds");
         let np = pb.len();
 
-        let mut pixel_bounds = camera.get_film_sample_bounds();
+        let mut pixel_bounds = camera.get_data().film.get_sample_bounds();
         if np > 0 {
             if np != 4 {
                 error!("Expected 4 values for 'pixel_bounds' parameter. Got {}", np);

@@ -31,7 +31,7 @@ impl VisibilityTester {
     /// true if the points are visible to each other.
     ///
     /// * `scene` - The scene.
-    pub fn unoccluded(&self, scene: Arc<Scene>) -> bool {
+    pub fn unoccluded(&self, scene: &Scene) -> bool {
         !scene.intersect_p(&self.p0.spawn_ray_to_hit(&self.p1))
     }
 
@@ -41,7 +41,7 @@ impl VisibilityTester {
     ///
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
-    pub fn tr(&self, scene: Arc<Scene>, sampler: ArcSampler) -> Spectrum {
+    pub fn tr(&self, scene: &Scene, sampler: ArcSampler) -> Spectrum {
         let mut ray = self.p0.spawn_ray_to_hit(&self.p1);
         let mut tr = Spectrum::new(1.0);
 

@@ -8,7 +8,6 @@ use crate::sampler::*;
 use crate::scene::Scene;
 use crate::spectrum::*;
 use bumpalo::Bump;
-use std::sync::Arc;
 
 // Re-export.
 pub use common::*;
@@ -19,7 +18,7 @@ pub trait Integrator {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&mut self, scene: Arc<Scene>);
+    fn render(&mut self, scene: &Scene);
 
     /// Returns the incident radiance at the origin of a given ray.
     ///
@@ -32,13 +31,10 @@ pub trait Integrator {
         &self,
         _arena: &Bump,
         _ray: &mut Ray,
-        _scene: Arc<Scene>,
+        _scene: &Scene,
         _sampler: &mut ArcSampler,
         _depth: usize,
     ) -> Spectrum {
         Spectrum::new(0.0)
     }
 }
-
-/// Atomic reference counted `Integrator`.
-pub type ArcIntegrator = Arc<dyn Integrator + Send + Sync>;

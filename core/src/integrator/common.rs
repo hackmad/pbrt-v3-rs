@@ -21,7 +21,7 @@ use std::sync::Arc;
 ///                       should be considered.
 pub fn uniform_sample_all_lights(
     it: &Interaction,
-    scene: Arc<Scene>,
+    scene: &Scene,
     sampler: &mut ArcSampler,
     n_light_samples: &[usize],
     handle_media: bool,
@@ -47,7 +47,7 @@ pub fn uniform_sample_all_lights(
                 &u_scattering,
                 Arc::clone(light),
                 &u_light,
-                Arc::clone(&scene),
+                scene,
                 sampler,
                 handle_media,
                 false,
@@ -61,7 +61,7 @@ pub fn uniform_sample_all_lights(
                     &u_scattering_array[k],
                     Arc::clone(light),
                     &u_light_array[k],
-                    Arc::clone(&scene),
+                    scene,
                     sampler,
                     handle_media,
                     false,
@@ -84,7 +84,7 @@ pub fn uniform_sample_all_lights(
 /// * `light_distrib` - PDF for the light's distribution.
 pub fn uniform_sample_one_light(
     it: &Interaction,
-    scene: Arc<Scene>,
+    scene: &Scene,
     sampler: &mut ArcSampler,
     handle_media: bool,
     light_distrib: Option<&Distribution1D>,
@@ -109,7 +109,7 @@ pub fn uniform_sample_one_light(
         (ln, pdf)
     };
 
-    let light = Arc::clone(&Arc::clone(&scene).lights[light_num]);
+    let light = Arc::clone(&scene.lights[light_num]);
     let u_light = Arc::get_mut(sampler).unwrap().get_2d();
     let u_scattering = Arc::get_mut(sampler).unwrap().get_2d();
     let estimate = estimate_direct(
@@ -117,7 +117,7 @@ pub fn uniform_sample_one_light(
         &u_scattering,
         light,
         &u_light,
-        Arc::clone(&scene),
+        scene,
         sampler,
         handle_media,
         false,
@@ -143,7 +143,7 @@ pub fn estimate_direct(
     u_scattering: &Point2f,
     light: ArcLight,
     u_light: &Point2f,
-    scene: Arc<Scene>,
+    scene: &Scene,
     sampler: &mut ArcSampler,
     handle_media: bool,
     specular: bool,
@@ -189,8 +189,8 @@ pub fn estimate_direct(
             // Compute effect of visibility for light source sample.
             if let Some(vis) = visibility {
                 if handle_media {
-                    li *= vis.tr(Arc::clone(&scene), Arc::clone(sampler));
-                } else if !vis.unoccluded(Arc::clone(&scene)) {
+                    li *= vis.tr(scene, Arc::clone(sampler));
+                } else if !vis.unoccluded(scene) {
                     debug!("  visiblity tester: shadow ray blocked");
                     li = Spectrum::new(0.0);
                 } else {
@@ -296,7 +296,7 @@ pub fn estimate_direct(
 /// Returns the light power distribution in a scene.
 ///
 /// * `scene` - The scene.
-pub fn compute_light_power_distribution(scene: Arc<Scene>) -> Option<Distribution1D> {
+pub fn compute_light_power_distribution(scene: &Scene) -> Option<Distribution1D> {
     if scene.lights.is_empty() {
         None
     } else {
