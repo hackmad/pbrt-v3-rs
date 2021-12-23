@@ -80,7 +80,7 @@ impl Material for FourierMaterial {
             Material::bump(self, Arc::clone(bump_map), si);
         }
 
-        let mut bsdf = BSDF::new(&si, None);
+        let mut bsdf = BSDF::alloc(arena, &si, None);
 
         // Checking for zero channels works as a proxy for checking whether the
         // table was successfully read from the file.

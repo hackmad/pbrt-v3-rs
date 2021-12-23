@@ -5,6 +5,7 @@ use super::*;
 use crate::interaction::*;
 use crate::rng::*;
 use bitflags::bitflags;
+use bumpalo::Bump;
 use std::fmt;
 
 bitflags! {
@@ -111,6 +112,16 @@ impl BSDF {
             ts: Vector3::from(ns).cross(&ss),
             bxdfs: Vec::with_capacity(MAX_BXDFS),
         }
+    }
+
+    /// Allocates a new `BSDF`.
+    ///
+    /// * `si`  - The differential geometry at the point on a surface.
+    /// * `eta` - Optional relative index of refraction over the surface
+    ///           boundary. If not provided, defaults to 1.0; used for
+    ///           opaque surfaces.
+    pub fn alloc(allocator: &Bump, si: &SurfaceInteraction, eta: Option<Float>) -> Self {
+        allocator.alloc(Self::new(si, eta)).to_owned()
     }
 
     /// Add a `BxDF`.

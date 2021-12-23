@@ -66,8 +66,8 @@ impl Material for MatteMaterial {
             Material::bump(self, Arc::clone(bump_map), si);
         }
 
-        let mut bsdf = BSDF::new(&si, None);
-
+        let mut bsdf = BSDF::alloc(arena, &si, None);
+    
         // Evaluate textures for `MatteMaterial` material and allocate BRDF
         let r = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         let sig = clamp(self.sigma.evaluate(&si.hit, &si.uv, &si.der), 0.0, 90.0);
@@ -80,7 +80,7 @@ impl Material for MatteMaterial {
             bsdf.add(bxdf);
         }
 
-        si.bsdf = Some(bsdf);
+        si.bsdf = Some(bsdf.to_owned());
     }
 }
 

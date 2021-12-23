@@ -99,7 +99,7 @@ impl Material for GlassMaterial {
         let t = self.kt.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
 
         // Initialize bsdf for smooth or rough dielectric.
-        let mut bsdf = BSDF::new(&si, Some(eta));
+        let mut bsdf = BSDF::alloc(arena, &si, None);
 
         // Evaluate textures for `GlassMaterial` material and allocate BRDF
         if !(r.is_black() && t.is_black()) {

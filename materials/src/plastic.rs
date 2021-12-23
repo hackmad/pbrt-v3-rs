@@ -84,7 +84,7 @@ impl Material for PlasticMaterial {
             Material::bump(self, Arc::clone(bump_map), si);
         }
 
-        let mut bsdf = BSDF::new(&si, None);
+        let mut bsdf = BSDF::alloc(arena, &si, None);
 
         // Initialize diffuse component of plastic material.
         let kd = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
