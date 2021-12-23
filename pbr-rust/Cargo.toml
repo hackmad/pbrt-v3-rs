@@ -9,8 +9,12 @@ edition = "2018"
 api = { path = "../api" }
 core = { path = "../core" }
 
+dhat = { version = "0.2.4", optional = true }
 env_logger = "0.9.0"
 log = "0.4.14"
 pest = "2.1.3"
 pest_derive = "2.1.0"
 rayon = "1.5.1"
+
+[features]
+dhat-rs = ["dhat"]

@@ -5,7 +5,17 @@ use api::parser::*;
 use api::*;
 use core::app::*;
 
+#[cfg(feature = "dhat-rs")]
+use dhat::{Dhat, DhatAlloc};
+
+#[cfg(feature = "dhat-rs")]
+#[global_allocator]
+static ALLOCATOR: DhatAlloc = DhatAlloc;
+
 fn main() {
+    #[cfg(feature = "dhat-rs")]
+    let _dhat = Dhat::start_heap_profiling();
+
     // Initialize `env_logger`.
     env_logger::init();
 

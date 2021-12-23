@@ -47,13 +47,22 @@ through the book.
 The debug version can be run as:
 
 ```
-cargo run
+cargo run -- <input file>
 ```
 
 The release version can be run as:
 
 ```
-cargo run --release
+cargo run --release -- <input file>
+```
+
+## Profiling
+
+Use `--features dhat-rs` to get heap profiling stats. Note that this will be a
+lot slower to run.
+
+```
+cargo run --release --features dhat-rs -- <input file>
 ```
 
 ## Renders
