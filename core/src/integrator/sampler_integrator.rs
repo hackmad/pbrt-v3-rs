@@ -11,9 +11,8 @@ use crate::sampler::*;
 use crate::scene::*;
 use crate::spectrum::*;
 use bumpalo::Bump;
-use itertools::iproduct;
 use rayon::prelude::*;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// Common data for sampler integrators.
 pub struct SamplerIntegratorData {
@@ -281,15 +280,20 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         info!("Rendering {}x{} tiles", n_tiles.x, n_tiles.y);
 
         // Parallelize.
-        let tiles = iproduct!(0..n_tiles.x, 0..n_tiles.y).par_bridge();
-        tiles.for_each(|(tile_x, tile_y)| {
+        let tiles = Bounds2i::new(
+            Point2i::new(0, 0),
+            Point2i::new(n_tiles.x as Int, n_tiles.y as Int),
+        );
+        let tile_iter = Arc::new(Mutex::new(tiles.into_iter()));
+        (0..n_tiles.x * n_tiles.y).into_par_iter().for_each(|_| {
+            // Render section of image corresponding to `tile`.
+            let mut tile_iter = tile_iter.lock().unwrap();
+            let tile = tile_iter.next().unwrap();
+
             let mut arena = Bump::with_capacity(262144); // 256 KiB
 
-            // Render section of image corresponding to `tile`.
-            let tile = Point2::new(tile_x, tile_y);
-
             // Get sampler instance for tile.
-            let seed = tile.y * n_tiles.x + tile.x;
+            let seed = tile.y as usize * n_tiles.x + tile.x as usize;
             let mut tile_sampler = Sampler::clone(&*data.sampler, seed as u64);
 
             let samples_per_pixel = {
@@ -306,7 +310,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
             info!(
                 "Starting image tile ({}, {}) -> {:}",
-                tile_x, tile_y, tile_bounds
+                tile.x, tile.y, tile_bounds
             );
 
             // Get `FilmTile` for tile.
@@ -385,7 +389,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
             info!(
                 "Finished image tile ({}, {}) -> {:}",
-                tile_x, tile_y, tile_bounds
+                tile.x, tile.y, tile_bounds
             );
 
             // Merge image tile into `Film`.
