@@ -10,6 +10,7 @@ use num_traits::Num;
 /// * `x` - The number to clamp.
 /// * `min` - Minimum value.
 /// * `max` - Maximum value.
+#[inline(always)]
 pub fn clamp<T>(x: T, min: T, max: T) -> T
 where
     T: Num + PartialOrd + Copy,
@@ -41,11 +42,13 @@ impl Clamp<Float> for Float {
     ///
     /// * `low`  - Low value.
     /// * `high` - High value.
+    #[inline(always)]
     fn clamp(&self, low: Float, high: Float) -> Self {
         clamp(*self, low, high)
     }
 
     /// Clamps the values to [0.0, INFINITY].
+    #[inline(always)]
     fn clamp_default(&self) -> Self {
         clamp(*self, 0.0, INFINITY)
     }

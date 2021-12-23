@@ -48,6 +48,7 @@ pub const SHADOW_EPSILON: Float = 0.0001;
 /// Returns the absolute value of a number.
 ///
 /// * `n` - The number.
+#[inline(always)]
 pub fn abs<T>(n: T) -> T
 where
     T: Num + Neg<Output = T> + PartialOrd + Copy,
@@ -63,6 +64,7 @@ where
 ///
 /// * `a` - First number.
 /// * `b` - Second number.
+#[inline(always)]
 pub fn min<T>(a: T, b: T) -> T
 where
     T: Num + PartialOrd + Copy,
@@ -78,6 +80,7 @@ where
 ///
 /// * `a` - First number.
 /// * `b` - Second number.
+#[inline(always)]
 pub fn max<T>(a: T, b: T) -> T
 where
     T: Num + PartialOrd + Copy,
@@ -94,6 +97,7 @@ where
 ///
 /// * `a` - Dividend.
 /// * `b` - Divisor.
+#[inline(always)]
 pub fn rem<T>(a: T, b: T) -> T
 where
     T: Num + Zero + PartialOrd + Copy,
@@ -109,7 +113,7 @@ where
 /// Returns the error bound for adding n terms.
 ///
 /// * `n` - Number of terms
-#[inline]
+#[inline(always)]
 pub fn gamma(n: Int) -> Float {
     (n as Float * MACHINE_EPSILON) / (1.0 - n as Float * MACHINE_EPSILON)
 }
@@ -117,7 +121,7 @@ pub fn gamma(n: Int) -> Float {
 /// Returns gamma corrected values for use in 8-bit images.
 ///
 /// * `value` - Value to correct.
-#[inline]
+#[inline(always)]
 pub fn gamma_correct(value: Float) -> Float {
     if value <= 0.0031308 {
         12.92 * value
@@ -129,7 +133,7 @@ pub fn gamma_correct(value: Float) -> Float {
 /// Returns inverse of a gamma corrected value.
 ///
 /// * `value` - The value.
-#[inline]
+#[inline(always)]
 pub fn inv_gamma_correct(value: Float) -> Float {
     if value <= 0.04045 {
         value * 1.0 / 12.92
@@ -144,6 +148,7 @@ pub fn inv_gamma_correct(value: Float) -> Float {
 /// * `t` - Parameter.
 /// * `p0` - Point at t=0.
 /// * `p1` - Point at t=1.
+#[inline(always)]
 pub fn lerp<P>(t: Float, p0: P, p1: P) -> P
 where
     Float: Mul<P, Output = P>,
@@ -255,7 +260,7 @@ where
 /// Return the cosine of an angle.
 ///
 /// * `theta` - The angle in radians.
-#[inline]
+#[inline(always)]
 pub fn cos(theta: Float) -> Float {
     theta.cos()
 }
@@ -263,7 +268,7 @@ pub fn cos(theta: Float) -> Float {
 /// Return the sine of an angle.
 ///
 /// * `theta` - The angle in radians.
-#[inline]
+#[inline(always)]
 pub fn sin(theta: Float) -> Float {
     theta.sin()
 }
@@ -271,7 +276,7 @@ pub fn sin(theta: Float) -> Float {
 /// Return the tangent of an angle.
 ///
 /// * `theta` - The angle in radians.
-#[inline]
+#[inline(always)]
 pub fn tan(theta: Float) -> Float {
     theta.tan()
 }
@@ -279,7 +284,7 @@ pub fn tan(theta: Float) -> Float {
 /// Return the arccosine of an angle.
 ///
 /// * `theta` - The angle in radians.
-#[inline]
+#[inline(always)]
 pub fn acos(theta: Float) -> Float {
     theta.acos()
 }
@@ -287,7 +292,7 @@ pub fn acos(theta: Float) -> Float {
 /// Return the arcsine of an angle.
 ///
 /// * `theta` - The angle in radians.
-#[inline]
+#[inline(always)]
 pub fn asin(theta: Float) -> Float {
     theta.asin()
 }
@@ -296,7 +301,7 @@ pub fn asin(theta: Float) -> Float {
 /// [-π/2, π/2];
 ///
 /// * `theta` - The angle in radians.
-#[inline]
+#[inline(always)]
 pub fn atan(theta: Float) -> Float {
     theta.atan()
 }
@@ -311,7 +316,7 @@ pub fn atan(theta: Float) -> Float {
 ///
 /// * `y` - Proportion of y-coordinate.
 /// * `x` - Proportion of x-coordinate.
-#[inline]
+#[inline(always)]
 pub fn atan2(y: Float, x: Float) -> Float {
     y.atan2(x)
 }
@@ -319,7 +324,7 @@ pub fn atan2(y: Float, x: Float) -> Float {
 /// Returns `v^5`.
 ///
 /// * `v` - The value.
-#[inline]
+#[inline(always)]
 pub fn pow5<T: Mul<T, Output = T> + Copy>(v: T) -> T {
     (v * v) * (v * v) * v
 }
@@ -327,6 +332,7 @@ pub fn pow5<T: Mul<T, Output = T> + Copy>(v: T) -> T {
 /// Returns the error function for a given floating point value.
 ///
 /// * `x` - The floating point value.
+#[inline(always)]
 pub fn erf(x: Float) -> Float {
     // constants
     let a1 = 0.254829592;
@@ -350,6 +356,7 @@ pub fn erf(x: Float) -> Float {
 /// Returns the inverse of the error function for a given floating point value.
 ///
 /// * `x` - The floating point value.
+#[inline(always)]
 pub fn erf_inv(x: Float) -> Float {
     let x = clamp(x, -0.99999, 0.99999);
     let mut w = -((1.0 - x) * (1.0 + x)).ln();

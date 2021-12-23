@@ -11,6 +11,7 @@ pub trait Log2<T: Num> {
 
 impl Log2<u32> for Float {
     /// Returns log base 2 of a value.
+    #[inline(always)]
     fn log2(self) -> u32 {
         if self < 1.0 {
             0
@@ -26,6 +27,7 @@ impl Log2<u32> for Float {
 
 impl Log2<i32> for u32 {
     /// Returns log base 2 of a value.
+    #[inline(always)]
     fn log2(self) -> i32 {
         31_i32 - self.leading_zeros() as i32
     }
@@ -33,6 +35,7 @@ impl Log2<i32> for u32 {
 
 impl Log2<i32> for i32 {
     /// Returns log base 2 of a value.
+    #[inline(always)]
     fn log2(self) -> i32 {
         Log2::log2(self as u32)
     }
@@ -40,6 +43,7 @@ impl Log2<i32> for i32 {
 
 impl Log2<i64> for u64 {
     /// Returns log base 2 of a value.
+    #[inline(always)]
     fn log2(self) -> i64 {
         63_i64 - self.leading_zeros() as i64
     }
@@ -47,6 +51,7 @@ impl Log2<i64> for u64 {
 
 impl Log2<i64> for i64 {
     /// Returns log base 2 of a value.
+    #[inline(always)]
     fn log2(self) -> i64 {
         Log2::log2(self as u64)
     }
@@ -54,6 +59,7 @@ impl Log2<i64> for i64 {
 
 impl Log2<i64> for usize {
     /// Returns log base 2 of a value.
+    #[inline(always)]
     fn log2(self) -> i64 {
         63_i64 - self.leading_zeros() as i64
     }
