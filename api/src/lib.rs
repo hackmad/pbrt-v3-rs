@@ -452,7 +452,7 @@ impl Api {
             }
 
             // Create scene and render.
-            let mut integrator = match self.render_options.make_integrator(&self.graphics_state) {
+            let integrator = match self.render_options.make_integrator(&self.graphics_state) {
                 Ok(integrator) => integrator,
                 Err(err) => panic!("Error creating integrator. {}", err),
             };

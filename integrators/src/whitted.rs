@@ -57,7 +57,7 @@ impl Integrator for WhittedIntegrator {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&mut self, scene: &Scene) {
+    fn render(&self, scene: &Scene) {
         SamplerIntegrator::render(self, scene);
     }
 
