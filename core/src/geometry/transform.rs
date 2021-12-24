@@ -503,13 +503,13 @@ impl Transform {
             );
 
             (
-                Ray::new_with_differentials(o, d, r.t_max, r.time, td, r.medium.as_ref().map(|m| Arc::clone(m))),
+                Ray::new_with_differentials(o, d, r.t_max, r.time, td, r.medium.as_ref().map(Arc::clone)), 
                 o_error,
                 d_error,
             )
         } else {
             (
-                Ray::new(o, d, r.t_max, r.time, r.medium.as_ref().map(|m| Arc::clone(m))),
+                Ray::new(o, d, r.t_max, r.time, r.medium.as_ref().map(Arc::clone)),
                 o_error,
                 d_error,
             )
@@ -542,9 +542,9 @@ impl Transform {
                 self.transform_vector(&diff.rx_direction),
                 self.transform_vector(&diff.ry_direction),
             );
-            Ray::new_with_differentials(o, d, t_max, r.time, r2d, r.medium.as_ref().map(|m| Arc::clone(m)))
+            Ray::new_with_differentials(o, d, t_max, r.time, r2d, r.medium.as_ref().map(Arc::clone))
         } else {
-            Ray::new(o, d, t_max, r.time, r.medium.as_ref().map(|m| Arc::clone(m)))
+            Ray::new(o, d, t_max, r.time, r.medium.as_ref().map(Arc::clone))
         };
 
         (r2, o_error_out, d_error_out)
