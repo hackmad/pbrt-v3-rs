@@ -17,4 +17,7 @@ proptest-regressions/
 /renders/
 
 .DS_Store
+
 dhat-heap.json
+cargo-flamegraph.stacks
+flamegraph.svg
