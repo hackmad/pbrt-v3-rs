@@ -76,6 +76,28 @@ use default global allocator. This is mutually exclusive with `dhat-rs` feature.
 cargo run --release --features jemalloc -- <input file>
 ```
 
+Also see [profile guided optimization](https://doc.rust-lang.org/rustc/profile-guided-optimization.html#a-complete-cargo-workflow).
+
+```
+# STEP 0: Make sure there is no left-over profiling data from previous runs
+rm -rf /tmp/pgo-data
+
+# STEP 1: Build the instrumented binaries
+RUSTFLAGS="-Cprofile-generate=/tmp/pgo-data" cargo build --release --target=x86_64-apple-darwin
+
+# STEP 2: Run the instrumented binaries with some typical data
+./target/x86_64-apple-darwin/release/pbr-rust scene1.pbrt
+./target/x86_64-apple-darwin/release/pbr-rust scene2.pbrt
+
+# STEP 3: Merge the `.profraw` files into a `.profdata` file
+export PATH=~/.asdf/installs/rust/1.57.0/toolchains/1.57.0-x86_64-apple-darwin/lib/rustlib/x86_64-apple-darwin/bin/:$PATH
+llvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data
+
+# STEP 4: Use the `.profdata` file for guiding optimizations
+RUSTFLAGS="-Cprofile-use=/tmp/pgo-data/merged.profdata" \
+    cargo build --release --target=x86_64-apple-darwin
+```
+
 ## Renders
 
 Coming soon...
