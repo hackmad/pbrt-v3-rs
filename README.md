@@ -65,6 +65,10 @@ lot slower to run.
 cargo run --release --features dhat-rs -- <input file>
 ```
 
+This will generate a file `dhat-heap.json` which can be viewed using the DHAT
+viewer. There is an [online tool](https://nnethercote.github.io/dh_view/dh_view.html) 
+available as well.
+
 ## Renders
 
 Coming soon...

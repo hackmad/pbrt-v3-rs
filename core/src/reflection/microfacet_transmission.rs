@@ -6,16 +6,14 @@ use super::*;
 use crate::material::*;
 use crate::microfacet::*;
 use bumpalo::Bump;
-use std::rc::Rc;
 
 /// BTDF for modeling glossy transmissive surfaces using a microfacet distribution.
-#[derive(Clone)]
-pub struct MicrofacetTransmission {
+pub struct MicrofacetTransmission<'arena> {
     /// BxDF type.
     bxdf_type: BxDFType,
 
     /// Fresnel interface for dielectrics and conductors.
-    fresnel: FresnelDielectric,
+    fresnel: &'arena mut Fresnel<'arena>,
 
     /// Spectrum used to scale the transmitted colour.
     t: Spectrum,
@@ -30,14 +28,16 @@ pub struct MicrofacetTransmission {
     mode: TransportMode,
 
     /// The microfacet distribution model.
-    distribution: Rc<MicrofacetDistribution>,
+    distribution: &'arena mut MicrofacetDistribution<'arena>,
 }
 
-impl MicrofacetTransmission {
-    /// Create a new instance of `MicrofacetTransmission`.
+impl<'arena> MicrofacetTransmission<'arena> {
+    /// Allocate a new instance of `MicrofacetTransmission`.
     ///
+    /// * `arena`        - The arena for memory allocations.
     /// * `t`            - Spectrum used to scale the transmitted colour.
     /// * `distribution` - Microfacet distribution.
+    /// * `fresnel`      - Fresnel interface for dielectrics and conductors.
     /// * `eta_a`        - Index of refraction above the surface (same side as
     ///                    surface normal).
     /// * `eta_b`        - Index of refraction below the surface (opposite side
@@ -45,47 +45,42 @@ impl MicrofacetTransmission {
     /// * `mode`         - Indicates whether incident ray started from a light
     ///                    source or from camera.
     pub fn new(
+        arena: &'arena Bump,
         t: Spectrum,
-        distribution: Rc<MicrofacetDistribution>,
+        distribution: &'arena mut MicrofacetDistribution<'arena>,
+        fresnel: &'arena mut Fresnel<'arena>,
         eta_a: Float,
         eta_b: Float,
         mode: TransportMode,
-    ) -> Self {
-        Self {
+    ) -> &'arena mut BxDF<'arena> {
+        let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_GLOSSY,
-            fresnel: FresnelDielectric::new(eta_a, eta_b),
             distribution,
+            fresnel,
             t,
             eta_a,
             eta_b,
             mode,
-        }
+        });
+        arena.alloc(BxDF::MicrofacetTransmission(model))
     }
-    /// Allocate a new instance of `MicrofacetTransmission`.
+
+    /// Clone into a newly allocated a new instance of `MicrofacetTransmission`.
     ///
-    /// * `allocator`    - The allocator.
-    /// * `t`            - Spectrum used to scale the transmitted colour.
-    /// * `distribution` - Microfacet distribution.
-    /// * `eta_a`        - Index of refraction above the surface (same side as
-    ///                    surface normal).
-    /// * `eta_b`        - Index of refraction below the surface (opposite side
-    ///                    as surface normal).
-    /// * `mode`         - Indicates whether incident ray started from a light
-    ///                    source or from camera.
-    pub fn alloc(
-        allocator: &Bump,
-        t: Spectrum,
-        distribution: Rc<MicrofacetDistribution>,
-        eta_a: Float,
-        eta_b: Float,
-        mode: TransportMode,
-    ) -> BxDF {
-        let model = allocator
-            .alloc(Self::new(t, distribution, eta_a, eta_b, mode))
-            .to_owned();
-        allocator
-            .alloc(BxDF::MicrofacetTransmission(model))
-            .to_owned()
+    /// * `arena` - The arena for memory allocations.
+    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let distribution = self.distribution.new_from(arena);
+        let fresnel = self.fresnel.new_from(arena);
+        let model = arena.alloc(Self {
+            bxdf_type: self.bxdf_type,
+            distribution,
+            fresnel,
+            t: self.t.clone(),
+            eta_a: self.eta_a.clone(),
+            eta_b: self.eta_b.clone(),
+            mode: self.mode,
+        });
+        arena.alloc(BxDF::MicrofacetTransmission(model))
     }
 
     /// Returns the BxDF type.

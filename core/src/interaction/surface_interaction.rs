@@ -13,8 +13,13 @@ use bumpalo::Bump;
 use std::sync::Arc;
 
 /// SurfaceInteraction represents geometry of a particular point on a surface.
-#[derive(Clone)]
-pub struct SurfaceInteraction<'a> {
+///
+/// The lifetime specifiers:
+/// * `'primitive` - Shared reference to the primitive.
+/// * `'arena`     - Shared mutable reference to values allocated by a memory arena.
+///                  Because we use bumpalo::Bump, this is how it returns allocated
+///                  values.
+pub struct SurfaceInteraction<'primitive, 'arena> {
     /// The common interaction data.
     pub hit: Hit,
 
@@ -31,19 +36,19 @@ pub struct SurfaceInteraction<'a> {
     pub shape_data: Arc<ShapeData>,
 
     /// The BSDF.
-    pub bsdf: Option<BSDF>,
+    pub bsdf: Option<&'arena mut BSDF<'arena>>,
 
     /// The BSSRDF.
     pub bssrdf: Option<ArcBSSRDF>,
 
     /// The primitive.
-    pub primitive: Option<&'a dyn Primitive>,
+    pub primitive: Option<&'primitive dyn Primitive>,
 
     /// Face index in a triangle mesh where hit occurred.
     pub face_index: usize,
 }
 
-impl<'a> SurfaceInteraction<'a> {
+impl<'primitive, 'arena> SurfaceInteraction<'primitive, 'arena> {
     /// Create a new surface interaction.
     ///
     /// * `p`          - Point of interaction.
@@ -136,7 +141,7 @@ impl<'a> SurfaceInteraction<'a> {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the primtive's surface.
     ///
-    /// * `arena`                - The memory arena for allocations.
+    /// * `arena`                - The arena for memory allocations.
     /// * `ray`                  - The ray.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -145,7 +150,7 @@ impl<'a> SurfaceInteraction<'a> {
     ///                            are available.
     pub fn compute_scattering_functions(
         &mut self,
-        arena: &Bump,
+        arena: &'arena Bump,
         ray: &Ray,
         allow_multiple_lobes: bool,
         mode: TransportMode,
@@ -248,6 +253,22 @@ impl<'a> SurfaceInteraction<'a> {
             area_light.l(&self.hit, w)
         } else {
             Spectrum::new(0.0)
+        }
+    }
+
+    /// Clones all the fields except for BSDF which should be allocated with
+    /// a memory arena.
+    pub fn clone_without_bsdf(&self) -> Self {
+        Self {
+            hit: self.hit.clone(),
+            uv: self.uv,
+            der: self.der.clone(),
+            shading: self.shading.clone(),
+            shape_data: self.shape_data.clone(),
+            bsdf: None,
+            bssrdf: self.bssrdf.clone(),
+            primitive: self.primitive,
+            face_index: self.face_index,
         }
     }
 }

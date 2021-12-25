@@ -4,39 +4,50 @@ use super::*;
 use bumpalo::Bump;
 
 /// BxDF scaling adapter scales a BxDF's contribution with a `Spectrum`.
-#[derive(Clone)]
-pub struct ScaledBxDF {
+pub struct ScaledBxDF<'arena> {
     /// BxDF type.
     bxdf_type: BxDFType,
 
     /// The BxDF to scale.
-    bxdf: Box<BxDF>,
+    ///
+    /// NOTE: This is `&'arena mut BxDF` because it is allocated from a memory
+    /// arena (bumpalo::Bump).
+    bxdf: &'arena mut BxDF<'arena>,
 
     /// Scaling value.
     scale: Spectrum,
 }
 
-impl ScaledBxDF {
-    /// Create a new instance of `ScaledBxDF`.
-    ///
-    /// * `bxdf`  - The BxDF to scale.
-    /// * `scale` - Scaling value.
-    pub fn new(bxdf: BxDF, scale: Spectrum) -> Self {
-        Self {
-            bxdf_type: bxdf.get_type(),
-            bxdf: Box::new(bxdf),
-            scale,
-        }
-    }
-
+impl<'arena> ScaledBxDF<'arena> {
     /// Allocate a new instance of `ScaledBxDF`.
     ///
-    /// * `allocator` - The allocator.
-    /// * `bxdf`      - The BxDF to scale.
-    /// * `scale`     - Scaling value.
-    pub fn alloc(allocator: &Bump, bxdf: BxDF, scale: Spectrum) -> BxDF {
-        let model = allocator.alloc(Self::new(bxdf, scale)).to_owned();
-        allocator.alloc(BxDF::ScaledBxDF(model)).to_owned()
+    /// * `arena` - The arena for memory allocations.
+    /// * `bxdf`  - The BxDF to scale.
+    /// * `scale` - Scaling value.
+    pub fn new(
+        arena: &'arena Bump,
+        bxdf: &'arena mut BxDF<'arena>,
+        scale: Spectrum,
+    ) -> &'arena mut BxDF<'arena> {
+        let model = arena.alloc(Self {
+            bxdf_type: bxdf.get_type(),
+            bxdf,
+            scale,
+        });
+        arena.alloc(BxDF::ScaledBxDF(model))
+    }
+
+    /// Clone into a newly allocated a new instance of `ScaledBxDF`.
+    ///
+    /// * `arena` - The arena for memory allocations.
+    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let bxdf = self.bxdf.new_from(arena);
+        let model = arena.alloc(Self {
+            bxdf_type: self.bxdf_type,
+            bxdf,
+            scale: self.scale.clone(),
+        });
+        arena.alloc(BxDF::ScaledBxDF(model))
     }
 
     /// Returns the BxDF type.

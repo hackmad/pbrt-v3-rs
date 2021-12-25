@@ -4,6 +4,7 @@
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::reflection::*;
+use bumpalo::Bump;
 
 mod beckmann;
 mod trowbridge_reitz;
@@ -13,13 +14,22 @@ pub use beckmann::*;
 pub use trowbridge_reitz::*;
 
 /// Interface for microfacet distribution models.
-#[derive(Clone)]
-pub enum MicrofacetDistribution {
-    Beckmann(BeckmannDistribution),
-    TrowBridgeReitz(TrowbridgeReitzDistribution),
+pub enum MicrofacetDistribution<'arena> {
+    Beckmann(&'arena mut BeckmannDistribution),
+    TrowBridgeReitz(&'arena mut TrowbridgeReitzDistribution),
 }
 
-impl MicrofacetDistribution {
+impl<'arena> MicrofacetDistribution<'arena> {
+    /// Clone into a newly allocated instance.
+    ///
+    /// * `arena` - The memory arena used for allocations.
+    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut MicrofacetDistribution<'arena> {
+        match self {
+            Self::Beckmann(dist) => dist.new_from(arena),
+            Self::TrowBridgeReitz(dist) => dist.new_from(arena),
+        }
+    }
+
     /// Returns whether or not the visible area is sampled or not.
     pub fn get_sample_visible_area(&self) -> bool {
         match self {

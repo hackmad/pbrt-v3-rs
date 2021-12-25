@@ -5,7 +5,6 @@ use bumpalo::Bump;
 
 /// BRDF for the Oren-Nayar model for modeling rough surfaces using a microfacet
 /// model.
-#[derive(Clone)]
 pub struct OrenNayar {
     /// BxDF type.
     bxdf_type: BxDFType,
@@ -31,33 +30,36 @@ pub struct OrenNayar {
 }
 
 impl OrenNayar {
-    /// Create a new instance of `OrenNayar`.
+    /// Allocator a new instance of `OrenNayar`.
     ///
+    /// * `arena` - The arena for memory allocations.
     /// * `r`     - Reflectance spectrum which gives the fraction of incident
     ///             light that is scattered.
     /// * `sigma` - The Gaussian distribution parameter, the standard deviation
     ///             of the microfacet orientation angle (in degrees).
-    pub fn new(r: Spectrum, sigma: Float) -> Self {
+    pub fn new<'arena>(arena: &'arena Bump, r: Spectrum, sigma: Float) -> &'arena mut BxDF {
         let sigma = sigma.to_radians();
         let sigma2 = sigma * sigma;
-        Self {
+        let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_DIFFUSE,
             r,
             a: 1.0 - (sigma2 / (2.0 * (sigma2 + 0.33))),
             b: 0.45 * sigma2 / (sigma2 + 0.09),
-        }
+        });
+        arena.alloc(BxDF::OrenNayar(model))
     }
 
-    /// Allocator a new instance of `OrenNayar`.
+    /// Clone into a newly allocated a new instance of `OrenNayar`.
     ///
-    /// * `allocator` - The allocator.
-    /// * `r`         - Reflectance spectrum which gives the fraction of incident
-    ///                 light that is scattered.
-    /// * `sigma`     - The Gaussian distribution parameter, the standard deviation
-    ///                 of the microfacet orientation angle (in degrees).
-    pub fn alloc(allocator: &Bump, r: Spectrum, sigma: Float) -> BxDF {
-        let model = allocator.alloc(Self::new(r, sigma)).to_owned();
-        allocator.alloc(BxDF::OrenNayar(model)).to_owned()
+    /// * `arena` - The arena for memory allocations.
+    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let model = arena.alloc(Self {
+            bxdf_type: self.bxdf_type,
+            r: self.r.clone(),
+            a: self.a,
+            b: self.b,
+        });
+        arena.alloc(BxDF::OrenNayar(model))
     }
 
     /// Returns the BxDF type.

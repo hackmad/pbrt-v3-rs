@@ -7,7 +7,6 @@ use bumpalo::Bump;
 
 /// BRDF for the Lambertian model for perfect diffuse surfaces that scatters
 /// incident illumination equally in all directions.
-#[derive(Clone)]
 pub struct LambertianReflection {
     /// BxDF type.
     bxdf_type: BxDFType,
@@ -18,27 +17,28 @@ pub struct LambertianReflection {
 }
 
 impl LambertianReflection {
-    /// Create a new instance of `LambertianReflection`.
-    ///
-    /// * `r` - Reflectance spectrum which gives the fraction of incident light
-    ///         that is scattered.
-    pub fn new(r: Spectrum) -> Self {
-        Self {
-            bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_DIFFUSE,
-            r,
-        }
-    }
-
     /// Allocate a new instance of `LambertianReflection`.
     ///
-    /// * `allocator` - The allocator.
-    /// * `r`         - Reflectance spectrum which gives the fraction of incident
-    ///                 light that is scattered.
-    pub fn alloc(allocator: &Bump, r: Spectrum) -> BxDF {
-        let model = allocator.alloc(Self::new(r)).to_owned();
-        allocator
-            .alloc(BxDF::LambertianReflection(model))
-            .to_owned()
+    /// * `arena` - The arena for memory allocations.
+    /// * `r`     - Reflectance spectrum which gives the fraction of incident
+    ///             light that is scattered.
+    pub fn new<'arena>(arena: &'arena Bump, r: Spectrum) -> &'arena mut BxDF {
+        let model = arena.alloc(Self {
+            bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_DIFFUSE,
+            r,
+        });
+        arena.alloc(BxDF::LambertianReflection(model))
+    }
+
+    /// Clone into a newly allocated a new instance of `LambertianReflection`.
+    ///
+    /// * `arena` - The arena for memory allocations.
+    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let model = arena.alloc(Self {
+            bxdf_type: self.bxdf_type,
+            r: self.r.clone(),
+        });
+        arena.alloc(BxDF::LambertianReflection(model))
     }
 
     /// Returns the BxDF type.

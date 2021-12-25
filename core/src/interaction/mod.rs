@@ -13,15 +13,23 @@ pub use medium_interaction::*;
 pub use surface_interaction::*;
 
 /// Interaction enumeration.
-pub enum Interaction<'a> {
+///
+/// The lifetime specifiers are from `SurfaceInteraction`:
+/// * `'primitive` - Shared reference to the primitive.
+/// * `'arena`     - Shared mutable reference to values allocated by a memory arena.
+///                  Because we use bumpalo::Bump, this is how it returns allocated
+///                  values.
+pub enum Interaction<'primitive, 'arena> {
     /// Represents geometry of a particular point on a surface.
-    Surface { si: SurfaceInteraction<'a> },
+    Surface {
+        si: SurfaceInteraction<'primitive, 'arena>,
+    },
 
     /// Represents an interaction point in a scattering medium.
     Medium { mi: MediumInteraction },
 }
 
-impl<'a> Interaction<'a> {
+impl<'primitive, 'arena> Interaction<'primitive, 'arena> {
     /// Returns the interaction hit point.
     pub fn get_hit(&self) -> &Hit {
         match self {

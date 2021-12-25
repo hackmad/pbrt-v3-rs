@@ -24,8 +24,9 @@ pub struct BeckmannDistribution {
 }
 
 impl BeckmannDistribution {
-    /// Create a new `BeckmannDistribution`.
+    /// Allocate a new `BeckmannDistribution`.
     ///
+    /// * `arena`               - The arena for memory allocations.
     /// * `alpha_x`             - For microfacets oriented perpendicular to the
     ///                           x-axis and where α = sqrt(2) * σ and σ is the
     ///                           RMS slope of microfacets.
@@ -34,32 +35,25 @@ impl BeckmannDistribution {
     ///                           RMS slope of microfacets.
     /// * `sample_visible_area` - Indicates whether or not the visible area is
     ///                           sampled or not (default to `true`).
-    pub fn new(alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> Self {
-        Self {
+    pub fn new<'arena>(arena: &'arena Bump, alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> &'arena mut MicrofacetDistribution {
+        let dist = arena.alloc(Self {
             sample_visible_area,
             alpha_x: max(0.001, alpha_x),
             alpha_y: max(0.001, alpha_y),
-        }
+        });
+        arena.alloc(MicrofacetDistribution::Beckmann(dist))
     }
 
-    /// Allocate a new `BeckmannDistribution`.
+    /// Clone into a newly allocated a new instance of `BeckmannDistribution`.
     ///
-    /// * `allocate`            - The allocator.
-    /// * `alpha_x`             - For microfacets oriented perpendicular to the
-    ///                           x-axis and where α = sqrt(2) * σ and σ is the
-    ///                           RMS slope of microfacets.
-    /// * `alpha_y`             - For microfacets oriented perpendicular to the
-    ///                           y-axis and where α = sqrt(2) * σ and σ is the
-    ///                           RMS slope of microfacets.
-    /// * `sample_visible_area` - Indicates whether or not the visible area is
-    ///                           sampled or not (default to `true`).
-    pub fn alloc(allocator: &Bump, alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> MicrofacetDistribution {
-        let dist = allocator.alloc(Self::new(
-            alpha_x,
-            alpha_y,
-            sample_visible_area,
-        )).to_owned();
-        allocator.alloc(MicrofacetDistribution::Beckmann(dist)).to_owned()
+    /// * `arena` - The memory arena.
+    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut MicrofacetDistribution<'arena> {
+        let dist = arena.alloc(Self {
+            sample_visible_area: self.sample_visible_area,
+            alpha_x: self.alpha_x,
+            alpha_y: self.alpha_y,
+        });
+        arena.alloc(MicrofacetDistribution::Beckmann(dist))
     }
 
     /// Maps scalar roughness parameter in [0, 1] to alpha values where

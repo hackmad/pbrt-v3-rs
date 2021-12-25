@@ -17,3 +17,4 @@ proptest-regressions/
 /renders/
 
 .DS_Store
+dhat-heap.json

@@ -43,17 +43,17 @@ impl Material for MixMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The memory arena for allocations.
+    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Indicates whether the material should use
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available.
-    fn compute_scattering_functions(
+    fn compute_scattering_functions<'primtive, 'arena>(
         &self,
-        arena: &Bump,
-        si: &mut SurfaceInteraction,
+        arena: &'arena Bump,
+        si: &mut SurfaceInteraction<'primtive, 'arena>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
     ) {
@@ -63,7 +63,7 @@ impl Material for MixMaterial {
             .evaluate(&si.hit, &si.uv, &si.der)
             .clamp_default();
         let s2 = (Spectrum::new(1.0) - s1).clamp_default();
-        let mut si2 = si.clone();
+        let mut si2 = si.clone_without_bsdf();
 
         self.m1
             .compute_scattering_functions(arena, si, mode, allow_multiple_lobes);
@@ -71,19 +71,23 @@ impl Material for MixMaterial {
             .compute_scattering_functions(arena, &mut si2, mode, allow_multiple_lobes);
 
         // Initialize `si.bsdf` with weighted mixture of BxDFs.
-        let mut bsdf = BSDF::alloc(arena, &si, None);
+        let bsdf = BSDF::new(arena, &si, None);
 
         if let Some(si_bsdf) = si.bsdf.as_ref() {
             let n1 = si_bsdf.num_components(BxDFType::all());
             for i in 0..n1 {
-                bsdf.add(ScaledBxDF::alloc(arena, si_bsdf.bxdfs[i].clone(), s1));
+                bsdf.add(ScaledBxDF::new(arena, si_bsdf.bxdfs[i].new_from(arena), s1));
             }
         }
 
         if let Some(si2_bsdf) = si2.bsdf {
             let n2 = si2_bsdf.num_components(BxDFType::all());
             for i in 0..n2 {
-                bsdf.add(ScaledBxDF::alloc(arena, si2_bsdf.bxdfs[i].clone(), s2));
+                bsdf.add(ScaledBxDF::new(
+                    arena,
+                    si2_bsdf.bxdfs[i].new_from(arena),
+                    s2,
+                ));
             }
         }
 

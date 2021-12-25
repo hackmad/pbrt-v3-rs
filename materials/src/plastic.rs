@@ -9,7 +9,6 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::spectrum::*;
 use core::texture::*;
-use std::rc::Rc;
 use std::sync::Arc;
 use textures::*;
 
@@ -65,17 +64,17 @@ impl Material for PlasticMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The memory arena for allocations.
+    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
-    fn compute_scattering_functions(
+    fn compute_scattering_functions<'primtive, 'arena>(
         &self,
-        arena: &Bump,
-        si: &mut SurfaceInteraction,
+        arena: &'arena Bump,
+        si: &mut SurfaceInteraction<'primtive, 'arena>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
     ) {
@@ -84,28 +83,26 @@ impl Material for PlasticMaterial {
             Material::bump(self, Arc::clone(bump_map), si);
         }
 
-        let mut bsdf = BSDF::alloc(arena, &si, None);
+        let bsdf = BSDF::new(arena, &si, None);
 
         // Initialize diffuse component of plastic material.
         let kd = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kd.is_black() {
-            bsdf.add(LambertianReflection::alloc(arena, kd));
+            bsdf.add(LambertianReflection::new(arena, kd));
         }
 
         // Initialize specular component of plastic material.
         let ks = self.ks.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !ks.is_black() {
-            let fresnel = FresnelDielectric::alloc(arena, 1.5, 1.0);
+            let fresnel = FresnelDielectric::new(arena, 1.5, 1.0);
 
             // Create microfacet distribution for plastic material.
             let mut rough = self.roughness.evaluate(&si.hit, &si.uv, &si.der);
             if self.remap_roughness {
                 rough = TrowbridgeReitzDistribution::roughness_to_alpha(rough);
             }
-            let distrib = Rc::new(TrowbridgeReitzDistribution::alloc(
-                arena, rough, rough, true,
-            ));
-            bsdf.add(MicrofacetReflection::alloc(arena, ks, distrib, fresnel));
+            let distrib = TrowbridgeReitzDistribution::new(arena, rough, rough, true);
+            bsdf.add(MicrofacetReflection::new(arena, ks, distrib, fresnel));
         }
 
         si.bsdf = Some(bsdf);

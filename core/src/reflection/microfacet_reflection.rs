@@ -4,60 +4,59 @@
 use super::*;
 use crate::microfacet::*;
 use bumpalo::Bump;
-use std::rc::Rc;
 
 /// BRDF for modeling metallic surfaces using a microfacet distribution.
-#[derive(Clone)]
-pub struct MicrofacetReflection {
+pub struct MicrofacetReflection<'arena> {
     /// BxDF type.
     bxdf_type: BxDFType,
 
     /// Fresnel interface for dielectrics and conductors.
-    fresnel: Fresnel,
+    fresnel: &'arena mut Fresnel<'arena>,
 
     /// Reflectance spectrum which gives the fraction of incident light that
     /// is scattered.
     r: Spectrum,
 
     /// The microfacet distribution model.
-    distribution: Rc<MicrofacetDistribution>,
+    distribution: &'arena mut MicrofacetDistribution<'arena>,
 }
 
-impl MicrofacetReflection {
-    /// Create a new instance of `MicrofacetReflection`.
+impl<'arena> MicrofacetReflection<'arena> {
+    /// Allocate a new instance of `MicrofacetReflection`.
     ///
+    /// * `arena`        - The arena for memory allocations.
     /// * `r`            - Reflectance spectrum which gives the fraction of incident
     ///                    light that is scattered.
     /// * `distribution` - Microfacet distribution.
     /// * `fresnel`      - Fresnel interface for dielectrics and conductors.
-    pub fn new(r: Spectrum, distribution: Rc<MicrofacetDistribution>, fresnel: Fresnel) -> Self {
-        Self {
+    pub fn new(
+        arena: &'arena Bump,
+        r: Spectrum,
+        distribution: &'arena mut MicrofacetDistribution<'arena>,
+        fresnel: &'arena mut Fresnel<'arena>,
+    ) -> &'arena mut BxDF<'arena> {
+        let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_GLOSSY,
             r,
             distribution,
             fresnel,
-        }
+        });
+        arena.alloc(BxDF::MicrofacetReflection(model))
     }
 
-    /// Allocate a new instance of `MicrofacetReflection`.
+    /// Clone into a newly allocated a new instance of `MicrofacetReflection`.
     ///
-    /// * `allocator`    - The allocator.
-    /// * `r`            - Reflectance spectrum which gives the fraction of incident
-    ///                    light that is scattered.
-    /// * `distribution` - Microfacet distribution.
-    /// * `fresnel`      - Fresnel interface for dielectrics and conductors.
-    pub fn alloc(
-        allocator: &Bump,
-        r: Spectrum,
-        distribution: Rc<MicrofacetDistribution>,
-        fresnel: Fresnel,
-    ) -> BxDF {
-        let model = allocator
-            .alloc(Self::new(r, distribution, fresnel))
-            .to_owned();
-        allocator
-            .alloc(BxDF::MicrofacetReflection(model))
-            .to_owned()
+    /// * `arena` - The arena for memory allocations.
+    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let distribution = self.distribution.new_from(arena);
+        let fresnel = self.fresnel.new_from(arena);
+        let model = arena.alloc(Self {
+            bxdf_type: self.bxdf_type,
+            r: self.r.clone(),
+            distribution,
+            fresnel,
+        });
+        arena.alloc(BxDF::MicrofacetReflection(model))
     }
 
     /// Returns the BxDF type.

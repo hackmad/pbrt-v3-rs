@@ -1,10 +1,10 @@
 //! Primitives
 
-use bumpalo::Bump;
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::light::*;
 use crate::material::*;
+use bumpalo::Bump;
 use std::sync::Arc;
 
 /// Primitive trait provide common behavior.
@@ -39,17 +39,17 @@ pub trait Primitive {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The memory arena for allocations.
+    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Indicates whether the material should use
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available.
-    fn compute_scattering_functions(
+    fn compute_scattering_functions<'primtive, 'arena>(
         &self,
-        arena: &Bump,
-        si: &mut SurfaceInteraction,
+        arena: &'arena Bump,
+        si: &mut SurfaceInteraction<'primtive, 'arena>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
     );
