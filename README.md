@@ -56,7 +56,7 @@ The release version can be run as:
 cargo run --release -- <input file>
 ```
 
-## Profiling
+## Profiling / Performance
 
 Use `--features dhat-rs` to get heap profiling stats. Note that this will be a
 lot slower to run.
@@ -68,6 +68,13 @@ cargo run --release --features dhat-rs -- <input file>
 This will generate a file `dhat-heap.json` which can be viewed using the DHAT
 viewer. There is an [online tool](https://nnethercote.github.io/dh_view/dh_view.html) 
 available as well.
+
+Use `--features jemalloc` to use jemalloc on Linux/MacOS. On Windows, it will 
+use default global allocator. This is mutually exclusive with `dhat-rs` feature.
+
+```
+cargo run --release --features jemalloc -- <input file>
+```
 
 ## Renders
 

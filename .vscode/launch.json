@@ -12,7 +12,8 @@
                 "args": [
                     "build",
                     "--bin=pbr-rust",
-                    "--package=pbr-rust"
+                    "--package=pbr-rust",
+                    "--features="
                 ],
                 "filter": {
                     "name": "pbr-rust",
@@ -39,7 +40,8 @@
                     "test",
                     "--no-run",
                     "--bin=pbr-rust",
-                    "--package=pbr-rust"
+                    "--package=pbr-rust",
+                    "--features="
                 ],
                 "filter": {
                     "name": "pbr-rust",

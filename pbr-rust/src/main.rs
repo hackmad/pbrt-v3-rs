@@ -5,12 +5,24 @@ use api::parser::*;
 use api::*;
 use core::app::*;
 
+#[cfg(all(feature = "dhat-rs", feature = "jemalloc"))]
+compile_error!("feature 'dhat-rs' and feature 'jemalloc' cannot be enabled at the same time");
+
 #[cfg(feature = "dhat-rs")]
 use dhat::{Dhat, DhatAlloc};
 
 #[cfg(feature = "dhat-rs")]
 #[global_allocator]
 static ALLOCATOR: DhatAlloc = DhatAlloc;
+
+#[cfg(feature = "jemalloc")]
+#[cfg(not(target_env = "msvc"))]
+use tikv_jemallocator::Jemalloc;
+
+#[cfg(feature = "jemalloc")]
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static ALLOCATOR: Jemalloc = Jemalloc;
 
 fn main() {
     #[cfg(feature = "dhat-rs")]
