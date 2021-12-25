@@ -1688,7 +1688,7 @@ pub fn van_der_corput(
     n_pixel_samples: usize,
     rng: &mut RNG,
 ) -> Vec<Float> {
-    let scramble: u32 = rng.uniform();
+    let scramble = rng.uniform_u32();
     let total_samples = n_samples_per_pixel_sample * n_pixel_samples;
 
     let mut samples = gray_code_sample_1d(&C_VANDER_CORPUT, total_samples, scramble);
@@ -1745,7 +1745,7 @@ pub fn sobol_2d(
     n_pixel_samples: usize,
     rng: &mut RNG,
 ) -> Vec<Point2f> {
-    let scramble: [u32; 2] = [rng.uniform(), rng.uniform()];
+    let scramble = [rng.uniform_u32(), rng.uniform_u32()];
 
     let mut samples = gray_code_sample_2d(
         &C_SOBOL,

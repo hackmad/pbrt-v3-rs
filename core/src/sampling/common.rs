@@ -14,7 +14,7 @@ pub fn stratified_sample_1d(rng: &mut RNG, n_samples: usize, jitter: bool) -> Ve
 
     (0..n_samples)
         .map(|i| {
-            let delta: Float = if jitter { rng.uniform() } else { 0.5 };
+            let delta = if jitter { rng.uniform_float() } else { 0.5 };
             min((i as Float + delta) * inv_n_samples, ONE_MINUS_EPSILON)
         })
         .collect::<Vec<Float>>()
@@ -33,8 +33,8 @@ pub fn stratified_sample_2d(rng: &mut RNG, nx: usize, ny: usize, jitter: bool) -
     (0..ny)
         .zip(0..nx)
         .map(|(y, x)| {
-            let jx = if jitter { rng.uniform() } else { 0.5 };
-            let jy = if jitter { rng.uniform() } else { 0.5 };
+            let jx = if jitter { rng.uniform_float() } else { 0.5 };
+            let jy = if jitter { rng.uniform_float() } else { 0.5 };
             Point2f::new(
                 min((x as Float + jx) * dx, ONE_MINUS_EPSILON),
                 min((y as Float + jy) * dy, ONE_MINUS_EPSILON),
@@ -55,7 +55,7 @@ pub fn latin_hypercube(rng: &mut RNG, n_samples: usize, n_dim: usize) -> Vec<Flo
     // Generate LHS samples along diagonal.
     for i in 0..n_samples {
         for j in 0..n_dim {
-            let r: Float = rng.uniform();
+            let r = rng.uniform_float();
             let sj = (i as Float + r) * inv_n_samples;
             samples[n_dim * i + j] = min(sj, ONE_MINUS_EPSILON);
         }
@@ -64,7 +64,7 @@ pub fn latin_hypercube(rng: &mut RNG, n_samples: usize, n_dim: usize) -> Vec<Flo
     // Permute LHS samples in each dimension.
     for i in 0..n_dim {
         for j in 0..n_samples {
-            let other = j + rng.bounded_uniform(0, n_samples - j);
+            let other = j + rng.bounded_uniform_u32(0, (n_samples - j) as u32) as usize;
             samples.swap(n_dim * j + i, n_dim * other + i);
         }
     }
@@ -78,8 +78,8 @@ pub fn latin_hypercube(rng: &mut RNG, n_samples: usize, n_dim: usize) -> Vec<Flo
 /// * `rng`       - Random number generator.
 pub fn rejection_sample_disk(rng: &mut RNG) -> Point2f {
     loop {
-        let rx: Float = rng.uniform();
-        let ry: Float = rng.uniform();
+        let rx = rng.uniform_float();
+        let ry = rng.uniform_float();
 
         let x = 1.0 - 2.0 * rx;
         let y = 1.0 - 2.0 * ry;

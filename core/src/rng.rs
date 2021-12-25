@@ -1,10 +1,6 @@
 //! Random Number Generator.
 
 use crate::pbrt::*;
-use rand::distributions::uniform::SampleUniform;
-use rand::distributions::{Distribution, Standard, Uniform};
-use rand::{Rng, SeedableRng};
-use rand_pcg::Pcg32;
 
 /// 32-bit precision value for 1 - epsilon.
 pub const FLOAT_ONE_MINUS_EPSILON: f32 = hexf32!("0x1.fffffep-1"); // 0.99999994
@@ -17,27 +13,21 @@ pub const ONE_MINUS_EPSILON: Float = FLOAT_ONE_MINUS_EPSILON;
 
 const PCG32_DEFAULT_STATE: u64 = 0x853c49e6748fea9b;
 const PCG32_DEFAULT_STREAM: u64 = 0xda3e39cb94b95bdb;
-
-/// Interface for generating uniform samples.
-pub trait UniformRandom<T>
-where
-    Standard: Distribution<T>,
-{
-    /// Returns a uniformly distributed value.
-    fn uniform(&mut self) -> T;
-}
+const PCG32_MULT: u64 = 0x5851f42d4c957f2d;
 
 /// Implements the pseudo-random number generator.
 #[derive(Clone)]
 pub struct RNG {
-    r: Pcg32,
+    state: u64,
+    inc: u64,
 }
 
 impl Default for RNG {
     /// Return a new instance of `RNG` with default state and stream.
     fn default() -> Self {
         Self {
-            r: Pcg32::new(PCG32_DEFAULT_STATE, PCG32_DEFAULT_STREAM),
+            state: PCG32_DEFAULT_STATE,
+            inc: PCG32_DEFAULT_STREAM,
         }
     }
 }
@@ -47,9 +37,46 @@ impl RNG {
     ///
     /// * `sequence_index` - The starting sequence to seed with.
     pub fn new(sequence_index: u64) -> Self {
-        Self {
-            r: Pcg32::seed_from_u64(sequence_index),
-        }
+        let mut ret = Self { state: 0, inc: 0 };
+        ret.set_sequence(sequence_index);
+        ret
+    }
+
+    /// Initialize the random number generator sequence.
+    ///
+    /// * `init_seq` - The starting sequence to seed with.
+    #[inline(always)]
+    fn set_sequence(&mut self, init_seq: u64) {
+        self.state = 0;
+        let (inc, _) = init_seq.overflowing_shl(1);
+        self.inc = inc | 1;
+        let _ = self.uniform_u32();
+
+        let (state, _) = self.state.overflowing_add(PCG32_DEFAULT_STATE);
+        self.state = state;
+        let _ = self.uniform_u32();
+    }
+
+    /// Returns a uniformly distributed u32 value.
+    #[inline(always)]
+    pub fn uniform_u32(&mut self) -> u32 {
+        let old_state = self.state;
+        let (new_state, _) = old_state.overflowing_mul(PCG32_MULT);
+        let (new_state, _) = new_state.overflowing_add(self.inc);
+        self.state = new_state;
+
+        let (xor_shifted, _) = old_state.overflowing_shr(18);
+        let (xor_shifted, _) = (xor_shifted ^ old_state).overflowing_shr(27);
+        let xor_shifted = xor_shifted as u32;
+
+        let (rot, _) = old_state.overflowing_shr(59);
+        let rot = rot as u32;
+
+        let (r1, _) = xor_shifted.overflowing_shr(rot);
+        let (bits, _) = (!rot).overflowing_add(1);
+        let (r2, _) = xor_shifted.overflowing_shl(bits & 31);
+
+        r1 | r2
     }
 
     /// Returns a uniformly distributed value over the closed interval containing
@@ -57,12 +84,23 @@ impl RNG {
     ///
     /// * `lower_bound` - The upper bound.
     /// * `upper_bound` - The upper bound.
-    pub fn bounded_uniform<T>(&mut self, lower_bound: T, upper_bound: T) -> T
-    where
-        T: SampleUniform,
-    {
-        let between = Uniform::from(lower_bound..upper_bound);
-        between.sample(&mut self.r)
+    pub fn bounded_uniform_u32(&mut self, lower_bound: u32, upper_bound: u32) -> u32 {
+        let b = upper_bound - lower_bound;
+        let threshold = (!b + 1) % b;
+        loop {
+            let r = self.uniform_u32();
+            if r >= threshold {
+                return lower_bound + r % b;
+            }
+        }
+    }
+
+    /// Returns a uniformly distributed value over the half open interval [0.0, 1.0).
+    pub fn uniform_float(&mut self) -> Float {
+        min(
+            self.uniform_u32() as Float * hexf32!("0x1.0p-32") as Float,
+            FLOAT_ONE_MINUS_EPSILON,
+        )
     }
 
     /// Randomly permute a slice containing n-dimensional values in a linear
@@ -75,36 +113,10 @@ impl RNG {
         debug_assert!(count * n_dimensions <= v.len());
 
         for i in 0..count {
-            let other = i + self.bounded_uniform(0, count - i);
+            let other = i + self.bounded_uniform_u32(0, (count - i) as u32) as usize;
             for j in 0..n_dimensions {
                 v.swap(n_dimensions * i + j, n_dimensions * other + j);
             }
         }
-    }
-}
-
-/// Use default implementation for `UniformRandom` that wraps `Rng::gen<T>()`.
-macro_rules! uniform_rand {
-    ($t: ty) => {
-        impl UniformRandom<$t> for RNG {
-            /// Returns a uniformly distributed value over the closed interval
-            /// containing the minimum value to maximum value of `$t`.
-            fn uniform(&mut self) -> $t {
-                let r = &mut self.r;
-                r.gen::<$t>()
-            }
-        }
-    };
-}
-uniform_rand!(u8);
-uniform_rand!(u16);
-uniform_rand!(u32);
-uniform_rand!(u64);
-
-impl UniformRandom<Float> for RNG {
-    /// Returns a uniformly distributed value over the half open interval [0.0, 1.0).
-    fn uniform(&mut self) -> Float {
-        let r = &mut self.r;
-        min(ONE_MINUS_EPSILON, r.gen::<Float>())
     }
 }

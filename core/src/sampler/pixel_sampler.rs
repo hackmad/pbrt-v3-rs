@@ -93,7 +93,7 @@ impl Sampler for PixelSampler {
             self.current_1d_dimension += 1;
             r
         } else {
-            self.rng.uniform()
+            self.rng.uniform_float()
         }
     }
 
@@ -107,7 +107,7 @@ impl Sampler for PixelSampler {
             self.current_2d_dimension += 1;
             r
         } else {
-            Point2f::new(self.rng.uniform(), self.rng.uniform())
+            Point2f::new(self.rng.uniform_float(), self.rng.uniform_float())
         }
     }
 

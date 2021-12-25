@@ -54,7 +54,7 @@ impl Sampler for RandomSampler {
         let n = self.data.sample_array_1d.len();
         for i in 0..n {
             for j in 0..self.data.sample_array_1d[i].len() {
-                self.data.sample_array_1d[i][j] = self.rng.uniform();
+                self.data.sample_array_1d[i][j] = self.rng.uniform_float();
             }
         }
 
@@ -62,7 +62,7 @@ impl Sampler for RandomSampler {
         for i in 0..n {
             for j in 0..self.data.sample_array_2d[i].len() {
                 self.data.sample_array_2d[i][j] =
-                    Point2f::new(self.rng.uniform(), self.rng.uniform());
+                    Point2f::new(self.rng.uniform_float(), self.rng.uniform_float());
             }
         }
 
@@ -72,13 +72,13 @@ impl Sampler for RandomSampler {
     /// Returns the sample value for the next dimension of the current sample
     /// vector.
     fn get_1d(&mut self) -> Float {
-        self.rng.uniform()
+        self.rng.uniform_float()
     }
 
     /// Returns the sample value for the next two dimensions of the current
     /// sample vector.
     fn get_2d(&mut self) -> Point2f {
-        Point2f::new(self.rng.uniform(), self.rng.uniform())
+        Point2f::new(self.rng.uniform_float(), self.rng.uniform_float())
     }
 }
 
