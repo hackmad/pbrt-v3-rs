@@ -454,7 +454,11 @@ impl Shape for Triangle {
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests.
-    fn intersect<'a>(&self, r: &Ray, test_alpha_texture: bool) -> Option<Intersection<'a>> {
+    fn intersect<'primitive, 'arena>(
+        &self,
+        r: &Ray,
+        test_alpha_texture: bool,
+    ) -> Option<Intersection<'primitive, 'arena>> {
         // Get triangle vertices in p0, p1, and p2
         let p0 = self.mesh.p[self.mesh.vertex_indices[self.v]];
         let p1 = self.mesh.p[self.mesh.vertex_indices[self.v + 1]];

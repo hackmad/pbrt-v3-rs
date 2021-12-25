@@ -9,7 +9,6 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::spectrum::*;
 use core::texture::*;
-use std::rc::Rc;
 use std::sync::Arc;
 use textures::*;
 
@@ -73,17 +72,17 @@ impl Material for GlassMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The memory arena for allocations.
+    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
-    fn compute_scattering_functions(
+    fn compute_scattering_functions<'primtive, 'arena>(
         &self,
-        arena: &Bump,
-        si: &mut SurfaceInteraction,
+        arena: &'arena Bump,
+        si: &mut SurfaceInteraction<'primtive, 'arena>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
     ) {
@@ -99,13 +98,13 @@ impl Material for GlassMaterial {
         let t = self.kt.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
 
         // Initialize bsdf for smooth or rough dielectric.
-        let mut bsdf = BSDF::alloc(arena, &si, None);
+        let bsdf = BSDF::new(arena, &si, None);
 
         // Evaluate textures for `GlassMaterial` material and allocate BRDF
         if !(r.is_black() && t.is_black()) {
             let is_specular = urough == 0.0 && vrough == 0.0;
             if is_specular && allow_multiple_lobes {
-                bsdf.add(FresnelSpecular::alloc(arena, r, t, 1.0, eta, mode));
+                bsdf.add(FresnelSpecular::new(arena, r, t, 1.0, eta, mode));
             } else {
                 if self.remap_roughness {
                     urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
@@ -114,31 +113,26 @@ impl Material for GlassMaterial {
 
                 if is_specular {
                     if !r.is_black() {
-                        let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
-                        bsdf.add(SpecularReflection::alloc(arena, r, fresnel));
+                        let fresnel = FresnelDielectric::new(arena, 1.0, eta);
+                        bsdf.add(SpecularReflection::new(arena, r, fresnel));
                     }
 
                     if !t.is_black() {
-                        bsdf.add(SpecularTransmission::alloc(arena, t, 1.0, eta, mode));
+                        let fresnel = FresnelDielectric::new(arena, 1.0, eta);
+                        bsdf.add(SpecularTransmission::new(arena, t, fresnel, 1.0, eta, mode));
                     }
                 } else {
-                    let distrib = Rc::new(TrowbridgeReitzDistribution::alloc(
-                        arena, urough, vrough, true,
-                    ));
-
                     if !r.is_black() {
-                        let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
-                        bsdf.add(MicrofacetReflection::alloc(
-                            arena,
-                            r,
-                            Rc::clone(&distrib),
-                            fresnel,
-                        ));
+                        let distrib = TrowbridgeReitzDistribution::new(arena, urough, vrough, true);
+                        let fresnel = FresnelDielectric::new(arena, 1.0, eta);
+                        bsdf.add(MicrofacetReflection::new(arena, r, distrib, fresnel));
                     }
 
                     if !t.is_black() {
-                        bsdf.add(MicrofacetTransmission::alloc(
-                            arena, t, distrib, 1.0, eta, mode,
+                        let distrib = TrowbridgeReitzDistribution::new(arena, urough, vrough, true);
+                        let fresnel = FresnelDielectric::new(arena, 1.0, eta);
+                        bsdf.add(MicrofacetTransmission::new(
+                            arena, t, distrib, fresnel, 1.0, eta, mode,
                         ));
                     }
                 };

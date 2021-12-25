@@ -4,39 +4,47 @@ use super::*;
 use bumpalo::Bump;
 
 /// BRDF for physically plausible specular reflection using Fresnel interface.
-#[derive(Clone)]
-pub struct SpecularReflection {
+pub struct SpecularReflection<'arena> {
     /// BxDF type.
     bxdf_type: BxDFType,
 
     /// Fresnel interface for dielectrics and conductors.
-    fresnel: Fresnel,
+    fresnel: &'arena mut Fresnel<'arena>,
 
     /// Spectrum used to scale the reflected colour.
     r: Spectrum,
 }
 
-impl SpecularReflection {
-    /// Create a new instance of `SpecularReflection`.
+impl<'arena> SpecularReflection<'arena> {
+    /// Allocate a new instance of `SpecularReflection`.
     ///
+    /// * `arena`   - The arena for memory allocations.
     /// * `fresnel` - Fresnel interface for dielectrics and conductors.
     /// * `r`       - Spectrum used to scale the reflected colour.
-    pub fn new(r: Spectrum, fresnel: Fresnel) -> Self {
-        Self {
+    pub fn new(
+        arena: &'arena Bump,
+        r: Spectrum,
+        fresnel: &'arena mut Fresnel<'arena>,
+    ) -> &'arena mut BxDF<'arena> {
+        let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_SPECULAR,
             fresnel,
             r,
-        }
+        });
+        arena.alloc(BxDF::SpecularReflection(model))
     }
 
-    /// Allocate a new instance of `SpecularReflection`.
+    /// Clone into a newly allocated a new instance of `SpecularReflection`.
     ///
-    /// * `allocator` - The allocator.
-    /// * `fresnel`   - Fresnel interface for dielectrics and conductors.
-    /// * `r`         - Spectrum used to scale the reflected colour.
-    pub fn alloc(allocator: &Bump, r: Spectrum, fresnel: Fresnel) -> BxDF {
-        let model = allocator.alloc(Self::new(r, fresnel)).to_owned();
-        allocator.alloc(BxDF::SpecularReflection(model)).to_owned()
+    /// * `arena` - The arena for memory allocations.
+    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let fresnel = self.fresnel.new_from(arena);
+        let model = arena.alloc(Self {
+            bxdf_type: self.bxdf_type,
+            fresnel,
+            r: self.r.clone(),
+        });
+        arena.alloc(BxDF::SpecularReflection(model))
     }
 
     /// Returns the BxDF type.

@@ -21,30 +21,37 @@ pub struct FourierBSDF {
 }
 
 impl FourierBSDF {
-    /// Create a new instance of `FourierBSDF`.
+    /// Allocate a new instance of `FourierBSDF`.
     ///
+    /// * `arena`      - The arena for memory allocations.
     /// * `bsdf_table` - The BSDF data.
     /// * `mode`       - Indicates whether incident ray started from a light source
     ///                  or from camera.
-    pub fn new(bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> Self {
-        Self {
+    pub fn new<'arena>(
+        arena: &'arena Bump,
+        bsdf_table: Arc<FourierBSDFTable>,
+        mode: TransportMode,
+    ) -> &'arena mut BxDF<'arena> {
+        let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_REFLECTION
                 | BxDFType::BSDF_TRANSMISSION
                 | BxDFType::BSDF_GLOSSY,
             bsdf_table: Arc::clone(&bsdf_table),
             mode,
-        }
+        });
+        arena.alloc(BxDF::FourierBSDF(model))
     }
 
-    /// Allocate a new instance of `FourierBSDF`.
+    /// Clone into a newly allocated a new instance of `FourierBSDF`.
     ///
-    /// * `allocator`  - The allocator.
-    /// * `bsdf_table` - The BSDF data.
-    /// * `mode`       - Indicates whether incident ray started from a light source
-    ///                  or from camera.
-    pub fn alloc(arena: &Bump, bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> BxDF {
-        let model = arena.alloc(Self::new(bsdf_table, mode)).to_owned();
-        arena.alloc(BxDF::FourierBSDF(model)).to_owned()
+    /// * `arena` - The memory arena.
+    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let model = arena.alloc(Self {
+            bxdf_type: self.bxdf_type,
+            bsdf_table: Arc::clone(&self.bsdf_table),
+            mode: self.mode,
+        });
+        arena.alloc(BxDF::FourierBSDF(model))
     }
 
     /// Returns the BxDF type.

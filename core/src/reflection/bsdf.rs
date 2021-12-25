@@ -68,8 +68,7 @@ impl fmt::Display for BxDFType {
 pub const MAX_BXDFS: usize = 8;
 
 /// BSDF interface represents a collection of BRDFs and BTDFs.
-#[derive(Clone)]
-pub struct BSDF {
+pub struct BSDF<'arena> {
     /// The shading normal given by per-vertex normals and/or bump mapping.
     /// It is the first axis in the orthonormal coordinate system and also
     /// used to define hemispheres for integrating incident illumincation for
@@ -86,48 +85,46 @@ pub struct BSDF {
     pub ts: Vector3f,
 
     /// The `BxDFs`.
-    pub bxdfs: Vec<BxDF>,
+    ///
+    /// NOTE: This is `&'arena mut BxDF` because it is allocated from a memory
+    /// arena (bumpalo::Bump).
+    pub bxdfs: Vec<&'arena mut BxDF<'arena>>,
 
     /// Relative index of refraction over the surfaceboundary.
     pub eta: Float,
 }
 
-impl BSDF {
-    /// Creates a new `BSDF`.
+impl<'arena> BSDF<'arena> {
+    /// Allocates a new `BSDF`.
     ///
-    /// * `si`  - The differential geometry at the point on a surface.
-    /// * `eta` - Optional relative index of refraction over the surface
-    ///           boundary. If not provided, defaults to 1.0; used for
-    ///           opaque surfaces.
-    pub fn new(si: &SurfaceInteraction, eta: Option<Float>) -> Self {
+    /// * `arena` - The arena for memory allocations.
+    /// * `si`    - The differential geometry at the point on a surface.
+    /// * `eta`   - Optional relative index of refraction over the surface
+    ///             boundary. If not provided, defaults to 1.0; used for
+    ///             opaque surfaces.
+    pub fn new(
+        arena: &'arena Bump,
+        si: &SurfaceInteraction,
+        eta: Option<Float>,
+    ) -> &'arena mut Self {
         let eta = eta.map_or_else(|| 1.0, |e| e);
         let ns = si.shading.n;
         let ss = si.shading.dpdu.normalize();
 
-        Self {
+        arena.alloc(Self {
             eta,
             ns,
             ng: si.hit.n,
             ss,
             ts: Vector3::from(ns).cross(&ss),
             bxdfs: Vec::with_capacity(MAX_BXDFS),
-        }
-    }
-
-    /// Allocates a new `BSDF`.
-    ///
-    /// * `si`  - The differential geometry at the point on a surface.
-    /// * `eta` - Optional relative index of refraction over the surface
-    ///           boundary. If not provided, defaults to 1.0; used for
-    ///           opaque surfaces.
-    pub fn alloc(allocator: &Bump, si: &SurfaceInteraction, eta: Option<Float>) -> Self {
-        allocator.alloc(Self::new(si, eta)).to_owned()
+        })
     }
 
     /// Add a `BxDF`.
     ///
     /// * `bxdf` - The `BxDF`.
-    pub fn add(&mut self, bxdf: BxDF) {
+    pub fn add(&mut self, bxdf: &'arena mut BxDF<'arena>) {
         assert!(
             self.bxdfs.len() < MAX_BXDFS,
             "Cannot add BxDFs. BSDF maximum limit {} reached.",

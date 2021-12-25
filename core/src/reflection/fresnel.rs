@@ -7,14 +7,24 @@ use bumpalo::Bump;
 use std::mem::swap;
 
 /// Interface for computing Fresnel reflection coefficients.
-#[derive(Clone)]
-pub enum Fresnel {
-    NoOp(FresnelNoOp),
-    Dielectric(FresnelDielectric),
-    Conductor(FresnelConductor),
+pub enum Fresnel<'arena> {
+    NoOp(&'arena mut FresnelNoOp),
+    Dielectric(&'arena mut FresnelDielectric),
+    Conductor(&'arena mut FresnelConductor),
 }
 
-impl Fresnel {
+impl<'arena> Fresnel<'arena> {
+    /// Clone into a newly allocated instance.
+    ///
+    /// * `arena` - The memory arena used for allocations.
+    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
+        match self {
+            Self::NoOp(f) => f.new_from(arena),
+            Self::Dielectric(f) => f.new_from(arena),
+            Self::Conductor(f) => f.new_from(arena),
+        }
+    }
+
     /// Returns the amount of light reflected by the surface.
     ///
     /// * `cos_thata_i` - Cosine of the angle made by incident direction and
@@ -29,7 +39,7 @@ impl Fresnel {
 }
 
 /// Implements `Fresnel` for dielectric materials.
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct FresnelDielectric {
     /// Index of refraction for exterior side of the surface.
     eta_i: Float,
@@ -39,22 +49,29 @@ pub struct FresnelDielectric {
 }
 
 impl FresnelDielectric {
-    /// Create a new `FresnelDielectric`.
-    ///
-    /// * `eta_i` - Index of refraction for exterior side of the surface.
-    /// * `eta_t` - Index of refraction for interior side of the surface.
-    pub fn new(eta_i: Float, eta_t: Float) -> Self {
-        Self { eta_i, eta_t }
-    }
-
     /// Allocate a new `FresnelDielectric`.
     ///
-    /// * `allocator` - The allocator.
-    /// * `eta_i`     - Index of refraction for exterior side of the surface.
-    /// * `eta_t`     - Index of refraction for interior side of the surface.
-    pub fn alloc(allocator: &Bump, eta_i: Float, eta_t: Float) -> Fresnel {
-        let f = allocator.alloc(Self::new(eta_i, eta_t)).to_owned();
-        allocator.alloc(Fresnel::Dielectric(f)).to_owned()
+    /// * `arena` - The arena for memory allocations.
+    /// * `eta_i` - Index of refraction for exterior side of the surface.
+    /// * `eta_t` - Index of refraction for interior side of the surface.
+    pub fn new<'arena>(
+        arena: &'arena Bump,
+        eta_i: Float,
+        eta_t: Float,
+    ) -> &'arena mut Fresnel<'arena> {
+        let f = arena.alloc(Self { eta_i, eta_t });
+        arena.alloc(Fresnel::Dielectric(f))
+    }
+
+    /// Clone into a newly allocated a new instance of `FresnelDielectric`.
+    ///
+    /// * `arena` - The arena for memory allocations.
+    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
+        let f = arena.alloc(Self {
+            eta_i: self.eta_i.clone(),
+            eta_t: self.eta_t.clone(),
+        });
+        arena.alloc(Fresnel::Dielectric(f))
     }
 
     /// Returns the amount of light reflected by the surface.
@@ -67,7 +84,7 @@ impl FresnelDielectric {
 }
 
 /// Implements `Fresnel` for conductors materials.
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct FresnelConductor {
     /// Index of refraction for exterior side of the surface.
     eta_i: Spectrum,
@@ -80,24 +97,32 @@ pub struct FresnelConductor {
 }
 
 impl FresnelConductor {
-    /// Create a new `FresnelDielectric`.
+    /// Allocate a new `FresnelConductor`.
     ///
+    /// * `arena` - The arena for memory allocations.
     /// * `eta_i` - Index of refraction for exterior side of the surface.
     /// * `eta_t` - Index of refraction for interior side of the surface.
     /// * `k`     - Absorption coefficient.
-    pub fn new(eta_i: Spectrum, eta_t: Spectrum, k: Spectrum) -> Self {
-        Self { eta_i, eta_t, k }
+    pub fn new<'arena>(
+        arena: &'arena Bump,
+        eta_i: Spectrum,
+        eta_t: Spectrum,
+        k: Spectrum,
+    ) -> &'arena mut Fresnel<'arena> {
+        let f = arena.alloc(Self { eta_i, eta_t, k });
+        arena.alloc(Fresnel::Conductor(f))
     }
 
-    /// Allocate a new `FresnelDielectric`.
+    /// Clone into a newly allocated a new instance of `FresnelConductor`.
     ///
-    /// * `allocator` - The allocator.
-    /// * `eta_i`     - Index of refraction for exterior side of the surface.
-    /// * `eta_t`     - Index of refraction for interior side of the surface.
-    /// * `k`         - Absorption coefficient.
-    pub fn alloc(allocator: &Bump, eta_i: Spectrum, eta_t: Spectrum, k: Spectrum) -> Fresnel {
-        let f = allocator.alloc(Self::new(eta_i, eta_t, k)).to_owned();
-        allocator.alloc(Fresnel::Conductor(f)).to_owned()
+    /// * `arena` - The arena for memory allocations.
+    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
+        let f = arena.alloc(Self {
+            eta_i: self.eta_i.clone(),
+            eta_t: self.eta_t.clone(),
+            k: self.k.clone(),
+        });
+        arena.alloc(Fresnel::Conductor(f))
     }
 
     /// Returns the amount of light reflected by the surface.
@@ -112,20 +137,23 @@ impl FresnelConductor {
 }
 
 /// Implements `Fresnel` for materials that reflect 100% of all incoming light.
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct FresnelNoOp {}
 impl FresnelNoOp {
-    /// Create a new `FresnelNoOp`.
-    pub fn new() -> Self {
-        Self {}
-    }
-
     /// Allocator a new `FresnelNoOp`.
     ///
     /// * `allocator` - The allocator.
-    pub fn alloc(allocator: &Bump) -> Fresnel {
-        let f = allocator.alloc(Self::new()).to_owned();
-        allocator.alloc(Fresnel::NoOp(f)).to_owned()
+    pub fn alloc<'arena>(arena: &'arena Bump) -> &'arena mut Fresnel {
+        let f = arena.alloc(Self {});
+        arena.alloc(Fresnel::NoOp(f))
+    }
+
+    /// Clone into a newly allocated a new instance of `FresnelNoOp`.
+    ///
+    /// * `arena` - The arena for memory allocations.
+    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
+        let f = arena.alloc(Self {});
+        arena.alloc(Fresnel::NoOp(f))
     }
 
     /// Returns the amount of light reflected by the surface.

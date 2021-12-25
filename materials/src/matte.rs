@@ -47,17 +47,17 @@ impl Material for MatteMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The memory arena for allocations.
+    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
-    fn compute_scattering_functions(
+    fn compute_scattering_functions<'primtive, 'arena>(
         &self,
-        arena: &Bump,
-        si: &mut SurfaceInteraction,
+        arena: &'arena Bump,
+        si: &mut SurfaceInteraction<'primtive, 'arena>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
     ) {
@@ -66,21 +66,21 @@ impl Material for MatteMaterial {
             Material::bump(self, Arc::clone(bump_map), si);
         }
 
-        let mut bsdf = BSDF::alloc(arena, &si, None);
-    
+        let bsdf = BSDF::new(arena, &si, None);
+
         // Evaluate textures for `MatteMaterial` material and allocate BRDF
         let r = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         let sig = clamp(self.sigma.evaluate(&si.hit, &si.uv, &si.der), 0.0, 90.0);
         if !r.is_black() {
             let bxdf = if sig == 0.0 {
-                LambertianReflection::alloc(arena, r)
+                LambertianReflection::new(arena, r)
             } else {
-                OrenNayar::alloc(arena, r, sig)
+                OrenNayar::new(arena, r, sig)
             };
             bsdf.add(bxdf);
         }
 
-        si.bsdf = Some(bsdf.to_owned());
+        si.bsdf = Some(bsdf);
     }
 }
 

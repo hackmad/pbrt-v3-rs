@@ -4,6 +4,7 @@
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::sampling::*;
+use bumpalo::Bump;
 use crate::spectrum::*;
 
 mod bsdf;
@@ -41,21 +42,38 @@ pub use specular_reflection::*;
 pub use specular_transmission::*;
 
 /// BxDF for BRDFs and BTDFs.
-#[derive(Clone)]
-pub enum BxDF {
-    FourierBSDF(FourierBSDF),
-    FresnelBlend(FresnelBlend),
-    FresnelSpecular(FresnelSpecular),
-    LambertianReflection(LambertianReflection),
-    MicrofacetReflection(MicrofacetReflection),
-    MicrofacetTransmission(MicrofacetTransmission),
-    OrenNayar(OrenNayar),
-    ScaledBxDF(ScaledBxDF),
-    SpecularReflection(SpecularReflection),
-    SpecularTransmission(SpecularTransmission),
+pub enum BxDF<'arena> {
+    FourierBSDF(&'arena mut FourierBSDF),
+    FresnelBlend(&'arena mut FresnelBlend<'arena>),
+    FresnelSpecular(&'arena mut FresnelSpecular),
+    LambertianReflection(&'arena mut LambertianReflection),
+    MicrofacetReflection(&'arena mut MicrofacetReflection<'arena>),
+    MicrofacetTransmission(&'arena mut MicrofacetTransmission<'arena>),
+    OrenNayar(&'arena mut OrenNayar),
+    ScaledBxDF(&'arena mut ScaledBxDF<'arena>),
+    SpecularReflection(&'arena mut SpecularReflection<'arena>),
+    SpecularTransmission(&'arena mut SpecularTransmission<'arena>),
 }
 
-impl BxDF {
+impl<'arena> BxDF<'arena> {
+    /// Clone into a newly allocated instance.
+    ///
+    /// * `arena` - The memory arena used for allocations.
+    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        match self {
+            BxDF::FourierBSDF(bxdf) => bxdf.new_from(arena),
+            BxDF::FresnelBlend(bxdf) => bxdf.new_from(arena),
+            BxDF::FresnelSpecular(bxdf) => bxdf.new_from(arena),
+            BxDF::LambertianReflection(bxdf) => bxdf.new_from(arena),
+            BxDF::MicrofacetReflection(bxdf) => bxdf.new_from(arena),
+            BxDF::MicrofacetTransmission(bxdf) => bxdf.new_from(arena),
+            BxDF::OrenNayar(bxdf) => bxdf.new_from(arena),
+            BxDF::ScaledBxDF(bxdf) => bxdf.new_from(arena),
+            BxDF::SpecularReflection(bxdf) => bxdf.new_from(arena),
+            BxDF::SpecularTransmission(bxdf) => bxdf.new_from(arena),
+        }
+    }
+
     /// Returns the BxDF type.
     pub fn get_type(&self) -> BxDFType {
         match self {
@@ -202,24 +220,3 @@ impl BxDF {
         }
     }
 }
-
-macro_rules! bxdf_from {
-    ($struct: ty, $enum: ident) => {
-        impl From<$struct> for BxDF {
-            /// Wraps $struct in BxDF::$enum.
-            fn from(bxdf: $struct) -> Self {
-                Self::$enum(bxdf)
-            }
-        }
-    };
-}
-bxdf_from!(FourierBSDF, FourierBSDF);
-bxdf_from!(FresnelBlend, FresnelBlend);
-bxdf_from!(FresnelSpecular, FresnelSpecular);
-bxdf_from!(LambertianReflection, LambertianReflection);
-bxdf_from!(MicrofacetReflection, MicrofacetReflection);
-bxdf_from!(MicrofacetTransmission, MicrofacetTransmission);
-bxdf_from!(OrenNayar, OrenNayar);
-bxdf_from!(ScaledBxDF, ScaledBxDF);
-bxdf_from!(SpecularReflection, SpecularReflection);
-bxdf_from!(SpecularTransmission, SpecularTransmission);

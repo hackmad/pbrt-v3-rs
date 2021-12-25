@@ -6,8 +6,7 @@ use crate::rng::*;
 use bumpalo::Bump;
 
 /// BRDF for modeling layered surfaces such as wood using Ashikhmin-Shirley model.
-#[derive(Clone)]
-pub struct FresnelBlend {
+pub struct FresnelBlend<'arena> {
     /// BxDF type.
     bxdf_type: BxDFType,
 
@@ -18,37 +17,43 @@ pub struct FresnelBlend {
     rs: Spectrum,
 
     /// The microfacet distribution model.
-    distribution: MicrofacetDistribution,
+    distribution: &'arena mut MicrofacetDistribution<'arena>,
 }
 
-impl FresnelBlend {
-    /// Create a new instance of `FresnelBlend`.
+impl<'arena> FresnelBlend<'arena> {
+    /// Allocate a new instance of `FresnelBlend`.
     ///
+    /// * `arena`        - The arena for memory allocations.
     /// * `rd`           - Reflectance spectrum for diffuse scattering.
     /// * `rs`           - Reflectance spectrum for specular scattering.
     /// * `distribution` - Microfacet distribution.
-    pub fn new(rd: Spectrum, rs: Spectrum, distribution: MicrofacetDistribution) -> Self {
-        Self {
+    pub fn new(
+        arena: &'arena Bump,
+        rd: Spectrum,
+        rs: Spectrum,
+        distribution: &'arena mut MicrofacetDistribution<'arena>,
+    ) -> &'arena mut BxDF<'arena> {
+        let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_GLOSSY,
             rd,
             rs,
             distribution,
-        }
+        });
+        arena.alloc(BxDF::FresnelBlend(model))
     }
 
-    /// Allocate a new instance of `FresnelBlend`.
+    /// Clone into a newly allocated a new instance of `FresnelBlend`.
     ///
-    /// * `allocator`    - The allocator.
-    /// * `rd`           - Reflectance spectrum for diffuse scattering.
-    /// * `rs`           - Reflectance spectrum for specular scattering.
-    /// * `distribution` - Microfacet distribution.
-    pub fn alloc(
-        allocator: &Bump,
-        rd: Spectrum,
-        rs: Spectrum,
-        distribution: MicrofacetDistribution,
-    ) -> Self {
-        allocator.alloc(Self::new(rd, rs, distribution)).to_owned()
+    /// * `arena` - The arena for memory allocations.
+    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let distribution = self.distribution.new_from(arena);
+        let model = arena.alloc(Self {
+            bxdf_type: self.bxdf_type,
+            rd: self.rd.clone(),
+            rs: self.rs.clone(),
+            distribution,
+        });
+        arena.alloc(BxDF::FresnelBlend(model))
     }
 
     /// Returns the Schlick approximation to the Fresnel reflection equations:

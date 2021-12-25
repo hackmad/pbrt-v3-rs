@@ -63,7 +63,7 @@ impl Integrator for WhittedIntegrator {
 
     /// Returns the incident radiance at the origin of a given ray.
     ///
-    /// * `arena`   - The memory arena for allocations.
+    /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.

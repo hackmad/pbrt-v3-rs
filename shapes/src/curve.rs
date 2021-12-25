@@ -325,7 +325,7 @@ impl Curve {
     /// * `u1`            - The ending u-parameter.
     /// * `depth`         - The recursion depth.
     /// * `is_shadow_ray` - Used to terminate recursion on first hit for shadow rays.
-    fn recursive_intersect<'a>(
+    fn recursive_intersect<'primitive, 'arena>(
         &self,
         ray: &Ray,
         cp: &[Point3f; 4],
@@ -334,7 +334,7 @@ impl Curve {
         u1: Float,
         depth: u32,
         is_shadow_ray: bool,
-    ) -> Option<Intersection<'a>> {
+    ) -> Option<Intersection<'primitive, 'arena>> {
         let ray_length = ray.d.length();
 
         if depth > 0 {
@@ -345,7 +345,7 @@ impl Curve {
             // overlaps the segment before recursively checking for
             // intersection with it.
             let u = [u0, (u0 + u1) / 2.0, u1];
-            let mut hit: Option<Intersection<'a>> = None;
+            let mut hit: Option<Intersection<'primitive, 'arena>> = None;
             let mut cps = 0;
             for seg in 0..2 {
                 // Splice containing the 4 control poitns for the current segment.
@@ -540,7 +540,11 @@ impl Curve {
     ///
     /// * `r`             - The ray.
     /// * `is_shadow_ray` - Used to terminate recursion on first hit for shadow rays.
-    fn intersect<'a>(&self, r: &Ray, is_shadow_ray: bool) -> Option<Intersection<'a>> {
+    fn intersect<'primitive, 'arena>(
+        &self,
+        r: &Ray,
+        is_shadow_ray: bool,
+    ) -> Option<Intersection<'primitive, 'arena>> {
         // Transform ray to object space.
         //
         // We could just use transform_ray() but there is minor adjustment in
@@ -680,7 +684,11 @@ impl Shape for Curve {
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect<'a>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'a>> {
+    fn intersect<'primitive, 'arena>(
+        &self,
+        r: &Ray,
+        _test_alpha_texture: bool,
+    ) -> Option<Intersection<'primitive, 'arena>> {
         Self::intersect(self, r, false)
     }
 

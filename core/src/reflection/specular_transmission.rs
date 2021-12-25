@@ -5,13 +5,12 @@ use crate::material::*;
 use bumpalo::Bump;
 
 /// BTDF for physically plausible specular transmission using Fresnel interface.
-#[derive(Clone)]
-pub struct SpecularTransmission {
+pub struct SpecularTransmission<'arena> {
     /// BxDF type.
     bxdf_type: BxDFType,
 
     /// Fresnel interface for dielectrics and conductors.
-    fresnel: FresnelDielectric,
+    fresnel: &'arena mut Fresnel<'arena>,
 
     /// Spectrum used to scale the transmitted colour.
     t: Spectrum,
@@ -26,62 +25,52 @@ pub struct SpecularTransmission {
     mode: TransportMode,
 }
 
-impl SpecularTransmission {
-    /// Create a new instance of `SpecularTransmission`.
+impl<'arena> SpecularTransmission<'arena> {
+    /// Allocate a new instance of `SpecularTransmission`.
     ///
-    /// * `t`     - Spectrum used to scale the transmitted colour.
-    /// * `eta_a` - Index of refraction above the surface (same side as surface
-    ///             normal).
-    /// * `eta_b` - Index of refraction below the surface (opposite side as surface
-    ///             normal).
-    /// * `mode`  - Indicates whether incident ray started from a light source
-    ///             or from camera.
-    pub fn new(t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> Self {
-        Self {
+    /// * `arena`  - The arena for memory allocations.
+    /// * `t`      - Spectrum used to scale the transmitted colour.
+    /// * `fresnel - Fresnel interface for dielectrics and conductors.
+    /// * `eta_a`  - Index of refraction above the surface (same side as
+    ///              surface normal).
+    /// * `eta_b`  - Index of refraction below the surface (opposite side as
+    ///              surface normal).
+    /// * `mode`   - Indicates whether incident ray started from a light
+    ///              source or from camera.
+    pub fn new(
+        arena: &'arena Bump,
+        t: Spectrum,
+        fresnel: &'arena mut Fresnel<'arena>,
+        eta_a: Float,
+        eta_b: Float,
+        mode: TransportMode,
+    ) -> &'arena mut BxDF<'arena> {
+        let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_SPECULAR,
-            fresnel: FresnelDielectric::new(eta_a, eta_b),
+            fresnel,
             t,
             eta_a,
             eta_b,
             mode,
-        }
+        });
+        arena.alloc(BxDF::SpecularTransmission(model))
     }
 
-    /// Allocate a new instance of `SpecularTransmission`.
+    /// Clone into a newly allocated a new instance of `SpecularTransmission`.
     ///
-    /// * `allocator` - The allocator.
-    /// * `t`         - Spectrum used to scale the transmitted colour.
-    /// * `eta_a`     - Index of refraction above the surface (same side as
-    ///                 surface normal).
-    /// * `eta_b`     - Index of refraction below the surface (opposite side as
-    ///                 surface normal).
-    /// * `mode`      - Indicates whether incident ray started from a light
-    ///                 source or from camera.
-    pub fn alloc(
-        allocator: &Bump,
-        t: Spectrum,
-        eta_a: Float,
-        eta_b: Float,
-        mode: TransportMode,
-    ) -> BxDF {
-        let fresnel = allocator
-            .alloc(FresnelDielectric::new(eta_a, eta_b))
-            .to_owned();
+    /// * `arena` - The arena for memory allocations.
 
-        let model = allocator
-            .alloc(Self {
-                bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_SPECULAR,
-                fresnel,
-                t,
-                eta_a,
-                eta_b,
-                mode,
-            })
-            .to_owned();
-
-        allocator
-            .alloc(BxDF::SpecularTransmission(model))
-            .to_owned()
+    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let fresnel = self.fresnel.new_from(arena);
+        let model = arena.alloc(Self {
+            bxdf_type: self.bxdf_type,
+            fresnel,
+            t: self.t.clone(),
+            eta_a: self.eta_a.clone(),
+            eta_b: self.eta_b.clone(),
+            mode: self.mode,
+        });
+        arena.alloc(BxDF::SpecularTransmission(model))
     }
 
     /// Returns the BxDF type.

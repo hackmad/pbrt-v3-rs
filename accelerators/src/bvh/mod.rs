@@ -322,7 +322,7 @@ impl Primitive for BVHAccel {
     /// compute_scattering_functions() on the primitive from the ray-primitive
     /// intersection.
     ///
-    /// * `_arena`                - The memory arena for allocations.
+    /// * `_arena`                - The arena for memory allocations.
     /// * `_si`                   - The surface interaction at the intersection.
     /// * `_mode`                 - Transport mode.
     /// * `_allow_multiple_lobes` - Allow multiple lobes.

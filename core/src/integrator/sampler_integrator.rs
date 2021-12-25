@@ -68,7 +68,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
     /// Trace rays for specular reflection.
     ///
-    /// * `arena`   - The memory arena for allocations.
+    /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `isect`   - The surface interaction.
     /// * `scene`   - The scene.
@@ -136,7 +136,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
     /// Trace rays for specular refraction.
     ///
-    /// * `arena`   - The memory arena for allocations.
+    /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `isect`   - The surface interaction.
     /// * `scene`   - The scene.
