@@ -3,6 +3,7 @@
 use super::*;
 use crate::app::OPTIONS;
 use crate::camera::*;
+use crate::film::FilmTile;
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::pbrt::*;
@@ -12,7 +13,7 @@ use crate::scene::*;
 use crate::spectrum::*;
 use bumpalo::Bump;
 use rayon::prelude::*;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// Common data for sampler integrators.
 pub struct SamplerIntegratorData {
@@ -263,146 +264,168 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// * `scene` - The scene.
     fn render(&self, scene: &Scene) {
         let data = self.get_data();
-        let cam = data.camera.get_data();
+        let camera = Arc::clone(&data.camera);
+        let camera_data = camera.get_data();
 
         let mut sampler = Arc::clone(&data.sampler);
         self.preprocess(scene, &mut sampler);
 
         // Compute number of tiles, `n_tiles`, to use for parallel rendering.
-        let sample_bounds = cam.film.get_sample_bounds();
+        let sample_bounds = camera_data.film.get_sample_bounds();
         let sample_extent = sample_bounds.diagonal();
-        let tile_size: i32 = OPTIONS.tile_size as i32;
+        let tile_size = OPTIONS.tile_size as i32;
         let n_tiles = Point2::new(
             ((sample_extent.x + tile_size - 1) / tile_size) as usize,
             ((sample_extent.y + tile_size - 1) / tile_size) as usize,
         );
-
-        info!("Rendering {}x{} tiles", n_tiles.x, n_tiles.y);
+        let tile_count = n_tiles.x * n_tiles.y;
 
         // Parallelize.
-        let tiles = Bounds2i::new(
-            Point2i::new(0, 0),
-            Point2i::new(n_tiles.x as Int, n_tiles.y as Int),
-        );
-        let tile_iter = Arc::new(Mutex::new(tiles.into_iter()));
-        (0..n_tiles.x * n_tiles.y).into_par_iter().for_each(|_| {
+        info!("Rendering {}x{} tiles", n_tiles.x, n_tiles.y);
+        (0..tile_count).into_par_iter().for_each(|tile_idx| {
+            let tile_x = tile_idx % n_tiles.x as usize;
+            let tile_y = tile_idx / n_tiles.x as usize;
+
             // Render section of image corresponding to `tile`.
-            let mut tile_iter = tile_iter.lock().unwrap();
-            let tile = tile_iter.next().unwrap();
-
-            let mut arena = Bump::with_capacity(262144); // 256 KiB
-
-            // Get sampler instance for tile.
-            let seed = tile.y as usize * n_tiles.x + tile.x as usize;
-            let mut tile_sampler = Sampler::clone(&*data.sampler, seed as u64);
-
-            let samples_per_pixel = {
-                let tile_sampler_data = Arc::get_mut(&mut tile_sampler).unwrap().get_data();
-                tile_sampler_data.samples_per_pixel
-            };
-
-            // Compute sample bounds for tile.
-            let x0 = sample_bounds.p_min.x + tile.x as i32 * tile_size;
-            let x1 = min(x0 + tile_size, sample_bounds.p_max.x);
-            let y0 = sample_bounds.p_min.y + tile.y as i32 * tile_size;
-            let y1 = min(y0 + tile_size, sample_bounds.p_max.y);
-            let tile_bounds = Bounds2i::new(Point2i::new(x0, y0), Point2i::new(x1, y1));
-
-            info!(
-                "Starting image tile ({}, {}) -> {:}",
-                tile.x, tile.y, tile_bounds
-            );
-
-            // Get `FilmTile` for tile.
-            let mut film_tile = cam.film.get_film_tile(tile_bounds);
-
-            // Loop over pixels in tile to render them.
-            for pixel in tile_bounds {
-                Arc::get_mut(&mut tile_sampler).unwrap().start_pixel(&pixel);
-
-                // Do this check after the StartPixel() call; this keeps the
-                // usage of RNG values from (most) Samplers that use RNGs
-                // consistent, which improves reproducability / debugging.
-                if !data.pixel_bounds.contains_exclusive(&pixel) {
-                    continue;
-                }
-
-                loop {
-                    // Initialize `CameraSample` for current sample.
-                    let camera_sample = Arc::get_mut(&mut tile_sampler)
-                        .unwrap()
-                        .get_camera_sample(&pixel);
-
-                    // Generate camera ray for current sample.
-                    let (mut ray, ray_weight) =
-                        { data.camera.generate_ray_differential(&camera_sample) };
-                    ray.scale_differentials(1.0 / (samples_per_pixel as Float).sqrt());
-
-                    // Evaluate radiance along camera ray.
-                    let mut l = Spectrum::new(0.0);
-                    if ray_weight > 0.0 {
-                        l = self.li(&arena, &mut ray, scene, &mut tile_sampler, 0);
-                    }
-
-                    // Issue warning if unexpected radiance value returned.
-                    let tile_sampler_data = Arc::get_mut(&mut tile_sampler).unwrap().get_data();
-                    let current_sample_number = tile_sampler_data.current_sample_number();
-                    if l.has_nans() {
-                        error!(
-                            "Not-a-number radiance value returned for pixel
-                                ({}, {}), sample {}. Setting to black.",
-                            pixel.x, pixel.y, current_sample_number
-                        );
-                        l = Spectrum::new(0.0);
-                    } else if l.y() < -1e-5 {
-                        error!(
-                            "Negative luminance value, {}, returned for pixel
-                                ({}, {}), sample {}. Setting to black.",
-                            l.y(),
-                            pixel.x,
-                            pixel.y,
-                            current_sample_number
-                        );
-                        l = Spectrum::new(0.0);
-                    } else if l.y().is_infinite() {
-                        error!(
-                            "Infinite luminance value returned for pixel
-                                ({}, {}), sample {}. Setting to black.",
-                            pixel.x, pixel.y, current_sample_number
-                        );
-                        l = Spectrum::new(0.0);
-                    }
-
-                    debug!(
-                        "Pixel: {:}, Camera sample: {:} -> ray: {:}, ray weight {} -> L = {:}",
-                        pixel, camera_sample, ray, ray_weight, l
-                    );
-
-                    // Add camera ray's contribution to image.
-                    film_tile.add_sample(camera_sample.p_film, l, ray_weight);
-
-                    if !Arc::get_mut(&mut tile_sampler).unwrap().start_next_sample() {
-                        break;
-                    }
-                }
-            }
-
-            info!(
-                "Finished image tile ({}, {}) -> {:}",
-                tile.x, tile.y, tile_bounds
-            );
+            let film_tile = self.render_tile(tile_idx, n_tiles, scene, sample_bounds);
 
             // Merge image tile into `Film`.
-            cam.film.merge_film_tile(&film_tile);
-
-            // Free memory arena.
-            arena.reset();
+            info!("Merging image tile ({}, {})", tile_x, tile_y);
+            camera_data.film.merge_film_tile(&film_tile);
         });
 
         info!("Rendering finished.");
 
         // Save final image after rendering.
-        cam.film.write_image(1.0);
+        camera_data.film.write_image(1.0);
         info!("Output image written.");
+    }
+
+    /// Render an image tile.
+    ///
+    /// * `tile_idx`      - Unique tile index.
+    /// * `n_tiles`       - Number of tiles in (x, y) direction.
+    /// * `scene`         - Scene.
+    /// * `sample_bounds` - Sample bounds.
+    fn render_tile(
+        &self,
+        tile_idx: usize,
+        n_tiles: Point2<usize>,
+        scene: &Scene,
+        sample_bounds: Bounds2i,
+    ) -> FilmTile {
+        // Get the x and y tile indices.
+        let tile_x = tile_idx % n_tiles.x;
+        let tile_y = tile_idx / n_tiles.x;
+
+        // Get camera data.
+        let data = self.get_data();
+        let camera = Arc::clone(&data.camera);
+        let camera_data = camera.get_data();
+
+        // Get sampler instance for tile.
+        let mut tile_sampler = Sampler::clone(&*data.sampler, tile_idx as u64);
+
+        let samples_per_pixel = {
+            let tile_sampler_data = Arc::get_mut(&mut tile_sampler).unwrap().get_data();
+            tile_sampler_data.samples_per_pixel
+        };
+
+        // Compute sample bounds for tile.
+        let tile_size = OPTIONS.tile_size as i32;
+        let x0 = sample_bounds.p_min.x + tile_x as i32 * tile_size;
+        let x1 = min(x0 + tile_size, sample_bounds.p_max.x);
+        let y0 = sample_bounds.p_min.y + tile_y as i32 * tile_size;
+        let y1 = min(y0 + tile_size, sample_bounds.p_max.y);
+        let tile_bounds = Bounds2i::new(Point2i::new(x0, y0), Point2i::new(x1, y1));
+
+        info!(
+            "Starting image tile ({}, {}) -> {:}",
+            tile_x, tile_y, tile_bounds
+        );
+
+        let mut arena = Bump::with_capacity(262144); // 256 KiB
+
+        let mut film_tile = camera_data.film.get_film_tile(tile_bounds);
+
+        // Loop over pixels in tile to render them.
+        for pixel in tile_bounds {
+            Arc::get_mut(&mut tile_sampler).unwrap().start_pixel(&pixel);
+
+            // Do this check after the StartPixel() call; this keeps the
+            // usage of RNG values from (most) Samplers that use RNGs
+            // consistent, which improves reproducability / debugging.
+            if !data.pixel_bounds.contains_exclusive(&pixel) {
+                continue;
+            }
+
+            loop {
+                // Initialize `CameraSample` for current sample.
+                let camera_sample = Arc::get_mut(&mut tile_sampler)
+                    .unwrap()
+                    .get_camera_sample(&pixel);
+
+                // Generate camera ray for current sample.
+                let (mut ray, ray_weight) = { camera.generate_ray_differential(&camera_sample) };
+                ray.scale_differentials(1.0 / (samples_per_pixel as Float).sqrt());
+
+                // Evaluate radiance along camera ray.
+                let mut l = Spectrum::new(0.0);
+                if ray_weight > 0.0 {
+                    l = self.li(&arena, &mut ray, scene, &mut tile_sampler, 0);
+                }
+
+                // Issue warning if unexpected radiance value returned.
+                let tile_sampler_data = Arc::get_mut(&mut tile_sampler).unwrap().get_data();
+                let current_sample_number = tile_sampler_data.current_sample_number();
+                if l.has_nans() {
+                    error!(
+                        "Not-a-number radiance value returned for pixel
+                                ({}, {}), sample {}. Setting to black.",
+                        pixel.x, pixel.y, current_sample_number
+                    );
+                    l = Spectrum::new(0.0);
+                } else if l.y() < -1e-5 {
+                    error!(
+                        "Negative luminance value, {}, returned for pixel
+                                ({}, {}), sample {}. Setting to black.",
+                        l.y(),
+                        pixel.x,
+                        pixel.y,
+                        current_sample_number
+                    );
+                    l = Spectrum::new(0.0);
+                } else if l.y().is_infinite() {
+                    error!(
+                        "Infinite luminance value returned for pixel
+                                ({}, {}), sample {}. Setting to black.",
+                        pixel.x, pixel.y, current_sample_number
+                    );
+                    l = Spectrum::new(0.0);
+                }
+
+                debug!(
+                    "Pixel: {:}, Camera sample: {:} -> ray: {:}, ray weight {} -> L = {:}",
+                    pixel, camera_sample, ray, ray_weight, l
+                );
+
+                // Add camera ray's contribution to image.
+                film_tile.add_sample(camera_sample.p_film, l, ray_weight);
+
+                if !Arc::get_mut(&mut tile_sampler).unwrap().start_next_sample() {
+                    break;
+                }
+            }
+        }
+
+        info!(
+            "Finished image tile ({}, {}) -> {:}",
+            tile_x, tile_y, tile_bounds
+        );
+
+        // Free memory arena.
+        arena.reset();
+
+        film_tile
     }
 }
