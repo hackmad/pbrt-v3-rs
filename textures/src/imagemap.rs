@@ -64,6 +64,13 @@ macro_rules! new_image_texture {
                     Ok(mipmap) => mipmap,
                     Err(err) => panic!("Unable to load MIPMap: {}", err),
                 };
+
+                // For debugging purposes write out mipmap levels to disk.
+                // NOTE: MIPMap images will be flipped upside down; texture
+                // coordinate space has (0,0) at the lower left corner.
+                // See crate::core::mipmap::cache:generate_mipmap().
+                //mipmap.write_images("mipmap");
+
                 Self { mapping, mipmap }
             }
         }

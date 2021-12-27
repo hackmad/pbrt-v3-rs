@@ -3,8 +3,12 @@
 use std::ops::{Index, IndexMut};
 
 /// Stores 2D arrays in a blocked memory layout.
+///
+/// * `T`              - Type of value to store.
+/// * `LOG_BLOCK_SIZE` - Use log base to ensure blocks are powers of this base.
+///                      Typically powers of 2 are used.
 #[derive(Clone)]
-pub struct BlockedArray<T> {
+pub struct BlockedArray<T, const LOG_BLOCK_SIZE: usize> {
     /// Array data.
     data: Vec<T>,
 
@@ -16,27 +20,33 @@ pub struct BlockedArray<T> {
 
     /// Size in v-dimension.
     v_res: usize,
+
+    /// Block size.
+    block_size: usize,
 }
 
-impl<T> BlockedArray<T>
+impl<T, const LOG_BLOCK_SIZE: usize> BlockedArray<T, LOG_BLOCK_SIZE>
 where
     T: Copy + Default,
 {
     /// Create a new `BlockedArray<T>` with default values.
     ///
-    /// * `u_res`          - Size in u-dimension.
-    /// * `v_res`          - Size in v-dimension.
-    /// * `log_block_size` - Logarithm base 2 value used to ensure block sizes
-    ///                      will be powers of 2.
+    /// * `u_res` - Size in u-dimension.
+    /// * `v_res` - Size in v-dimension.
     pub fn new(u_res: usize, v_res: usize) -> Self {
-        let u_res_rounded = round_up(u_res);
-        let v_res_rounded = round_up(v_res);
+        let block_size = 1 << LOG_BLOCK_SIZE;
+
+        let u_res_rounded = round_up(u_res, block_size);
+        let v_res_rounded = round_up(v_res, block_size);
 
         let u_blocks = u_res_rounded >> LOG_BLOCK_SIZE;
         let n_alloc = u_res_rounded * v_res_rounded;
 
+        let data: Vec<T> = vec![T::default(); n_alloc];
+
         Self {
-            data: vec![T::default(); n_alloc],
+            data,
+            block_size,
             u_blocks,
             u_res,
             v_res,
@@ -45,10 +55,9 @@ where
 
     /// Create a new `BlockedArray<T>` from slice.
     ///
-    /// * `u_res`          - Size in u-dimension.
-    /// * `v_res`          - Size in v-dimension.
-    /// * `log_block_size` - Logarithm base 2 value used to ensure block sizes
-    ///                      will be powers of 2.
+    /// * `u_res` - Size in u-dimension.
+    /// * `v_res` - Size in v-dimension.
+    /// * `data`  - Slice containing the items.
     pub fn from_slice(u_res: usize, v_res: usize, data: &[T]) -> Self {
         let mut ret = Self::new(u_res, v_res);
         for v in 0..v_res {
@@ -60,11 +69,13 @@ where
     }
 
     /// Returns the size in u-dimension.
+    #[inline(always)]
     pub fn u_size(&self) -> usize {
         self.u_res
     }
 
     /// Returns the size in v-dimension.
+    #[inline(always)]
     pub fn v_size(&self) -> usize {
         self.v_res
     }
@@ -72,30 +83,45 @@ where
     /// Returns a linear `Vec<T>`.
     pub fn linear_vec(&self) -> Vec<T> {
         let mut a = Vec::with_capacity(self.u_res * self.v_res);
-        let mut i = 0;
         for v in 0..self.v_res {
             for u in 0..self.u_res {
-                a[i] = self[(u, v)];
-                i += 1;
+                a.push(self[(u, v)]);
             }
         }
         a
     }
 
-    /// Returns the offset into `data` for a given (x, y) index.
+    /// Returns the offset into `data` for a given (x, y) coordinate.
     ///
     /// * `index` -  A tuple containing (x, y).
-    fn offset(&self, index: (usize, usize)) -> usize {
-        let (u, v) = index;
-        let bu = block(u);
-        let bv = block(v);
-        let ou = offset(u);
-        let ov = offset(v);
-        BLOCK_SIZE * BLOCK_SIZE * (self.u_blocks * bv + bu) + BLOCK_SIZE * ov + ou
+    #[inline(always)]
+    fn coord_offset(&self, coord: (usize, usize)) -> usize {
+        let (u, v) = coord;
+        let bu = self.block(u);
+        let bv = self.block(v);
+        let ou = self.offset(u);
+        let ov = self.offset(v);
+        self.block_size * self.block_size * (self.u_blocks * bv + bu) + self.block_size * ov + ou
+    }
+
+    /// Return the block for an index.
+    ///
+    /// * `a` - The index.
+    #[inline(always)]
+    fn block(&self, a: usize) -> usize {
+        a >> LOG_BLOCK_SIZE
+    }
+
+    /// Return the offset for an index.
+    ///
+    /// * `a` - The index.
+    #[inline(always)]
+    fn offset(&self, a: usize) -> usize {
+        a & (self.block_size - 1)
     }
 }
 
-impl<T> Index<(usize, usize)> for BlockedArray<T>
+impl<T, const LOG_BLOCK_SIZE: usize> Index<(usize, usize)> for BlockedArray<T, LOG_BLOCK_SIZE>
 where
     T: Copy + Default,
 {
@@ -103,50 +129,31 @@ where
 
     /// Index the `BlockedArray<T>` by a tuple of (x, y) indexes.
     ///
-    /// * `index` -  A tuple containing (x, y).
-    fn index(&self, index: (usize, usize)) -> &Self::Output {
-        let offset = self.offset(index);
+    /// * `coord` -  A tuple containing (x, y).
+    fn index(&self, coord: (usize, usize)) -> &Self::Output {
+        let offset = self.coord_offset(coord);
         &self.data[offset]
     }
 }
 
-impl<T> IndexMut<(usize, usize)> for BlockedArray<T>
+impl<T, const LOG_BLOCK_SIZE: usize> IndexMut<(usize, usize)> for BlockedArray<T, LOG_BLOCK_SIZE>
 where
     T: Copy + Default,
 {
     /// Index the `BlockedArray<T>` by a tuple of (x, y) indexes.
     ///
-    /// * `index` -  A tuple containing (x, y).
-    fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
-        let offset = self.offset(index);
+    /// * `coord` -  A tuple containing (x, y).
+    fn index_mut(&mut self, coord: (usize, usize)) -> &mut Self::Output {
+        let offset = self.coord_offset(coord);
         &mut self.data[offset]
     }
 }
 
-/// Use log base 2 to ensure blocks are powers of 2.
-const LOG_BLOCK_SIZE: usize = 2;
-
-/// Block size.
-const BLOCK_SIZE: usize = 1 << LOG_BLOCK_SIZE;
-
-/// Rounds up to power of 2.
-#[inline]
-fn round_up(x: usize) -> usize {
-    (x + BLOCK_SIZE - 1) & !(BLOCK_SIZE - 1)
-}
-
-/// Return the block for an index.
+/// Rounds up to next power.
 ///
-/// * `a` - The index.
-#[inline]
-pub fn block(a: usize) -> usize {
-    a >> LOG_BLOCK_SIZE
-}
-
-/// Return the offset for an index.
-///
-/// * `a` - The index.
-#[inline]
-pub fn offset(a: usize) -> usize {
-    a & (BLOCK_SIZE - 1)
+/// * `x`          - Value to round up.
+/// * `block_size` - Block size based on LOG_BLOCK_SIZE.
+#[inline(always)]
+fn round_up(x: usize, block_size: usize) -> usize {
+    (x + block_size - 1) & !(block_size - 1)
 }

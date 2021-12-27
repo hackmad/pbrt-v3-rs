@@ -89,9 +89,7 @@ where
         for x in 0..resolution.x {
             let o1 = y * resolution.x + x;
             let o2 = (resolution.y - 1 - y) * resolution.x + x;
-            let tmp = texels[o1];
-            texels[o2] = texels[o1];
-            texels[o1] = tmp;
+            texels.swap(o1, o2);
         }
     }
 

@@ -3,8 +3,10 @@
 #![allow(dead_code)]
 
 use crate::geometry::*;
+use crate::image_io::write_image;
 use crate::memory::*;
 use crate::pbrt::*;
+use crate::spectrum::RGBSpectrum;
 use crate::texture::*;
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
@@ -68,7 +70,7 @@ pub struct MIPMap<T> {
 
     /// Stores the image pyramid of increasingly lower resolution prefiltered
     /// versions of the original image.
-    pyramid: Vec<BlockedArray<T>>,
+    pyramid: Vec<BlockedArray<T, 2>>,
 
     /// Precomputed lookup table of Gaussian filter function values.
     weight_lut: [Float; WEIGHT_LUT_SIZE],
@@ -179,10 +181,10 @@ where
 
         // Initialize levels of MIPMap from image.
         let n_levels = 1 + Log2::log2(max(resolution[0], resolution[1])) as usize;
-        let mut pyramid: Vec<BlockedArray<T>> = Vec::with_capacity(n_levels);
+        let mut pyramid: Vec<BlockedArray<T, 2>> = Vec::with_capacity(n_levels);
 
         // Initialize most detailed level of MIPMap
-        pyramid.push(BlockedArray::from_slice(
+        pyramid.push(BlockedArray::<T, 2>::from_slice(
             resolution[0],
             resolution[1],
             if resampled_image.len() > 0 {
@@ -196,7 +198,7 @@ where
             // Initialize i^th MIPMap level from `i-1` level.
             let s_res = max(1, pyramid[i - 1].u_size() / 2);
             let t_res = max(1, pyramid[i - 1].v_size() / 2);
-            pyramid.push(BlockedArray::new(s_res, t_res));
+            pyramid.push(BlockedArray::<T, 2>::new(s_res, t_res));
 
             // Filter four texels from finer level of pyramid.
             for t in 0..t_res {
@@ -458,7 +460,7 @@ fn resample_weights(old_res: usize, new_res: usize) -> Vec<ResampleWeight> {
 /// * `s`         - s-index.
 /// * `t`         - t-index.
 fn texel<T>(
-    pyramid: &[BlockedArray<T>],
+    pyramid: &[BlockedArray<T, 2>],
     wrap_mode: ImageWrap,
     level: usize,
     s: usize,
@@ -483,6 +485,69 @@ where
             } else {
                 l[(s, t)]
             }
+        }
+    }
+}
+
+/// Image writer interface for MIPMap levels.
+pub trait MIPMapImageWriter {
+    /// Write mipmap levels to images in the given base path.
+    ///
+    /// * `pyramids`  - The MIPMap pyramids.
+    /// * `base_path` - Base path.
+    fn write_images(&self, base_path: &str);
+}
+
+impl MIPMapImageWriter for MIPMap<RGBSpectrum> {
+    /// Write mipmap levels to images in the given base path.
+    ///
+    /// * `pyramids`  - The MIPMap pyramids.
+    /// * `base_path` - Base path.
+    fn write_images(&self, base_path: &str) {
+        for (i, level) in self.pyramid.iter().enumerate() {
+            let nx = level.u_size();
+            let ny = level.v_size();
+            let n = 3 * nx * ny;
+
+            let mut rgb = vec![0.0; n];
+            let mut j = 0;
+            for pixel in level.linear_vec() {
+                rgb[j] = pixel[0];
+                rgb[j + 1] = pixel[1];
+                rgb[j + 2] = pixel[2];
+                j += 3;
+            }
+
+            let path = format!("{}-{}.png", base_path, i);
+            let bounds = Bounds2i::new(Point2i::new(0, 0), Point2i::new(nx as Int, ny as Int));
+            write_image(&path, &rgb, &bounds).unwrap();
+        }
+    }
+}
+
+impl MIPMapImageWriter for MIPMap<Float> {
+    /// Write mipmap levels to images in the given base path.
+    ///
+    /// * `pyramids`  - The MIPMap pyramids.
+    /// * `base_path` - Base path.
+    fn write_images(&self, base_path: &str) {
+        for (i, level) in self.pyramid.iter().enumerate() {
+            let nx = level.u_size();
+            let ny = level.v_size();
+            let n = 3 * nx * ny;
+
+            let mut rgb = vec![0.0; n];
+            let mut j = 0;
+            for pixel in level.linear_vec() {
+                rgb[j] = pixel;
+                rgb[j + 1] = pixel;
+                rgb[j + 2] = pixel;
+                j += 3;
+            }
+
+            let path = format!("{}-{}.png", base_path, i);
+            let bounds = Bounds2i::new(Point2i::new(0, 0), Point2i::new(nx as Int, ny as Int));
+            write_image(&path, &rgb, &bounds).unwrap();
         }
     }
 }

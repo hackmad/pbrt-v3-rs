@@ -54,14 +54,12 @@ impl Sphere {
         z_max: Float,
         phi_max: Float,
     ) -> Self {
-        let zmin = clamp(min(z_min, z_max), -radius, radius);
-        let zmax = clamp(max(z_min, z_max), -radius, radius);
         Self {
             radius,
-            z_min: zmin,
-            z_max: zmax,
-            theta_min: clamp(zmin / radius, -1.0, 1.0).acos(),
-            theta_max: clamp(zmax / radius, -1.0, 1.0).acos(),
+            z_min: clamp(min(z_min, z_max), -radius, radius),
+            z_max: clamp(max(z_min, z_max), -radius, radius),
+            theta_min: acos(clamp(min(z_min, z_max) / radius, -1.0, 1.0)),
+            theta_max: acos(clamp(max(z_min, z_max) / radius, -1.0, 1.0)),
             phi_max: clamp(phi_max, 0.0, 360.0).to_radians(),
             data: Arc::new(ShapeData::new(
                 Arc::clone(&object_to_world),
@@ -151,7 +149,7 @@ impl Shape for Sphere {
             p_hit.x = 1e-5 * self.radius;
         }
 
-        let mut phi = p_hit.y.atan2(p_hit.x);
+        let mut phi = atan2(p_hit.y, p_hit.x);
         if phi < 0.0 {
             phi += TWO_PI;
         }
@@ -179,7 +177,7 @@ impl Shape for Sphere {
                 p_hit.x = 1e-5 * self.radius;
             }
 
-            phi = p_hit.y.atan2(p_hit.x);
+            phi = atan2(p_hit.y, p_hit.x);
             if phi < 0.0 {
                 phi += TWO_PI;
             }
@@ -194,7 +192,7 @@ impl Shape for Sphere {
 
         // Find parametric representation of sphere hit.
         let u = phi / self.phi_max;
-        let theta = clamp(p_hit.z / self.radius, -1.0, 1.0).acos();
+        let theta = acos(clamp(p_hit.z / self.radius, -1.0, 1.0));
         let v = (theta - self.theta_min) / (self.theta_max - self.theta_min);
 
         // Compute sphere dpdu and dpdv.
