@@ -68,7 +68,7 @@ impl Material for MatteMaterial {
 
         let bsdf = BSDF::new(arena, &si, None);
 
-        // Evaluate textures for `MatteMaterial` material and allocate BRDF
+        // Evaluate textures for `MatteMaterial` material and allocate BRDF.
         let r = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         let sig = clamp(self.sigma.evaluate(&si.hit, &si.uv, &si.der), 0.0, 90.0);
         if !r.is_black() {

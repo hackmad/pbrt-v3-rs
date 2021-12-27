@@ -101,8 +101,6 @@ impl TextureParams {
                     return constant_tex_fn(s[0]);
                 }
             }
-
-            return constant_tex_fn(default);
         }
 
         // We have a texture name from either shape or material parameters.
@@ -161,8 +159,6 @@ impl TextureParams {
                     return constant_tex_fn(s[0]);
                 }
             }
-
-            return constant_tex_fn(default);
         }
 
         // We have a texture name from either shape or material parameters.
