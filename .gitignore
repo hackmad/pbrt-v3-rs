@@ -14,8 +14,6 @@ proptest-regressions/
 
 #Added by cargo
 
-/renders/
-
 .DS_Store
 
 dhat-heap.json

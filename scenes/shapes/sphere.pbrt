@@ -1,0 +1,49 @@
+LookAt 0 5 1.5  # eye
+       0 0 0    # look at point
+       0 0 1    # up vector
+
+Camera "perspective" "float fov" 45
+
+Film "image" "string filename" "renders/shapes/sphere.png"
+     "integer xresolution" [800] "integer yresolution" [400]
+
+Sampler "halton" "integer pixelsamples" 128
+Integrator "whitted"
+
+WorldBegin
+
+  LightSource "infinite" "rgb L" [.6 .6 .55]
+
+  Texture "uv-grid" "color" "imagemap" "string filename" "../textures/uv-grid.png"
+
+  AttributeBegin
+    Translate -1.75 0 0
+    Scale 1.5 1.5 1.5
+    Rotate 135 1 0 0
+    Rotate -15 0 0 1
+    Rotate 15 0 1 0
+    Material "matte" "texture Kd" "uv-grid"
+    Shape "sphere" "float radius" 1
+  AttributeEnd
+
+  AttributeBegin
+    Translate 1.75 0 0 
+    Scale 1.5 1.5 1.5
+    Rotate -100 1 0 0
+    Rotate -90 0 1 0
+    Rotate -30 0 0 1
+    Rotate -20 1 0 0
+    Material "matte" "texture Kd" "uv-grid"
+    Shape "sphere" "float radius" 1 "float zmin" -1 "float zmax" 0 "float phimax" 210
+  AttributeEnd
+
+  AttributeBegin
+    Material "matte"
+    Translate 0 0 -1.5
+    Shape "trianglemesh"
+        "integer indices" [ 0 1 2   0 2 3 ]
+        "point P" [ -20 -20 0   20 -20 0   20 20 0   -20 20 0 ]
+        "float st" [ 0 0   1 0   1 1   0 1 ]
+  AttributeEnd
+
+WorldEnd
