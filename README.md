@@ -17,9 +17,12 @@ algorithms.
 
 ### Shapes
 
-| Title | Image |
-| ----- | ----- |
-| [<img src="renders/shapes/sphere.png" width="200px"/>](renders/shapes/sphere.png) | [<img src="renders/shapes/all-shapes.png" width="200px"/>](renders/shapes/sphere.png) |
+<table>
+  <tr>
+    <td><a href="renders/shapes/sphere.png"><img src="renders/shapes/sphere.png" width="300px"/></a></td>
+    <td><a href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" width="300px"/></a></td>
+  </tr>
+</table>
 
 
 ## Building
