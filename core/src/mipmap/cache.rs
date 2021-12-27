@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
 use std::result::Result;
 use std::sync::{Arc, Mutex};
+use std::marker::{Send, Sync};
 
 /// Interface for caching and retrieving `MIPMap`s.
 pub trait MIPMapCacheProvider<Tmemory> {
@@ -71,7 +72,7 @@ where
         + DivAssign<Float>
         + Add<Tmemory, Output = Tmemory>
         + AddAssign
-        + Clamp<Float>,
+        + Clamp<Float> + Send + Sync,
     Spectrum: ConvertIn<Tmemory>,
 {
     // Create `MipMap` for `filename`.

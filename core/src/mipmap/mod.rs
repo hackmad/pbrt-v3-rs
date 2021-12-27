@@ -2,15 +2,18 @@
 
 #![allow(dead_code)]
 
+use crate::app::OPTIONS;
 use crate::geometry::*;
 use crate::image_io::write_image;
 use crate::memory::*;
 use crate::pbrt::*;
 use crate::spectrum::RGBSpectrum;
 use crate::texture::*;
+use rayon::prelude::*;
 use std::hash::Hash;
+use std::marker::{Send, Sync};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 mod cache;
 mod convert_in;
@@ -94,7 +97,9 @@ where
         + DivAssign<Float>
         + Add<T, Output = T>
         + AddAssign
-        + Clamp<Float>,
+        + Clamp<Float>
+        + Send
+        + Sync,
 {
     /// * `resolution`       - Image resolution.
     /// * `img`              - Image data.
@@ -109,7 +114,7 @@ where
         wrap_mode: ImageWrap,
         max_anisotropy: Float,
     ) -> Self {
-        let mut resampled_image: Vec<T> = vec![];
+        let resampled_image: Arc<RwLock<Vec<T>>> = Arc::new(RwLock::new(vec![]));
 
         let resolution = if !resolution[0].is_power_of_two() || !resolution[1].is_power_of_two() {
             // Resample image to power-of-two resolution.
@@ -124,55 +129,90 @@ where
 
             // Resample image in `s` direction.
             let s_weights = resample_weights(resolution[0], res_pow2[0]);
-            resampled_image.resize(res_pow2[0] * res_pow2[1], T::default());
+            {
+                let mut r_img = resampled_image.write().unwrap();
+                (*r_img).resize(res_pow2[0] * res_pow2[1], T::default());
+            }
 
             // Apply `s_weights` in the `s` direction.
-            for t in 0..resolution[1] {
-                for s in 0..res_pow2[0] {
-                    // Compute texel `(s, t)` in `s`-zoomed image.
-                    resampled_image[t * res_pow2[0] + s] = T::default(); // Should be zero.
-                    for j in 0..4 {
-                        let orig_s = s_weights[s].first_texel + j;
-                        let orig_s = match wrap_mode {
-                            ImageWrap::Repeat => rem(orig_s, resolution[0]),
-                            ImageWrap::Clamp => clamp(orig_s, 0, resolution[0] - 1),
-                            _ => orig_s,
-                        };
+            (0..resolution[1])
+                .into_par_iter()
+                .chunks(16)
+                .for_each(|vt| {
+                    for t in vt {
+                        for s in 0..res_pow2[0] {
+                            // Compute texel `(s, t)` in `s`-zoomed image.
+                            {
+                                let mut r_img = resampled_image.write().unwrap();
+                                (*r_img)[t * res_pow2[0] + s] = T::default(); // Initialize to zero.
+                            }
 
-                        if orig_s < resolution[0] {
-                            resampled_image[t * res_pow2[0] + s] +=
-                                img[t * resolution[0] + orig_s] * s_weights[s].weight[j];
+                            for j in 0..4 {
+                                let orig_s = s_weights[s].first_texel + j;
+                                let orig_s = match wrap_mode {
+                                    ImageWrap::Repeat => rem(orig_s, resolution[0]),
+                                    ImageWrap::Clamp => clamp(orig_s, 0, resolution[0] - 1),
+                                    _ => orig_s,
+                                };
+
+                                if orig_s < resolution[0] {
+                                    let mut r_img = resampled_image.write().unwrap();
+                                    (*r_img)[t * res_pow2[0] + s] +=
+                                        img[t * resolution[0] + orig_s] * s_weights[s].weight[j];
+                                }
+                            }
                         }
                     }
-                }
-            }
+                });
 
             // Resample image in `t` direction.
             let t_weights = resample_weights(resolution[1], res_pow2[1]);
 
             // Apply `t_weights` in the `t` direction.
-            let mut work_data = vec![T::default(); res_pow2[1]];
-            for s in 0..res_pow2[0] {
-                for t in 0..res_pow2[1] {
-                    work_data[t] = T::default(); // Should be zero.
-                    for j in 0..4 {
-                        let offset = t_weights[t].first_texel + j;
-                        let offset = match wrap_mode {
-                            ImageWrap::Repeat => rem(offset, resolution[1]),
-                            ImageWrap::Clamp => clamp(offset, 0, resolution[1] - 1),
-                            _ => offset,
-                        };
+            let work_data: Vec<Arc<RwLock<Vec<T>>>> =
+                vec![Arc::new(RwLock::new(vec![])); OPTIONS.n_threads];
 
-                        if offset < resolution[1] {
-                            work_data[t] +=
-                                resampled_image[offset * res_pow2[0] + s] * t_weights[t].weight[j];
+            (0..res_pow2[0])
+                .into_par_iter()
+                .chunks(32)
+                .enumerate()
+                .for_each(|(vi, vs)| {
+                    // Lock for duration of thread run. Otherwise work_data will
+                    // get muddled up between threads.
+                    let mut work_data = work_data[vi % OPTIONS.n_threads].write().unwrap();
+                    if work_data.len() == 0 {
+                        // Allocate with default.
+                        *work_data = vec![T::default(); res_pow2[1]];
+                    }
+
+                    for s in vs {
+                        for t in 0..res_pow2[1] {
+                            // Initialize to zero since work_data is shared and we
+                            // don't want old values from previous iteration or thread.
+                            (*work_data)[t] = T::default();
+                            for j in 0..4 {
+                                let offset = t_weights[t].first_texel + j;
+                                let offset = match wrap_mode {
+                                    ImageWrap::Repeat => rem(offset, resolution[1]),
+                                    ImageWrap::Clamp => clamp(offset, 0, resolution[1] - 1),
+                                    _ => offset,
+                                };
+
+                                if offset < resolution[1] {
+                                    let r_img = resampled_image.read().unwrap();
+                                    work_data[t] +=
+                                        (*r_img)[offset * res_pow2[0] + s] * t_weights[t].weight[j];
+                                }
+                            }
+                        }
+                        for t in 0..res_pow2[1] {
+                            {
+                                let mut r_img = resampled_image.write().unwrap();
+                                (*r_img)[t * res_pow2[0] + s] = work_data[t].clamp_default();
+                            }
                         }
                     }
-                }
-                for t in 0..res_pow2[1] {
-                    resampled_image[t * res_pow2[0] + s] = work_data[t].clamp_default();
-                }
-            }
+                });
 
             res_pow2
         } else {
@@ -184,14 +224,11 @@ where
         let mut pyramid: Vec<BlockedArray<T, 2>> = Vec::with_capacity(n_levels);
 
         // Initialize most detailed level of MIPMap
+        let r_img = resampled_image.read().unwrap();
         pyramid.push(BlockedArray::<T, 2>::from_slice(
             resolution[0],
             resolution[1],
-            if resampled_image.len() > 0 {
-                &resampled_image
-            } else {
-                img
-            },
+            if r_img.len() > 0 { &(*r_img) } else { img },
         ));
 
         for i in 1..n_levels {
