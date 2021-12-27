@@ -9,9 +9,18 @@ like Rust.
 Completed work from the book will be tagged as a release which can be found
 [here](https://github.com/hackmad/pbr_rust/releases).
 
+## Renders
+
 The images shown below are based on those versions. Not all scenes are
 available in each release and may look different due to changes in the
 algorithms.
+
+### Shapes
+
+| Title | Image |
+| ----- | ----- |
+| [<img src="renders/shapes/sphere.png" height="200px"/>](renders/shapes/sphere.png) | [<img src="renders/shapes/all-shapes.png" height="200px"/>](renders/shapes/sphere.png) |
+
 
 ## Building
 
@@ -126,7 +135,3 @@ Ignore this error if you see `cargo-flamegraph.stacks`.
 ```
 
 The result should be in `flamegraph.svg`.
-
-## Renders
-
-Coming soon...
