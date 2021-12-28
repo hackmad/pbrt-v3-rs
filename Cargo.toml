@@ -1,5 +1,4 @@
 [workspace]
-
 members = [
     "accelerators",
     "api",
@@ -22,3 +21,6 @@ debug = true
 [profile.release]
 opt-level = 3
 debug = false
+lto = true
+#codegen-units = 1
+#panic = "abort"
