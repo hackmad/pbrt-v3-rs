@@ -245,6 +245,19 @@ impl Mul for RGBSpectrum {
     }
 }
 
+impl Mul<&RGBSpectrum> for RGBSpectrum {
+    type Output = Self;
+
+    /// Multiplies the corresponding sample values from another `RGBSpectrum`.
+    ///
+    /// * `other` - The other `RGBSpectrum`.
+    fn mul(self, other: &RGBSpectrum) -> Self::Output {
+        let mut ret = self;
+        CoefficientSpectrum::mul(&mut ret, other);
+        ret
+    }
+}
+
 impl Mul<Float> for RGBSpectrum {
     type Output = Self;
 

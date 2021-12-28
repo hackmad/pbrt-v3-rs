@@ -1404,7 +1404,7 @@ fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut M
     *r_quat = Quaternion::from(Transform::from(r));
 
     // Compute scale S using rotation and original matrix
-    *s = r.inverse() * *m;
+    *s = r.inverse() * m;
 }
 
 /// DerivativeTerm encapsulates the coefficients `ki` to bound the motion of a

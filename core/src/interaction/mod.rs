@@ -141,7 +141,7 @@ impl Hit {
     ///
     /// * `p` - The target point.
     pub fn spawn_ray_to_point(&self, p: &Point3f) -> Ray {
-        let d = *p - self.p;
+        let d = p - &self.p;
         let origin = Ray::offset_origin(&self.p, &self.p_error, &self.n, &d);
         Ray::new(
             origin,

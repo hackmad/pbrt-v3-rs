@@ -228,6 +228,28 @@ impl<T: Num + Copy> Sub<&Point2<T>> for Point2<T> {
     }
 }
 
+impl<T: Num + Copy> Sub for &Point2<T> {
+    type Output = Vector2<T>;
+
+    /// Subtracts the given point and returns the vector towards that point.
+    ///
+    /// * `other` - The point to subtract.
+    fn sub(self, other: Self) -> Self::Output {
+        Vector2::new(self.x - other.x, self.y - other.y)
+    }
+}
+
+impl<T: Num + Copy> Sub<Point2<T>> for &Point2<T> {
+    type Output = Vector2<T>;
+
+    /// Subtracts the given point and returns the vector towards that point.
+    ///
+    /// * `other` - The point to subtract.
+    fn sub(self, other: Point2<T>) -> Self::Output {
+        Vector2::new(self.x - other.x, self.y - other.y)
+    }
+}
+
 impl<T: Num + Copy> SubAssign<Point2<T>> for Point2<T> {
     /// Performs the `-=` operation.
     ///
@@ -358,6 +380,15 @@ impl<T: Num + Copy> DivAssign<T> for Point2<T> {
 
 impl<T: Num + Neg<Output = T>> Neg for Point2<T> {
     type Output = Self;
+
+    /// Flip the point's direction (scale by -1).
+    fn neg(self) -> Self::Output {
+        Self::Output::new(-self.x, -self.y)
+    }
+}
+
+impl<T: Num + Neg<Output = T> + Copy> Neg for &Point2<T> {
+    type Output = Point2<T>;
 
     /// Flip the point's direction (scale by -1).
     fn neg(self) -> Self::Output {

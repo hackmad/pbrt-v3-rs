@@ -108,7 +108,7 @@ impl<'arena> MicrofacetTransmission<'arena> {
                 } else {
                     self.eta_a / self.eta_b
                 };
-                let mut wh = (*wo + *wi * eta).normalize();
+                let mut wh = (wo + wi * eta).normalize();
                 if wh.z < 0.0 {
                     wh = -wh;
                 }
@@ -183,7 +183,7 @@ impl<'arena> MicrofacetTransmission<'arena> {
             } else {
                 self.eta_a / self.eta_b
             };
-            let wh = (*wo + *wi * eta).normalize();
+            let wh = (wo + wi * eta).normalize();
 
             if wo.dot(&wh) * wi.dot(&wh) > 0.0 {
                 0.0

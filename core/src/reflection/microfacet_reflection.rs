@@ -72,7 +72,7 @@ impl<'arena> MicrofacetReflection<'arena> {
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let cos_theta_o = abs_cos_theta(wo);
         let cos_theta_i = abs_cos_theta(wi);
-        let wh = *wi + *wo;
+        let wh = wi + wo;
 
         // Handle degenerate cases for microfacet reflection.
         if cos_theta_i == 0.0 || cos_theta_o == 0.0 {
@@ -124,7 +124,7 @@ impl<'arena> MicrofacetReflection<'arena> {
     /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if same_hemisphere(wo, wi) {
-            let wh = (*wo + *wi).normalize();
+            let wh = (wo + wi).normalize();
             self.distribution.pdf(wo, &wh) / (4.0 * wo.dot(&wh))
         } else {
             0.0

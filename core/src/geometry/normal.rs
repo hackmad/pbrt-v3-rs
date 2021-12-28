@@ -308,7 +308,16 @@ impl<T: Num + Neg<Output = T>> Neg for Normal3<T> {
 
     /// Flip the vector's direction (scale by -1).
     fn neg(self) -> Self::Output {
-        Self::new(-self.x, -self.y, -self.z)
+        Self::Output::new(-self.x, -self.y, -self.z)
+    }
+}
+
+impl<T: Num + Neg<Output = T> + Copy> Neg for &Normal3<T> {
+    type Output = Normal3<T>;
+
+    /// Flip the vector's direction (scale by -1).
+    fn neg(self) -> Self::Output {
+        Self::Output::new(-self.x, -self.y, -self.z)
     }
 }
 

@@ -261,6 +261,28 @@ impl<T: Num + Copy> Add<&Vector3<T>> for Vector3<T> {
     }
 }
 
+impl<T: Num + Copy> Add for &Vector3<T> {
+    type Output = Vector3<T>;
+
+    /// Adds the given vector and returns the result.
+    ///
+    /// * `other` -  The vector to add.
+    fn add(self, other: Self) -> Self::Output {
+        Self::Output::new(self.x + other.x, self.y + other.y, self.z + other.z)
+    }
+}
+
+impl<T: Num + Copy> Add<Vector3<T>> for &Vector3<T> {
+    type Output = Vector3<T>;
+
+    /// Adds the given vector and returns the result.
+    ///
+    /// * `other` -  The vector to add.
+    fn add(self, other: Vector3<T>) -> Self::Output {
+        Self::Output::new(self.x + other.x, self.y + other.y, self.z + other.z)
+    }
+}
+
 impl<T: Num + Copy> AddAssign for Vector3<T> {
     /// Performs the `+=` operation.
     ///
@@ -320,6 +342,17 @@ impl<T: Num + Copy> SubAssign<&Vector3<T>> for Vector3<T> {
 }
 
 impl<T: Num + Copy> Mul<T> for Vector3<T> {
+    type Output = Vector3<T>;
+
+    /// Scale the vector.
+    ///
+    /// * `f` -  The scaling factor.
+    fn mul(self, f: T) -> Self::Output {
+        Self::Output::new(f * self.x, f * self.y, f * self.z)
+    }
+}
+
+impl<T: Num + Copy> Mul<T> for &Vector3<T> {
     type Output = Vector3<T>;
 
     /// Scale the vector.
@@ -401,6 +434,15 @@ impl<T: Num + Copy> DivAssign<T> for Vector3<T> {
 }
 
 impl<T: Num + Neg<Output = T>> Neg for Vector3<T> {
+    type Output = Self;
+
+    /// Flip the vector's direction (scale by -1).
+    fn neg(self) -> Self::Output {
+        Self::Output::new(-self.x, -self.y, -self.z)
+    }
+}
+
+impl<T: Num + Neg<Output = T> + Copy> Neg for &Vector3<T> {
     type Output = Vector3<T>;
 
     /// Flip the vector's direction (scale by -1).
@@ -475,6 +517,32 @@ impl<T> From<Normal3<T>> for Vector3<T> {
     ///
     /// * `n` -  3-D normal.
     fn from(n: Normal3<T>) -> Self {
+        Self {
+            x: n.x,
+            y: n.y,
+            z: n.z,
+        }
+    }
+}
+
+impl<T: Copy> From<&Point3<T>> for Vector3<T> {
+    /// Convert a 3-D point to a 3-D vector.
+    ///
+    /// * `p` -  3-D point.
+    fn from(p: &Point3<T>) -> Self {
+        Self {
+            x: p.x,
+            y: p.y,
+            z: p.z,
+        }
+    }
+}
+
+impl<T: Copy> From<&Normal3<T>> for Vector3<T> {
+    /// Convert a 3-D normal to a 3-D vector.
+    ///
+    /// * `n` -  3-D normal.
+    fn from(n: &Normal3<T>) -> Self {
         Self {
             x: n.x,
             y: n.y,

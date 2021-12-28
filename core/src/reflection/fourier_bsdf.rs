@@ -66,9 +66,9 @@ impl FourierBSDF {
     /// * `wi` - Incident direction.
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         // Find the zenith angle cosines and azimuth difference angle.
-        let mu_i = cos_theta(&(-*wi));
+        let mu_i = cos_theta(&(-wi));
         let mu_o = cos_theta(wo);
-        let cos_phi = cos_d_phi(&(-*wi), wo) as f64;
+        let cos_phi = cos_d_phi(&(-wi), wo) as f64;
 
         // Compute Fourier coefficients `ak` for `(μi, μo)`.
 
@@ -250,9 +250,9 @@ impl FourierBSDF {
     /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         // Find the zenith angle cosines and azimuth difference angle.
-        let mu_i = cos_theta(&(-(*wi)));
+        let mu_i = cos_theta(&(-(wi)));
         let mu_o = cos_theta(wo);
-        let cos_phi = cos_d_phi(&(-(*wi)), wo);
+        let cos_phi = cos_d_phi(&(-(wi)), wo);
 
         // Compute luminance Fourier coefficients `a_k` for `(μi, μo)`.
         let (weights_i, offset_i) = match self.bsdf_table.get_weights_and_offset(mu_i) {

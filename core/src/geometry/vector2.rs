@@ -332,6 +332,15 @@ impl<T: Num + Neg<Output = T>> Neg for Vector2<T> {
     }
 }
 
+impl<T: Num + Neg<Output = T> + Copy> Neg for &Vector2<T> {
+    type Output = Vector2<T>;
+
+    /// Flip the vector's direction (scale by -1).
+    fn neg(self) -> Self::Output {
+        Self::Output::new(-self.x, -self.y)
+    }
+}
+
 impl<T> Index<Axis> for Vector2<T> {
     type Output = T;
 

@@ -187,6 +187,17 @@ impl Mul<Matrix4x4> for Matrix4x4 {
     ///
     /// * `other` - The other matrix
     fn mul(self, other: Matrix4x4) -> Self::Output {
+        self * &other
+    }
+}
+
+impl Mul<&Matrix4x4> for Matrix4x4 {
+    type Output = Self;
+
+    /// Post-multiply the given matrix.
+    ///
+    /// * `other` - The other matrix
+    fn mul(self, other: &Matrix4x4) -> Self::Output {
         let mut m = Self::default();
 
         for i in 0..4 {

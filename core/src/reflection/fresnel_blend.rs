@@ -81,7 +81,7 @@ impl<'arena> FresnelBlend<'arena> {
             * (Spectrum::new(1.0) - self.rs)
             * (1.0 - pow5(1.0 - 0.5 * abs_cos_theta(wi)))
             * (1.0 - pow5(1.0 - 0.5 * abs_cos_theta(wo)));
-        let wh = *wi + *wo;
+        let wh = wi + wo;
         if wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0 {
             Spectrum::new(0.0)
         } else {
@@ -132,7 +132,7 @@ impl<'arena> FresnelBlend<'arena> {
         if !same_hemisphere(wo, wi) {
             0.0
         } else {
-            let wh = (*wo + *wi).normalize();
+            let wh = (wo + wi).normalize();
             let pdf_wh = self.distribution.pdf(wo, &wh);
             0.5 * (abs_cos_theta(wi) * INV_PI + pdf_wh / (4.0 * wo.dot(&wh)))
         }

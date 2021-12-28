@@ -159,7 +159,7 @@ pub fn refract(wi: &Vector3f, n: &Normal3f, eta: Float) -> Option<Vector3f> {
         None
     } else {
         let cos_theta_t = (1.0 - sin_2_theta_t).sqrt();
-        Some(eta * -(*wi) + (eta * cos_theta_i - cos_theta_t) * Vector3f::from(*n))
+        Some(eta * -wi + (eta * cos_theta_i - cos_theta_t) * Vector3f::from(n))
     }
 }
 
@@ -169,5 +169,5 @@ pub fn refract(wi: &Vector3f, n: &Normal3f, eta: Float) -> Option<Vector3f> {
 /// * `n`  - Normal.
 #[inline]
 pub fn reflect(wo: &Vector3f, n: &Vector3f) -> Vector3f {
-    -(*wo) + 2.0 * wo.dot(n) * n
+    -wo + 2.0 * wo.dot(n) * n
 }

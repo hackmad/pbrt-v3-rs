@@ -153,7 +153,7 @@ impl<T: Num + Copy> Bounds2<T> {
     where
         T: num_traits::Float + DivAssign<T> + PartialOrd + Copy,
     {
-        let mut o = *p - self.p_min;
+        let mut o = p - self.p_min;
         if self.p_max.x > self.p_min.x {
             o.x /= self.p_max.x - self.p_min.x;
         }
