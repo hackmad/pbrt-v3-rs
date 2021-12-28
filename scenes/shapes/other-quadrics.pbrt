@@ -1,0 +1,56 @@
+LookAt 0 5 1.5  # eye
+       0 0 0    # look at point
+       0 0 1    # up vector
+
+Camera "perspective" "float fov" 45
+
+Film "image" "string filename" "renders/shapes/other-quadrics.png"
+     "integer xresolution" [800] "integer yresolution" [400]
+
+Sampler "halton" "integer pixelsamples" 128
+Integrator "whitted"
+
+WorldBegin
+
+  LightSource "infinite" "rgb L" [.6 .6 .55]
+
+
+  AttributeBegin
+    Translate -2.25 0 -1.25
+    Scale 1.5 1.5 1.5
+    Rotate -75 0 0 1
+    Texture "uv-grid" "color" "imagemap" "string filename" "../textures/uv-grid.png"
+            "float uscale" -1 "float vscale" -1
+    Material "matte" "texture Kd" "uv-grid"
+    Shape "paraboloid" "float radius" 0.5 "float zmax" 1.5
+  AttributeEnd
+
+  AttributeBegin
+    Scale 0.7 0.7 1.1
+    Rotate 45 0 0 1
+    Texture "uv-grid" "color" "imagemap" "string filename" "../textures/uv-grid.png"
+            "float uscale" 1 "float vscale" -1
+    Material "matte" "texture Kd" "uv-grid"
+    Shape "hyperboloid" "point p1" [ -3.2 0.8 0.4 ] "point p2" [ -1.0 -0.5 -1.25 ] 
+  AttributeEnd
+
+
+  AttributeBegin
+    Translate 2.25 0 -1.25
+    Texture "uv-grid" "color" "imagemap" "string filename" "../textures/uv-grid.png"
+            "float uscale" -1 "float vscale" -1
+    Rotate -45 0 0 1
+    Material "matte" "texture Kd" "uv-grid"
+    Shape "cone" "float radius" 0.75 "float height" 2.35
+  AttributeEnd
+
+  AttributeBegin
+    Material "matte"
+    Translate 0 0 -1.25
+    Shape "trianglemesh"
+        "integer indices" [ 0 1 2   0 2 3 ]
+        "point P" [ -20 -20 0   20 -20 0   20 20 0   -20 20 0 ]
+        "float st" [ 0 0   1 0   1 1   0 1 ]
+  AttributeEnd
+
+WorldEnd
