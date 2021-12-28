@@ -590,7 +590,7 @@ impl Transform {
         si.shading.dndu = self.transform_normal(&si.shading.dndu);
         si.shading.dndv = self.transform_normal(&si.shading.dndv);
         si.shading.n = self.transform_normal(&si.shading.n).normalize();
-        si.shading.n = si.shading.n.face_forward(&Vector3::from(si.hit.n));
+        si.shading.n = si.shading.n.face_forward(&si.hit.n);
     }
 
     /// Returns `true` if the transformation changes the handedness of the

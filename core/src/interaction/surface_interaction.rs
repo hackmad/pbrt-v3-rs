@@ -126,9 +126,9 @@ impl<'primitive, 'arena> SurfaceInteraction<'primitive, 'arena> {
         // Compute normal.
         self.shading.n = Normal3::from(dpdu.cross(&dpdv)).normalize();
         if orientation_is_authoritative {
-            self.hit.n = self.hit.n.face_forward(&self.shading.n.into());
+            self.hit.n = self.hit.n.face_forward(&self.shading.n);
         } else {
-            self.shading.n = self.shading.n.face_forward(&self.hit.n.into());
+            self.shading.n = self.shading.n.face_forward(&self.hit.n);
         }
 
         // Initialize shading partial derivative values.
