@@ -1,27 +1,25 @@
 //! MIPMap
 
-#![allow(dead_code)]
-
 use crate::app::OPTIONS;
 use crate::geometry::*;
-use crate::image_io::write_image;
 use crate::memory::*;
 use crate::pbrt::*;
-use crate::spectrum::RGBSpectrum;
 use crate::texture::*;
 use rayon::prelude::*;
 use std::hash::Hash;
 use std::marker::{Send, Sync};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex};
 
 mod cache;
 mod convert_in;
+mod image_writer;
 mod tex_info;
 
 // Re-export
 pub use cache::*;
 pub use convert_in::*;
+pub use image_writer::*;
 pub use tex_info::*;
 
 /// Size of the weights lookup table.
@@ -101,6 +99,8 @@ where
         + Send
         + Sync,
 {
+    /// Create a new `MIPMap<T>`.
+    ///
     /// * `resolution`       - Image resolution.
     /// * `img`              - Image data.
     /// * `filtering_method` - MIPMap filtering method to use.
@@ -114,121 +114,26 @@ where
         wrap_mode: ImageWrap,
         max_anisotropy: Float,
     ) -> Self {
-        let resampled_image: Arc<RwLock<Vec<T>>> = Arc::new(RwLock::new(vec![]));
-
-        let resolution = if !resolution[0].is_power_of_two() || !resolution[1].is_power_of_two() {
-            // Resample image to power-of-two resolution.
-            let res_pow2 = Point2::new(
-                resolution[0].next_power_of_two(),
-                resolution[1].next_power_of_two(),
-            );
-            info!(
-                "Resampling MIPMap from {}x{} to {}x{}",
-                resolution[0], resolution[1], res_pow2[0], res_pow2[1],
-            );
-
-            // Resample image in `s` direction.
-            let s_weights = resample_weights(resolution[0], res_pow2[0]);
-            {
-                let mut r_img = resampled_image.write().unwrap();
-                (*r_img).resize(res_pow2[0] * res_pow2[1], T::default());
-            }
-
-            // Apply `s_weights` in the `s` direction.
-            (0..resolution[1])
-                .into_par_iter()
-                .chunks(16)
-                .for_each(|vt| {
-                    for t in vt {
-                        for s in 0..res_pow2[0] {
-                            // Compute texel `(s, t)` in `s`-zoomed image.
-                            {
-                                let mut r_img = resampled_image.write().unwrap();
-                                (*r_img)[t * res_pow2[0] + s] = T::default(); // Initialize to zero.
-                            }
-
-                            for j in 0..4 {
-                                let orig_s = s_weights[s].first_texel + j;
-                                let orig_s = match wrap_mode {
-                                    ImageWrap::Repeat => rem(orig_s, resolution[0]),
-                                    ImageWrap::Clamp => clamp(orig_s, 0, resolution[0] - 1),
-                                    _ => orig_s,
-                                };
-
-                                if orig_s < resolution[0] {
-                                    let mut r_img = resampled_image.write().unwrap();
-                                    (*r_img)[t * res_pow2[0] + s] +=
-                                        img[t * resolution[0] + orig_s] * s_weights[s].weight[j];
-                                }
-                            }
-                        }
-                    }
-                });
-
-            // Resample image in `t` direction.
-            let t_weights = resample_weights(resolution[1], res_pow2[1]);
-
-            // Apply `t_weights` in the `t` direction.
-            let work_data: Vec<Arc<RwLock<Vec<T>>>> =
-                vec![Arc::new(RwLock::new(vec![])); OPTIONS.n_threads];
-
-            (0..res_pow2[0])
-                .into_par_iter()
-                .chunks(32)
-                .enumerate()
-                .for_each(|(vi, vs)| {
-                    // Lock for duration of thread run. Otherwise work_data will
-                    // get muddled up between threads.
-                    let mut work_data = work_data[vi % OPTIONS.n_threads].write().unwrap();
-                    if work_data.len() == 0 {
-                        // Allocate with default.
-                        *work_data = vec![T::default(); res_pow2[1]];
-                    }
-
-                    for s in vs {
-                        for t in 0..res_pow2[1] {
-                            // Initialize to zero since work_data is shared and we
-                            // don't want old values from previous iteration or thread.
-                            (*work_data)[t] = T::default();
-                            for j in 0..4 {
-                                let offset = t_weights[t].first_texel + j;
-                                let offset = match wrap_mode {
-                                    ImageWrap::Repeat => rem(offset, resolution[1]),
-                                    ImageWrap::Clamp => clamp(offset, 0, resolution[1] - 1),
-                                    _ => offset,
-                                };
-
-                                if offset < resolution[1] {
-                                    let r_img = resampled_image.read().unwrap();
-                                    work_data[t] +=
-                                        (*r_img)[offset * res_pow2[0] + s] * t_weights[t].weight[j];
-                                }
-                            }
-                        }
-                        for t in 0..res_pow2[1] {
-                            {
-                                let mut r_img = resampled_image.write().unwrap();
-                                (*r_img)[t * res_pow2[0] + s] = work_data[t].clamp_default();
-                            }
-                        }
-                    }
-                });
-
-            res_pow2
-        } else {
-            *resolution
-        };
+        let (resampled_image, resolution) =
+            if !resolution[0].is_power_of_two() || !resolution[1].is_power_of_two() {
+                resample_image(resolution, img, wrap_mode)
+            } else {
+                (vec![], *resolution)
+            };
 
         // Initialize levels of MIPMap from image.
         let n_levels = 1 + Log2::log2(max(resolution[0], resolution[1])) as usize;
         let mut pyramid: Vec<BlockedArray<T, 2>> = Vec::with_capacity(n_levels);
 
-        // Initialize most detailed level of MIPMap
-        let r_img = resampled_image.read().unwrap();
+        // Initialize most detailed level of MIPMap.
         pyramid.push(BlockedArray::<T, 2>::from_slice(
             resolution[0],
             resolution[1],
-            if r_img.len() > 0 { &(*r_img) } else { img },
+            if resampled_image.len() > 0 {
+                &resampled_image
+            } else {
+                img
+            },
         ));
 
         for i in 1..n_levels {
@@ -459,6 +364,138 @@ where
     }
 }
 
+/// Resample the image so the width and height are scaled up to the next
+/// power of two.
+///
+/// NOTE: If image has weird aspect ratio it will cause stretching/squashing.
+///
+/// * `resolution`       - Image resolution.
+/// * `img`              - Image data.
+/// * `wrap_mode`        - Determines how to handle out-of-bounds texels.
+fn resample_image<T>(
+    resolution: &Point2<usize>,
+    img: &[T],
+    wrap_mode: ImageWrap,
+) -> (Vec<T>, Point2<usize>)
+where
+    T: Copy
+        + Clone
+        + Default
+        + Mul<Float, Output = T>
+        + MulAssign<Float>
+        + Div<Float, Output = T>
+        + DivAssign<Float>
+        + Add<T, Output = T>
+        + AddAssign
+        + Clamp<Float>
+        + Send
+        + Sync,
+{
+    // Resample image to power-of-two resolution.
+    let res_pow2 = Point2::new(
+        resolution[0].next_power_of_two(),
+        resolution[1].next_power_of_two(),
+    );
+    let res = res_pow2[0] * res_pow2[1];
+
+    // Use a mutex to modify resampled image data in parallel.
+    let resampled_image: Arc<Mutex<Vec<T>>> = Arc::new(Mutex::new(vec![T::default(); res]));
+
+    info!(
+        "Resampling MIPMap from {}x{} to {}x{}",
+        resolution[0], resolution[1], res_pow2[0], res_pow2[1],
+    );
+
+    // Resample image in `s` direction.
+    let s_weights = resample_weights(resolution[0], res_pow2[0]);
+
+    // Apply `s_weights` in the `s` direction.
+    (0..resolution[1])
+        .into_par_iter()
+        .chunks(16)
+        .for_each(|vt| {
+            for t in vt {
+                for s in 0..res_pow2[0] {
+                    // Compute texel `(s, t)` in `s`-zoomed image.
+                    {
+                        let mut pixels = resampled_image.lock().unwrap();
+                        (*pixels)[t * res_pow2[0] + s] = T::default(); // Initialize to zero.
+                    }
+
+                    for j in 0..4 {
+                        let orig_s = s_weights[s].first_texel + j;
+                        let orig_s = match wrap_mode {
+                            ImageWrap::Repeat => rem(orig_s, resolution[0]),
+                            ImageWrap::Clamp => clamp(orig_s, 0, resolution[0] - 1),
+                            _ => orig_s,
+                        };
+
+                        if orig_s < resolution[0] {
+                            let mut pixels = resampled_image.lock().unwrap();
+                            (*pixels)[t * res_pow2[0] + s] +=
+                                img[t * resolution[0] + orig_s] * s_weights[s].weight[j];
+                        }
+                    }
+                }
+            }
+        });
+
+    // Resample image in `t` direction.
+    let t_weights = resample_weights(resolution[1], res_pow2[1]);
+
+    // Setup some mutexes for temporarily holding working data; one per thread.
+    let work_data: Vec<Arc<Mutex<Vec<T>>>> = vec![Arc::new(Mutex::new(vec![])); OPTIONS.n_threads];
+
+    // Apply `t_weights` in the `t` direction.
+    (0..res_pow2[0])
+        .into_par_iter()
+        .chunks(32)
+        .enumerate()
+        .for_each(|(vi, vs)| {
+            // Lock for duration of thread run. Otherwise work_data will
+            // get muddled up between threads.
+            let mut work_data = work_data[vi % OPTIONS.n_threads].lock().unwrap();
+
+            // Allocate with default T values (zeroes) if it isn't already.
+            if work_data.len() == 0 {
+                *work_data = vec![T::default(); res_pow2[1]];
+            }
+
+            for s in vs {
+                for t in 0..res_pow2[1] {
+                    // Initialize to zero since work_data is shared and we
+                    // don't want old values from previous iteration or thread.
+                    (*work_data)[t] = T::default();
+                    for j in 0..4 {
+                        let offset = t_weights[t].first_texel + j;
+                        let offset = match wrap_mode {
+                            ImageWrap::Repeat => rem(offset, resolution[1]),
+                            ImageWrap::Clamp => clamp(offset, 0, resolution[1] - 1),
+                            _ => offset,
+                        };
+
+                        if offset < resolution[1] {
+                            let pixels = resampled_image.lock().unwrap();
+                            work_data[t] +=
+                                (*pixels)[offset * res_pow2[0] + s] * t_weights[t].weight[j];
+                        }
+                    }
+                }
+                for t in 0..res_pow2[1] {
+                    {
+                        let mut pixels = resampled_image.lock().unwrap();
+                        (*pixels)[t * res_pow2[0] + s] = work_data[t].clamp_default();
+                    }
+                }
+            }
+        });
+
+    let resampled_pixels = resampled_image.lock().unwrap();
+    let mut result: Vec<T> = Vec::with_capacity(resampled_pixels.len());
+    result.clone_from(&*resampled_pixels);
+    (result, res_pow2)
+}
+
 /// Resample the weights for texels at a new resolution of the image size.
 ///
 /// * `old_res` - The old resolution.
@@ -522,69 +559,6 @@ where
             } else {
                 l[(s, t)]
             }
-        }
-    }
-}
-
-/// Image writer interface for MIPMap levels.
-pub trait MIPMapImageWriter {
-    /// Write mipmap levels to images in the given base path.
-    ///
-    /// * `pyramids`  - The MIPMap pyramids.
-    /// * `base_path` - Base path.
-    fn write_images(&self, base_path: &str);
-}
-
-impl MIPMapImageWriter for MIPMap<RGBSpectrum> {
-    /// Write mipmap levels to images in the given base path.
-    ///
-    /// * `pyramids`  - The MIPMap pyramids.
-    /// * `base_path` - Base path.
-    fn write_images(&self, base_path: &str) {
-        for (i, level) in self.pyramid.iter().enumerate() {
-            let nx = level.u_size();
-            let ny = level.v_size();
-            let n = 3 * nx * ny;
-
-            let mut rgb = vec![0.0; n];
-            let mut j = 0;
-            for pixel in level.linear_vec() {
-                rgb[j] = pixel[0];
-                rgb[j + 1] = pixel[1];
-                rgb[j + 2] = pixel[2];
-                j += 3;
-            }
-
-            let path = format!("{}-{}.png", base_path, i);
-            let bounds = Bounds2i::new(Point2i::new(0, 0), Point2i::new(nx as Int, ny as Int));
-            write_image(&path, &rgb, &bounds).unwrap();
-        }
-    }
-}
-
-impl MIPMapImageWriter for MIPMap<Float> {
-    /// Write mipmap levels to images in the given base path.
-    ///
-    /// * `pyramids`  - The MIPMap pyramids.
-    /// * `base_path` - Base path.
-    fn write_images(&self, base_path: &str) {
-        for (i, level) in self.pyramid.iter().enumerate() {
-            let nx = level.u_size();
-            let ny = level.v_size();
-            let n = 3 * nx * ny;
-
-            let mut rgb = vec![0.0; n];
-            let mut j = 0;
-            for pixel in level.linear_vec() {
-                rgb[j] = pixel;
-                rgb[j + 1] = pixel;
-                rgb[j + 2] = pixel;
-                j += 3;
-            }
-
-            let path = format!("{}-{}.png", base_path, i);
-            let bounds = Bounds2i::new(Point2i::new(0, 0), Point2i::new(nx as Int, ny as Int));
-            write_image(&path, &rgb, &bounds).unwrap();
         }
     }
 }

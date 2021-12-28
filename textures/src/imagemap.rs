@@ -69,7 +69,7 @@ macro_rules! new_image_texture {
                 // NOTE: MIPMap images will be flipped upside down; texture
                 // coordinate space has (0,0) at the lower left corner.
                 // See crate::core::mipmap::cache:generate_mipmap().
-                mipmap.write_images("mipmap");
+                //mipmap.write_images("mipmap");
 
                 Self { mapping, mipmap }
             }
