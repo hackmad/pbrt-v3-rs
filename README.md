@@ -21,6 +21,7 @@ algorithms.
   <tr>
     <td><a href="renders/shapes/sphere.png"><img src="renders/shapes/sphere.png" width="300px"/></a></td>
     <td><a href="renders/shapes/cylinder.png"><img src="renders/shapes/cylinder.png" width="300px"/></a></td>
+    <td><a href="renders/shapes/disk.png"><img src="renders/shapes/disk.png" width="300px"/></a></td>
     <td><a href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" width="300px"/></a></td>
   </tr>
 </table>
