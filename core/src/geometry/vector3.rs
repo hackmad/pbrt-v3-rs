@@ -88,20 +88,6 @@ impl<T: Num> Vector3<T> {
         Self::new(abs(self.x), abs(self.y), abs(self.z))
     }
 
-    /// Returns the cross product with another vector.
-    ///
-    /// * `other` - The other vector.
-    pub fn cross(&self, other: &Self) -> Self
-    where
-        T: Copy,
-    {
-        Self::new(
-            (self.y * other.z) - (self.z * other.y),
-            (self.z * other.x) - (self.x * other.z),
-            (self.x * other.y) - (self.y * other.x),
-        )
-    }
-
     /// Returns the smallest coordinate value.
     pub fn min_component(&self) -> T
     where
@@ -219,6 +205,36 @@ impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Normal3<T>> for Vector3<T
     }
 }
 
+impl<T: Num + Copy> Cross<Vector3<T>> for Vector3<T> {
+    type Output = Self;
+
+    /// Returns the cross product with another vector.
+    ///
+    /// * `other` - The other vector.
+    fn cross(&self, other: &Vector3<T>) -> Self::Output {
+        Self::new(
+            (self.y * other.z) - (self.z * other.y),
+            (self.z * other.x) - (self.x * other.z),
+            (self.x * other.y) - (self.y * other.x),
+        )
+    }
+}
+
+impl<T: Num + Copy> Cross<Normal3<T>> for Vector3<T> {
+    type Output = Self;
+
+    /// Returns the cross product with another normal.
+    ///
+    /// * `other` - The other vector.
+    fn cross(&self, other: &Normal3<T>) -> Self::Output {
+        Self::new(
+            (self.y * other.z) - (self.z * other.y),
+            (self.z * other.x) - (self.x * other.z),
+            (self.x * other.y) - (self.y * other.x),
+        )
+    }
+}
+
 /// Implement FaceForward trait which allows pointing vectors in the same
 /// hemisphere as another normal/vector.
 impl<T: Num + Neg<Output = T> + PartialOrd + Copy> FaceForward<T, Vector3<T>> for Vector3<T> {}
@@ -234,11 +250,31 @@ impl<T: Num> Add for Vector3<T> {
     }
 }
 
+impl<T: Num + Copy> Add<&Vector3<T>> for Vector3<T> {
+    type Output = Self;
+
+    /// Adds the given vector and returns the result.
+    ///
+    /// * `other` -  The vector to add.
+    fn add(self, other: &Vector3<T>) -> Self::Output {
+        Self::Output::new(self.x + other.x, self.y + other.y, self.z + other.z)
+    }
+}
+
 impl<T: Num + Copy> AddAssign for Vector3<T> {
     /// Performs the `+=` operation.
     ///
     /// * `other` -  The vector to add.
     fn add_assign(&mut self, other: Self) {
+        *self = Self::new(self.x + other.x, self.y + other.y, self.z + other.z);
+    }
+}
+
+impl<T: Num + Copy> AddAssign<&Vector3<T>> for Vector3<T> {
+    /// Performs the `+=` operation.
+    ///
+    /// * `other` -  The vector to add.
+    fn add_assign(&mut self, other: &Vector3<T>) {
         *self = Self::new(self.x + other.x, self.y + other.y, self.z + other.z);
     }
 }
@@ -254,11 +290,31 @@ impl<T: Num> Sub for Vector3<T> {
     }
 }
 
+impl<T: Num + Copy> Sub<&Vector3<T>> for Vector3<T> {
+    type Output = Self;
+
+    /// Subtracts the given vector and returns the result.
+    ///
+    /// * `other` -  The vector to subtract.
+    fn sub(self, other: &Vector3<T>) -> Self::Output {
+        Self::Output::new(self.x - other.x, self.y - other.y, self.z - other.z)
+    }
+}
+
 impl<T: Num + Copy> SubAssign for Vector3<T> {
     /// Performs the `-=` operation.
     ///
     /// * `other` -  The vector to subtract.
     fn sub_assign(&mut self, other: Self) {
+        *self = Self::new(self.x - other.x, self.y - other.y, self.z - other.z);
+    }
+}
+
+impl<T: Num + Copy> SubAssign<&Vector3<T>> for Vector3<T> {
+    /// Performs the `-=` operation.
+    ///
+    /// * `other` -  The vector to subtract.
+    fn sub_assign(&mut self, other: &Vector3<T>) {
         *self = Self::new(self.x - other.x, self.y - other.y, self.z - other.z);
     }
 }

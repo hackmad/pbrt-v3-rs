@@ -137,12 +137,14 @@ impl<T: Num> Add for Point2<T> {
     }
 }
 
-impl<T: Num + Copy> AddAssign for Point2<T> {
-    /// Performs the `+=` operation.
+impl<T: Num + Copy> Add<&Point2<T>> for Point2<T> {
+    type Output = Point2<T>;
+
+    /// Adds the given point and returns the result.
     ///
     /// * `other` - The point to add.
-    fn add_assign(&mut self, other: Self) {
-        *self = Point2::new(self.x + other.x, self.y + other.y);
+    fn add(self, other: &Point2<T>) -> Self::Output {
+        Self::Output::new(self.x + other.x, self.y + other.y)
     }
 }
 
@@ -157,11 +159,49 @@ impl<T: Num> Add<Vector2<T>> for Point2<T> {
     }
 }
 
+impl<T: Num + Copy> Add<&Vector2<T>> for Point2<T> {
+    type Output = Self;
+
+    /// Offsets the point by the given vector.
+    ///
+    /// * `other` - The vector to add.
+    fn add(self, other: &Vector2<T>) -> Self::Output {
+        Self::Output::new(self.x + other.x, self.y + other.y)
+    }
+}
+
+impl<T: Num + Copy> AddAssign for Point2<T> {
+    /// Performs the `+=` operation.
+    ///
+    /// * `other` - The point to add.
+    fn add_assign(&mut self, other: Self) {
+        *self = Point2::new(self.x + other.x, self.y + other.y);
+    }
+}
+
+impl<T: Num + Copy> AddAssign<&Point2<T>> for Point2<T> {
+    /// Performs the `+=` operation.
+    ///
+    /// * `other` - The point to add.
+    fn add_assign(&mut self, other: &Point2<T>) {
+        *self = Point2::new(self.x + other.x, self.y + other.y);
+    }
+}
+
 impl<T: Num + Copy> AddAssign<Vector2<T>> for Point2<T> {
     /// Performs the `+=` operation.
     ///
     /// * `other` - The vector to add.
     fn add_assign(&mut self, other: Vector2<T>) {
+        *self = Self::new(self.x + other.x, self.y + other.y);
+    }
+}
+
+impl<T: Num + Copy> AddAssign<&Vector2<T>> for Point2<T> {
+    /// Performs the `+=` operation.
+    ///
+    /// * `other` - The vector to add.
+    fn add_assign(&mut self, other: &Vector2<T>) {
         *self = Self::new(self.x + other.x, self.y + other.y);
     }
 }
@@ -174,6 +214,35 @@ impl<T: Num> Sub for Point2<T> {
     /// * `other` - The point to subtract.
     fn sub(self, other: Self) -> Self::Output {
         Vector2::new(self.x - other.x, self.y - other.y)
+    }
+}
+
+impl<T: Num + Copy> Sub<&Point2<T>> for Point2<T> {
+    type Output = Vector2<T>;
+
+    /// Subtracts the given point and returns the vector towards that point.
+    ///
+    /// * `other` - The point to subtract.
+    fn sub(self, other: &Point2<T>) -> Self::Output {
+        Vector2::new(self.x - other.x, self.y - other.y)
+    }
+}
+
+impl<T: Num + Copy> SubAssign<Point2<T>> for Point2<T> {
+    /// Performs the `-=` operation.
+    ///
+    /// * `other` - The point to subtract.
+    fn sub_assign(&mut self, other: Point2<T>) {
+        *self = Self::new(self.x - other.x, self.y - other.y);
+    }
+}
+
+impl<T: Num + Copy> SubAssign<&Point2<T>> for Point2<T> {
+    /// Performs the `-=` operation.
+    ///
+    /// * `other` - The point to subtract.
+    fn sub_assign(&mut self, other: &Point2<T>) {
+        *self = Self::new(self.x - other.x, self.y - other.y);
     }
 }
 
@@ -193,6 +262,15 @@ impl<T: Num + Copy> SubAssign<Vector2<T>> for Point2<T> {
     ///
     /// * `other` - The vector to subtract.
     fn sub_assign(&mut self, other: Vector2<T>) {
+        *self = Self::new(self.x - other.x, self.y - other.y);
+    }
+}
+
+impl<T: Num + Copy> SubAssign<&Vector2<T>> for Point2<T> {
+    /// Performs the `-=` operation.
+    ///
+    /// * `other` - The vector to subtract.
+    fn sub_assign(&mut self, other: &Vector2<T>) {
         *self = Self::new(self.x - other.x, self.y - other.y);
     }
 }

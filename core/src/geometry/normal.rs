@@ -107,6 +107,36 @@ impl<T: Num + Neg<Output = T> + PartialOrd + Copy> Dot<Vector3<T>> for Normal3<T
     }
 }
 
+impl<T: Num + Copy> Cross<Normal3<T>> for Normal3<T> {
+    type Output = Self;
+
+    /// Returns the cross product with another normal.
+    ///
+    /// * `other` - The other vector.
+    fn cross(&self, other: &Normal3<T>) -> Self::Output {
+        Self::new(
+            (self.y * other.z) - (self.z * other.y),
+            (self.z * other.x) - (self.x * other.z),
+            (self.x * other.y) - (self.y * other.x),
+        )
+    }
+}
+
+impl<T: Num + Copy> Cross<Vector3<T>> for Normal3<T> {
+    type Output = Self;
+
+    /// Returns the cross product with another vector.
+    ///
+    /// * `other` - The other vector.
+    fn cross(&self, other: &Vector3<T>) -> Self::Output {
+        Self::new(
+            (self.y * other.z) - (self.z * other.y),
+            (self.z * other.x) - (self.x * other.z),
+            (self.x * other.y) - (self.y * other.x),
+        )
+    }
+}
+
 /// Implement FaceForward trait which allows pointing vectors in the same
 /// hemisphere as another normal/vector.
 impl<T: Num + Neg<Output = T> + PartialOrd + Copy> FaceForward<T, Vector3<T>> for Normal3<T> {}
@@ -122,11 +152,31 @@ impl<T: Num> Add for Normal3<T> {
     }
 }
 
+impl<T: Num + Copy> Add<&Normal3<T>> for Normal3<T> {
+    type Output = Self;
+
+    /// Adds the given normal and returns the result.
+    ///
+    /// * `other` - The normal to add.
+    fn add(self, other: &Normal3<T>) -> Self::Output {
+        Self::new(self.x + other.x, self.y + other.y, self.z + other.z)
+    }
+}
+
 impl<T: Num + Copy> AddAssign for Normal3<T> {
     /// Performs the `+=` operation.
     ///
     /// * `other` - The normal to add.
     fn add_assign(&mut self, other: Self) {
+        *self = Self::new(self.x + other.x, self.y + other.y, self.z + other.z);
+    }
+}
+
+impl<T: Num + Copy> AddAssign<&Normal3<T>> for Normal3<T> {
+    /// Performs the `+=` operation.
+    ///
+    /// * `other` - The normal to add.
+    fn add_assign(&mut self, other: &Normal3<T>) {
         *self = Self::new(self.x + other.x, self.y + other.y, self.z + other.z);
     }
 }
@@ -142,11 +192,31 @@ impl<T: Num> Sub for Normal3<T> {
     }
 }
 
+impl<T: Num + Copy> Sub<&Normal3<T>> for Normal3<T> {
+    type Output = Normal3<T>;
+
+    /// Subtracts the given normal and returns the result.
+    ///
+    /// * `other` - The normal to subtract.
+    fn sub(self, other: &Normal3<T>) -> Self::Output {
+        Self::new(self.x - other.x, self.y - other.y, self.z - other.z)
+    }
+}
+
 impl<T: Num + Copy> SubAssign for Normal3<T> {
     /// Performs the `-=` operation.
     ///
     /// * `other` - The normal to subtract.
     fn sub_assign(&mut self, other: Self) {
+        *self = Self::new(self.x - other.x, self.y - other.y, self.z - other.z);
+    }
+}
+
+impl<T: Num + Copy> SubAssign<&Normal3<T>> for Normal3<T> {
+    /// Performs the `-=` operation.
+    ///
+    /// * `other` - The normal to subtract.
+    fn sub_assign(&mut self, other: &Normal3<T>) {
         *self = Self::new(self.x - other.x, self.y - other.y, self.z - other.z);
     }
 }

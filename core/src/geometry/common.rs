@@ -21,6 +21,16 @@ pub trait Dot<V> {
     }
 }
 
+/// Cross product trait.
+pub trait Cross<V> {
+    type Output;
+
+    /// Returns the cross product.
+    ///
+    /// * `other` - The other vector/normal.
+    fn cross(&self, other: &V) -> Self::Output;
+}
+
 /// FaceForward trait allows pointing vectors in the same hemisphere as
 /// another normal/vector.
 ///

@@ -1,7 +1,7 @@
 //! 3-D Coordinate System
 
 #![allow(dead_code)]
-use crate::geometry::Vector3;
+use crate::geometry::{Cross, Vector3};
 use crate::pbrt::abs;
 use num_traits::Float;
 

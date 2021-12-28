@@ -688,10 +688,10 @@ impl Shape for Triangle {
             };
 
             // Compute shading bitangent `ts` for triangle and adjust `ss`.
-            let mut ts = ss.cross(&ns.into());
+            let mut ts = ss.cross(&ns);
             if ts.length_squared() > 0.0 {
                 ts = ts.normalize();
-                ss = ts.cross(&ns.into());
+                ss = ts.cross(&ns);
             } else {
                 let (ss_new, ts_new) = coordinate_system(&ns.into());
                 ss = ss_new;

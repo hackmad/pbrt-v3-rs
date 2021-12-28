@@ -173,11 +173,31 @@ impl<T: Num> Add for Vector2<T> {
     }
 }
 
+impl<T: Num + Copy> Add<&Vector2<T>> for Vector2<T> {
+    type Output = Self;
+
+    /// Adds the given vector and returns the result.
+    ///
+    /// * `other` -  The vector to add.
+    fn add(self, other: &Vector2<T>) -> Self::Output {
+        Self::Output::new(self.x + other.x, self.y + other.y)
+    }
+}
+
 impl<T: Num + Copy> AddAssign for Vector2<T> {
     /// Performs the `+=` operation.
     ///
     /// * `other` -  The vector to add.
     fn add_assign(&mut self, other: Self) {
+        *self = Self::new(self.x + other.x, self.y + other.y);
+    }
+}
+
+impl<T: Num + Copy> AddAssign<&Vector2<T>> for Vector2<T> {
+    /// Performs the `+=` operation.
+    ///
+    /// * `other` -  The vector to add.
+    fn add_assign(&mut self, other: &Vector2<T>) {
         *self = Self::new(self.x + other.x, self.y + other.y);
     }
 }
@@ -193,11 +213,31 @@ impl<T: Num> Sub for Vector2<T> {
     }
 }
 
+impl<T: Num + Copy> Sub<&Vector2<T>> for Vector2<T> {
+    type Output = Self;
+
+    /// Subtracts the given vector and returns the result.
+    ///
+    /// * `other` -  The vector to subtract.
+    fn sub(self, other: &Vector2<T>) -> Self::Output {
+        Self::Output::new(self.x - other.x, self.y - other.y)
+    }
+}
+
 impl<T: Num + Copy> SubAssign for Vector2<T> {
     /// Performs the `-=` operation.
     ///
     /// * `other` -  The vector to subtract.
     fn sub_assign(&mut self, other: Self) {
+        *self = Self::new(self.x - other.x, self.y - other.y);
+    }
+}
+
+impl<T: Num + Copy> SubAssign<&Vector2<T>> for Vector2<T> {
+    /// Performs the `-=` operation.
+    ///
+    /// * `other` -  The vector to subtract.
+    fn sub_assign(&mut self, other: &Vector2<T>) {
         *self = Self::new(self.x - other.x, self.y - other.y);
     }
 }
