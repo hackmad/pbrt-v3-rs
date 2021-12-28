@@ -335,17 +335,17 @@ where
         let inv_det = 1.0 / det;
         let u_sqrt = (det * c).sqrt();
         let v_sqrt = (a * det).sqrt();
-        let s0 = (st[0] - 2.0 * inv_det * u_sqrt).ceil() as usize;
-        let s1 = (st[0] + 2.0 * inv_det * u_sqrt).floor() as usize;
-        let t0 = (st[1] - 2.0 * inv_det * v_sqrt).ceil() as usize;
-        let t1 = (st[1] + 2.0 * inv_det * v_sqrt).floor() as usize;
+        let s0 = (st[0] - 2.0 * inv_det * u_sqrt).ceil() as isize;
+        let s1 = (st[0] + 2.0 * inv_det * u_sqrt).floor() as isize;
+        let t0 = (st[1] - 2.0 * inv_det * v_sqrt).ceil() as isize;
+        let t1 = (st[1] + 2.0 * inv_det * v_sqrt).floor() as isize;
 
         // Scan over ellipse bound and compute quadratic equation.
         let mut sum = T::default();
         let mut sum_wts = 0.0;
-        for it in t0..t1 + 1 {
+        for it in t0..=t1 {
             let tt = it as Float - st[1];
-            for is in s0..s1 + 1 {
+            for is in s0..=s1 {
                 let ss = is as Float - st[0];
                 // Compute squared radius and filter texel if inside ellipse.
                 let r2 = a * ss * ss + b * ss * tt + c * tt * tt;
@@ -355,7 +355,13 @@ where
                         WEIGHT_LUT_SIZE - 1,
                     );
                     let weight = self.weight_lut[index];
-                    sum += texel(&self.pyramid, self.wrap_mode, level, is, it) * weight;
+                    sum += texel(
+                        &self.pyramid,
+                        self.wrap_mode,
+                        level,
+                        is as usize,
+                        it as usize,
+                    ) * weight;
                     sum_wts += weight;
                 }
             }

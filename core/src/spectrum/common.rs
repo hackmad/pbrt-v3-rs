@@ -155,6 +155,7 @@ pub trait CoefficientSpectrum:
     ///
     /// * `other` - The other SPD.
     fn add(&mut self, other: &Self) {
+        debug_assert!(!self.has_nans());
         let samples = self.samples_mut();
         let other_samples = other.samples();
         let n = samples.len();
@@ -162,13 +163,13 @@ pub trait CoefficientSpectrum:
         for i in 0..n {
             samples[i] += other_samples[i];
         }
-        assert!(!self.has_nans());
     }
 
     /// Subtract the sample values from another SPD.
     ///
     /// * `other` - The other SPD.
     fn sub(&mut self, other: &Self) {
+        debug_assert!(!self.has_nans());
         let samples = self.samples_mut();
         let other_samples = other.samples();
         let n = samples.len();
@@ -176,13 +177,13 @@ pub trait CoefficientSpectrum:
         for i in 0..n {
             samples[i] -= other_samples[i];
         }
-        assert!(!self.has_nans());
     }
 
     /// Multiplies the sample values from another SPD.
     ///
     /// * `other` - The other SPD.
     fn mul(&mut self, other: &Self) {
+        debug_assert!(!self.has_nans());
         let samples = self.samples_mut();
         let other_samples = other.samples();
         let n = samples.len();
@@ -190,13 +191,13 @@ pub trait CoefficientSpectrum:
         for i in 0..n {
             samples[i] *= other_samples[i];
         }
-        assert!(!self.has_nans());
     }
 
     /// Divides the sample values from another SPD.
     ///
     /// * `other` - The other SPD.
     fn div(&mut self, other: &Self) {
+        debug_assert!(!self.has_nans());
         let samples = self.samples_mut();
         let other_samples = other.samples();
         let n = samples.len();
@@ -204,19 +205,16 @@ pub trait CoefficientSpectrum:
         for i in 0..n {
             samples[i] /= other_samples[i];
         }
-        assert!(!self.has_nans());
     }
 
     /// Scales the sample values by a constant factor.
     ///
     /// * `f` - The factor.
     fn scale(&mut self, f: Float) {
-        let samples = self.samples_mut();
-        let n = samples.len();
-        for i in 0..n {
-            samples[i] *= f;
+        for s in self.samples_mut().iter_mut() {
+            *s *= f;
         }
-        assert!(!self.has_nans());
+        debug_assert!(!self.has_nans());
     }
 }
 
