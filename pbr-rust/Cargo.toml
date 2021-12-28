@@ -5,7 +5,6 @@ authors = ["Ahmad Kabani <ahmadkabani@yahoo.com>"]
 edition = "2018"
 
 [dependencies]
-
 api = { path = "../api" }
 core = { path = "../core" }
 
