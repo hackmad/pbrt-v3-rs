@@ -1,0 +1,16 @@
+{
+  "configurations": {
+    "launch": {
+      "adapter": "CodeLLDB",
+      "filetypes": ["rust"],
+      "configuration": {
+        "request": "launch",
+        "program": "${workspaceRoot}/target/debug/pbr-rust",
+        "args": ["-t", "1", "scenes/test/example.pbrt"],
+        "env": {
+          "RUST_LOG": "info"
+        }
+      }
+    }
+  }
+}
