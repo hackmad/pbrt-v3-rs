@@ -2,6 +2,7 @@
 
 #[macro_use]
 extern crate log;
+extern crate ply_rs;
 
 mod cone;
 mod curve;
@@ -10,6 +11,7 @@ mod disk;
 mod hyperboloid;
 mod loopsubdiv;
 mod paraboloid;
+mod plymesh;
 mod sphere;
 mod triangle;
 
@@ -21,5 +23,6 @@ pub use disk::*;
 pub use hyperboloid::*;
 pub use loopsubdiv::*;
 pub use paraboloid::*;
+pub use plymesh::*;
 pub use sphere::*;
 pub use triangle::*;

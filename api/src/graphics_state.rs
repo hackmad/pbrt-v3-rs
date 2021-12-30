@@ -233,19 +233,32 @@ impl GraphicsState {
         reverse_orientation: bool,
         paramset: &ParamSet,
     ) -> Result<Vec<ArcShape>, String> {
-        let p = (paramset, object2world, world2object, reverse_orientation);
-
         match name {
-            "cone" => Ok(vec![Arc::new(Cone::from(p))]),
-            "curve" => Ok(Curve::from_props(p)),
-            "cylinder" => Ok(vec![Arc::new(Cylinder::from(p))]),
-            "disk" => Ok(vec![Arc::new(Disk::from(p))]),
-            "hyperboloid" => Ok(vec![Arc::new(Hyperboloid::from(p))]),
-            "loopsubdiv" => Ok(LoopSubDiv::from_props(p)),
-            "paraboloid" => Ok(vec![Arc::new(Paraboloid::from(p))]),
-            "sphere" => Ok(vec![Arc::new(Sphere::from(p))]),
-            "trianglemesh" => Ok(TriangleMesh::from_props(p, &self.float_textures)),
-            _ => Err(format!("Shape '{}' unknown.", name)),
+            "plymesh" => {
+                let p = (
+                    paramset,
+                    object2world,
+                    world2object,
+                    reverse_orientation,
+                    &self.float_textures,
+                );
+                Ok(PLYMesh::from_props(p))
+            }
+            n => {
+                let p = (paramset, object2world, world2object, reverse_orientation);
+                match n {
+                    "cone" => Ok(vec![Arc::new(Cone::from(p))]),
+                    "curve" => Ok(Curve::from_props(p)),
+                    "cylinder" => Ok(vec![Arc::new(Cylinder::from(p))]),
+                    "disk" => Ok(vec![Arc::new(Disk::from(p))]),
+                    "hyperboloid" => Ok(vec![Arc::new(Hyperboloid::from(p))]),
+                    "loopsubdiv" => Ok(LoopSubDiv::from_props(p)),
+                    "paraboloid" => Ok(vec![Arc::new(Paraboloid::from(p))]),
+                    "sphere" => Ok(vec![Arc::new(Sphere::from(p))]),
+                    "trianglemesh" => Ok(TriangleMesh::from_props(p, &self.float_textures)),
+                    _ => Err(format!("Shape '{}' unknown.", name)),
+                }
+            }
         }
     }
 

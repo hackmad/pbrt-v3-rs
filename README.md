@@ -15,17 +15,21 @@ The images shown below are based on those versions. Not all scenes are
 available in each release and may look different due to changes in the
 algorithms.
 
+Some scenes include PBRT files from [here](https://www.pbrt.org/scenes-v3) and 
+rely on having them under `../pbrt-v3-scenes`.
+
 ### Shapes
 
 <table>
   <tr>
-    <td><a href="renders/shapes/sphere.png"><img src="renders/shapes/sphere.png" width="300px"/></a></td>
-    <td><a href="renders/shapes/cylinder.png"><img src="renders/shapes/cylinder.png" width="300px"/></a></td>
-    <td><a href="renders/shapes/disk.png"><img src="renders/shapes/disk.png" width="300px"/></a></td>
+    <td><a href="renders/shapes/sphere.png"><img src="renders/shapes/sphere.png" width="200px"/></a></td>
+    <td><a href="renders/shapes/cylinder.png"><img src="renders/shapes/cylinder.png" width="200px"/></a></td>
+    <td><a href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" width="200px"/></a></td>
   </tr>
   <tr>
-    <td><a href="renders/shapes/other-quadrics.png"><img src="renders/shapes/other-quadrics.png" width="300px"/></a></td>
-    <td><a href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" width="300px"/></a></td>
+    <td><a href="renders/shapes/disk.png"><img src="renders/shapes/disk.png" width="200px"/></a></td>
+    <td><a href="renders/shapes/other-quadrics.png"><img src="renders/shapes/other-quadrics.png" width="200px"/></a></td>
+    <td><a href="renders/shapes/plymesh.png"><img src="renders/shapes/plymesh.png" width="100px"/></a></td>
   </tr>
 </table>
 

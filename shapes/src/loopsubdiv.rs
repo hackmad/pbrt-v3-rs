@@ -319,7 +319,7 @@ impl Default for SDFace {
 }
 
 /// Implements Loop Subdivision.
-pub struct LoopSubDiv {}
+pub struct LoopSubDiv;
 
 impl LoopSubDiv {
     /// Subdivide a triangle mesh using loop subdivision.

@@ -9,3 +9,4 @@ core = { path = "../core" }
 textures = { path = "../textures" }
 
 log = "0.4.14"
+ply-rs = "0.1.3"

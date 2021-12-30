@@ -6,8 +6,8 @@ use core::interaction::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::sampling::*;
+use core::texture::FloatTextureMap;
 use core::texture::*;
-use std::collections::HashMap;
 use std::mem::size_of;
 use std::sync::Arc;
 use textures::ConstantTexture;
@@ -189,7 +189,7 @@ impl TriangleMesh {
     /// * `float_textures` - Float textures.
     pub fn from_props(
         p: (&ParamSet, ArcTransform, ArcTransform, bool),
-        float_textures: &HashMap<String, ArcTexture<Float>>,
+        float_textures: &FloatTextureMap,
     ) -> Vec<ArcShape> {
         let (params, o2w, w2o, reverse_orientation) = p;
 
@@ -719,11 +719,11 @@ impl Shape for Triangle {
                     // (rather than giving up) so that ray differentials for
                     // rays reflected from triangles with degenerate
                     // parameterizations are still reasonable.
-                    let dn = Vector3::from(n2 - n0).cross(&Vector3::from(n1 - n0));
+                    let dn = (n2 - n0).cross(&(n1 - n0));
                     if dn.length_squared() == 0.0 {
                         (Normal3f::default(), Normal3f::default())
                     } else {
-                        let (dndu2, dndv2) = coordinate_system(&dn);
+                        let (dndu2, dndv2) = coordinate_system(&dn.into());
                         (Normal3::from(dndu2), Normal3::from(dndv2))
                     }
                 } else {
