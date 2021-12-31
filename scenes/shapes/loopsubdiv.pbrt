@@ -28,9 +28,9 @@ WorldBegin
     Translate 0 0 -5.85
     Rotate 45 0 0 1
     Shape "trianglemesh"
-        "integer indices" [ 0 1 2   0 2 3 ]
-        "point P" [ -40 -40 0   40 -40 0   40 40 0   -40 40 0 ]
-        "float st" [ 0 0   1 0   1 1   0 1 ]
+          "integer indices" [ 0 1 2   0 2 3 ]
+          "point P" [ -40 -40 0   40 -40 0   40 40 0   -40 40 0 ]
+          "float st" [ 0 0   1 0   1 1   0 1 ]
   AttributeEnd
 
 WorldEnd

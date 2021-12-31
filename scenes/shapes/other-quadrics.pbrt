@@ -14,12 +14,12 @@ WorldBegin
 
   LightSource "infinite" "rgb L" [1.2 1.2 1.1]
 
-
   AttributeBegin
     Translate -2.25 0 -1.25
     Scale 1.5 1.5 1.5
     Rotate -75 0 0 1
-    Texture "uv-grid" "color" "imagemap" "string filename" "../textures/uv-grid.png"
+    Texture "uv-grid" "color" "imagemap"
+            "string filename" "../../../pbrt-v3-scenes/simple/textures/grid.png"
             "float uscale" -1 "float vscale" -1
     Material "matte" "texture Kd" "uv-grid"
     Shape "paraboloid" "float radius" 0.5 "float zmax" 1.5
@@ -28,7 +28,8 @@ WorldBegin
   AttributeBegin
     Scale 0.7 0.7 1.1
     Rotate 45 0 0 1
-    Texture "uv-grid" "color" "imagemap" "string filename" "../textures/uv-grid.png"
+    Texture "uv-grid" "color" "imagemap"
+            "string filename" "../../../pbrt-v3-scenes/simple/textures/grid.png"
             "float uscale" 1 "float vscale" -1
     Material "matte" "texture Kd" "uv-grid"
     Shape "hyperboloid" "point p1" [ -3.2 0.8 0.4 ] "point p2" [ -1.0 -0.5 -1.25 ] 
@@ -37,7 +38,8 @@ WorldBegin
 
   AttributeBegin
     Translate 2.25 0 -1.25
-    Texture "uv-grid" "color" "imagemap" "string filename" "../textures/uv-grid.png"
+    Texture "uv-grid" "color" "imagemap"
+            "string filename" "../../../pbrt-v3-scenes/simple/textures/grid.png"
             "float uscale" -1 "float vscale" -1
     Rotate -45 0 0 1
     Material "matte" "texture Kd" "uv-grid"
@@ -48,9 +50,9 @@ WorldBegin
     Material "matte"
     Translate 0 0 -1.25
     Shape "trianglemesh"
-        "integer indices" [ 0 1 2   0 2 3 ]
-        "point P" [ -20 -20 0   20 -20 0   20 20 0   -20 20 0 ]
-        "float st" [ 0 0   1 0   1 1   0 1 ]
+          "integer indices" [ 0 1 2   0 2 3 ]
+          "point P" [ -20 -20 0   20 -20 0   20 20 0   -20 20 0 ]
+          "float st" [ 0 0   1 0   1 1   0 1 ]
   AttributeEnd
 
 WorldEnd

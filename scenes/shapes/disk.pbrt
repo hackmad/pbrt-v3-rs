@@ -14,8 +14,8 @@ WorldBegin
 
   LightSource "infinite" "rgb L" [1.2 1.2 1.1]
 
-  Texture "uv-grid" "color" "imagemap" "string filename" "../textures/uv-grid.png"
-          "float uscale" 1 "float vscale" -1
+  Texture "uv-grid" "color" "imagemap"
+          "string filename" "../../../pbrt-v3-scenes/simple/textures/grid.png"
 
   AttributeBegin
     Translate -1.75 -0.25 -0.18
@@ -39,9 +39,9 @@ WorldBegin
     Material "matte"
     Translate 0 0 -1.5
     Shape "trianglemesh"
-        "integer indices" [ 0 1 2   0 2 3 ]
-        "point P" [ -20 -20 0   20 -20 0   20 20 0   -20 20 0 ]
-        "float st" [ 0 0   1 0   1 1   0 1 ]
+          "integer indices" [ 0 1 2   0 2 3 ]
+          "point P" [ -20 -20 0   20 -20 0   20 20 0   -20 20 0 ]
+          "float st" [ 0 0   1 0   1 1   0 1 ]
   AttributeEnd
 
 WorldEnd
