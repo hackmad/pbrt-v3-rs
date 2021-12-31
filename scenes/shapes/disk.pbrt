@@ -12,7 +12,7 @@ Integrator "whitted"
 
 WorldBegin
 
-  LightSource "infinite" "rgb L" [.6 .6 .55]
+  LightSource "infinite" "rgb L" [1.2 1.2 1.1]
 
   Texture "uv-grid" "color" "imagemap" "string filename" "../textures/uv-grid.png"
           "float uscale" 1 "float vscale" -1

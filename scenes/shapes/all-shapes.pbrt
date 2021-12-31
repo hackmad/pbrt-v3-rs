@@ -10,7 +10,7 @@ Film "image" "string filename" "renders/shapes/all-shapes.png"
 
 WorldBegin
 
-  LightSource "infinite" "rgb L" [.4 .45 .5]
+  LightSource "infinite" "rgb L" [.8 .9 1]
   
   LightSource "distant"
               "point from" [ -30 40 100 ] 

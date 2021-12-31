@@ -12,7 +12,7 @@ Integrator "whitted"
 
 WorldBegin
 
-  LightSource "infinite" "rgb L" [.8 .8 .75]
+  LightSource "infinite" "rgb L" [1.2 1.2 1.1]
 
   AttributeBegin
     Rotate 180 0 0 1
