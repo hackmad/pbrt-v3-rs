@@ -1240,7 +1240,7 @@ impl AnimatedTransform {
         }
 
         // Compute interpolated matrix as product of interpolated components
-        Arc::new(Transform::translate(&trans) * &Transform::from(rotate) * &Transform::from(scale))
+        Arc::new(Transform::translate(&trans) * &Transform::from(&rotate) * &Transform::from(scale))
     }
 
     /// Applies animated transformation to a given ray.
@@ -1401,7 +1401,7 @@ fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut M
             break;
         }
     }
-    *r_quat = Quaternion::from(Transform::from(r));
+    *r_quat = Quaternion::from(&Transform::from(r));
 
     // Compute scale S using rotation and original matrix
     *s = r.inverse() * m;

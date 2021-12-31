@@ -85,11 +85,11 @@ impl fmt::Display for Quaternion {
     }
 }
 
-impl From<Transform> for Quaternion {
+impl From<&Transform> for Quaternion {
     /// Returns a quaternion representing a rotational transform.
     ///
     /// * `t` - The transform.
-    fn from(t: Transform) -> Self {
+    fn from(t: &Transform) -> Self {
         let m = &t.m;
         let trace = m[0][0] + m[1][1] + m[2][2];
         if trace > 0.0 {
@@ -143,11 +143,11 @@ impl From<Transform> for Quaternion {
     }
 }
 
-impl From<Quaternion> for Transform {
+impl From<&Quaternion> for Transform {
     /// Returns a rotation transform from a quaternion.
     ///
     /// * `q` - The quaternion.
-    fn from(q: Quaternion) -> Transform {
+    fn from(q: &Quaternion) -> Transform {
         let xx = q.v.x * q.v.x;
         let yy = q.v.y * q.v.y;
         let zz = q.v.z * q.v.z;
@@ -177,7 +177,7 @@ impl From<Quaternion> for Transform {
     }
 }
 
-impl Add<Quaternion> for Quaternion {
+impl Add for Quaternion {
     type Output = Self;
 
     /// Adds the components of the given quaternion.
@@ -188,7 +188,18 @@ impl Add<Quaternion> for Quaternion {
     }
 }
 
-impl AddAssign<Quaternion> for Quaternion {
+impl Add<&Quaternion> for Quaternion {
+    type Output = Self;
+
+    /// Adds the components of the given quaternion.
+    ///
+    /// * `other` - The quaternion to add.
+    fn add(self, other: &Quaternion) -> Self::Output {
+        Self::Output::new(self.v + other.v, self.w + other.w)
+    }
+}
+
+impl AddAssign for Quaternion {
     /// Performs the `+=` operation.
     ///
     /// * `other` - The quaternion to add.
@@ -197,7 +208,16 @@ impl AddAssign<Quaternion> for Quaternion {
     }
 }
 
-impl Sub<Quaternion> for Quaternion {
+impl AddAssign<&Quaternion> for Quaternion {
+    /// Performs the `+=` operation.
+    ///
+    /// * `other` - The quaternion to add.
+    fn add_assign(&mut self, other: &Quaternion) {
+        *self = Self::new(self.v + other.v, self.w + other.w)
+    }
+}
+
+impl Sub for Quaternion {
     type Output = Self;
 
     /// Subtracts the components of the given quaternion.
@@ -208,11 +228,31 @@ impl Sub<Quaternion> for Quaternion {
     }
 }
 
-impl SubAssign<Quaternion> for Quaternion {
+impl Sub<&Quaternion> for Quaternion {
+    type Output = Self;
+
+    /// Subtracts the components of the given quaternion.
+    ///
+    /// * `other` - The quaternion to subtract.
+    fn sub(self, other: &Quaternion) -> Self::Output {
+        Self::new(self.v - other.v, self.w - other.w)
+    }
+}
+
+impl SubAssign for Quaternion {
     /// Performs the `-=` operation.
     ///
     /// * `other` - The quaternion to subtract.
     fn sub_assign(&mut self, other: Self) {
+        *self = Self::new(self.v - other.v, self.w - other.w)
+    }
+}
+
+impl SubAssign<&Quaternion> for Quaternion {
+    /// Performs the `-=` operation.
+    ///
+    /// * `other` - The quaternion to subtract.
+    fn sub_assign(&mut self, other: &Quaternion) {
         *self = Self::new(self.v - other.v, self.w - other.w)
     }
 }
@@ -235,6 +275,17 @@ impl Mul<Quaternion> for Float {
     ///
     /// * `q` - The quaternion to scale.
     fn mul(self, q: Quaternion) -> Self::Output {
+        Self::Output::new(self * q.v, self * q.w)
+    }
+}
+
+impl Mul<&Quaternion> for Float {
+    type Output = Quaternion;
+
+    /// Scales the components of the given quaternion.
+    ///
+    /// * `q` - The quaternion to scale.
+    fn mul(self, q: &Quaternion) -> Self::Output {
         Self::Output::new(self * q.v, self * q.w)
     }
 }
@@ -270,6 +321,15 @@ impl DivAssign<Float> for Quaternion {
 
 impl Neg for Quaternion {
     type Output = Self;
+
+    /// Scales the components by -1.
+    fn neg(self) -> Self::Output {
+        Self::Output::new(-self.v, -self.w)
+    }
+}
+
+impl Neg for &Quaternion {
+    type Output = Quaternion;
 
     /// Scales the components by -1.
     fn neg(self) -> Self::Output {
