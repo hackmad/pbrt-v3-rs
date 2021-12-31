@@ -18,4 +18,4 @@ proptest-regressions/
 
 dhat-heap.json
 cargo-flamegraph.stacks
-flamegraph.svg
+flamegraph*.svg

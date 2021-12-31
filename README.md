@@ -16,22 +16,19 @@ available in each release and may look different due to changes in the
 algorithms.
 
 Some scenes include PBRT files from [here](https://www.pbrt.org/scenes-v3) and 
-rely on having them under `../pbrt-v3-scenes`.
+rely on having them under `../pbrt-v3-scenes` relative to this repositories
+root. Note that relative paths for `Texture`, `Include` etc are relative to the
+scene file location.
 
 ### Shapes
 
-<table>
-  <tr>
-    <td><a href="renders/shapes/sphere.png"><img src="renders/shapes/sphere.png" width="200px"/></a></td>
-    <td><a href="renders/shapes/cylinder.png"><img src="renders/shapes/cylinder.png" width="200px"/></a></td>
-    <td><a href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" width="200px"/></a></td>
-  </tr>
-  <tr>
-    <td><a href="renders/shapes/disk.png"><img src="renders/shapes/disk.png" width="200px"/></a></td>
-    <td><a href="renders/shapes/other-quadrics.png"><img src="renders/shapes/other-quadrics.png" width="200px"/></a></td>
-    <td><a href="renders/shapes/plymesh.png"><img src="renders/shapes/plymesh.png" width="100px"/></a></td>
-  </tr>
-</table>
+<a href="renders/shapes/sphere.png"><img src="renders/shapes/sphere.png" style="height: 100px"/></a>
+<a href="renders/shapes/cylinder.png"><img src="renders/shapes/cylinder.png" style="height: 100px;"/></a>
+<a href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" style="height: 100px;"/></a>
+<a href="renders/shapes/disk.png"><img src="renders/shapes/disk.png" style="height: 100px;"/></a>
+<a href="renders/shapes/other-quadrics.png"><img src="renders/shapes/other-quadrics.png" style="height: 100px;"/></a>
+<a href="renders/shapes/plymesh.png"><img src="renders/shapes/plymesh.png" style="height: 100px;"/></a>
+<a href="renders/shapes/loopsubdiv.png"><img src="renders/shapes/loopsubdiv.png" style="height: 100px;"/></a>
 
 
 ## Building

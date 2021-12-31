@@ -1,0 +1,36 @@
+LookAt 2 -8 60  # eye
+       0 0 0    # look at point
+       0 1 0    # up vector
+Rotate -60 1 0 0
+Rotate -135 0 0 1
+
+Camera "perspective" "float fov" 30
+
+Film "image" "string filename" "renders/shapes/loopsubdiv.png"
+     "integer xresolution" [400] "integer yresolution" [400]
+
+Sampler "halton" "integer pixelsamples" 128
+Integrator "whitted"
+
+WorldBegin
+
+  LightSource "infinite" "rgb L" [1.2 1.2 1.1]
+
+  AttributeBegin
+    Translate 0 0 8
+    Scale 0.1 0.1 0.1
+    Material "matte"
+    Include "../../../pbrt-v3-scenes/killeroos/geometry/killeroo.pbrt"
+  AttributeEnd
+
+  AttributeBegin
+    Material "matte"
+    Translate 0 0 -5.85
+    Rotate 45 0 0 1
+    Shape "trianglemesh"
+        "integer indices" [ 0 1 2   0 2 3 ]
+        "point P" [ -40 -40 0   40 -40 0   40 40 0   -40 40 0 ]
+        "float st" [ 0 0   1 0   1 1   0 1 ]
+  AttributeEnd
+
+WorldEnd
