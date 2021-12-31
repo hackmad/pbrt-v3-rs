@@ -20,6 +20,14 @@ rely on having them under `../pbrt-v3-scenes` relative to this repositories
 root. Note that relative paths for `Texture`, `Include` etc are relative to the
 scene file location.
 
+PNG files can be compressed using `pngquant`:
+```
+pngquant --ext .png --force renders/shapes/sphere.png
+```
+```
+pngquant --ext .png --force renders/shapes/*.png 
+```
+
 ### Shapes
 
 <a href="renders/shapes/sphere.png"><img src="renders/shapes/sphere.png" style="height: 100px"/></a>
