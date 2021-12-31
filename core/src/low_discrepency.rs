@@ -1514,10 +1514,8 @@ fn base_index_to_prime(base_index: u16) -> u16 {
 /// * `rng` - The random number generator.
 pub fn compute_radical_inverse_permutations(rng: &mut RNG) -> Vec<u16> {
     // Allocate space for radical inverse permutations.
-    let mut perm_array_size = 0;
-    for i in 0..PRIME_TABLE_SIZE {
-        perm_array_size += PRIMES[i];
-    }
+    let perm_array_size = (0..PRIME_TABLE_SIZE).fold(0, |a, i| a + PRIMES[i]);
+
     let mut perms = vec![0_u16; perm_array_size];
     let mut p = 0;
     for i in 0..PRIME_TABLE_SIZE {
@@ -1625,11 +1623,11 @@ pub fn gray_code_sample_1d(c: &[u32], n: usize, scramble: u32) -> Vec<Float> {
 pub fn gray_code_sample_2d(c: &[[u32; 32]; 2], n: usize, scramble: &[u32; 2]) -> Vec<Point2f> {
     let mut v = [scramble[0], scramble[1]];
     let mut p = vec![Point2f::default(); n];
-    for i in 0..n {
+    for (i, pi) in p.iter_mut().enumerate().take(n) {
         let t = (i + 1).trailing_zeros() as usize;
 
         for j in 0..2 {
-            p[i][j] = min(
+            (*pi)[j] = min(
                 v[j] as Float * hexf32!("0x1.0p-32") as Float,
                 ONE_MINUS_EPSILON,
             );

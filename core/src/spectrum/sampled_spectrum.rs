@@ -92,7 +92,7 @@ impl From<&Vec<Sample>> for SampledSpectrum {
         };
 
         let mut c = [0.0; SPECTRAL_SAMPLES];
-        for i in 0..SPECTRAL_SAMPLES {
+        for (i, v) in c.iter_mut().enumerate() {
             // Compute average value of given SPD over i^th sample's range.
             let lambda0 = lerp(
                 i as Float / SPECTRAL_SAMPLES as Float,
@@ -104,7 +104,7 @@ impl From<&Vec<Sample>> for SampledSpectrum {
                 SAMPLED_LAMBDA_START as Float,
                 SAMPLED_LAMBDA_END as Float,
             );
-            c[i] = average_spectrum_samples(samples, lambda0, lambda1);
+            *v = average_spectrum_samples(samples, lambda0, lambda1);
         }
 
         Self { c }
@@ -209,10 +209,7 @@ impl CoefficientSpectrum for SampledSpectrum {
 
     /// Takes the square root of all sample values.
     fn sqrt(&self) -> Self {
-        let mut c = [0.0; SPECTRAL_SAMPLES];
-        for i in 0..SPECTRAL_SAMPLES {
-            c[i] = self.c[i].sqrt();
-        }
+        let c = self.c.map(|v| v.sqrt());
         Self { c }
     }
 
@@ -220,10 +217,7 @@ impl CoefficientSpectrum for SampledSpectrum {
     ///
     /// * `p` - The power.
     fn pow(&self, p: Float) -> Self {
-        let mut c = [0.0; SPECTRAL_SAMPLES];
-        for i in 0..SPECTRAL_SAMPLES {
-            c[i] = self.c[i].powf(p);
-        }
+        let c = self.c.map(|v| v.powf(p));
         Self { c }
     }
 
@@ -423,10 +417,7 @@ impl Clamp<Float> for SampledSpectrum {
     /// * `low`  - Low value.
     /// * `high` - High value.
     fn clamp(&self, low: Float, high: Float) -> Self {
-        let mut c = [0.0; SPECTRAL_SAMPLES];
-        for i in 0..SPECTRAL_SAMPLES {
-            c[i] = clamp(self.c[i], low, high);
-        }
+        let c = self.c.map(|v| clamp(v, low, high));
         Self { c }
     }
 

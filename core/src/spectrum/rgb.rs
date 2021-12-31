@@ -53,6 +53,13 @@ impl RGB {
     }
 }
 
+impl Default for RGB {
+    /// Returns the "default value" for RGB.
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Index<SpectrumType> for RGB {
     type Output = [SampledSpectrum; NUM_RGB_SPECTRUM_COLOURS];
 

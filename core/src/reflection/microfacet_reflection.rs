@@ -29,7 +29,8 @@ impl<'arena> MicrofacetReflection<'arena> {
     ///                    light that is scattered.
     /// * `distribution` - Microfacet distribution.
     /// * `fresnel`      - Fresnel interface for dielectrics and conductors.
-    pub fn new(
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc(
         arena: &'arena Bump,
         r: Spectrum,
         distribution: &'arena mut MicrofacetDistribution<'arena>,
@@ -47,12 +48,13 @@ impl<'arena> MicrofacetReflection<'arena> {
     /// Clone into a newly allocated a new instance of `MicrofacetReflection`.
     ///
     /// * `arena` - The arena for memory allocations.
-    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let distribution = self.distribution.new_from(arena);
-        let fresnel = self.fresnel.new_from(arena);
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let distribution = self.distribution.clone_alloc(arena);
+        let fresnel = self.fresnel.clone_alloc(arena);
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
-            r: self.r.clone(),
+            r: self.r,
             distribution,
             fresnel,
         });
@@ -75,9 +77,8 @@ impl<'arena> MicrofacetReflection<'arena> {
         let wh = wi + wo;
 
         // Handle degenerate cases for microfacet reflection.
-        if cos_theta_i == 0.0 || cos_theta_o == 0.0 {
-            Spectrum::new(0.0)
-        } else if wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0 {
+        if (cos_theta_i == 0.0 || cos_theta_o == 0.0) || (wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0)
+        {
             Spectrum::new(0.0)
         } else {
             let wh = wh.normalize();

@@ -21,7 +21,8 @@ impl<'arena> SpecularReflection<'arena> {
     /// * `arena`   - The arena for memory allocations.
     /// * `fresnel` - Fresnel interface for dielectrics and conductors.
     /// * `r`       - Spectrum used to scale the reflected colour.
-    pub fn new(
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc(
         arena: &'arena Bump,
         r: Spectrum,
         fresnel: &'arena mut Fresnel<'arena>,
@@ -37,12 +38,13 @@ impl<'arena> SpecularReflection<'arena> {
     /// Clone into a newly allocated a new instance of `SpecularReflection`.
     ///
     /// * `arena` - The arena for memory allocations.
-    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let fresnel = self.fresnel.new_from(arena);
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let fresnel = self.fresnel.clone_alloc(arena);
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
             fresnel,
-            r: self.r.clone(),
+            r: self.r,
         });
         arena.alloc(BxDF::SpecularReflection(model))
     }

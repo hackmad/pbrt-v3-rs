@@ -187,7 +187,18 @@ impl Mul<Matrix4x4> for Matrix4x4 {
     ///
     /// * `other` - The other matrix
     fn mul(self, other: Matrix4x4) -> Self::Output {
-        self * &other
+        let mut m = Matrix4x4::default();
+
+        for i in 0..4 {
+            for j in 0..4 {
+                m.m[i][j] = self.m[i][0] * other.m[0][j]
+                    + self.m[i][1] * other.m[1][j]
+                    + self.m[i][2] * other.m[2][j]
+                    + self.m[i][3] * other.m[3][j];
+            }
+        }
+
+        m
     }
 }
 
@@ -198,7 +209,51 @@ impl Mul<&Matrix4x4> for Matrix4x4 {
     ///
     /// * `other` - The other matrix
     fn mul(self, other: &Matrix4x4) -> Self::Output {
-        let mut m = Self::default();
+        let mut m = Matrix4x4::default();
+
+        for i in 0..4 {
+            for j in 0..4 {
+                m.m[i][j] = self.m[i][0] * other.m[0][j]
+                    + self.m[i][1] * other.m[1][j]
+                    + self.m[i][2] * other.m[2][j]
+                    + self.m[i][3] * other.m[3][j];
+            }
+        }
+
+        m
+    }
+}
+
+impl Mul for &Matrix4x4 {
+    type Output = Matrix4x4;
+
+    /// Post-multiply the given matrix.
+    ///
+    /// * `other` - The other matrix
+    fn mul(self, other: Self) -> Self::Output {
+        let mut m = Matrix4x4::default();
+
+        for i in 0..4 {
+            for j in 0..4 {
+                m.m[i][j] = self.m[i][0] * other.m[0][j]
+                    + self.m[i][1] * other.m[1][j]
+                    + self.m[i][2] * other.m[2][j]
+                    + self.m[i][3] * other.m[3][j];
+            }
+        }
+
+        m
+    }
+}
+
+impl Mul<Matrix4x4> for &Matrix4x4 {
+    type Output = Matrix4x4;
+
+    /// Post-multiply the given matrix.
+    ///
+    /// * `other` - The other matrix
+    fn mul(self, other: Matrix4x4) -> Self::Output {
+        let mut m = Matrix4x4::default();
 
         for i in 0..4 {
             for j in 0..4 {

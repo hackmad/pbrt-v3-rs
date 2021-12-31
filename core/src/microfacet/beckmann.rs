@@ -35,7 +35,8 @@ impl BeckmannDistribution {
     ///                           RMS slope of microfacets.
     /// * `sample_visible_area` - Indicates whether or not the visible area is
     ///                           sampled or not (default to `true`).
-    pub fn new<'arena>(arena: &'arena Bump, alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> &'arena mut MicrofacetDistribution {
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc<'arena>(arena: &'arena Bump, alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> &'arena mut MicrofacetDistribution {
         let dist = arena.alloc(Self {
             sample_visible_area,
             alpha_x: max(0.001, alpha_x),
@@ -47,7 +48,8 @@ impl BeckmannDistribution {
     /// Clone into a newly allocated a new instance of `BeckmannDistribution`.
     ///
     /// * `arena` - The memory arena.
-    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut MicrofacetDistribution<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut MicrofacetDistribution<'arena> {
         let dist = arena.alloc(Self {
             sample_visible_area: self.sample_visible_area,
             alpha_x: self.alpha_x,
@@ -285,8 +287,8 @@ fn beckmann_sample(
     slope_x = tmp;
 
     // 4. unstretch
-    slope_x = alpha_x * slope_x;
-    slope_y = alpha_y * slope_y;
+    slope_x *= alpha_x;
+    slope_y *= alpha_y;
 
     // 5. compute normal
     Vector3f::new(-slope_x, -slope_y, 1.0).normalize()

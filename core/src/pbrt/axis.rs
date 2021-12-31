@@ -29,18 +29,18 @@ impl From<u8> for Axis {
         }
     }
 }
-impl Into<u8> for Axis {
-    fn into(self) -> u8 {
-        match self {
+impl From<Axis> for u8 {
+    fn from(axis: Axis) -> Self {
+        match axis {
             Axis::X => 0_u8,
             Axis::Y => 1_u8,
             Axis::Z => 2_u8,
         }
     }
 }
-impl Into<usize> for Axis {
-    fn into(self) -> usize {
-        match self {
+impl From<Axis> for usize {
+    fn from(axis: Axis) -> usize {
+        match axis {
             Axis::X => 0_usize,
             Axis::Y => 1_usize,
             Axis::Z => 2_usize,

@@ -80,7 +80,7 @@ pub fn noise(p: Point3f) -> Float {
 /// * `value` - The value.
 fn smooth_step(min: Float, max: Float, value: Float) -> Float {
     let v = clamp((value - min) / (max - min), 0.0, 1.0);
-    return v * v * (-2.0 * v + 3.0);
+    v * v * (-2.0 * v + 3.0)
 }
 
 /// Returns the weight value for a corner cell that the point (x, y, z) lies in.

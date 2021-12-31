@@ -47,7 +47,7 @@ impl PhaseFunction for HenyeyGreenstein {
         let sin_theta = max(0.0, 1.0 - cos_theta * cos_theta).sqrt();
         let phi = 2.0 * PI * u[1];
 
-        let (v1, v2) = coordinate_system(&wo);
+        let (v1, v2) = coordinate_system(wo);
         let wi = spherical_direction_in_coord_frame(sin_theta, cos_theta, phi, &v1, &v2, wo);
         let phg = phase_hg(cos_theta, self.g);
         (phg, wi)

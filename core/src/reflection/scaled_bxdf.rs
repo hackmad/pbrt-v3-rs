@@ -24,7 +24,8 @@ impl<'arena> ScaledBxDF<'arena> {
     /// * `arena` - The arena for memory allocations.
     /// * `bxdf`  - The BxDF to scale.
     /// * `scale` - Scaling value.
-    pub fn new(
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc(
         arena: &'arena Bump,
         bxdf: &'arena mut BxDF<'arena>,
         scale: Spectrum,
@@ -40,12 +41,13 @@ impl<'arena> ScaledBxDF<'arena> {
     /// Clone into a newly allocated a new instance of `ScaledBxDF`.
     ///
     /// * `arena` - The arena for memory allocations.
-    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let bxdf = self.bxdf.new_from(arena);
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let bxdf = self.bxdf.clone_alloc(arena);
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
             bxdf,
-            scale: self.scale.clone(),
+            scale: self.scale,
         });
         arena.alloc(BxDF::ScaledBxDF(model))
     }

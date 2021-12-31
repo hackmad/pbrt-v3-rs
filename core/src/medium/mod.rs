@@ -38,8 +38,8 @@ impl Clone for MediumInterface {
     /// Returns a copy of the value.
     fn clone(&self) -> Self {
         Self {
-            inside: self.inside.as_ref().map(|m| Arc::clone(&m)),
-            outside: self.outside.as_ref().map(|m| Arc::clone(&m)),
+            inside: self.inside.as_ref().map(Arc::clone),
+            outside: self.outside.as_ref().map(Arc::clone),
         }
     }
 }
@@ -51,8 +51,8 @@ impl MediumInterface {
     /// * `outside` - The exterior medium.
     pub fn new(inside: Option<ArcMedium>, outside: Option<ArcMedium>) -> Self {
         Self {
-            inside: inside.as_ref().map(|m| Arc::clone(&m)),
-            outside: outside.as_ref().map(|m| Arc::clone(&m)),
+            inside: inside.as_ref().map(Arc::clone),
+            outside: outside.as_ref().map(Arc::clone),
         }
     }
 
@@ -68,7 +68,7 @@ impl MediumInterface {
     /// two distinct media.
     pub fn is_medium_transition(&self) -> bool {
         match (self.inside.clone(), self.outside.clone()) {
-            (Some(inside), Some(outside)) => Arc::ptr_eq(&inside, &outside),
+            (Some(inside), Some(outside)) => Arc::ptr_eq(&inside, &outside), // TODO https://rust-lang.github.io/rust-clippy/master/index.html#vtable_address_comparisons
             (Some(_), None) => true,
             (None, Some(_)) => true,
             (None, None) => false,
@@ -94,8 +94,8 @@ impl From<Option<ArcMedium>> for MediumInterface {
     /// * `medium` - The medium on either side of the interface.
     fn from(medium: Option<ArcMedium>) -> Self {
         Self {
-            inside: medium.as_ref().map(|m| Arc::clone(&m)),
-            outside: medium.as_ref().map(|m| Arc::clone(&m)),
+            inside: medium.as_ref().map(Arc::clone),
+            outside: medium.as_ref().map(Arc::clone),
         }
     }
 }

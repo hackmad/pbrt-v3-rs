@@ -361,7 +361,7 @@ pub fn erf_inv(x: Float) -> Float {
     let x = clamp(x, -0.99999, 0.99999);
     let mut w = -((1.0 - x) * (1.0 + x)).ln();
     if w < 5.0 {
-        w = w - 2.5;
+        w -= 2.5;
 
         let mut p = 2.81022636e-08;
         p = 3.43273939e-07 + p * w;
@@ -395,7 +395,7 @@ pub fn erf_inv(x: Float) -> Float {
 pub struct HashableFloat(u64, i16, i8);
 impl HashableFloat {
     /// Create a new `HashableFloat` from a floating point value.
-    /// 
+    ///
     /// * `val` - The floating point value.
     pub fn new(val: Float) -> Self {
         let (mantissa, exponent, sign) = num_traits::Float::integer_decode(val);

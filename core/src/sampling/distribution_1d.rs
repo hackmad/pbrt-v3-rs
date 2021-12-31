@@ -33,12 +33,12 @@ impl Distribution1D {
         // Transform step function integral into CDF.
         let func_int = cdf[n];
         if func_int == 0.0 {
-            for i in 1..n + 1 {
-                cdf[i] = i as Float / n as Float;
+            for (i, v) in cdf.iter_mut().enumerate().skip(1).take(n) {
+                *v = i as Float / n as Float;
             }
         } else {
-            for i in 1..n + 1 {
-                cdf[i] /= func_int;
+            for v in cdf.iter_mut().skip(1).take(n) {
+                *v /= func_int;
             }
         }
 
@@ -93,7 +93,10 @@ impl Distribution1D {
             0.0
         };
         let u_remapped = (u - self.cdf[offset]) / (self.cdf[offset + 1] - self.cdf[offset]);
-        assert!(u_remapped >= 0.0 && u_remapped <= 1.0);
+
+        //assert!(u_remapped >= 0.0 && u_remapped <= 1.0);
+        assert!((0.0..=1.0).contains(&u_remapped));
+
         (offset, pdf, u_remapped)
     }
 

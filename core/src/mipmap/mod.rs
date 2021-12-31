@@ -129,7 +129,7 @@ where
         pyramid.push(BlockedArray::<T, 2>::from_slice(
             resolution[0],
             resolution[1],
-            if resampled_image.len() > 0 {
+            if !resampled_image.is_empty() {
                 &resampled_image
             } else {
                 img
@@ -156,10 +156,10 @@ where
 
         // Initialize EWA filter weights.
         let mut weight_lut = [0.0; WEIGHT_LUT_SIZE];
-        let alpha = 2.0;
-        for i in 0..WEIGHT_LUT_SIZE {
+        const ALPHA: Float = 2.0;
+        for (i, w) in weight_lut.iter_mut().enumerate().take(WEIGHT_LUT_SIZE) {
             let r2 = i as Float / (WEIGHT_LUT_SIZE - 1) as Float;
-            weight_lut[i] = (-alpha * r2).exp() - (-alpha).exp();
+            *w = (-ALPHA * r2).exp() - (-ALPHA).exp();
         }
 
         Self {
@@ -202,7 +202,7 @@ where
                 );
                 self.lookup_triangle(st, width)
             }
-            FilteringMethod::Ewa => self.lookup_ewa(st, &dst0, &dst1),
+            FilteringMethod::Ewa => self.lookup_ewa(st, dst0, dst1),
         }
     }
 
@@ -421,7 +421,7 @@ where
         .chunks(16)
         .for_each(|vt| {
             for t in vt {
-                for s in 0..res_pow2[0] {
+                for (s, swt) in s_weights.iter().enumerate().take(res_pow2[0]) {
                     // Compute texel `(s, t)` in `s`-zoomed image.
                     {
                         let mut pixels = resampled_image.lock().unwrap();
@@ -439,7 +439,7 @@ where
                         if orig_s < resolution[0] {
                             let mut pixels = resampled_image.lock().unwrap();
                             (*pixels)[t * res_pow2[0] + s] +=
-                                img[t * resolution[0] + orig_s] * s_weights[s].weight[j];
+                                img[t * resolution[0] + orig_s] * swt.weight[j];
                         }
                     }
                 }
@@ -512,21 +512,20 @@ fn resample_weights(old_res: usize, new_res: usize) -> Vec<ResampleWeight> {
     let mut wt: Vec<ResampleWeight> = vec![ResampleWeight::default(); new_res];
 
     let filterwidth = 2.0;
-    for i in 0..new_res {
+    for (i, wti) in wt.iter_mut().enumerate().take(new_res) {
         // Compute image resampling weights for i^th texel.
         let center = (i as Float + 0.5) * old_res as Float / new_res as Float;
 
-        wt[i].first_texel = ((center - filterwidth) + 0.5).floor() as usize;
+        wti.first_texel = ((center - filterwidth) + 0.5).floor() as usize;
         for j in 0..4 {
-            let pos = wt[i].first_texel as Float + j as Float + 0.5;
-            wt[i].weight[j] = lanczos((pos - center) / filterwidth, 2.0);
+            let pos = wti.first_texel as Float + j as Float + 0.5;
+            wti.weight[j] = lanczos((pos - center) / filterwidth, 2.0);
         }
 
         // Normalize filter weights for texel resampling
-        let inv_sum_wts =
-            1.0 / (wt[i].weight[0] + wt[i].weight[1] + wt[i].weight[2] + wt[i].weight[3]);
+        let inv_sum_wts = 1.0 / (wti.weight[0] + wti.weight[1] + wti.weight[2] + wti.weight[3]);
         for j in 0..4 {
-            wt[i].weight[j] *= inv_sum_wts;
+            wti.weight[j] *= inv_sum_wts;
         }
     }
     wt

@@ -37,7 +37,8 @@ impl<'arena> SpecularTransmission<'arena> {
     ///              surface normal).
     /// * `mode`   - Indicates whether incident ray started from a light
     ///              source or from camera.
-    pub fn new(
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc(
         arena: &'arena Bump,
         t: Spectrum,
         fresnel: &'arena mut Fresnel<'arena>,
@@ -59,15 +60,15 @@ impl<'arena> SpecularTransmission<'arena> {
     /// Clone into a newly allocated a new instance of `SpecularTransmission`.
     ///
     /// * `arena` - The arena for memory allocations.
-
-    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let fresnel = self.fresnel.new_from(arena);
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let fresnel = self.fresnel.clone_alloc(arena);
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
             fresnel,
-            t: self.t.clone(),
-            eta_a: self.eta_a.clone(),
-            eta_b: self.eta_b.clone(),
+            t: self.t,
+            eta_a: self.eta_a,
+            eta_b: self.eta_b,
             mode: self.mode,
         });
         arena.alloc(BxDF::SpecularTransmission(model))

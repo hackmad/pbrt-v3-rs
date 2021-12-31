@@ -4,8 +4,8 @@
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::sampling::*;
-use bumpalo::Bump;
 use crate::spectrum::*;
+use bumpalo::Bump;
 
 mod bsdf;
 mod bsdf_reader;
@@ -59,18 +59,19 @@ impl<'arena> BxDF<'arena> {
     /// Clone into a newly allocated instance.
     ///
     /// * `arena` - The memory arena used for allocations.
-    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
         match self {
-            BxDF::FourierBSDF(bxdf) => bxdf.new_from(arena),
-            BxDF::FresnelBlend(bxdf) => bxdf.new_from(arena),
-            BxDF::FresnelSpecular(bxdf) => bxdf.new_from(arena),
-            BxDF::LambertianReflection(bxdf) => bxdf.new_from(arena),
-            BxDF::MicrofacetReflection(bxdf) => bxdf.new_from(arena),
-            BxDF::MicrofacetTransmission(bxdf) => bxdf.new_from(arena),
-            BxDF::OrenNayar(bxdf) => bxdf.new_from(arena),
-            BxDF::ScaledBxDF(bxdf) => bxdf.new_from(arena),
-            BxDF::SpecularReflection(bxdf) => bxdf.new_from(arena),
-            BxDF::SpecularTransmission(bxdf) => bxdf.new_from(arena),
+            BxDF::FourierBSDF(bxdf) => bxdf.clone_alloc(arena),
+            BxDF::FresnelBlend(bxdf) => bxdf.clone_alloc(arena),
+            BxDF::FresnelSpecular(bxdf) => bxdf.clone_alloc(arena),
+            BxDF::LambertianReflection(bxdf) => bxdf.clone_alloc(arena),
+            BxDF::MicrofacetReflection(bxdf) => bxdf.clone_alloc(arena),
+            BxDF::MicrofacetTransmission(bxdf) => bxdf.clone_alloc(arena),
+            BxDF::OrenNayar(bxdf) => bxdf.clone_alloc(arena),
+            BxDF::ScaledBxDF(bxdf) => bxdf.clone_alloc(arena),
+            BxDF::SpecularReflection(bxdf) => bxdf.clone_alloc(arena),
+            BxDF::SpecularTransmission(bxdf) => bxdf.clone_alloc(arena),
         }
     }
 

@@ -284,23 +284,9 @@ impl ParamSet {
             match absolute_path(path) {
                 Ok(abs_path) => {
                     if let Some(spectrum) = self.cached_spectra.get(&abs_path) {
-                        spectra.push(spectrum.clone());
+                        spectra.push(*spectrum);
                         continue;
                     }
-                    /*
-                    match read_float_file(path) {
-                        Ok(values) => {
-                            let samples = Sample::list(&values);
-                            spectra.push(Spectrum::from(&samples));
-                        }
-                        Err(err) => {
-                            error!(
-                                "Error reading {}. Using black distribution.\n{}.",
-                                path, err
-                            );
-                            spectra.push(Spectrum::new(0.0));
-                        }
-                    } */
                 }
                 Err(err) => {
                     error!(
@@ -322,7 +308,7 @@ impl ParamSet {
     /// * `default` - Default file to use.
     pub fn find_one_filename(&self, name: &str, default: String) -> String {
         let filename = self.find_one_string(name, String::from(""));
-        if filename.len() == 0 {
+        if filename.is_empty() {
             default
         } else {
             absolute_path(&filename).map_or(default, |s| s)
@@ -343,6 +329,13 @@ impl ParamSet {
         self.strings.clear();
         self.textures.clear();
         self.cached_spectra.clear();
+    }
+}
+
+impl Default for ParamSet {
+    /// Returns the "default value" for `ParamSet`.
+    fn default() -> Self {
+        Self::new()
     }
 }
 

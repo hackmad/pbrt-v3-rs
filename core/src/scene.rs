@@ -32,11 +32,11 @@ impl Scene {
         let scene = Self {
             aggregate: Arc::clone(&aggregate),
             world_bound: aggregate.world_bound(),
-            lights: lights.iter().map(|l| Arc::clone(&l)).collect(),
+            lights: lights.iter().map(Arc::clone).collect(),
             infinite_lights: lights
                 .iter()
                 .filter(|l| l.get_type().matches(LightType::INFINITE_LIGHT))
-                .map(|l| Arc::clone(&l))
+                .map(Arc::clone)
                 .collect(),
         };
 

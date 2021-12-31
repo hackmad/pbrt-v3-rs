@@ -46,7 +46,7 @@ impl GeometricPrimitive {
             shape: Arc::clone(&shape),
             material: Some(Arc::clone(&material)),
             area_light: area_light.clone(),
-            medium_interface: medium_interface.clone(),
+            medium_interface,
         }
     }
 }
@@ -80,12 +80,9 @@ impl Primitive for GeometricPrimitive {
             let is_medium_transition = self.medium_interface.is_medium_transition();
             it.isect.hit.medium_interface = if is_medium_transition {
                 Some(self.medium_interface.clone())
-            } else if let Some(medium) = r.medium.as_ref() {
-                Some(MediumInterface::from(Arc::clone(&medium)))
             } else {
-                None
+                r.medium.as_ref().map(Arc::clone).map(MediumInterface::from)
             };
-
             Some(it.isect)
         } else {
             None

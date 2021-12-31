@@ -22,7 +22,7 @@ impl CylindericalMapping2D {
     /// * `p` - The point.
     fn cylinder(&self, p: &Point3f) -> Point2f {
         let vec =
-            (self.world_to_texture.transform_point(&p) - Point3f::new(0.0, 0.0, 0.0)).normalize();
+            (self.world_to_texture.transform_point(p) - Point3f::new(0.0, 0.0, 0.0)).normalize();
         Point2f::new((PI + atan2(vec.y, vec.x)) * INV_TWO_PI, vec.z)
     }
 }

@@ -83,26 +83,26 @@ impl Material for PlasticMaterial {
             Material::bump(self, Arc::clone(bump_map), si);
         }
 
-        let bsdf = BSDF::new(arena, &si, None);
+        let bsdf = BSDF::alloc(arena, &si, None);
 
         // Initialize diffuse component of plastic material.
         let kd = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kd.is_black() {
-            bsdf.add(LambertianReflection::new(arena, kd));
+            bsdf.add(LambertianReflection::alloc(arena, kd));
         }
 
         // Initialize specular component of plastic material.
         let ks = self.ks.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !ks.is_black() {
-            let fresnel = FresnelDielectric::new(arena, 1.5, 1.0);
+            let fresnel = FresnelDielectric::alloc(arena, 1.5, 1.0);
 
             // Create microfacet distribution for plastic material.
             let mut rough = self.roughness.evaluate(&si.hit, &si.uv, &si.der);
             if self.remap_roughness {
                 rough = TrowbridgeReitzDistribution::roughness_to_alpha(rough);
             }
-            let distrib = TrowbridgeReitzDistribution::new(arena, rough, rough, true);
-            bsdf.add(MicrofacetReflection::new(arena, ks, distrib, fresnel));
+            let distrib = TrowbridgeReitzDistribution::alloc(arena, rough, rough, true);
+            bsdf.add(MicrofacetReflection::alloc(arena, ks, distrib, fresnel));
         }
 
         si.bsdf = Some(bsdf);

@@ -64,8 +64,8 @@ impl Primitive for TransformedPrimitive {
     /// * `r`                  - The ray.
     fn intersect_p(&self, r: &Ray) -> bool {
         let interpolated_prim_to_world = self.primitive_to_world.interpolate(r.time);
-        let mut ray = interpolated_prim_to_world.inverse().transform_ray(r);
-        self.primitive.intersect_p(&mut ray)
+        let ray = interpolated_prim_to_world.inverse().transform_ray(r);
+        self.primitive.intersect_p(&ray)
     }
 
     /// Returns a reference to the AreaLight that describes the primitive’s

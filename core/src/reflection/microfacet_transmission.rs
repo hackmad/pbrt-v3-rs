@@ -44,7 +44,8 @@ impl<'arena> MicrofacetTransmission<'arena> {
     ///                    as surface normal).
     /// * `mode`         - Indicates whether incident ray started from a light
     ///                    source or from camera.
-    pub fn new(
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc(
         arena: &'arena Bump,
         t: Spectrum,
         distribution: &'arena mut MicrofacetDistribution<'arena>,
@@ -68,16 +69,17 @@ impl<'arena> MicrofacetTransmission<'arena> {
     /// Clone into a newly allocated a new instance of `MicrofacetTransmission`.
     ///
     /// * `arena` - The arena for memory allocations.
-    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let distribution = self.distribution.new_from(arena);
-        let fresnel = self.fresnel.new_from(arena);
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let distribution = self.distribution.clone_alloc(arena);
+        let fresnel = self.fresnel.clone_alloc(arena);
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
             distribution,
             fresnel,
-            t: self.t.clone(),
-            eta_a: self.eta_a.clone(),
-            eta_b: self.eta_b.clone(),
+            t: self.t,
+            eta_a: self.eta_a,
+            eta_b: self.eta_b,
             mode: self.mode,
         });
         arena.alloc(BxDF::MicrofacetTransmission(model))

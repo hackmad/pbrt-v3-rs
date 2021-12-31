@@ -22,7 +22,8 @@ impl LambertianReflection {
     /// * `arena` - The arena for memory allocations.
     /// * `r`     - Reflectance spectrum which gives the fraction of incident
     ///             light that is scattered.
-    pub fn new<'arena>(arena: &'arena Bump, r: Spectrum) -> &'arena mut BxDF {
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc<'arena>(arena: &'arena Bump, r: Spectrum) -> &'arena mut BxDF {
         let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_DIFFUSE,
             r,
@@ -33,10 +34,11 @@ impl LambertianReflection {
     /// Clone into a newly allocated a new instance of `LambertianReflection`.
     ///
     /// * `arena` - The arena for memory allocations.
-    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
-            r: self.r.clone(),
+            r: self.r,
         });
         arena.alloc(BxDF::LambertianReflection(model))
     }

@@ -27,11 +27,12 @@ impl FourierBSDF {
     /// * `bsdf_table` - The BSDF data.
     /// * `mode`       - Indicates whether incident ray started from a light source
     ///                  or from camera.
-    pub fn new<'arena>(
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc<'arena>(
         arena: &'arena Bump,
         bsdf_table: Arc<FourierBSDFTable>,
         mode: TransportMode,
-    ) -> &'arena mut BxDF<'arena> {
+    ) -> &'arena mut BxDF {
         let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_REFLECTION
                 | BxDFType::BSDF_TRANSMISSION
@@ -45,7 +46,8 @@ impl FourierBSDF {
     /// Clone into a newly allocated a new instance of `FourierBSDF`.
     ///
     /// * `arena` - The memory arena.
-    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
             bsdf_table: Arc::clone(&self.bsdf_table),
@@ -88,10 +90,10 @@ impl FourierBSDF {
 
         // Accumulate weighted sums of nearby `ak` coefficients.
         let mut m_max = 0;
-        for b in 0..4 {
-            for a in 0..4 {
+        for (b, wtob) in weights_o.iter().enumerate() {
+            for (a, wtia) in weights_i.iter().enumerate() {
                 // Add contribution of `(a, b)` to `ak` values.
-                let weight = weights_i[a] * weights_o[b];
+                let weight = wtia * wtob;
                 if weight != 0.0 {
                     let (m, ap) = self.bsdf_table.get_ak(offset_i + a, offset_o + b);
                     m_max = max(m_max, m);
@@ -121,7 +123,7 @@ impl FourierBSDF {
             Spectrum::new(y * scale)
         } else {
             // Compute and return RGB colors for tabulated BSDF.
-            let rs = 1 * self.bsdf_table.m_max;
+            let rs = self.bsdf_table.m_max;
             let re = rs + m_max;
             let r = fourier(&ak[rs..re], cos_phi);
 
@@ -171,10 +173,10 @@ impl FourierBSDF {
 
         // Accumulate weighted sums of nearby `a_k` coefficients.
         let mut m_max = 0;
-        for b in 0..4 {
-            for a in 0..4 {
+        for (b, wtob) in weights_o.iter().enumerate() {
+            for (a, wtia) in weights_i.iter().enumerate() {
                 // Add contribution of `(a, b)` to `ak` values.
-                let weight = weights_i[a] * weights_o[b];
+                let weight = wtia * wtob;
                 if weight != 0.0 {
                     let (m, ap) = self.bsdf_table.get_ak(offset_i + a, offset_o + b);
                     m_max = max(m_max, m);
@@ -230,7 +232,7 @@ impl FourierBSDF {
         if self.bsdf_table.n_channels == 1 {
             BxDFSample::new(Spectrum::new(y * scale), pdf, wi, self.bxdf_type)
         } else {
-            let rs = 1 * self.bsdf_table.m_max;
+            let rs = self.bsdf_table.m_max;
             let re = rs + m_max;
             let r = fourier(&ak[rs..re], cos_phi as f64);
 
@@ -268,10 +270,10 @@ impl FourierBSDF {
         let mut ak = vec![0.0; ak_size];
 
         let mut m_max = 0;
-        for o in 0..4 {
-            for i in 0..4 {
+        for (o, wto) in weights_o.iter().enumerate() {
+            for (i, wti) in weights_i.iter().enumerate() {
                 // Add contribution of `(a, b)` to `ak` values.
-                let weight = weights_i[i] * weights_o[o];
+                let weight = wti * wto;
                 if weight == 0.0 {
                     continue;
                 }

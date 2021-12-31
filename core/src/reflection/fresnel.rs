@@ -17,11 +17,12 @@ impl<'arena> Fresnel<'arena> {
     /// Clone into a newly allocated instance.
     ///
     /// * `arena` - The memory arena used for allocations.
-    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
         match self {
-            Self::NoOp(f) => f.new_from(arena),
-            Self::Dielectric(f) => f.new_from(arena),
-            Self::Conductor(f) => f.new_from(arena),
+            Self::NoOp(f) => f.clone_alloc(arena),
+            Self::Dielectric(f) => f.clone_alloc(arena),
+            Self::Conductor(f) => f.clone_alloc(arena),
         }
     }
 
@@ -54,11 +55,8 @@ impl FresnelDielectric {
     /// * `arena` - The arena for memory allocations.
     /// * `eta_i` - Index of refraction for exterior side of the surface.
     /// * `eta_t` - Index of refraction for interior side of the surface.
-    pub fn new<'arena>(
-        arena: &'arena Bump,
-        eta_i: Float,
-        eta_t: Float,
-    ) -> &'arena mut Fresnel<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc<'arena>(arena: &'arena Bump, eta_i: Float, eta_t: Float) -> &'arena mut Fresnel {
         let f = arena.alloc(Self { eta_i, eta_t });
         arena.alloc(Fresnel::Dielectric(f))
     }
@@ -66,10 +64,11 @@ impl FresnelDielectric {
     /// Clone into a newly allocated a new instance of `FresnelDielectric`.
     ///
     /// * `arena` - The arena for memory allocations.
-    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
         let f = arena.alloc(Self {
-            eta_i: self.eta_i.clone(),
-            eta_t: self.eta_t.clone(),
+            eta_i: self.eta_i,
+            eta_t: self.eta_t,
         });
         arena.alloc(Fresnel::Dielectric(f))
     }
@@ -103,12 +102,13 @@ impl FresnelConductor {
     /// * `eta_i` - Index of refraction for exterior side of the surface.
     /// * `eta_t` - Index of refraction for interior side of the surface.
     /// * `k`     - Absorption coefficient.
-    pub fn new<'arena>(
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc<'arena>(
         arena: &'arena Bump,
         eta_i: Spectrum,
         eta_t: Spectrum,
         k: Spectrum,
-    ) -> &'arena mut Fresnel<'arena> {
+    ) -> &'arena mut Fresnel {
         let f = arena.alloc(Self { eta_i, eta_t, k });
         arena.alloc(Fresnel::Conductor(f))
     }
@@ -116,11 +116,12 @@ impl FresnelConductor {
     /// Clone into a newly allocated a new instance of `FresnelConductor`.
     ///
     /// * `arena` - The arena for memory allocations.
-    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
         let f = arena.alloc(Self {
-            eta_i: self.eta_i.clone(),
-            eta_t: self.eta_t.clone(),
-            k: self.k.clone(),
+            eta_i: self.eta_i,
+            eta_t: self.eta_t,
+            k: self.k,
         });
         arena.alloc(Fresnel::Conductor(f))
     }
@@ -143,6 +144,7 @@ impl FresnelNoOp {
     /// Allocator a new `FresnelNoOp`.
     ///
     /// * `allocator` - The allocator.
+    #[allow(clippy::mut_from_ref)]
     pub fn alloc<'arena>(arena: &'arena Bump) -> &'arena mut Fresnel {
         let f = arena.alloc(Self {});
         arena.alloc(Fresnel::NoOp(f))
@@ -151,7 +153,8 @@ impl FresnelNoOp {
     /// Clone into a newly allocated a new instance of `FresnelNoOp`.
     ///
     /// * `arena` - The arena for memory allocations.
-    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
         let f = arena.alloc(Self {});
         arena.alloc(Fresnel::NoOp(f))
     }

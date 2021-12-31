@@ -56,9 +56,7 @@ impl TextureParams {
     ///
     /// * `name` - Parameter name.
     pub fn get_float_texture(&self, name: &str) -> Option<ArcTexture<Float>> {
-        self.float_textures
-            .get(&String::from(name))
-            .map(|tex| Arc::clone(tex))
+        self.float_textures.get(&String::from(name)).map(Arc::clone)
     }
 
     /// Returns a floating point texture, a floating point value or the given
@@ -116,7 +114,7 @@ impl TextureParams {
     pub fn get_spectrum_texture(&self, name: &str) -> Option<ArcTexture<Spectrum>> {
         self.spectrum_textures
             .get(&String::from(name))
-            .map(|tex| Arc::clone(tex))
+            .map(Arc::clone)
     }
 
     /// Returns a spectrum texture, a spectrum value or the given default
@@ -180,7 +178,7 @@ impl TextureParams {
     pub fn find_filename(&self, name: &str, mat_default: String, cwd: &str) -> String {
         let default = self.mat_params.find_one_string(name, mat_default);
         let mut path = self.geom_params.find_one_string(name, default);
-        if is_relative_path(&path) && cwd.len() > 0 {
+        if is_relative_path(&path) && !cwd.is_empty() {
             // Path is relative to the parent path of the file being parsed.
             path = cwd.to_string() + "/" + &path;
         }

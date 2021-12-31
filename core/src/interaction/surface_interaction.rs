@@ -249,7 +249,7 @@ impl<'primitive, 'arena> SurfaceInteraction<'primitive, 'arena> {
     ///
     /// * `w` - The outgoing direction.
     pub fn le(&self, w: &Vector3f) -> Spectrum {
-        if let Some(area_light) = self.primitive.map(|p| p.get_area_light()).flatten() {
+        if let Some(area_light) = self.primitive.and_then(|p| p.get_area_light()) {
             area_light.l(&self.hit, w)
         } else {
             Spectrum::new(0.0)

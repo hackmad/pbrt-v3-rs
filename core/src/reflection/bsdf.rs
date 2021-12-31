@@ -37,25 +37,25 @@ impl fmt::Display for BxDFType {
             s += "BSDF_REFLECTION";
         }
         if self.bits & Self::BSDF_TRANSMISSION.bits == Self::BSDF_TRANSMISSION.bits {
-            if s.len() > 0 {
+            if !s.is_empty() {
                 s += " | ";
             }
             s += "BSDF_TRANSMISSION";
         }
         if self.bits & Self::BSDF_DIFFUSE.bits == Self::BSDF_DIFFUSE.bits {
-            if s.len() > 0 {
+            if !s.is_empty() {
                 s += " | ";
             }
             s += "BSDF_DIFFUSE";
         }
         if self.bits & Self::BSDF_GLOSSY.bits == Self::BSDF_GLOSSY.bits {
-            if s.len() > 0 {
+            if !s.is_empty() {
                 s += " | ";
             }
             s += "BSDF_GLOSSY";
         }
         if self.bits & Self::BSDF_SPECULAR.bits == Self::BSDF_SPECULAR.bits {
-            if s.len() > 0 {
+            if !s.is_empty() {
                 s += " | ";
             }
             s += "BSDF_SPECULAR";
@@ -102,7 +102,8 @@ impl<'arena> BSDF<'arena> {
     /// * `eta`   - Optional relative index of refraction over the surface
     ///             boundary. If not provided, defaults to 1.0; used for
     ///             opaque surfaces.
-    pub fn new(
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc(
         arena: &'arena Bump,
         si: &SurfaceInteraction,
         eta: Option<Float>,
@@ -352,7 +353,7 @@ impl<'arena> BSDF<'arena> {
     /// * `wi_world`  - Incident direction in world-space.
     /// * `bxdf_type` - The `BxdFType` to evaluate.
     pub fn pdf(&self, wo_world: &Vector3f, wi_world: &Vector3f, bxdf_type: BxDFType) -> Float {
-        if self.bxdfs.len() == 0 {
+        if self.bxdfs.is_empty() {
             return 0.0;
         }
 

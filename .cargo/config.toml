@@ -1,0 +1,2 @@
+[build]
+rustflags = "-A clippy::excessive_precision -A clippy::return_self_not_must_use"

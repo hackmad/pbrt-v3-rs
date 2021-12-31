@@ -15,9 +15,9 @@ pub enum SpectrumType {
     /// Surface illuminant.
     Illuminant = 1,
 }
-impl Into<usize> for SpectrumType {
-    fn into(self) -> usize {
-        self as usize
+impl From<SpectrumType> for usize {
+    fn from(stype: SpectrumType) -> Self {
+        stype as usize
     }
 }
 pub const NUM_RGB_SPECTRUM_TYPES: usize = 2;
@@ -121,7 +121,7 @@ pub trait CoefficientSpectrum:
     /// Returns the maximum sample value.
     fn max_component_value(&self) -> Float {
         let samples = self.samples();
-        assert!(samples.len() > 0);
+        assert!(!samples.is_empty());
         samples[1..].iter().fold(samples[0], |m, v| max(m, *v))
     }
 
@@ -221,16 +221,15 @@ pub trait CoefficientSpectrum:
 /// Determines if given vector containing wavelengths is sorted.
 ///
 /// * `lambda` - Vector containing wavelengths.
-pub fn are_spectrum_samples_sorted(samples: &Vec<Sample>) -> bool {
+pub fn are_spectrum_samples_sorted(samples: &[Sample]) -> bool {
     let n = samples.len();
     match n {
         0 => true,
         1 => true,
-        _ => samples
+        _ => !samples
             .iter()
             .zip(samples[1..].iter())
-            .find(|(s1, s2)| s1.lambda > s2.lambda)
-            .is_none(),
+            .any(|(s1, s2)| s1.lambda > s2.lambda),
     }
 }
 
@@ -249,7 +248,7 @@ pub fn sort_spectrum_samples(samples: &mut Vec<Sample>) {
 /// * `lambda_start` - Starting wavelength.
 /// * `lambda_end`   - Ending wavelength.
 pub fn average_spectrum_samples(
-    samples: &Vec<Sample>,
+    samples: &[Sample],
     lambda_start: Float,
     lambda_end: Float,
 ) -> Float {
@@ -320,7 +319,7 @@ pub fn average_spectrum_samples(
 ///
 /// * `samples` - The sample values.
 /// * `l`       - Wavelength at which to interpolate SPD.
-pub fn interpolate_spectrum_samples(samples: &Vec<Sample>, l: Float) -> Float {
+pub fn interpolate_spectrum_samples(samples: &[Sample], l: Float) -> Float {
     let n = samples.len();
 
     if l <= samples[0].lambda {
@@ -401,8 +400,9 @@ pub fn blackbody_normalized(lambda: &[Float], t: Float) -> Vec<Float> {
     // Normalize `Le` values based on maximum blackbody radiance.
     let lambda_max = 2.8977721e-3 / t * 1e9; // Convert to meters -> nanometers.
     let max_l = blackbody(&[lambda_max], t);
-    for i in 0..le.len() {
-        le[i] /= max_l[0];
+
+    for v in &mut le {
+        *v /= max_l[0];
     }
     le
 }

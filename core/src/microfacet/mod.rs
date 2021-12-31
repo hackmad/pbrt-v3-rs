@@ -23,10 +23,11 @@ impl<'arena> MicrofacetDistribution<'arena> {
     /// Clone into a newly allocated instance.
     ///
     /// * `arena` - The memory arena used for allocations.
-    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut MicrofacetDistribution<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut MicrofacetDistribution<'arena> {
         match self {
-            Self::Beckmann(dist) => dist.new_from(arena),
-            Self::TrowBridgeReitz(dist) => dist.new_from(arena),
+            Self::Beckmann(dist) => dist.clone_alloc(arena),
+            Self::TrowBridgeReitz(dist) => dist.clone_alloc(arena),
         }
     }
 

@@ -27,7 +27,8 @@ impl<'arena> FresnelBlend<'arena> {
     /// * `rd`           - Reflectance spectrum for diffuse scattering.
     /// * `rs`           - Reflectance spectrum for specular scattering.
     /// * `distribution` - Microfacet distribution.
-    pub fn new(
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc(
         arena: &'arena Bump,
         rd: Spectrum,
         rs: Spectrum,
@@ -45,12 +46,13 @@ impl<'arena> FresnelBlend<'arena> {
     /// Clone into a newly allocated a new instance of `FresnelBlend`.
     ///
     /// * `arena` - The arena for memory allocations.
-    pub fn new_from(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let distribution = self.distribution.new_from(arena);
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+        let distribution = self.distribution.clone_alloc(arena);
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
-            rd: self.rd.clone(),
-            rs: self.rs.clone(),
+            rd: self.rd,
+            rs: self.rs,
             distribution,
         });
         arena.alloc(BxDF::FresnelBlend(model))
@@ -62,7 +64,7 @@ impl<'arena> FresnelBlend<'arena> {
     ///
     /// * `cos_theta` - Angle made by incident direction.
     fn schlick_fresnel(&self, cos_theta: Float) -> Spectrum {
-        return self.rs + (Spectrum::new(1.0) - self.rs) * pow5(1.0 - cos_theta);
+        self.rs + (Spectrum::new(1.0) - self.rs) * pow5(1.0 - cos_theta)
     }
 
     /// Returns the BxDF type.

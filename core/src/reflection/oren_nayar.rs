@@ -37,7 +37,8 @@ impl OrenNayar {
     ///             light that is scattered.
     /// * `sigma` - The Gaussian distribution parameter, the standard deviation
     ///             of the microfacet orientation angle (in degrees).
-    pub fn new<'arena>(arena: &'arena Bump, r: Spectrum, sigma: Float) -> &'arena mut BxDF {
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc<'arena>(arena: &'arena Bump, r: Spectrum, sigma: Float) -> &'arena mut BxDF {
         let sigma = sigma.to_radians();
         let sigma2 = sigma * sigma;
         let model = arena.alloc(Self {
@@ -52,10 +53,11 @@ impl OrenNayar {
     /// Clone into a newly allocated a new instance of `OrenNayar`.
     ///
     /// * `arena` - The arena for memory allocations.
-    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
-            r: self.r.clone(),
+            r: self.r,
             a: self.a,
             b: self.b,
         });

@@ -71,21 +71,25 @@ impl Material for MixMaterial {
             .compute_scattering_functions(arena, &mut si2, mode, allow_multiple_lobes);
 
         // Initialize `si.bsdf` with weighted mixture of BxDFs.
-        let bsdf = BSDF::new(arena, &si, None);
+        let bsdf = BSDF::alloc(arena, &si, None);
 
         if let Some(si_bsdf) = si.bsdf.as_ref() {
             let n1 = si_bsdf.num_components(BxDFType::all());
             for i in 0..n1 {
-                bsdf.add(ScaledBxDF::new(arena, si_bsdf.bxdfs[i].new_from(arena), s1));
+                bsdf.add(ScaledBxDF::alloc(
+                    arena,
+                    si_bsdf.bxdfs[i].clone_alloc(arena),
+                    s1,
+                ));
             }
         }
 
         if let Some(si2_bsdf) = si2.bsdf {
             let n2 = si2_bsdf.num_components(BxDFType::all());
             for i in 0..n2 {
-                bsdf.add(ScaledBxDF::new(
+                bsdf.add(ScaledBxDF::alloc(
                     arena,
-                    si2_bsdf.bxdfs[i].new_from(arena),
+                    si2_bsdf.bxdfs[i].clone_alloc(arena),
                     s2,
                 ));
             }

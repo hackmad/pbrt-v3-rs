@@ -88,6 +88,13 @@ impl CIE {
     }
 }
 
+impl Default for CIE {
+    /// Returns the "default value" for `CIE`.
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // CIE X function values.
 #[rustfmt::skip]
 pub const CIE_X: [Float; CIE_SAMPLES] = [

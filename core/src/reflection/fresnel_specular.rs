@@ -40,7 +40,8 @@ impl FresnelSpecular {
     ///               normal).
     /// * `mode`    - Indicates whether incident ray started from a light source
     ///               or from camera.
-    pub fn new<'arena>(
+    #[allow(clippy::mut_from_ref)]
+    pub fn alloc<'arena>(
         arena: &'arena Bump,
         r: Spectrum,
         t: Spectrum,
@@ -64,11 +65,12 @@ impl FresnelSpecular {
     /// Clone into a newly allocated a new instance of `FresnelSpecular`.
     ///
     /// * `arena` - The arena for memory allocations.
-    pub fn new_from<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
-            r: self.r.clone(),
-            t: self.t.clone(),
+            r: self.r,
+            t: self.t,
             eta_a: self.eta_a,
             eta_b: self.eta_b,
             mode: self.mode,

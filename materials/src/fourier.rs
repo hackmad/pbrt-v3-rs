@@ -80,12 +80,12 @@ impl Material for FourierMaterial {
             Material::bump(self, Arc::clone(bump_map), si);
         }
 
-        let bsdf = BSDF::new(arena, &si, None);
+        let bsdf = BSDF::alloc(arena, &si, None);
 
         // Checking for zero channels works as a proxy for checking whether the
         // table was successfully read from the file.
         if self.bsdf_table.n_channels > 0 {
-            bsdf.add(FourierBSDF::new(arena, Arc::clone(&self.bsdf_table), mode));
+            bsdf.add(FourierBSDF::alloc(arena, Arc::clone(&self.bsdf_table), mode));
         }
 
         si.bsdf = Some(bsdf);
