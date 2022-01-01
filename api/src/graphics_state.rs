@@ -339,6 +339,7 @@ impl GraphicsState {
             "mix" => Ok(Arc::new(MixTexture::<Float>::from(p))),
             "scale" => Ok(Arc::new(ScaleTexture::<Float>::from(p))),
             "windy" => Ok(Arc::new(WindyTexture::<Float>::from(p))),
+            "wrinkled" => Ok(Arc::new(WrinkledTexture::<Float>::from(p))),
             _ => Err(format!("Float texture '{}' unknown.", name)),
         }
     }

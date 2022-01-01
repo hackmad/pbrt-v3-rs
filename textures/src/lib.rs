@@ -20,6 +20,7 @@ mod mix;
 mod scale;
 mod uv;
 mod windy;
+mod wrinkled;
 
 // Re-export
 pub use bilerp::*;
@@ -34,6 +35,7 @@ pub use mix::*;
 pub use scale::*;
 pub use uv::*;
 pub use windy::*;
+pub use wrinkled::*;
 
 /// Returns a 2D texture mapping reference from the texture parameters.
 ///
