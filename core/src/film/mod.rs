@@ -218,15 +218,54 @@ impl Film {
 
     /// Merge the `FilmTile`'s pixel contribution into the image.
     ///
+    /// This is same as merge_film_tile_old() to reduce all but one call to
+    /// tile.get_pixel_offset() and self.get_pixel_offset().
+    ///
     /// * `tile` - The `FilmTile` to merge.
     pub fn merge_film_tile(&self, tile: &FilmTile) {
+        let mut pixels = self.pixels.write().unwrap();
+
+        let cropped_pixel_width =
+            (self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x) as usize;
+
+        let tile_pixel_bounds = tile.get_pixel_bounds();
+        let tile_width = (tile_pixel_bounds.p_max.x - tile_pixel_bounds.p_min.x) as usize;
+        let tile_size = tile_pixel_bounds.area() as usize;
+
+        let mut tile_pixel = tile.get_pixel_offset(&tile_pixel_bounds.p_min);
+        let mut merge_pixel = self.get_pixel_offset(&tile_pixel_bounds.p_min);
+        let mut x = tile_pixel_bounds.p_min.x;
+
+        for _ in 0..tile_size {
+            let xyz = tile.pixels[tile_pixel].contrib_sum.to_xyz();
+            pixels[merge_pixel].xyz[0] += xyz[0];
+            pixels[merge_pixel].xyz[1] += xyz[1];
+            pixels[merge_pixel].xyz[2] += xyz[2];
+
+            pixels[merge_pixel].filter_weight_sum += tile.pixels[tile_pixel].filter_weight_sum;
+
+            x += 1;
+            tile_pixel += 1;
+            merge_pixel += 1;
+
+            if x == tile_pixel_bounds.p_max.x {
+                x = tile_pixel_bounds.p_min.x;
+                merge_pixel += cropped_pixel_width - tile_width;
+            }
+        }
+    }
+
+    /// Merge the `FilmTile`'s pixel contribution into the image.
+    ///
+    /// * `tile` - The `FilmTile` to merge.
+    fn merge_film_tile_old(&self, tile: &FilmTile) {
         let mut pixels = self.pixels.write().unwrap();
         for pixel in tile.get_pixel_bounds() {
             let tile_pixel = tile.get_pixel_offset(&pixel);
             let merge_pixel = self.get_pixel_offset(&pixel);
             let xyz = tile.pixels[tile_pixel].contrib_sum.to_xyz();
             for (i, colour) in xyz.iter().enumerate() {
-                pixels[merge_pixel].xyz[i] += colour;
+                pixels[merge_pixel].xyz[i] += *colour;
             }
             pixels[merge_pixel].filter_weight_sum += tile.pixels[tile_pixel].filter_weight_sum;
         }
@@ -237,8 +276,8 @@ impl Film {
     /// * `img` - The spectrum values for the cropped area.
     pub fn set_image(&self, img: &[Spectrum]) {
         let mut pixels = self.pixels.write().unwrap();
-        let n_pixels = self.cropped_pixel_bounds.area();
-        for i in (0..n_pixels).map(|i| i as usize) {
+        let n_pixels = self.cropped_pixel_bounds.area() as usize;
+        for i in 0..n_pixels {
             pixels[i].xyz = img[i].to_xyz();
             pixels[i].filter_weight_sum = 1.0;
             pixels[i].splat_xyz = [0.0; 3];
