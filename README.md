@@ -38,6 +38,9 @@ pngquant --ext .png --force renders/shapes/*.png
 <a href="renders/shapes/plymesh.png"><img src="renders/shapes/plymesh.png" style="height: 100px;"/></a>
 <a href="renders/shapes/loopsubdiv.png"><img src="renders/shapes/loopsubdiv.png" style="height: 100px;"/></a>
 
+### Textures
+
+<a href="renders/textures/2d-mappings.png"><img src="renders/textures/2d-mappings.png" style="height: 100px"/></a>
 
 ## Building
 
