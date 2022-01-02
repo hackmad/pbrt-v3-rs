@@ -1,6 +1,5 @@
 //! Application related stuff
 
-#![allow(dead_code)]
 use crate::pbrt::Float;
 use clap::*;
 

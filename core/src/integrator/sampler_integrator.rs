@@ -12,6 +12,7 @@ use crate::sampler::*;
 use crate::scene::*;
 use crate::spectrum::*;
 use bumpalo::Bump;
+use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::sync::Arc;
 
@@ -282,23 +283,36 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
         // Parallelize.
         info!("Rendering {}x{} tiles", n_tiles.x, n_tiles.y);
-        (0..tile_count).into_par_iter().for_each(|tile_idx| {
-            let tile_x = tile_idx % n_tiles.x as usize;
-            let tile_y = tile_idx / n_tiles.x as usize;
 
-            // Render section of image corresponding to `tile`.
-            let film_tile = self.render_tile(tile_idx, n_tiles, scene, sample_bounds);
+        let progress_style = ProgressStyle::default_bar()
+            .template(
+                "{msg:.cyan.bold}: [{bar:40.green/white}] {pos:>7}/{len:7} ({elapsed_precise}|{eta_precise})",
+            )
+            .progress_chars("█▓▒░  ");
+        let render_progress = ProgressBar::new(tile_count as u64);
+        render_progress.set_message("Rendering");
+        render_progress.set_style(progress_style);
+        render_progress.finish_with_message("Rendering finished");
 
-            // Merge image tile into `Film`.
-            info!("Merging image tile ({}, {})", tile_x, tile_y);
-            camera_data.film.merge_film_tile(&film_tile);
-        });
-
-        info!("Rendering finished.");
+        (0..tile_count)
+            .into_par_iter()
+            .progress_with(render_progress)
+            .map(|tile_idx| {
+                // Render section of image corresponding to `tile`.
+                let tile_x = tile_idx % n_tiles.x as usize;
+                let tile_y = tile_idx / n_tiles.x as usize;
+                info!("Rendering {}x{} tiles", n_tiles.x, n_tiles.y);
+                let film_tile = self.render_tile(tile_idx, n_tiles, scene, sample_bounds);
+                (tile_x, tile_y, film_tile)
+            })
+            .for_each(|(tile_x, tile_y, film_tile)| {
+                // Merge image tile into `Film`.
+                info!("Merging image tile ({}, {})", tile_x, tile_y);
+                camera_data.film.merge_film_tile(&film_tile);
+            });
 
         // Save final image after rendering.
         camera_data.film.write_image(1.0);
-        info!("Output image written.");
     }
 
     /// Render an image tile.
