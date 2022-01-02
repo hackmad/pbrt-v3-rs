@@ -52,7 +52,7 @@ fn get_texture_mapping(tp: &TextureParams, tex2world: ArcTransform) -> ArcTextur
             Arc::new(UVMapping2D::new(su, sv, du, dv))
         }
         "spherical" => Arc::new(SphericalMapping2D::new(tex2world.inverse())),
-        "cylinderical" => Arc::new(CylindericalMapping2D::new(tex2world.inverse())),
+        "cylindrical" => Arc::new(CylindericalMapping2D::new(tex2world.inverse())),
         "planar" => Arc::new(PlanarMapping2D::new(
             tp.find_vector3f("v1", Vector3f::new(1.0, 0.0, 0.0)),
             tp.find_vector3f("v2", Vector3f::new(0.0, 1.0, 0.0)),
