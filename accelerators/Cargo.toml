@@ -2,7 +2,7 @@
 name = "accelerators"
 version = "0.0.1"
 authors = ["Ahmad Kabani <ahmadkabani@yahoo.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 core = { path = "../core" }
