@@ -38,16 +38,17 @@ pngquant --ext .png --force renders/shapes/*.png
 <a href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" style="height: 100px;"/></a>
 <a href="renders/shapes/disk.png"><img src="renders/shapes/disk.png" style="height: 100px;"/></a>
 <a href="renders/shapes/other-quadrics.png"><img src="renders/shapes/other-quadrics.png" style="height: 100px;"/></a>
-<a href="renders/shapes/plymesh.png"><img src="renders/shapes/plymesh.png" style="height: 100px;"/></a><a 
-    href="renders/shapes/loopsubdiv.png"><img src="renders/shapes/loopsubdiv.png" style="height: 100px;"/></a>
+<a href="renders/shapes/plymesh.png"><img src="renders/shapes/plymesh.png" style="height: 100px;"/></a>
+<a href="renders/shapes/loopsubdiv.png"><img src="renders/shapes/loopsubdiv.png" style="height: 100px;"/></a>
 
 ### Textures
 
 <a href="renders/textures/2d-mappings.png"><img src="renders/textures/2d-mappings.png" style="height: 100px"/></a>
 <a href="renders/textures/trilinear-filtering.png"><img src="renders/textures/trilinear-filtering.png" style="height: 100px"/></a><a 
    href="renders/textures/ewa-filtering.png"><img src="renders/textures/ewa-filtering.png" style="height: 100px"/></a>
-<a href="renders/textures/uv.png"><img src="renders/textures/uv.png" style="height: 100px"/></a><a
-   href="renders/textures/2d-checkerboard.png"><img src="renders/textures/2d-checkerboard.png" style="height: 100px"/></a>
+<a href="renders/textures/uv.png"><img src="renders/textures/uv.png" style="height: 100px"/></a>
+<a href="renders/textures/2d-checkerboard.png"><img src="renders/textures/2d-checkerboard.png" style="height: 100px"/></a>
+<a href="renders/textures/dots.png"><img src="renders/textures/dots.png" style="height: 100px"/></a>
 <a href="renders/textures/3d-checkerboard.png"><img src="renders/textures/3d-checkerboard.png" style="height: 100px"/></a>
 
 ## Building
