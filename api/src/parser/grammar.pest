@@ -14,7 +14,7 @@ stmt_end = _{ WHITESPACE_OR_NEWLINE+ | comment? }
 
 block_stmt = {
     world_begin_stmt | world_end_stmt | attribute_begin_stmt | attribute_end_stmt
-    | object_begin_stmt | object_end_stmt
+    | object_begin_stmt | object_end_stmt | transform_begin_stmt | transform_end_stmt
 }
 world_begin_stmt = { "WorldBegin" ~ stmt_end }
 world_end_stmt = { "WorldEnd" ~ stmt_end }

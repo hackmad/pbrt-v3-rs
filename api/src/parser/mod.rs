@@ -144,6 +144,8 @@ impl PbrtFileParser {
                 api.pbrt_object_begin(str);
             }
             Rule::object_end_stmt => api.pbrt_object_end(),
+            Rule::transform_begin_stmt => api.pbrt_transform_begin(),
+            Rule::transform_end_stmt => api.pbrt_transform_end(),
             _ => unreachable!(),
         }
     }
