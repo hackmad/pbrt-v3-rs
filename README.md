@@ -11,19 +11,22 @@ Completed work from the book will be tagged as a release which can be found
 
 ## Renders
 
-The images shown below are based on those versions. Not all scenes are
-available in each release and may look different due to changes in the
-algorithms.
+Some scenes include PBRT files from:
+- [Scenes for pbrt-v3](https://www.pbrt.org/scenes-v3) under `../pbrt-v3-scenes` 
+  relative to this repositories root. 
+- [Vripped reconstruction of Dragon Model](http://graphics.stanford.edu/data/3Dscanrep/) 
+  under `../dragon_recon` relative to this repositories root. 
 
-Some scenes include PBRT files from [here](https://www.pbrt.org/scenes-v3) and 
-rely on having them under `../pbrt-v3-scenes` relative to this repositories
-root. Note that relative paths for `Texture`, `Include` etc are relative to the
-scene file location.
+The relative paths for `Texture`, `Include` etc are relative to the scene file location.
 
 PNG files can be compressed using `pngquant`:
+
 ```
 pngquant --ext .png --force renders/shapes/sphere.png
 ```
+
+OR
+
 ```
 pngquant --ext .png --force renders/shapes/*.png 
 ```
@@ -42,7 +45,10 @@ pngquant --ext .png --force renders/shapes/*.png
 
 <a href="renders/textures/2d-mappings.png"><img src="renders/textures/2d-mappings.png" style="height: 100px"/></a>
 <a href="renders/textures/trilinear-filtering.png"><img src="renders/textures/trilinear-filtering.png" style="height: 100px"/></a><a 
-    href="renders/textures/ewa-filtering.png"><img src="renders/textures/ewa-filtering.png" style="height: 100px"/></a>
+   href="renders/textures/ewa-filtering.png"><img src="renders/textures/ewa-filtering.png" style="height: 100px"/></a>
+<a href="renders/textures/uv.png"><img src="renders/textures/uv.png" style="height: 100px"/></a><a
+   href="renders/textures/2d-checkerboard.png"><img src="renders/textures/2d-checkerboard.png" style="height: 100px"/></a>
+<a href="renders/textures/3d-checkerboard.png"><img src="renders/textures/3d-checkerboard.png" style="height: 100px"/></a>
 
 ## Building
 

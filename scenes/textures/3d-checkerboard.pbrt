@@ -1,0 +1,37 @@
+LookAt 0 0.75 0.25
+       0 0 0.06
+       0 0 1
+Camera "perspective" "float fov" 17
+
+Film "image" "string filename" "renders/textures/3d-checkerboard.png"
+     "integer xresolution" [400] "integer yresolution" [400]
+
+Sampler "halton" "integer pixelsamples" 128
+Integrator "whitted"
+
+WorldBegin
+
+  LightSource "infinite" "rgb L" [1.2 1.2 1.1]
+
+  AttributeBegin
+    TransformBegin
+      Scale 100 100 100
+      Texture "tex" "color" "checkerboard" "integer dimension" 3
+        "rgb tex1" [.5 .5 0] "rgb tex2" [0 .5 .5]
+      Material "matte" "texture Kd" "tex"
+    TransformEnd
+
+    Translate 0 0 -0.055
+    Rotate 90 1 0 0
+    Shape "plymesh" "string filename" ["/Users/ahmad/Documents/Projects/Dev/rust/dragon_recon/dragon_vrip.ply"]
+  AttributeEnd
+
+  AttributeBegin
+    Material "matte"
+    Shape "trianglemesh"
+          "integer indices" [ 0 1 2   0 2 3 ]
+          "point P" [ -20 -20 0   20 -20 0   2 2 0   -20 20 0 ]
+          "float st" [ 0 0   1 0   1 1   0 1 ]
+  AttributeEnd
+
+WorldEnd

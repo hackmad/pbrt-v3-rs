@@ -25,19 +25,29 @@ WorldBegin
 
   AttributeBegin
     Translate -1 0 0 
-    Texture "checks" "color" "imagemap"
-            "string filename" "../images/checkerboard.png"
-            "string mapping" "spherical"
-    Material "matte" "texture Kd" "checks"
+
+    TransformBegin
+      Rotate 90 1 0 0
+      Texture "checks" "color" "imagemap"
+              "string filename" "../images/checkerboard.png"
+              "string mapping" "spherical"
+      Material "matte" "texture Kd" "checks"
+    TransformEnd
+
     Shape "hyperboloid" "point p1" [ 0.6 0.6 1 ] "point p2" [ 0.6 -0.6 -1 ]
   AttributeEnd
 
   AttributeBegin
     Translate 1 0 0 
-    Texture "checks" "color" "imagemap"
-            "string filename" "../images/checkerboard.png"
-            "string mapping" "cylindrical"
-    Material "matte" "texture Kd" "checks"
+
+    TransformBegin
+      Rotate 90 1 0 0
+      Texture "checks" "color" "imagemap"
+              "string filename" "../images/checkerboard.png"
+              "string mapping" "cylindrical"
+      Material "matte" "texture Kd" "checks"
+    TransformEnd
+
     Shape "hyperboloid" "point p1" [ 0.6 0.6 1 ] "point p2" [ 0.6 -0.6 -1 ]
   AttributeEnd
 
