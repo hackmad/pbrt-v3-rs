@@ -52,6 +52,7 @@ pngquant --ext .png --force renders/shapes/*.png
 <a href="renders/textures/wrinkled.png"><img src="renders/textures/wrinkled.png" style="height: 100px"/></a>
 <a href="renders/textures/windy.png"><img src="renders/textures/windy.png" style="height: 100px"/></a>
 <a href="renders/textures/fbm.png"><img src="renders/textures/fbm.png" style="height: 100px"/></a>
+<a href="renders/textures/marble.png"><img src="renders/textures/marble.png" style="height: 100px"/></a>
 <a href="renders/textures/3d-checkerboard.png"><img src="renders/textures/3d-checkerboard.png" style="height: 100px"/></a>
 
 ## Building

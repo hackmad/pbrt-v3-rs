@@ -1,0 +1,89 @@
+LookAt 0 22 0  # eye
+       0 0 0   # look at point
+       0 0 1   # up vector
+
+Camera "perspective" "float fov" 15
+
+Film "image" "string filename" "renders/textures/marble.png"
+     "integer xresolution" [400] "integer yresolution" [400]
+
+Sampler "halton" "integer pixelsamples" 128
+Integrator "whitted"
+
+WorldBegin
+
+  TransformBegin
+    Texture "tex" "color" "marble" "float scale" 2 "float variation" 10
+  TransformEnd
+  MakeNamedMaterial "marble" "string type" "matte" "texture Kd" "tex"
+  MakeNamedMaterial "colour" "string type" "matte" "rgb Kd" [0.01 0.04 0.17]
+  MakeNamedMaterial "mat" "string type" "mix" 
+                    "string namedmaterial1" "marble" 
+                    "string namedmaterial2" "colour" 
+                    "rgb amount" [ 0.1 0.1 0.1 ]
+
+  LightSource "infinite" "rgb L" [1 1 1]
+
+  AttributeBegin
+    Translate -1.8 0 1
+    Rotate 15 0 1 0
+    Rotate 200 1 0 0
+    Rotate -30 0 0 1
+    NamedMaterial "mat"
+    Shape "sphere" "float radius" 0.8
+  AttributeEnd
+
+  AttributeBegin
+    Translate -1.8 0 -1
+    Rotate 15 0 1 0
+    Rotate 200 1 0 0
+    Rotate -15 0 0 1
+    NamedMaterial "mat"
+    Shape "hyperboloid" "point p1" [ 0.6 0.6 0.6 ] "point p2" [ 0.6 -0.6 -0.6 ]
+  AttributeEnd
+
+  AttributeBegin
+    Translate 0 0 0.4
+    Rotate 15 0 1 0
+    Rotate 15 1 0 0
+    Rotate 150 0 0 1
+    NamedMaterial "mat"
+    Shape "cone" "float radius" 0.8 "float height" 1.4
+  AttributeEnd
+
+  AttributeBegin
+    Translate -0.2 0 -1.8
+    Rotate 15 0 1 0
+    Rotate 15 1 0 0
+    Rotate 30 0 0 1
+    NamedMaterial "mat"
+    Shape "paraboloid" "float radius" 0.8 "float zmin" 0 "float zmax" 1.4
+  AttributeEnd
+
+  AttributeBegin
+    Translate 1.8 0 0.75
+    Rotate 15 0 1 0
+    Rotate 15 1 0 0
+    Rotate 30 0 0 1
+    NamedMaterial "mat"
+    Shape "cylinder" "float radius" 0.8 "float zmin" -0.6 "float zmax" 0.6
+  AttributeEnd
+
+  AttributeBegin
+    Translate 1.8 0 -1
+    Rotate 200 0 1 0
+    Rotate -150 1 0 0
+    Rotate 210 0 0 1
+    NamedMaterial "mat"
+    Shape "disk" "float radius" 0.8
+  AttributeEnd
+
+  AttributeBegin
+    Translate 0 -1 0
+    Shape "trianglemesh"
+          "integer indices" [ 0 1 2   0 2 3 ]
+          "point P" [ -20 0 -20   20 0 -20   20 0 20   -20 0 20 ]
+          "float st" [ 0 0   1 0   1 1   0 1 ]
+  AttributeEnd
+
+WorldEnd
