@@ -651,7 +651,7 @@ impl Api {
                     self.graphics_state.named_materials = nm;
                     self.graphics_state.named_materials_shared = false;
                 }
-                let mtli = Arc::new(MaterialInstance::new(&name, Arc::clone(&mtl), params));
+                let mtli = Arc::new(MaterialInstance::new(&mat_name, Arc::clone(&mtl), params));
                 self.graphics_state.named_materials.insert(name, mtli);
             }
         }

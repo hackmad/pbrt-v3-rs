@@ -63,6 +63,7 @@ impl Material for MixMaterial {
             .evaluate(&si.hit, &si.uv, &si.der)
             .clamp_default();
         let s2 = (Spectrum::new(1.0) - s1).clamp_default();
+
         let mut si2 = si.clone_without_bsdf();
 
         self.m1
