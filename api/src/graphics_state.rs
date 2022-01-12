@@ -383,6 +383,7 @@ impl GraphicsState {
             "scale" => Ok(Arc::new(ScaleTexture::<Spectrum>::from(p))),
             "uv" => Ok(Arc::new(UVTexture::from(p))),
             "windy" => Ok(Arc::new(WindyTexture::<Spectrum>::from(p))),
+            "wrinkled" => Ok(Arc::new(WrinkledTexture::<Spectrum>::from(p))),
             _ => Err(format!("Spectrum texture '{}' unknown.", name)),
         }
     }

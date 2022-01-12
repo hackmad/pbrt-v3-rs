@@ -39,25 +39,30 @@ const NOISE_PERM: [usize; 2 * NOISE_PERM_SIZE] = [
 /// Evaluates the Perlin Noise function for a point.
 ///
 /// * `p` - The point.
+#[rustfmt::skip]
 pub fn noise(p: Point3f) -> Float {
     let Point3f { x, y, z } = p;
 
     // Compute noise cell coordinates and offsets.
-    let ix = x.floor() as usize & (NOISE_PERM_SIZE - 1);
-    let iy = y.floor() as usize & (NOISE_PERM_SIZE - 1);
-    let iz = z.floor() as usize & (NOISE_PERM_SIZE - 1);
+    let mut ix = x.floor() as isize;
+    let mut iy = y.floor() as isize;
+    let mut iz = z.floor() as isize;
     let dx = x - ix as Float;
     let dy = y - iy as Float;
     let dz = z - iz as Float;
 
     // Compute gradient weights
-    let w000 = grad(ix, iy, iz, dx, dy, dz);
-    let w100 = grad(ix + 1, iy, iz, dx - 1.0, dy, dz);
-    let w010 = grad(ix, iy + 1, iz, dx, dy - 1.0, dz);
-    let w110 = grad(ix + 1, iy + 1, iz, dx - 1.0, dy - 1.0, dz);
-    let w001 = grad(ix, iy, iz + 1, dx, dy, dz - 1.0);
-    let w101 = grad(ix + 1, iy, iz + 1, dx - 1.0, dy, dz - 1.0);
-    let w011 = grad(ix, iy + 1, iz + 1, dx, dy - 1.0, dz - 1.0);
+    let nps: isize = NOISE_PERM_SIZE as isize - 1;
+    ix &= nps;
+    iy &= nps;
+    iz &= nps;
+    let w000 = grad(ix,     iy,     iz,     dx,       dy,       dz      );
+    let w100 = grad(ix + 1, iy,     iz,     dx - 1.0, dy,       dz      );
+    let w010 = grad(ix,     iy + 1, iz,     dx,       dy - 1.0, dz      );
+    let w110 = grad(ix + 1, iy + 1, iz,     dx - 1.0, dy - 1.0, dz      );
+    let w001 = grad(ix,     iy,     iz + 1, dx,       dy,       dz - 1.0);
+    let w101 = grad(ix + 1, iy,     iz + 1, dx - 1.0, dy,       dz - 1.0);
+    let w011 = grad(ix,     iy + 1, iz + 1, dx,       dy - 1.0, dz - 1.0);
     let w111 = grad(ix + 1, iy + 1, iz + 1, dx - 1.0, dy - 1.0, dz - 1.0);
 
     // Compute trilinear interpolation of weights.
@@ -91,8 +96,13 @@ fn smooth_step(min: Float, max: Float, value: Float) -> Float {
 /// * `dx` - Point's x-coordinate offset.
 /// * `dy` - Point's y-coordinate offset.
 /// * `dz` - Point's z-coordinate offset.
-fn grad(x: usize, y: usize, z: usize, dx: Float, dy: Float, dz: Float) -> Float {
+fn grad(x: isize, y: isize, z: isize, dx: Float, dy: Float, dz: Float) -> Float {
+    let x = x as usize;
+    let y = y as usize;
+    let z = z as usize;
+
     let h = NOISE_PERM[NOISE_PERM[NOISE_PERM[x] + y] + z] & 15;
+
     let u = if h < 8 || h == 12 || h == 13 { dx } else { dy };
     let v = if h < 4 || h == 12 || h == 13 { dy } else { dz };
 
