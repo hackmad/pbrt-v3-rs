@@ -100,7 +100,7 @@ impl Primitive for GeometricPrimitive {
     /// emission distribution, if the primitive is itself a light source.
     /// If the primitive is not emissive, this method should return `None`.  
     fn get_area_light(&self) -> Option<ArcAreaLight> {
-        self.area_light.clone()
+        self.area_light.as_ref().map(Arc::clone)
     }
 
     /// Returns a reference to the material instance assigned to the primitive.
@@ -109,7 +109,7 @@ impl Primitive for GeometricPrimitive {
     /// participating media. This method is also used to check if two rays have
     /// intersected the same object by comparing their Material pointers.
     fn get_material(&self) -> Option<ArcMaterial> {
-        self.material.clone()
+        self.material.as_ref().map(Arc::clone)
     }
 
     /// Initializes representations of the light-scattering properties of the
@@ -126,7 +126,7 @@ impl Primitive for GeometricPrimitive {
         mode: TransportMode,
         allow_multiple_lobes: bool,
     ) {
-        if let Some(material) = self.material.clone() {
+        if let Some(material) = self.material.as_ref() {
             material.compute_scattering_functions(arena, si, mode, allow_multiple_lobes);
         }
     }
