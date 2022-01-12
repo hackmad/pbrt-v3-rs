@@ -33,28 +33,31 @@ pngquant --ext .png --force renders/shapes/*.png
 
 ### Shapes
 
-<a href="renders/shapes/sphere.png"><img src="renders/shapes/sphere.png" style="height: 100px"/></a>
-<a href="renders/shapes/cylinder.png"><img src="renders/shapes/cylinder.png" style="height: 100px;"/></a>
-<a href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" style="height: 100px;"/></a>
-<a href="renders/shapes/disk.png"><img src="renders/shapes/disk.png" style="height: 100px;"/></a>
-<a href="renders/shapes/other-quadrics.png"><img src="renders/shapes/other-quadrics.png" style="height: 100px;"/></a>
-<a href="renders/shapes/plymesh.png"><img src="renders/shapes/plymesh.png" style="height: 100px;"/></a>
-<a href="renders/shapes/loopsubdiv.png"><img src="renders/shapes/loopsubdiv.png" style="height: 100px;"/></a>
+<a title="Sphere" href="renders/shapes/sphere.png"><img src="renders/shapes/sphere.png" style="height: 100px"/></a>
+<a title="Cyinder" href="renders/shapes/cylinder.png"><img src="renders/shapes/cylinder.png" style="height: 100px;"/></a>
+<a title="Disk" href="renders/shapes/disk.png"><img src="renders/shapes/disk.png" style="height: 100px;"/></a>
+<a title="Other Quadrics" href="renders/shapes/other-quadrics.png"><img src="renders/shapes/other-quadrics.png" style="height: 100px;"/></a>
+<a title="PLY Mesh" href="renders/shapes/plymesh.png"><img src="renders/shapes/plymesh.png" style="height: 100px;"/></a>
+<a title="Loop Subdivision Surface" href="renders/shapes/loopsubdiv.png"><img src="renders/shapes/loopsubdiv.png" style="height: 100px;"/></a>
+<a title="All Shapes" href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" style="height: 100px;"/></a>
 
 ### Textures
 
-<a href="renders/textures/2d-mappings.png"><img src="renders/textures/2d-mappings.png" style="height: 100px"/></a>
-<a href="renders/textures/trilinear-filtering.png"><img src="renders/textures/trilinear-filtering.png" style="height: 100px"/></a><a 
-   href="renders/textures/ewa-filtering.png"><img src="renders/textures/ewa-filtering.png" style="height: 100px"/></a>
-<a href="renders/textures/uv.png"><img src="renders/textures/uv.png" style="height: 100px"/></a>
-<a href="renders/textures/2d-checkerboard.png"><img src="renders/textures/2d-checkerboard.png" style="height: 100px"/></a>
-<a href="renders/textures/dots.png"><img src="renders/textures/dots.png" style="height: 100px"/></a>
-<a href="renders/textures/wrinkled.png"><img src="renders/textures/wrinkled.png" style="height: 100px"/></a>
-<a href="renders/textures/windy.png"><img src="renders/textures/windy.png" style="height: 100px"/></a>
-<a href="renders/textures/fbm.png"><img src="renders/textures/fbm.png" style="height: 100px"/></a>
-<a href="renders/textures/marble.png"><img src="renders/textures/marble.png" style="height: 100px"/></a>
-<a href="renders/textures/bilerp.png"><img src="renders/textures/bilerp.png" style="height: 100px"/></a>
-<a href="renders/textures/3d-checkerboard.png"><img src="renders/textures/3d-checkerboard.png" style="height: 100px"/></a>
+<a title="2D Mappings" href="renders/textures/2d-mappings.png"><img src="renders/textures/2d-mappings.png" style="height: 100px"/></a>
+<a title="UV" href="renders/textures/uv.png"><img src="renders/textures/uv.png" style="height: 100px"/></a>
+<a title="2D Checkerboard" href="renders/textures/2d-checkerboard.png"><img src="renders/textures/2d-checkerboard.png" style="height: 100px"/></a>
+<a title="Dots" href="renders/textures/dots.png"><img src="renders/textures/dots.png" style="height: 100px"/></a>
+<a title="Wrinkled" href="renders/textures/wrinkled.png"><img src="renders/textures/wrinkled.png" style="height: 100px"/></a>
+<a title="Windy" href="renders/textures/windy.png"><img src="renders/textures/windy.png" style="height: 100px"/></a>
+<a title="fBm" href="renders/textures/fbm.png"><img src="renders/textures/fbm.png" style="height: 100px"/></a>
+<a title="Marble" href="renders/textures/marble.png"><img src="renders/textures/marble.png" style="height: 100px"/></a>
+<a title="Bilerp" href="renders/textures/bilerp.png"><img src="renders/textures/bilerp.png" style="height: 100px"/></a>
+<a title="Constant" href="renders/textures/constant.png"><img src="renders/textures/constant.png" style="height: 100px"/></a>
+<a title="Mix" href="renders/textures/mix.png"><img src="renders/textures/mix.png" style="height: 100px"/></a>
+<a title="Scale" href="renders/textures/scale.png"><img src="renders/textures/scale.png" style="height: 100px"/></a>
+<a title="3D Checkerboard" href="renders/textures/3d-checkerboard.png"><img src="renders/textures/3d-checkerboard.png" style="height: 100px"/></a>
+<a title="Trilinear Filtering" href="renders/textures/trilinear-filtering.png"><img src="renders/textures/trilinear-filtering.png" style="height: 100px"/></a>
+<a title="EWA Filtering" href="renders/textures/ewa-filtering.png"><img src="renders/textures/ewa-filtering.png" style="height: 100px"/></a>
 
 ## Building
 
