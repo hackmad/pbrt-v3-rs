@@ -59,6 +59,13 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Trilinear Filtering" href="renders/textures/trilinear-filtering.png"><img src="renders/textures/trilinear-filtering.png" style="height: 100px"/></a>
 <a title="EWA Filtering" href="renders/textures/ewa-filtering.png"><img src="renders/textures/ewa-filtering.png" style="height: 100px"/></a>
 
+### Materials
+
+<a title="Matte" href="renders/materials/matte.png"><img src="renders/materials/matte.png" style="height: 100px"/></a>
+<a title="Glass" href="renders/materials/glass.png"><img src="renders/materials/glass.png" style="height: 100px"/></a>
+<a title="Plastic" href="renders/materials/plastic.png"><img src="renders/materials/plastic.png" style="height: 100px"/></a>
+<a title="Fourier" href="renders/materials/fourier.png"><img src="renders/materials/fourier.png" style="height: 100px"/></a>
+
 ## Building
 
 Build debug profile. The executable will be `target/debug/pbr_rust`.
