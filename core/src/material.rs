@@ -42,7 +42,7 @@ pub trait Material {
     ///
     /// * `d`  - Bump map.
     /// * `si` - Surface interaction.
-    fn bump(&self, d: ArcTexture<Float>, si: &mut SurfaceInteraction) {
+    fn bump(&self, d: &ArcTexture<Float>, si: &mut SurfaceInteraction) {
         // Compute offset positions and evaluate displacement texture.
         let mut si_eval_hit = si.hit.clone();
 

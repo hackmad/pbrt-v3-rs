@@ -109,7 +109,7 @@ impl<'primitive, 'arena> SurfaceInteraction<'primitive, 'arena> {
         }
     }
 
-    /// Returns updated shading geometry.
+    /// Updates the shading geometry.
     ///
     /// * `dpdu` - Parametric partial derivative of the point ∂p/∂u.
     /// * `dpdv` - Parametric partial derivative of the point ∂p/∂v.
@@ -266,7 +266,7 @@ impl<'primitive, 'arena> SurfaceInteraction<'primitive, 'arena> {
             shading: self.shading.clone(),
             shape_data: self.shape_data.clone(),
             bsdf: None,
-            bssrdf: self.bssrdf.clone(),
+            bssrdf: self.bssrdf.as_ref().map(Arc::clone),
             primitive: self.primitive,
             face_index: self.face_index,
         }

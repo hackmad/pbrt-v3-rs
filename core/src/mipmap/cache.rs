@@ -6,10 +6,10 @@ use crate::image_io::*;
 use crate::mipmap::*;
 use crate::spectrum::*;
 use std::collections::HashMap;
+use std::marker::{Send, Sync};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
 use std::result::Result;
 use std::sync::{Arc, Mutex};
-use std::marker::{Send, Sync};
 
 /// Interface for caching and retrieving `MIPMap`s.
 pub trait MIPMapCacheProvider<Tmemory> {
@@ -72,7 +72,9 @@ where
         + DivAssign<Float>
         + Add<Tmemory, Output = Tmemory>
         + AddAssign
-        + Clamp<Float> + Send + Sync,
+        + Clamp<Float>
+        + Send
+        + Sync,
     Spectrum: ConvertIn<Tmemory>,
 {
     // Create `MipMap` for `filename`.
@@ -97,7 +99,7 @@ where
     // Convert texels to type M and create MIPMap.
     let converted_texels: Vec<Tmemory> = texels
         .iter()
-        .map(|texel| (*texel).convert_in(info.scale, info.gamma))
+        .map(|texel| texel.convert_in(info.scale, info.gamma))
         .collect();
 
     Ok(Arc::new(MIPMap::new(

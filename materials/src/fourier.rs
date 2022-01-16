@@ -52,7 +52,7 @@ impl FourierMaterial {
 
         Self {
             bsdf_table,
-            bump_map: bump_map.clone(),
+            bump_map,
         }
     }
 }
@@ -77,7 +77,7 @@ impl Material for FourierMaterial {
     ) {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
-            Material::bump(self, Arc::clone(bump_map), si);
+            Material::bump(self, bump_map, si);
         }
 
         let bsdf = BSDF::alloc(arena, &si, None);
@@ -85,7 +85,11 @@ impl Material for FourierMaterial {
         // Checking for zero channels works as a proxy for checking whether the
         // table was successfully read from the file.
         if self.bsdf_table.n_channels > 0 {
-            bsdf.add(FourierBSDF::alloc(arena, Arc::clone(&self.bsdf_table), mode));
+            bsdf.add(FourierBSDF::alloc(
+                arena,
+                Arc::clone(&self.bsdf_table),
+                mode,
+            ));
         }
 
         si.bsdf = Some(bsdf);
@@ -99,7 +103,7 @@ impl From<(&TextureParams, &str)> for FourierMaterial {
     /// * `p` - Texture parameter set and current working directory.
     fn from(p: (&TextureParams, &str)) -> Self {
         let (tp, cwd) = p;
-        let bump_map = tp.get_float_texture("bumpmap");
+        let bump_map = tp.get_float_texture_or_none("bumpmap");
         let path = tp.find_filename("bsdffile", String::from(""), cwd);
         Self::new(&path, bump_map)
     }

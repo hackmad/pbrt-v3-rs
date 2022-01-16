@@ -57,12 +57,12 @@ impl GlassMaterial {
         remap_roughness: bool,
     ) -> Self {
         Self {
-            kr: Arc::clone(&kr),
-            kt: Arc::clone(&kt),
-            u_roughness: Arc::clone(&u_roughness),
-            v_roughness: Arc::clone(&v_roughness),
-            index: Arc::clone(&index),
-            bump_map: bump_map.clone(),
+            kr,
+            kt,
+            u_roughness,
+            v_roughness,
+            index,
+            bump_map,
             remap_roughness,
         }
     }
@@ -88,7 +88,7 @@ impl Material for GlassMaterial {
     ) {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
-            Material::bump(self, Arc::clone(bump_map), si);
+            Material::bump(self, bump_map, si);
         }
 
         let eta = self.index.evaluate(&si.hit, &si.uv, &si.der);
@@ -173,7 +173,7 @@ impl From<&TextureParams> for GlassMaterial {
         let v_roughness =
             tp.get_float_texture_or_else("vroughness", 0.0, |v| Arc::new(ConstantTexture::new(v)));
 
-        let bump_map = tp.get_float_texture("bumpmap");
+        let bump_map = tp.get_float_texture_or_none("bumpmap");
         let remap_roughness = tp.find_bool("remaproughness", true);
 
         Self::new(

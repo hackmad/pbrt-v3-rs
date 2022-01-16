@@ -51,11 +51,11 @@ impl PlasticMaterial {
         bump_map: Option<ArcTexture<Float>>,
     ) -> Self {
         Self {
-            kd: Arc::clone(&kd),
-            ks: Arc::clone(&ks),
-            roughness: Arc::clone(&roughness),
+            kd,
+            ks,
+            roughness,
             remap_roughness,
-            bump_map: bump_map.clone(),
+            bump_map,
         }
     }
 }
@@ -80,7 +80,7 @@ impl Material for PlasticMaterial {
     ) {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
-            Material::bump(self, Arc::clone(bump_map), si);
+            Material::bump(self, bump_map, si);
         }
 
         let bsdf = BSDF::alloc(arena, &si, None);
@@ -125,7 +125,7 @@ impl From<&TextureParams> for PlasticMaterial {
         let roughness =
             tp.get_float_texture_or_else("roughness", 0.1, |v| Arc::new(ConstantTexture::new(v)));
 
-        let bump_map = tp.get_float_texture("bumpmap");
+        let bump_map = tp.get_float_texture_or_none("bumpmap");
         let remap_roughness = tp.find_bool("remaproughness", true);
 
         Self::new(kd, ks, roughness, remap_roughness, bump_map)

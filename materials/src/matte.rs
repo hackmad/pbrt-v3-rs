@@ -36,9 +36,9 @@ impl MatteMaterial {
         bump_map: Option<ArcTexture<Float>>,
     ) -> Self {
         Self {
-            kd: Arc::clone(&kd),
-            sigma: Arc::clone(&sigma),
-            bump_map: bump_map.clone(),
+            kd,
+            sigma,
+            bump_map,
         }
     }
 }
@@ -63,7 +63,7 @@ impl Material for MatteMaterial {
     ) {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
-            Material::bump(self, Arc::clone(bump_map), si);
+            Material::bump(self, bump_map, si);
         }
 
         let bsdf = BSDF::alloc(arena, &si, None);
@@ -96,7 +96,7 @@ impl From<&TextureParams> for MatteMaterial {
         let sigma =
             tp.get_float_texture_or_else("sigma", 0.0, |v| Arc::new(ConstantTexture::new(v)));
 
-        let bump_map = tp.get_float_texture("bumpmap");
+        let bump_map = tp.get_float_texture_or_none("bumpmap");
 
         Self::new(kd, sigma, bump_map)
     }

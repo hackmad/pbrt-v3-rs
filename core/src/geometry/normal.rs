@@ -382,6 +382,19 @@ impl<T> From<Vector3<T>> for Normal3<T> {
     }
 }
 
+impl<T: Copy> From<&Vector3<T>> for Normal3<T> {
+    /// Convert a 3-D vector to a 3-D normal.
+    ///
+    /// * `v` - 3-D vector.
+    fn from(v: &Vector3<T>) -> Self {
+        Self {
+            x: v.x,
+            y: v.y,
+            z: v.z,
+        }
+    }
+}
+
 impl<T: fmt::Display> fmt::Display for Normal3<T> {
     /// Formats the value using the given formatter.
     ///

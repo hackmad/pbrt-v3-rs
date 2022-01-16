@@ -576,21 +576,21 @@ impl Transform {
         si.hit.p = p;
         si.hit.p_error = p_error;
         si.hit.wo = self.transform_vector(&si.hit.wo).normalize();
+        si.hit.n = self.transform_normal(&si.hit.n).normalize();
+
         si.der.dpdu = self.transform_vector(&si.der.dpdu);
         si.der.dpdv = self.transform_vector(&si.der.dpdv);
         si.der.dndu = self.transform_normal(&si.der.dndu);
         si.der.dndv = self.transform_normal(&si.der.dndv);
-
-        // Transform remaining members of SurfaceInteraction.
-        si.hit.n = self.transform_normal(&si.hit.n).normalize();
         si.der.dpdx = self.transform_vector(&si.der.dpdx);
         si.der.dpdy = self.transform_vector(&si.der.dpdy);
+
+        si.shading.n = self.transform_normal(&si.shading.n).normalize();
+        si.shading.n = si.shading.n.face_forward(&si.hit.n);
         si.shading.dpdu = self.transform_vector(&si.shading.dpdu);
         si.shading.dpdv = self.transform_vector(&si.shading.dpdv);
         si.shading.dndu = self.transform_normal(&si.shading.dndu);
         si.shading.dndv = self.transform_normal(&si.shading.dndv);
-        si.shading.n = self.transform_normal(&si.shading.n).normalize();
-        si.shading.n = si.shading.n.face_forward(&si.hit.n);
     }
 
     /// Returns `true` if the transformation changes the handedness of the
