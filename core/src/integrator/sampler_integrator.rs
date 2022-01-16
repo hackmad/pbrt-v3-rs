@@ -284,14 +284,19 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         // Parallelize.
         info!("Rendering {}x{} tiles", n_tiles.x, n_tiles.y);
 
-        let progress_style = ProgressStyle::default_bar()
-            .template(
-                "{msg:25.cyan.bold} [{bar:40.green/white}] {pos:>5}/{len:5} ({elapsed}|{eta})",
-            )
-            .progress_chars("█▓▒░  ");
-        let progress = ProgressBar::new(tile_count as u64 + 1_u64); // Render + image write
-        progress.set_message("Rendering");
-        progress.set_style(progress_style);
+        let progress = if OPTIONS.quiet {
+            ProgressBar::hidden()
+        } else {
+            let progress_style = ProgressStyle::default_bar()
+                .template(
+                    "{msg:25.cyan.bold} [{bar:40.green/white}] {pos:>5}/{len:5} ({elapsed}|{eta})",
+                )
+                .progress_chars("█▓▒░  ");
+            let pb = ProgressBar::new(tile_count as u64 + 1_u64); // Render + image write
+            pb.set_message("Rendering");
+            pb.set_style(progress_style);
+            pb
+        };
 
         (0..tile_count)
             .into_par_iter()
