@@ -31,12 +31,9 @@ fn main() {
     // Initialize `env_logger`.
     env_logger::init();
 
-    // Load the program options.
-    let options = OPTIONS.clone();
-
     // Configure number of threads.
     rayon::ThreadPoolBuilder::new()
-        .num_threads(options.n_threads)
+        .num_threads(OPTIONS.threads())
         .build_global()
         .unwrap();
 
@@ -45,7 +42,7 @@ fn main() {
     api.pbrt_init();
 
     // Process scene description.
-    for path in options.paths.iter() {
+    for path in OPTIONS.paths.iter() {
         let parser = PbrtFileParser::new(path);
         match parser.parse(&mut api) {
             Ok(_) => (),

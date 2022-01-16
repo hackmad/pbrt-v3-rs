@@ -450,7 +450,7 @@ where
     let t_weights = resample_weights(resolution[1], res_pow2[1]);
 
     // Setup some mutexes for temporarily holding working data; one per thread.
-    let work_data: Vec<Arc<Mutex<Vec<T>>>> = vec![Arc::new(Mutex::new(vec![])); OPTIONS.n_threads];
+    let work_data: Vec<Arc<Mutex<Vec<T>>>> = vec![Arc::new(Mutex::new(vec![])); OPTIONS.threads()];
 
     // Apply `t_weights` in the `t` direction.
     (0..res_pow2[0])
@@ -460,7 +460,7 @@ where
         .for_each(|(vi, vs)| {
             // Lock for duration of thread run. Otherwise work_data will
             // get muddled up between threads.
-            let mut work_data = work_data[vi % OPTIONS.n_threads].lock().unwrap();
+            let mut work_data = work_data[vi % OPTIONS.threads()].lock().unwrap();
 
             // Allocate with default T values (zeroes) if it isn't already.
             if work_data.len() == 0 {

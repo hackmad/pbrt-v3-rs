@@ -384,14 +384,15 @@ impl From<(&ParamSet, ArcFilter)> for Film {
     fn from(p: (&ParamSet, ArcFilter)) -> Self {
         let (params, filter) = p;
 
-        let image_file = &OPTIONS.image_file[..];
+        let image_file = OPTIONS.image_file();
         let filename = if !image_file.is_empty() {
             let params_filename = params.find_one_string("filename", String::from(""));
             if !params_filename.is_empty() {
                 warn!(
                     "Output filename supplied on command line, '{}' is overriding 
                     filename provided in scene description file, '{}'.",
-                    OPTIONS.image_file, params_filename
+                    OPTIONS.image_file(),
+                    params_filename
                 );
                 params_filename
             } else {
@@ -418,17 +419,19 @@ impl From<(&ParamSet, ArcFilter)> for Film {
             crop.p_max.y = clamp(max(cr[2], cr[3]), 0.0, 1.0);
         } else if cwi > 0 {
             panic!("{} values supplied for 'cropwindow'. Expected 4.", cwi);
-        } else {
+        } else if OPTIONS.crop_window.len() == 4 {
             crop = Bounds2f::new(
                 Point2f::new(
-                    clamp(OPTIONS.crop_window[0][0], 0.0, 1.0),
-                    clamp(OPTIONS.crop_window[1][0], 0.0, 1.0),
+                    clamp(OPTIONS.crop_window[0], 0.0, 1.0),
+                    clamp(OPTIONS.crop_window[2], 0.0, 1.0),
                 ),
                 Point2f::new(
-                    clamp(OPTIONS.crop_window[0][1], 0.0, 1.0),
-                    clamp(OPTIONS.crop_window[1][1], 0.0, 1.0),
+                    clamp(OPTIONS.crop_window[1], 0.0, 1.0),
+                    clamp(OPTIONS.crop_window[3], 0.0, 1.0),
                 ),
             );
+        } else {
+            crop = Bounds2f::new(Point2f::new(0.0, 0.0), Point2f::new(1.0, 1.0));
         }
 
         let scale = params.find_one_float("scale", 1.0);
