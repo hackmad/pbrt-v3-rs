@@ -29,19 +29,22 @@ pub fn uniform_sample_all_lights(
     let mut l = Spectrum::new(0.0);
 
     for (j, light) in scene.lights.iter().enumerate() {
+        let sampler_mut = Arc::get_mut(sampler).unwrap();
+
         // Accumulate contribution of j^th light to `l`.
         let n_samples = n_light_samples[j];
 
-        let u_light_array = Arc::get_mut(sampler).unwrap().get_2d_array(n_samples);
-        let u_scattering_array = Arc::get_mut(sampler).unwrap().get_2d_array(n_samples);
+        let u_light_array = sampler_mut.get_2d_array(n_samples);
+        let u_scattering_array = sampler_mut.get_2d_array(n_samples);
 
         let nl = u_light_array.len();
         let sl = u_scattering_array.len();
 
         if nl == 0 || sl == 0 {
             // Use a single sample for illumination from `light`.
-            let u_light = Arc::get_mut(sampler).unwrap().get_2d();
-            let u_scattering = Arc::get_mut(sampler).unwrap().get_2d();
+            let u_light = sampler_mut.get_2d();
+            let u_scattering = sampler_mut.get_2d();
+
             l += estimate_direct(
                 it,
                 &u_scattering,
@@ -95,23 +98,26 @@ pub fn uniform_sample_one_light(
         return Spectrum::new(0.0);
     }
 
+    let sampler_mut = Arc::get_mut(sampler).unwrap();
+
     let (light_num, light_pdf) = if let Some(ld) = light_distrib {
-        let sample = Arc::get_mut(sampler).unwrap().get_1d();
+        let sample = sampler_mut.get_1d();
         let (ln, pdf, _) = ld.sample_discrete(sample);
         if pdf == 0.0 {
             return Spectrum::new(0.0);
         }
         (ln, pdf)
     } else {
-        let sample = Arc::get_mut(sampler).unwrap().get_1d();
+        let sample = sampler_mut.get_1d();
         let ln = min(sample * n_lights as Float, n_lights as Float - 1.0) as usize;
         let pdf = 1.0 / n_lights as Float;
         (ln, pdf)
     };
 
     let light = Arc::clone(&scene.lights[light_num]);
-    let u_light = Arc::get_mut(sampler).unwrap().get_2d();
-    let u_scattering = Arc::get_mut(sampler).unwrap().get_2d();
+    let u_light = sampler_mut.get_2d();
+    let u_scattering = sampler_mut.get_2d();
+
     let estimate = estimate_direct(
         it,
         &u_scattering,

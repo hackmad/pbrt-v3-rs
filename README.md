@@ -65,6 +65,7 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Glass" href="renders/materials/glass.png"><img src="renders/materials/glass.png" style="height: 100px"/></a>
 <a title="Plastic" href="renders/materials/plastic.png"><img src="renders/materials/plastic.png" style="height: 100px"/></a>
 <a title="Fourier" href="renders/materials/fourier.png"><img src="renders/materials/fourier.png" style="height: 100px"/></a>
+<a title="Bump Map" href="renders/materials/bump.png"><img src="renders/materials/bump.png" style="height: 100px"/></a>
 
 ## Building
 

@@ -50,8 +50,8 @@ pub trait Sampler {
             p_raster.y as Float + film_sample.y,
         );
 
-        let p_lens = self.get_2d();
         let time = self.get_1d();
+        let p_lens = self.get_2d();
 
         CameraSample::new(p_film, p_lens, time)
     }

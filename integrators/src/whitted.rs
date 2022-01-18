@@ -82,16 +82,16 @@ impl Integrator for WhittedIntegrator {
         if let Some(mut isect) = scene.intersect(ray) {
             // Compute emitted and reflected light at ray intersection point.
 
-            // Initialize common variables for Whitted integrator.
-            let n = isect.shading.n;
-            let wo = isect.hit.wo;
-
             // Compute scattering functions for surface interaction.
             isect.compute_scattering_functions(arena, ray, false, TransportMode::Radiance);
             if isect.bsdf.is_none() {
                 let mut new_ray = isect.hit.spawn_ray(&ray.d);
                 return self.li(arena, &mut new_ray, scene, sampler, depth);
             }
+
+            // Initialize common variables for Whitted integrator.
+            let n = isect.shading.n;
+            let wo = isect.hit.wo;
 
             // Compute emitted light if ray hit an area light source.
             l += isect.le(&wo);

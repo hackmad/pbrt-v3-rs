@@ -141,7 +141,7 @@ impl<'arena> BxDF<'arena> {
                     wi.z *= -1.0;
                 }
                 let pdf = self.pdf(wo, &wi);
-                BxDFSample::new(self.f(wo, &wi), pdf, wi, BxDFType::BSDF_NONE) // self.get_type() ???
+                BxDFSample::new(self.f(wo, &wi), pdf, wi, self.get_type())
             }
         }
     }

@@ -100,7 +100,7 @@ impl SamplerData {
             self.array_1d_offset += 1;
 
             let i = self.current_pixel_sample_index * n;
-            let m = i + n * self.samples_per_pixel;
+            let m = i + n;
             array[i..m].to_vec()
         }
     }
@@ -119,7 +119,7 @@ impl SamplerData {
             self.array_2d_offset += 1;
 
             let i = self.current_pixel_sample_index * n;
-            let m = i + n * self.samples_per_pixel;
+            let m = i + n;
             array[i..m].to_vec()
         }
     }
@@ -156,7 +156,7 @@ impl SamplerData {
 /// Stores the data for samplers that are not pixel based and can generate
 /// samples that are spread across the entire image. This can support samplers
 /// that can generate samples for image tiles.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct GlobalSamplerData {
     /// Sample dimension.
     pub dimension: u16,
@@ -185,5 +185,12 @@ impl GlobalSamplerData {
             array_start_dim: 5,
             array_end_dim: 5,
         }
+    }
+}
+
+impl Default for GlobalSamplerData {
+    /// Returns the "default value" for `GlobalSamplerData`.
+    fn default() -> Self {
+        Self::new()
     }
 }

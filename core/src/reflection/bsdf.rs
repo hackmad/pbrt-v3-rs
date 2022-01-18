@@ -110,15 +110,18 @@ impl<'arena> BSDF<'arena> {
     ) -> &'arena mut Self {
         let eta = eta.map_or_else(|| 1.0, |e| e);
         let ns = si.shading.n;
+        let ng = si.hit.n;
         let ss = si.shading.dpdu.normalize();
+        let ts = Vector3::from(ns).cross(&ss);
+        let bxdfs = Vec::with_capacity(MAX_BXDFS);
 
         arena.alloc(Self {
             eta,
             ns,
-            ng: si.hit.n,
+            ng,
             ss,
-            ts: Vector3::from(ns).cross(&ss),
-            bxdfs: Vec::with_capacity(MAX_BXDFS),
+            ts,
+            bxdfs,
         })
     }
 
@@ -175,25 +178,24 @@ impl<'arena> BSDF<'arena> {
         let wo = self.world_to_local(wo_w);
 
         if wo.z == 0.0 {
-            Spectrum::new(0.0)
-        } else {
-            let reflect = wi_w.dot(&self.ng) * wo_w.dot(&self.ng) > 0.0;
-            let mut f = Spectrum::new(0.0);
-            for bxdf in self.bxdfs.iter() {
-                let curr_type = bxdf.get_type();
-                if bxdf.matches_flags(bxdf_type)
-                    && ((reflect && curr_type.contains(BxDFType::BSDF_REFLECTION))
-                        || (!reflect && curr_type.contains(BxDFType::BSDF_TRANSMISSION)))
-                {
-                    f += bxdf.f(&wo, &wi);
-                }
-            }
-            f
+            return Spectrum::new(0.0);
         }
+
+        let reflect = wi_w.dot(&self.ng) * wo_w.dot(&self.ng) > 0.0;
+        let mut f = Spectrum::new(0.0);
+        for bxdf in self.bxdfs.iter() {
+            let curr_type = bxdf.get_type();
+            if bxdf.matches_flags(bxdf_type)
+                && ((reflect && curr_type.contains(BxDFType::BSDF_REFLECTION))
+                    || (!reflect && curr_type.contains(BxDFType::BSDF_TRANSMISSION)))
+            {
+                f += bxdf.f(&wo, &wi);
+            }
+        }
+        f
     }
 
     /// Returns the value of the BSDF given the outgpoing direction.
-    /// direction.
     ///
     /// * `wo_world`  - Outgoing direction in world-space.
     /// * `u`         - The 2D uniform random values.
@@ -266,7 +268,6 @@ impl<'arena> BSDF<'arena> {
             debug!("sample.pdf = 0");
             return BxDFSample::default();
         }
-        sample.bxdf_type = matched_bxdf.get_type();
 
         let wi_world = self.local_to_world(&sample.wi);
 
