@@ -1,5 +1,9 @@
 # Based on dragon scene from https://www.pbrt.org/scenes-v3
 
+# TODO: Need consistent relative path handling. Pick relative to scene file. You 
+#       can see how texture and plymesh paths have different relative paths than 
+#       the FourierMaterial.
+
 LookAt 277 -240 250
        0 60 -30
        0 0 1
@@ -30,7 +34,7 @@ WorldBegin
   
   AttributeBegin
     Rotate -53 0 1 0
-    Material "fourier" "string bsdffile" "../pbrt-v3-scenes/dragon/bsdfs/roughgold_alpha_0.2.bsdf"
+    Material "fourier" "string bsdffile" "../../../pbrt-v3-scenes/dragon/bsdfs/roughgold_alpha_0.2.bsdf"
     Shape "plymesh" "string filename" "../pbrt-v3-scenes/dragon/geometry/dragon_remeshed.ply"
   AttributeEnd
 
