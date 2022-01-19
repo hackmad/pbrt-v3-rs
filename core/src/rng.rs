@@ -107,7 +107,7 @@ impl RNG {
     /// structure.
     ///
     /// * `v`            - The slice to shuffle.
-    /// * `count`        - Number n-dimensional values.
+    /// * `count`        - Number of n-dimensional values.
     /// * `n_dimensions` - Number of total dimensions.
     pub fn shuffle<T>(&mut self, v: &mut [T], count: usize, n_dimensions: usize) {
         debug_assert!(count * n_dimensions <= v.len());

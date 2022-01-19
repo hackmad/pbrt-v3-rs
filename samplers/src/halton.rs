@@ -12,6 +12,14 @@ use std::sync::Arc;
 /// Maximum resolution for sampling first 2 dimensions.
 const K_MAX_RESOLUTION: Int = 128;
 
+lazy_static! {
+    /// Stores precomputed radical inverse permutations.
+    static ref RADICAL_INVERSE_PERMUTATIONS: Vec<u16> = {
+        let mut rng = RNG::default();
+        compute_radical_inverse_permutations(&mut rng)
+    };
+}
+
 /// Implements a low-discrepency sampler using Halton sequences.
 pub struct HaltonSampler {
     /// The sampler data.
@@ -22,9 +30,6 @@ pub struct HaltonSampler {
 
     /// Sample bounds.
     sample_bounds: Bounds2i,
-
-    /// Stores precomputed radical inverse permutations.
-    radical_inverse_permutations: Vec<u16>,
 
     /// The scale factor, either `2^j` or `3^k` for corresponding exponents `j`
     /// and `k` stored in `base_exponents`.
@@ -57,21 +62,8 @@ impl HaltonSampler {
     /// * `sample_bounds`     - Sample bounds.
     /// * `sample_at_center`  - Indicates whether or not to jitter each sample's
     ///                         center point.
-    /// * `seed`              - Optional seed for random number generator.
-    fn new(
-        samples_per_pixel: usize,
-        sample_bounds: Bounds2i,
-        sample_at_center: bool,
-        seed: Option<u64>,
-    ) -> Self {
-        let mut rng = match seed {
-            Some(s) => RNG::new(s),
-            None => RNG::default(),
-        };
-
+    fn new(samples_per_pixel: usize, sample_bounds: Bounds2i, sample_at_center: bool) -> Self {
         // Find radical inverse, base scales and exponents that cover sampling area.
-        let radical_inverse_permutations = compute_radical_inverse_permutations(&mut rng);
-
         let res = sample_bounds.p_max - sample_bounds.p_min;
         let mut base_scales = Point2::<u64>::default();
         let mut base_exponents = Point2::<u64>::default();
@@ -104,7 +96,6 @@ impl HaltonSampler {
             pixel_for_offset: Point2i::new(Int::MAX, Int::MAX),
             offset_for_current_pixel: 0,
             sample_bounds,
-            radical_inverse_permutations,
             base_scales,
             base_exponents,
             sample_stride,
@@ -121,7 +112,7 @@ impl HaltonSampler {
             "HaltonSampler can only sample {} dimensions",
             PRIME_TABLE_SIZE
         );
-        &self.radical_inverse_permutations[PRIME_SUMS[dim as usize]..]
+        &RADICAL_INVERSE_PERMUTATIONS[PRIME_SUMS[dim as usize]..]
     }
 
     /// Performs the inverse mapping from the current pixel and given sample
@@ -185,13 +176,12 @@ impl Sampler for HaltonSampler {
     /// Generates a new instance of an initial `Sampler` for use by a rendering
     /// thread.
     ///
-    /// * `seed` - The seed for the random number generator (if any).
-    fn clone(&self, seed: u64) -> ArcSampler {
+    /// * `seed` - The seed for the random number generator (ignored).
+    fn clone(&self, _seed: u64) -> ArcSampler {
         Arc::new(Self::new(
             self.data.samples_per_pixel,
             self.sample_bounds,
             self.sample_at_pixel_center,
-            Some(seed),
         ))
     }
 
@@ -314,7 +304,7 @@ impl From<(&ParamSet, Bounds2i)> for HaltonSampler {
 
         let sample_at_center = params.find_one_bool("samplepixelcenter", false);
 
-        Self::new(samples_per_pixel, sample_bounds, sample_at_center, None)
+        Self::new(samples_per_pixel, sample_bounds, sample_at_center)
     }
 }
 
@@ -339,5 +329,5 @@ fn extended_gcd(a: u64, b: u64) -> (i64, i64) {
 /// * `n` - Modulus.
 fn multiplicative_inverse(a: i64, n: i64) -> u64 {
     let (x, _y) = extended_gcd(a as u64, n as u64);
-    rem(x, n as i64) as u64
+    rem(x, n) as u64
 }
