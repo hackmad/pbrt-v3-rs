@@ -4,7 +4,7 @@ LookAt 0 22 0  # eye
 
 Camera "perspective" "float fov" 15
 
-Film "image" "string filename" "renders/textures/uv-texture.png"
+Film "image" "string filename" "renders/textures/uv.png"
      "integer xresolution" [400] "integer yresolution" [400]
 
 Sampler "halton" "integer pixelsamples" 128
