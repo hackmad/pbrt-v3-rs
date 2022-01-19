@@ -36,12 +36,12 @@ impl SobolSampler {
     /// * `sample_bounds`     - Sample bounds.
     fn new(samples_per_pixel: usize, sample_bounds: Bounds2i) -> Self {
         let samples_per_pixel = if !samples_per_pixel.is_power_of_two() {
+            let spp = samples_per_pixel.next_power_of_two();
             warn!(
                 "WARNING: Non power-of-two sample count rounded up to {} for SobolSampler.",
-                samples_per_pixel
+                spp
             );
-
-            samples_per_pixel.next_power_of_two()
+            spp
         } else {
             samples_per_pixel
         };
