@@ -7,4 +7,5 @@ edition = "2021"
 [dependencies]
 core = { path = "../core" }
 
+lazy_static = "1.4.0"
 log = "0.4.14"
