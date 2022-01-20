@@ -241,6 +241,7 @@ impl GraphicsState {
                     world2object,
                     reverse_orientation,
                     &self.float_textures,
+                    self.cwd.as_ref(),
                 );
                 Ok(PLYMesh::from_props(p))
             }
@@ -270,7 +271,7 @@ impl GraphicsState {
         match name {
             "matte" => Ok(Arc::new(MatteMaterial::from(mp))),
             "plastic" => Ok(Arc::new(PlasticMaterial::from(mp))),
-            "fourier" => Ok(Arc::new(FourierMaterial::from((mp, &self.cwd[..])))),
+            "fourier" => Ok(Arc::new(FourierMaterial::from((mp, self.cwd.as_ref())))),
             "mix" => {
                 let m1 = mp.find_string("namedmaterial1", String::from(""));
                 let mat1 = match self.named_materials.get(&m1) {
@@ -375,7 +376,7 @@ impl GraphicsState {
             "dots" => Ok(Arc::new(DotsTexture::<Spectrum>::from(p))),
             "fbm" => Ok(Arc::new(FBmTexture::<Spectrum>::from(p))),
             "imagemap" => {
-                let p = (tp, Arc::clone(&tex2world), &self.cwd[..]);
+                let p = (tp, Arc::clone(&tex2world), self.cwd.as_ref());
                 Ok(Arc::new(ImageTexture::<Spectrum>::from(p)))
             }
             "marble" => Ok(Arc::new(MarbleTexture::from(p))),
@@ -408,6 +409,7 @@ impl GraphicsState {
     /// * `medium_interface` - Medium interface.
     /// * `paramset`         - Parameter set.
     pub fn make_light(
+        &self,
         name: &str,
         light2world: ArcTransform,
         medium_interface: &MediumInterface,
@@ -427,11 +429,11 @@ impl GraphicsState {
                 Ok(Arc::new(DistantLight::from(p)))
             }
             "infinite" => {
-                let p = (paramset, Arc::clone(&light2world));
+                let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref());
                 Ok(Arc::new(InfiniteAreaLight::from(p)))
             }
             "exinfinite" => {
-                let p = (paramset, Arc::clone(&light2world));
+                let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref());
                 Ok(Arc::new(InfiniteAreaLight::from(p)))
             }
             _ => Err(format!("Light '{}' unknown.", name)),

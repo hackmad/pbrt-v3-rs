@@ -156,7 +156,9 @@ macro_rules! from_params {
                     _ => ImageWrap::Repeat,
                 };
                 let scale = tp.find_float("scale", 1.0);
-                let path = tp.find_filename("filename", String::from(""), cwd);
+                let path = tp
+                    .find_filename("filename", Some(cwd))
+                    .expect("imagemap path not specified.");
                 let gamma = tp.find_bool("gamma", path.ends_with(".tga") || path.ends_with(".png"));
                 Self::new(
                     map,

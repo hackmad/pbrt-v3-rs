@@ -680,7 +680,10 @@ impl Api {
 
             let mi = self.create_medium_interface();
             let light2world = self.current_transforms[0].clone();
-            match GraphicsState::make_light(&name, light2world, &mi, params) {
+            match self
+                .graphics_state
+                .make_light(&name, light2world, &mi, params)
+            {
                 Ok(lt) => self.render_options.lights.push(lt),
                 Err(err) => error!("{}", err),
             }

@@ -18,8 +18,6 @@ WorldBegin
               "point from" [ -30 40 100 ] 
               "blackbody L" [ 3000 1.5 ]
 
-  #Texture "bump" "float" "imagemap"
-  #        "string filename" "../../../pbrt-v3-scenes/simple/textures/lines.png"
   Texture "bump" "float" "windy"
 
   AttributeBegin

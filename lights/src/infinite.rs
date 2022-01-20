@@ -57,15 +57,20 @@ impl InfiniteAreaLight {
     /// * `n_samples`        - Used to trace multiple shadow rays to the light
     ///                        to compute soft shadows. Default to 1.
     /// * `texmap`           - Path to the image to use for the radiance map.
-    pub fn new(light_to_world: ArcTransform, l: Spectrum, n_samples: usize, texmap: &str) -> Self {
+    pub fn new(
+        light_to_world: ArcTransform,
+        l: Spectrum,
+        n_samples: usize,
+        texmap: Option<&str>,
+    ) -> Self {
         let world_to_light = Arc::clone(&light_to_world).inverse();
 
         let lrgb = l.to_rgb_spectrum();
 
         // Read texel data from texmap and initialize `l_map`.
         let (texels, resolution) = match texmap {
-            "" => (vec![lrgb], Point2::new(1_usize, 1_usize)),
-            _ => match read_image(texmap) {
+            None => (vec![lrgb], Point2::new(1_usize, 1_usize)),
+            Some(texmap) => match read_image(texmap) {
                 Ok(RGBImage { pixels, resolution }) => {
                     let texels = pixels.iter().map(|texel| *texel * lrgb).collect();
                     (texels, resolution)
@@ -304,23 +309,29 @@ impl Light for InfiniteAreaLight {
     }
 }
 
-impl From<(&ParamSet, ArcTransform)> for InfiniteAreaLight {
+impl From<(&ParamSet, ArcTransform, &str)> for InfiniteAreaLight {
     /// Create a `InfiniteAreaLight` from given parameter set and, light to world
-    /// transform.
+    /// transform and current working directory.
     ///
-    /// * `p` - A tuple containing the parameter set and light to world transform.
-    fn from(p: (&ParamSet, ArcTransform)) -> Self {
-        let (params, light_to_world) = p;
+    /// * `p` - A tuple containing the parameter set and light to world transform
+    ///         and current working directory.
+    fn from(p: (&ParamSet, ArcTransform, &str)) -> Self {
+        let (params, light_to_world, cwd) = p;
 
         let l = params.find_one_spectrum("L", Spectrum::new(1.0));
         let sc = params.find_one_spectrum("scale", Spectrum::new(1.0));
-        let texmap = params.find_one_filename("mapname", String::from(""));
+        let texmap = params.find_one_filename("mapname", Some(cwd));
 
         let mut n_samples = params.find_one_int("samples", params.find_one_int("nsamples", 1));
         if OPTIONS.quick_render {
             n_samples = max(1, n_samples / 4);
         }
 
-        Self::new(light_to_world, l * sc, n_samples as usize, &texmap)
+        Self::new(
+            light_to_world,
+            l * sc,
+            n_samples as usize,
+            texmap.as_ref().map(|t| t.as_ref()),
+        )
     }
 }

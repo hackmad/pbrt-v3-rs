@@ -20,7 +20,7 @@ WorldBegin
     Translate -6.55 0 0
     Scale 0.02 0.02 0.02
     Material "matte"
-    Shape "plymesh" "string filename" ["../pbrt-v3-scenes/ganesha/geometry/ganesha.ply"]
+    Shape "plymesh" "string filename" "../../../pbrt-v3-scenes/ganesha/geometry/ganesha.ply"
   AttributeEnd
 
   AttributeBegin

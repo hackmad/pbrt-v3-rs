@@ -19,14 +19,16 @@ pub struct PLYMesh;
 impl PLYMesh {
     /// Create mesh from a PLY file using given parameter set, object to world
     /// transform, world to object transform, whether or not surface normal
-    /// orientation is reversed and floating point texture maps.
+    /// orientation is reversed, floating point texture maps and current working
+    /// directory.
     ///
     /// NOTE: Because we return a set of shapes as `Vec<Arc<Shape>>` we cannot
     /// implement this as `From` trait :(
     ///
     /// * `p` - A tuple containing the parameter set, object to world transform,
     ///         world to object transform, whether or not surface normal
-    ///         orientation is reversed and floating point texture maps.
+    ///         orientation is reversed, floating point texture maps and current
+    ///         working directory.
     pub fn from_props(
         p: (
             &ParamSet,
@@ -34,12 +36,14 @@ impl PLYMesh {
             ArcTransform,
             bool,
             &FloatTextureMap,
+            &str,
         ),
     ) -> Vec<ArcShape> {
-        let (params, o2w, w2o, reverse_orientation, float_textures) = p;
+        let (params, o2w, w2o, reverse_orientation, float_textures, cwd) = p;
 
-        let path = params.find_one_filename("filename", String::from(""));
-        assert!(path.len() > 0, "PLY filename not provied");
+        let path = params
+            .find_one_filename("filename", Some(cwd))
+            .expect("PLY filename not provied");
 
         // Look up an alpha texture, if applicable.
         let alpha_tex_name = params.find_one_texture("alpha", String::from(""));

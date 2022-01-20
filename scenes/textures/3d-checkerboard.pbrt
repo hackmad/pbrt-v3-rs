@@ -23,7 +23,7 @@ WorldBegin
 
     Translate 0 0 -0.055
     Rotate 90 1 0 0
-    Shape "plymesh" "string filename" ["../dragon_recon/dragon_vrip.ply"]
+    Shape "plymesh" "string filename" "../../../dragon_recon/dragon_vrip.ply"
   AttributeEnd
 
   AttributeBegin

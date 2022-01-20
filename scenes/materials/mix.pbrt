@@ -17,7 +17,7 @@ WorldBegin
     Rotate 90 0 0 1
     Rotate -90 1 0 0
     LightSource "infinite" "color scale" [2.5 2.5 2.5]
-                "string mapname" "../pbrt-v3-scenes/dragon/textures/20060807_wells6_hd.exr"
+                "string mapname" "../../../pbrt-v3-scenes/dragon/textures/20060807_wells6_hd.exr"
   AttributeEnd
   
   AttributeBegin
@@ -35,7 +35,7 @@ WorldBegin
     Material "mix" "string namedmaterial1" "mat1"
                    "string namedmaterial2" "mat2"
                    "rgb amount" [.2 .2 .5] 
-    Shape "plymesh" "string filename" "../pbrt-v3-scenes/dragon/geometry/dragon_remeshed.ply"
+    Shape "plymesh" "string filename" "../../../pbrt-v3-scenes/dragon/geometry/dragon_remeshed.ply"
   AttributeEnd
 
 WorldEnd

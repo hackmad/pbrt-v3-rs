@@ -607,13 +607,12 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Realisti
         }
 
         // Realistic camera-specific parameters
-        let lens_file = params.find_one_filename("lensfile", String::from(""));
+        let lens_file = params
+            .find_one_filename("lensfile", None)
+            .expect("No lens description file supplied!");
         let aperture_diameter = params.find_one_float("aperturediameter", 1.0);
         let focus_distance = params.find_one_float("focusdistance", 10.0);
         let simple_weighting = params.find_one_bool("simpleweighting", true);
-        if lens_file.is_empty() {
-            panic!("No lens description file supplied!");
-        }
 
         // Load element data from lens description file
         let lens_data = match parse_float_file(&lens_file) {

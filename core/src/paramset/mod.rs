@@ -304,14 +304,24 @@ impl ParamSet {
 
     /// Finds a filename and returns the absolute path to the file.
     ///
-    /// * `name`    - Parameter name.
-    /// * `default` - Default file to use.
-    pub fn find_one_filename(&self, name: &str, default: String) -> String {
-        let filename = self.find_one_string(name, String::from(""));
+    /// * `name` - Parameter name.
+    /// * `cwd`  - .
+    pub fn find_one_filename(&self, name: &str, cwd: Option<&str>) -> Option<String> {
+        let mut filename = self.find_one_string(name, String::from(""));
         if filename.is_empty() {
-            default
-        } else {
-            absolute_path(&filename).map_or(default, |s| s)
+            return None;
+        }
+        if is_relative_path(&filename) {
+            if let Some(c) = cwd {
+                if !c.is_empty() {
+                    // Path is relative to the parent path of the file being parsed.
+                    filename = c.to_string() + "/" + &filename;
+                }
+            }
+        }
+        match absolute_path(&filename) {
+            Ok(s) => Some(s),
+            Err(_) => None,
         }
     }
 

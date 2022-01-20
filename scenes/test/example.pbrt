@@ -15,7 +15,7 @@ WorldBegin
   LightSource "infinite" "rgb L" [.4 .45 .5]
 
   #LightSource "infinite" 
-  #  "string mapname" "/Users/ahmad/Documents/Projects/Dev/rust/pbrt-v3-scenes/bunny-fur/textures/20060807_wells6_hd.exr"
+  #  "string mapname" "../../../pbrt-v3-scenes/bunny-fur/textures/20060807_wells6_hd.exr"
 
   # approximate the sun
   LightSource "distant" "point from" [ -30 40  100 ] "blackbody L" [3000 1.5]
