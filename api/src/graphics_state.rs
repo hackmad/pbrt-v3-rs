@@ -519,19 +519,31 @@ impl GraphicsState {
             transform_end,
         );
 
-        let p = (
-            paramset,
-            &animated_cam2world,
-            film,
-            medium_interface.outside.clone(),
-        );
-
         match name {
-            "environment" => Ok(Arc::new(EnvironmentCamera::from(p))),
-            "orthographic" => Ok(Arc::new(OrthographicCamera::from(p))),
-            "perspective" => Ok(Arc::new(PerspectiveCamera::from(p))),
-            "realistic" => Ok(Arc::new(RealisticCamera::from(p))),
-            _ => Err(format!("Camera '{}' unknown.", name)),
+            "realistic" => {
+                let p = (
+                    paramset,
+                    &animated_cam2world,
+                    film,
+                    medium_interface.outside.clone(),
+                    self.cwd.as_ref(),
+                );
+                Ok(Arc::new(RealisticCamera::from(p)))
+            }
+            _ => {
+                let p = (
+                    paramset,
+                    &animated_cam2world,
+                    film,
+                    medium_interface.outside.clone(),
+                );
+                match name {
+                    "environment" => Ok(Arc::new(EnvironmentCamera::from(p))),
+                    "orthographic" => Ok(Arc::new(OrthographicCamera::from(p))),
+                    "perspective" => Ok(Arc::new(PerspectiveCamera::from(p))),
+                    _ => Err(format!("Camera '{}' unknown.", name)),
+                }
+            }
         }
     }
 

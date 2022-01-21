@@ -586,14 +586,14 @@ impl RealisticCamera {
     }
 }
 
-impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for RealisticCamera {
+impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>, &str)> for RealisticCamera {
     /// Create a `RealisticCamera` from given parameter set, animated transform,
-    /// film and medium.
+    /// film, medium and current working directory.
     ///
-    /// * `p` - A tuple containing  parameter set, animated transform, film and
-    ///         medium.
-    fn from(p: (&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)) -> Self {
-        let (params, cam2world, film, medium) = p;
+    /// * `p` - A tuple containing  parameter set, animated transform, film,
+    ///         medium and current working directory.
+    fn from(p: (&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>, &str)) -> Self {
+        let (params, cam2world, film, medium, cwd) = p;
 
         // Extract common camera parameters from `ParamSet`
         let mut shutter_open = params.find_one_float("shutteropen", 0.0);
@@ -608,7 +608,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Realisti
 
         // Realistic camera-specific parameters
         let lens_file = params
-            .find_one_filename("lensfile", None)
+            .find_one_filename("lensfile", Some(cwd))
             .expect("No lens description file supplied!");
         let aperture_diameter = params.find_one_float("aperturediameter", 1.0);
         let focus_distance = params.find_one_float("focusdistance", 10.0);

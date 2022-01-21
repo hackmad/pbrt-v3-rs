@@ -305,7 +305,8 @@ impl ParamSet {
     /// Finds a filename and returns the absolute path to the file.
     ///
     /// * `name` - Parameter name.
-    /// * `cwd`  - .
+    /// * `cwd`  - Current working directory used for relative path handling. If
+    ///            it is None, assume path is relative to program path.
     pub fn find_one_filename(&self, name: &str, cwd: Option<&str>) -> Option<String> {
         let mut filename = self.find_one_string(name, String::from(""));
         if filename.is_empty() {
