@@ -75,6 +75,14 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Environment" href="renders/cameras/environment.png"><img src="renders/cameras/environment.png" style="height: 100px"/></a>
 <a title="Depth of field" href="renders/cameras/depth-of-field.png"><img src="renders/cameras/depth-of-field.png" style="height: 100px"/></a>
 
+### Lights
+
+<a title="Point" href="renders/lights/point.png"><img src="renders/lights/point.png" style="height: 100px"/></a>
+<a title="Diffuse" href="renders/lights/diffuse.png"><img src="renders/lights/diffuse.png" style="height: 100px"/></a>
+<a title="Distant" href="renders/lights/distant.png"><img src="renders/lights/distant.png" style="height: 100px"/></a>
+<a title="Infinite No Map" href="renders/lights/infinite-no-map.png"><img src="renders/lights/infinite-no-map.png" style="height: 100px"/></a>
+<a title="Infinite With Map" href="renders/lights/infinite-with-map.png"><img src="renders/lights/infinite-with-map.png" style="height: 100px"/></a>
+
 ## Building
 
 Build debug profile. The executable will be `target/debug/pbr_rust`.
