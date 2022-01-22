@@ -67,6 +67,14 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Fourier" href="renders/materials/fourier.png"><img src="renders/materials/fourier.png" style="height: 100px"/></a>
 <a title="Bump Map" href="renders/materials/bump.png"><img src="renders/materials/bump.png" style="height: 100px"/></a>
 
+### Cameras
+
+<a title="Perspective" href="renders/cameras/perspective.png"><img src="renders/cameras/perspective.png" style="height: 100px"/></a>
+<a title="Orthographic" href="renders/cameras/orthographic.png"><img src="renders/cameras/orthographic.png" style="height: 100px"/></a>
+<a title="Realistic" href="renders/cameras/realistic.png"><img src="renders/cameras/realistic.png" style="height: 100px"/></a>
+<a title="Environment" href="renders/cameras/environment.png"><img src="renders/cameras/environment.png" style="height: 100px"/></a>
+<a title="Depth of field" href="renders/cameras/depth-of-field.png"><img src="renders/cameras/depth-of-field.png" style="height: 100px"/></a>
+
 ## Building
 
 Build debug profile. The executable will be `target/debug/pbr_rust`.
