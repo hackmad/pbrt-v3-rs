@@ -535,7 +535,7 @@ impl RealisticCamera {
         if n_exiting_rays == 0 {
             // NOTE: This should happen a few times when calling focus_binary_search().
             // Not when computing the actual exit pupil bounds.
-            error!(
+            warn!(
                 "Unable to find exit pupil in x = [{}, {}] on film.",
                 p_film_x0, p_film_x1
             );
