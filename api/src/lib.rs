@@ -710,7 +710,7 @@ impl Api {
             let mut prims: Vec<ArcPrimitive> = vec![];
             let mut area_lights: Vec<ArcLight> = vec![]; // Upcasting AreaLight -> Light not possible.
 
-            if self.current_transforms.is_animated() {
+            if !self.current_transforms.is_animated() {
                 // Initialize `prims` and `area_lights` for static shape.
 
                 // Create shapes for shape `name`.
