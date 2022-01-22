@@ -210,7 +210,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Orthogra
         }
 
         let lens_radius = params.find_one_float("lensradius", 0.0);
-        let focal_distance = params.find_one_float("focaldistance", 1e30);
+        let focal_distance = params.find_one_float("focaldistance", 1e6);
 
         let frame = params.find_one_float(
             "frameaspectratio",

@@ -142,8 +142,7 @@ pub trait Light {
     /// scene bounds.
     ///
     /// * `ray` - The ray with differentials.
-    fn le(&self, ray: &Ray) -> Spectrum {
-        debug_assert!(ray.differentials.is_some(), "ray.differentials == None");
+    fn le(&self, _ray: &Ray) -> Spectrum {
         Spectrum::new(0.0)
     }
 

@@ -207,8 +207,6 @@ impl Light for InfiniteAreaLight {
     ///
     /// * `ray` - The ray with differentials.
     fn le(&self, ray: &Ray) -> Spectrum {
-        debug_assert!(ray.differentials.is_some(), "ray.differentials == None");
-
         let w = self.world_to_light.transform_vector(&ray.d).normalize();
         let st = Point2f::new(spherical_phi(&w) * INV_TWO_PI, spherical_theta(&w) * INV_PI);
         Spectrum::from_rgb(
