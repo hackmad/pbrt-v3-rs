@@ -533,7 +533,8 @@ impl RealisticCamera {
         // Return the entire element bounds if no rays made it through the
         // lens system.
         if n_exiting_rays == 0 {
-            // NOTE: This should happen a few times when calling focus_binary_search().
+            // NOTE: This should happen a few times when called via
+            // focus_binary_search() -> focus_distance() -> bound_exit_pupil().
             // Not when computing the actual exit pupil bounds.
             warn!(
                 "Unable to find exit pupil in x = [{}, {}] on film.",
