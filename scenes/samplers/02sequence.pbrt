@@ -1,0 +1,17 @@
+Film "image" "integer xresolution" 64 "integer yresolution" 64
+     "string filename" "renders/samplers/02sequence.png"
+
+Sampler "02sequence" "integer pixelsamples" 16
+Camera "perspective" "float fov" 35 "float focaldistance" 1 "float lensradius" .1
+Integrator "whitted"
+
+WorldBegin
+
+    LightSource "infinite" "color L" [.8 .8 .8] "integer nsamples" [32]
+    LightSource "distant" "point from" [-1 1 -1]
+
+    Translate 0 0 4
+    Material "matte" "color Kd" [.2 .2 .2] 
+    Shape "sphere"
+
+WorldEnd

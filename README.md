@@ -83,6 +83,14 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Infinite No Map" href="renders/lights/infinite-no-map.png"><img src="renders/lights/infinite-no-map.png" style="height: 100px"/></a>
 <a title="Infinite With Map" href="renders/lights/infinite-with-map.png"><img src="renders/lights/infinite-with-map.png" style="height: 100px"/></a>
 
+### Samplers
+
+<a title="(0-2) Sequence" href="renders/samplers/02sequence.png"><img src="renders/samplers/02sequence.png" style="height: 100px"/></a>
+<a title="Halton" href="renders/samplers/halton.png"><img src="renders/samplers/halton.png" style="height: 100px"/></a>
+<a title="Maximized Minimal Distance" href="renders/samplers/maxmindist.png"><img src="renders/samplers/maxmindist.png" style="height: 100px"/></a>
+<a title="Random" href="renders/samplers/random.png"><img src="renders/samplers/random.png" style="height: 100px"/></a>
+<a title="Stratified" href="renders/samplers/stratified.png"><img src="renders/samplers/stratified.png" style="height: 100px"/></a>
+
 ## Building
 
 Build debug profile. The executable will be `target/debug/pbr_rust`.
