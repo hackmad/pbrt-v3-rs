@@ -1602,9 +1602,9 @@ pub fn gray_code_sample(n: u32) -> u32 {
 /// * `c`        - A generator matrix.
 /// * `n`        - Number of samples to generate
 /// * `scramble` - Starting set of bits used for scrambling.
-pub fn gray_code_sample_1d(c: &[u32], n: usize, scramble: u32) -> Vec<Float> {
+/// * `p`        - Samples to update.
+pub fn gray_code_sample_1d(c: &[u32], n: usize, scramble: u32, p: &mut [Float]) {
     let mut v = scramble;
-    let mut p = vec![0.0; n];
     for i in 0..n {
         p[i] = min(
             v as Float * hexf32!("0x1.0p-32") as Float, // 1 / (2^32)
@@ -1612,7 +1612,6 @@ pub fn gray_code_sample_1d(c: &[u32], n: usize, scramble: u32) -> Vec<Float> {
         );
         v ^= c[(i + 1).trailing_zeros() as usize];
     }
-    p
 }
 
 /// Generates the 2D samples using a generator matrices.
@@ -1620,9 +1619,9 @@ pub fn gray_code_sample_1d(c: &[u32], n: usize, scramble: u32) -> Vec<Float> {
 /// * `c`        - Generator matrices for the 2 dimensions.
 /// * `n`        - Number of samples to generate
 /// * `scramble` - Starting set of bits used for scrambling in each dimension.
-pub fn gray_code_sample_2d(c: &[[u32; 32]; 2], n: usize, scramble: &[u32; 2]) -> Vec<Point2f> {
+/// * `p`        - Samples to update.
+pub fn gray_code_sample_2d(c: &[[u32; 32]; 2], n: usize, scramble: &[u32; 2], p: &mut [Point2f]) {
     let mut v = [scramble[0], scramble[1]];
-    let mut p = vec![Point2f::default(); n];
     for (i, pi) in p.iter_mut().enumerate().take(n) {
         let t = (i + 1).trailing_zeros() as usize;
 
@@ -1634,7 +1633,6 @@ pub fn gray_code_sample_2d(c: &[[u32; 32]; 2], n: usize, scramble: &[u32; 2]) ->
             v[j] ^= c[j][t];
         }
     }
-    p
 }
 
 /// Define VanDerCorput Generator Matrix.
@@ -1680,16 +1678,18 @@ const C_VANDER_CORPUT: [u32; 32] = [
 /// * `n_samples_per_pixel_sample` - Number of samples to generate for every
 ///                                  sample for a pixel.
 /// * `n_pixel_samples`            - Number of samples for a pixel.
+/// * `samples`                    - Sample values to update.
 /// * `rng`                        - Random number generator.
 pub fn van_der_corput(
     n_samples_per_pixel_sample: usize,
     n_pixel_samples: usize,
+    samples: &mut [Float],
     rng: &mut RNG,
-) -> Vec<Float> {
+) {
     let scramble = rng.uniform_u32();
     let total_samples = n_samples_per_pixel_sample * n_pixel_samples;
 
-    let mut samples = gray_code_sample_1d(&C_VANDER_CORPUT, total_samples, scramble);
+    gray_code_sample_1d(&C_VANDER_CORPUT, total_samples, scramble, samples);
 
     // Randomly shuffle 1D sample points.
     for i in 0..n_pixel_samples {
@@ -1699,11 +1699,13 @@ pub fn van_der_corput(
     }
 
     // Randomly shuffle last set of 1D sample points.
-    let start = n_pixel_samples;
-    let end = start + n_samples_per_pixel_sample;
-    rng.shuffle(&mut samples[start..end], n_samples_per_pixel_sample, 1);
-
-    samples
+    let start = 0;
+    let end = start + n_pixel_samples;
+    rng.shuffle(
+        &mut samples[start..end],
+        n_pixel_samples,
+        n_samples_per_pixel_sample,
+    );
 }
 
 /// Define 2D Sobol Generator Matrices.
@@ -1737,18 +1739,21 @@ const C_SOBOL: [[u32; 32]; 2] = [
 /// * `n_samples_per_pixel_sample` - Number of samples to generate for every
 ///                                  sample for a pixel.
 /// * `n_pixel_samples`            - Number of samples for a pixel.
+/// * `samples`                    - Sample values to update.
 /// * `rng`                        - Random number generator.
 pub fn sobol_2d(
     n_samples_per_pixel_sample: usize,
     n_pixel_samples: usize,
+    samples: &mut [Point2f],
     rng: &mut RNG,
-) -> Vec<Point2f> {
+) {
     let scramble = [rng.uniform_u32(), rng.uniform_u32()];
 
-    let mut samples = gray_code_sample_2d(
+    gray_code_sample_2d(
         &C_SOBOL,
         n_samples_per_pixel_sample * n_pixel_samples,
         &scramble,
+        samples,
     );
 
     for i in 0..n_pixel_samples {
@@ -1757,11 +1762,13 @@ pub fn sobol_2d(
         rng.shuffle(&mut samples[start..end], n_samples_per_pixel_sample, 1);
     }
 
-    let start = n_pixel_samples;
-    let end = start + n_samples_per_pixel_sample;
-    rng.shuffle(&mut samples[start..end], n_samples_per_pixel_sample, 1);
-
-    samples
+    let start = 0;
+    let end = start + n_pixel_samples;
+    rng.shuffle(
+        &mut samples[start..end],
+        n_pixel_samples,
+        n_samples_per_pixel_sample,
+    );
 }
 
 /// Returns the index of a pixel sample.

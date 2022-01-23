@@ -45,8 +45,8 @@ impl PixelSampler {
         let mut samples_2d = Vec::<Vec<Point2f>>::with_capacity(n_sampled_dimensions);
 
         for _i in 0..n_sampled_dimensions {
-            samples_1d.push(Vec::<Float>::with_capacity(samples_per_pixel));
-            samples_2d.push(Vec::<Point2f>::with_capacity(samples_per_pixel));
+            samples_1d.push(vec![0.0; samples_per_pixel]);
+            samples_2d.push(vec![Point2f::default(); samples_per_pixel]);
         }
 
         let rng = match seed {

@@ -65,37 +65,45 @@ impl Sampler for ZeroTwoSequenceSampler {
 
         // Generate 1D and 2D pixel sample components using (0, 2)-sequence.
         let n = self.sampler.samples_1d.len();
-        self.sampler.samples_1d = (0..n)
-            .map(|_i| van_der_corput(1, samples_per_pixel, &mut self.sampler.rng))
-            .collect();
+        for i in 0..n {
+            van_der_corput(
+                1,
+                samples_per_pixel,
+                &mut self.sampler.samples_1d[i],
+                &mut self.sampler.rng,
+            );
+        }
 
         let n = self.sampler.samples_2d.len();
-        self.sampler.samples_2d = (0..n)
-            .map(|_i| sobol_2d(1, samples_per_pixel, &mut self.sampler.rng))
-            .collect();
+        for i in 0..n {
+            sobol_2d(
+                1,
+                samples_per_pixel,
+                &mut self.sampler.samples_2d[i],
+                &mut self.sampler.rng,
+            );
+        }
 
         // Generate 1D and 2D array samples using (0, 2)-sequence.
         let n = self.sampler.data.samples_1d_array_sizes.len();
-        self.sampler.data.sample_array_1d = (0..n)
-            .map(|i| {
-                van_der_corput(
-                    self.sampler.data.samples_1d_array_sizes[i],
-                    samples_per_pixel,
-                    &mut self.sampler.rng,
-                )
-            })
-            .collect();
+        for i in 0..n {
+            van_der_corput(
+                self.sampler.data.samples_1d_array_sizes[i],
+                samples_per_pixel,
+                &mut self.sampler.data.sample_array_1d[i],
+                &mut self.sampler.rng,
+            );
+        }
 
         let n = self.sampler.data.samples_2d_array_sizes.len();
-        self.sampler.data.sample_array_2d = (0..n)
-            .map(|i| {
-                sobol_2d(
-                    self.sampler.data.samples_2d_array_sizes[i],
-                    samples_per_pixel,
-                    &mut self.sampler.rng,
-                )
-            })
-            .collect();
+        for i in 0..n {
+            sobol_2d(
+                self.sampler.data.samples_2d_array_sizes[i],
+                samples_per_pixel,
+                &mut self.sampler.data.sample_array_2d[i],
+                &mut self.sampler.rng,
+            );
+        }
 
         self.get_data().start_pixel(p);
     }

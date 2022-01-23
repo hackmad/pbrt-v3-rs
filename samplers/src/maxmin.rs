@@ -25,33 +25,35 @@ impl MaxMinDistSampler {
     /// * `n_sampled_dimensions` - Number of dimensions for sampling.
     /// * `seed`                 - Optional seed for the random number generator.
     pub fn new(samples_per_pixel: usize, n_sampled_dimensions: usize, seed: Option<u64>) -> Self {
-        let c_index = Log2::log2(samples_per_pixel) as usize;
+        let mut spp = samples_per_pixel;
+
+        let mut c_index = Log2::log2(spp);
         let max_c_index = C_MAX_MIN_DIST.len();
 
-        let spp = if c_index >= max_c_index {
-            let s = 1 << (max_c_index - 1);
+        if c_index as usize >= max_c_index {
             warn!(
                 "No more than {} samples per pixel are supported with \
                 MaxMinDistSampler. Rounding down.",
-                s
+                spp
             );
-            s
-        } else if !samples_per_pixel.is_power_of_two() {
-            let s = samples_per_pixel.next_power_of_two();
+            spp = (1 << max_c_index) - 1;
+        }
+        if !spp.is_power_of_two() {
+            let spp2 = samples_per_pixel.next_power_of_two();
             warn!(
                 "Non power-of-two {} sample count for MaxMinDistSampler. \
                 Rounded up to {}.",
-                samples_per_pixel, s
+                spp, spp2
             );
-            s
-        } else {
-            samples_per_pixel
-        };
-        assert!(c_index <= max_c_index);
+            spp = spp2;
+        }
+
+        c_index = Log2::log2(spp);
+        assert!(c_index >= 0_i64 && c_index < max_c_index as i64);
 
         Self {
             sampler: PixelSampler::new(spp, n_sampled_dimensions, seed),
-            c_pixel: C_MAX_MIN_DIST[c_index],
+            c_pixel: C_MAX_MIN_DIST[c_index as usize],
         }
     }
 }
@@ -95,31 +97,44 @@ impl Sampler for MaxMinDistSampler {
 
         // Generate remaining samples for `MaxMinDistSampler`.
         let n = self.sampler.samples_1d.len();
-        self.sampler.samples_1d = (0..n)
-            .map(|_i| van_der_corput(1, samples_per_pixel, &mut self.sampler.rng))
-            .collect();
+        for i in 0..n {
+            van_der_corput(
+                1,
+                samples_per_pixel,
+                &mut self.sampler.samples_1d[i],
+                &mut self.sampler.rng,
+            );
+        }
+
+        let n = self.sampler.samples_2d.len();
+        for i in 1..n {
+            sobol_2d(
+                1,
+                samples_per_pixel,
+                &mut self.sampler.samples_2d[i],
+                &mut self.sampler.rng,
+            );
+        }
 
         let n = self.sampler.data.samples_1d_array_sizes.len();
-        self.sampler.data.sample_array_1d = (0..n)
-            .map(|i| {
-                van_der_corput(
-                    self.sampler.data.samples_1d_array_sizes[i],
-                    samples_per_pixel,
-                    &mut self.sampler.rng,
-                )
-            })
-            .collect();
+        for i in 0..n {
+            van_der_corput(
+                self.sampler.data.samples_1d_array_sizes[i],
+                samples_per_pixel,
+                &mut self.sampler.data.sample_array_1d[i],
+                &mut self.sampler.rng,
+            );
+        }
 
         let n = self.sampler.data.samples_2d_array_sizes.len();
-        self.sampler.data.sample_array_2d = (0..n)
-            .map(|i| {
-                sobol_2d(
-                    self.sampler.data.samples_2d_array_sizes[i],
-                    samples_per_pixel,
-                    &mut self.sampler.rng,
-                )
-            })
-            .collect();
+        for i in 0..n {
+            sobol_2d(
+                self.sampler.data.samples_2d_array_sizes[i],
+                samples_per_pixel,
+                &mut self.sampler.data.sample_array_2d[i],
+                &mut self.sampler.rng,
+            );
+        }
 
         self.get_data().start_pixel(p);
     }

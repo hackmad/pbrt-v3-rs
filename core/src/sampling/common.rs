@@ -3,6 +3,7 @@
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::rng::*;
+use itertools::iproduct;
 
 /// Generate 1D samples.
 ///
@@ -30,8 +31,7 @@ pub fn stratified_sample_2d(rng: &mut RNG, nx: usize, ny: usize, jitter: bool) -
     let dx = 1.0 / nx as Float;
     let dy = 1.0 / ny as Float;
 
-    (0..ny)
-        .zip(0..nx)
+    iproduct!(0..ny, 0..nx)
         .map(|(y, x)| {
             let jx = if jitter { rng.uniform_float() } else { 0.5 };
             let jy = if jitter { rng.uniform_float() } else { 0.5 };
