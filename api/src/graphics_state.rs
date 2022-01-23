@@ -563,7 +563,7 @@ impl GraphicsState {
             "02sequence" => Ok(Arc::new(ZeroTwoSequenceSampler::from(p))),
             "lowdiscrepency" => Ok(Arc::new(ZeroTwoSequenceSampler::from(p))),
             "halton" => Ok(Arc::new(HaltonSampler::from(p))),
-            "maxmindist" => Ok(Arc::new(HaltonSampler::from(p))),
+            "maxmindist" => Ok(Arc::new(MaxMinDistSampler::from(p))),
             "random" => Ok(Arc::new(RandomSampler::from(p))),
             "sobol" => Ok(Arc::new(SobolSampler::from(p))),
             "stratified" => Ok(Arc::new(StratifiedSampler::from(p))),
