@@ -35,7 +35,6 @@ pub struct PlasticMaterial {
 impl PlasticMaterial {
     /// Create a new `PlasticMaterial`.
     ///
-    ///
     /// * `kd`              - Spectral diffuse reflection.
     /// * `ks`              - Spectral specular reflection.
     /// * `roughness`       - Roughness.

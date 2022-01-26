@@ -14,39 +14,53 @@ use textures::*;
 
 /// Implements purely specular surfaces.
 pub struct GlassMaterial {
-    ///
+    /// Reflectivity of the surface.
     kr: ArcTexture<Spectrum>,
 
-    ///
+    /// Transmissibity of the surface.
     kt: ArcTexture<Spectrum>,
 
-    ///
+    /// Microfacet roughness in the u direction. If zero, perfect specular
+    /// reflection is modeled.
     u_roughness: ArcTexture<Float>,
 
-    ///
+    /// Microfacet roughness in the u direction. If zero, perfect specular
+    /// reflection is modeled.
     v_roughness: ArcTexture<Float>,
 
-    ///
+    /// The index of refraction of the inside of the object.
+    /// Implicitly assumes that the exterior of objects is a vacuum, with IOR of 1.
     index: ArcTexture<Float>,
 
     /// Bump map.
     bump_map: Option<ArcTexture<Float>>,
 
-    ///
+    /// If true, roughness values are expected to be in the range [0,1], and are 
+    /// remapped to microfacet distribution function parameter values that range 
+    /// from near-perfect-specular at 0 to very rough at 1. Otherwise the 
+    /// roughness parameters are used directly for the alpha parameters of the 
+    /// microfacet distribution function.
     remap_roughness: bool,
 }
 
 impl GlassMaterial {
     /// Create a new `GlassMaterial`.
     ///
-    ///
-    /// * `kr`              -
-    /// * `kt`              -
-    /// * `u_roughness`     -
-    /// * `v_roughness`     -
-    /// * `index`           -
+    /// * `kr`              - Reflectivity of the surface.
+    /// * `kt`              - Transmissibity of the surface.
+    /// * `u_roughness`     - Microfacet roughness in the u direction. If zero, 
+    ///                       perfect specular reflection is modeled.
+    /// * `v_roughness`     - Microfacet roughness in the u direction. If zero,
+    ///                       perfect specular reflection is modeled.
+    /// * `index`           - Bump map.
     /// * `bump_map`        - Optional bump map.
-    /// * `remap_roughness` -
+    /// * `remap_roughness` - If true, roughness values are expected to be in
+    ///                       the range [0,1], and are remapped to microfacet
+    ///                       distribution function parameter values that range
+    ///                       from near-perfect-specular at 0 to very rough at 1.
+    ///                       Otherwise the roughness parameters are used directly
+    ///                       for the alpha parameters of the microfacet 
+    ///                       distribution function.
     pub fn new(
         kr: ArcTexture<Spectrum>,
         kt: ArcTexture<Spectrum>,

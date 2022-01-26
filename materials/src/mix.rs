@@ -26,7 +26,6 @@ pub struct MixMaterial {
 impl MixMaterial {
     /// Create a new `MixMaterial`.
     ///
-    ///
     /// * `m1`    - First material.
     /// * `m2`    - Second material.
     /// * `scale` - Texture used to blend between `m1` and `m2`.

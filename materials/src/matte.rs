@@ -26,7 +26,6 @@ pub struct MatteMaterial {
 impl MatteMaterial {
     /// Create a new `MatteMaterial`.
     ///
-    ///
     /// * `kd`       - Spectral diffuse reflection.
     /// * `sigma`    - Roughness.
     /// * `bump_map` - Optional bump map.

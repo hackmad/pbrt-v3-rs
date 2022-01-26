@@ -27,7 +27,6 @@ pub struct FourierMaterial {
 impl FourierMaterial {
     /// Create a new `FourierMaterial`.
     ///
-    ///
     /// * `path`     - Path to the Fourier BSDF data file.
     /// * `bump_map` - Optional bump map.
     pub fn new(path: &str, bump_map: Option<ArcTexture<Float>>) -> Self {
