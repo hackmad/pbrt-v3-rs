@@ -30,7 +30,6 @@ impl<'arena> SpecularTransmission<'arena> {
     ///
     /// * `arena`  - The arena for memory allocations.
     /// * `t`      - Spectrum used to scale the transmitted colour.
-    /// * `fresnel - Fresnel interface for dielectrics and conductors.
     /// * `eta_a`  - Index of refraction above the surface (same side as
     ///              surface normal).
     /// * `eta_b`  - Index of refraction below the surface (opposite side as
@@ -41,11 +40,11 @@ impl<'arena> SpecularTransmission<'arena> {
     pub fn alloc(
         arena: &'arena Bump,
         t: Spectrum,
-        fresnel: &'arena mut Fresnel<'arena>,
         eta_a: Float,
         eta_b: Float,
         mode: TransportMode,
     ) -> &'arena mut BxDF<'arena> {
+        let fresnel = FresnelDielectric::alloc(arena, eta_a, eta_b);
         let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_SPECULAR,
             fresnel,

@@ -9,6 +9,7 @@ mod matte;
 mod mirror;
 mod mix;
 mod plastic;
+mod uber;
 
 // Re-export
 pub use fourier::*;
@@ -17,3 +18,4 @@ pub use matte::*;
 pub use mirror::*;
 pub use mix::*;
 pub use plastic::*;
+pub use uber::*;

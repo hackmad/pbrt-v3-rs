@@ -1,0 +1,43 @@
+# Based on dragon scene from https://www.pbrt.org/scenes-v3
+
+LookAt 277 -240 250
+       0 60 -30
+       0 0 1
+Camera "perspective" "float fov" [33]
+
+Sampler "halton" "integer pixelsamples" [128]
+Integrator "whitted"
+
+Film "image" "string filename" "renders/materials/uber.png"
+     "integer xresolution" [400] "integer yresolution" [400]
+
+WorldBegin
+
+  AttributeBegin
+    Rotate 90 0 0 1
+    Rotate -90 1 0 0
+    LightSource "infinite" "color scale" [2.5 2.5 2.5]
+                "string mapname" "/Users/ahmad/Documents/Projects/Dev/rust/pbrt-v3-scenes/dragon/textures/20060807_wells6_hd.exr"
+  AttributeEnd
+  
+  AttributeBegin
+    Translate 0 0 -40
+    Material "matte" "color Kd" [.7 .7 .7]
+    Shape "trianglemesh"
+          "point P" [ -1000 -1000 0   1000 -1000 0   1000 1000 0 -1000 1000 0 ]
+          "integer indices" [ 0 1 2 2 3 0]
+  AttributeEnd
+  
+  AttributeBegin
+    Rotate -53 0 1 0
+    Material "uber" 
+             "float roughness" 0.0104080001
+             "float index" 1
+             "rgb Kd" [ .3 .5 .4 ]
+             "rgb Ks" [ 0.5 0.5 0.5 ] 
+             "rgb Kt" [ 0 0 0 ] 
+             "rgb opacity" [ 1 1 1 ] 
+    Shape "plymesh" "string filename" "/Users/ahmad/Documents/Projects/Dev/rust/pbrt-v3-scenes/dragon/geometry/dragon_remeshed.ply"
+  AttributeEnd
+
+WorldEnd

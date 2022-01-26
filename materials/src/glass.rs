@@ -24,7 +24,7 @@ pub struct GlassMaterial {
     /// reflection is modeled.
     u_roughness: ArcTexture<Float>,
 
-    /// Microfacet roughness in the u direction. If zero, perfect specular
+    /// Microfacet roughness in the v direction. If zero, perfect specular
     /// reflection is modeled.
     v_roughness: ArcTexture<Float>,
 
@@ -35,10 +35,10 @@ pub struct GlassMaterial {
     /// Bump map.
     bump_map: Option<ArcTexture<Float>>,
 
-    /// If true, roughness values are expected to be in the range [0,1], and are 
-    /// remapped to microfacet distribution function parameter values that range 
-    /// from near-perfect-specular at 0 to very rough at 1. Otherwise the 
-    /// roughness parameters are used directly for the alpha parameters of the 
+    /// If true, roughness values are expected to be in the range [0,1], and are
+    /// remapped to microfacet distribution function parameter values that range
+    /// from near-perfect-specular at 0 to very rough at 1. Otherwise the
+    /// roughness parameters are used directly for the alpha parameters of the
     /// microfacet distribution function.
     remap_roughness: bool,
 }
@@ -48,7 +48,7 @@ impl GlassMaterial {
     ///
     /// * `kr`              - Reflectivity of the surface.
     /// * `kt`              - Transmissibity of the surface.
-    /// * `u_roughness`     - Microfacet roughness in the u direction. If zero, 
+    /// * `u_roughness`     - Microfacet roughness in the u direction. If zero,
     ///                       perfect specular reflection is modeled.
     /// * `v_roughness`     - Microfacet roughness in the u direction. If zero,
     ///                       perfect specular reflection is modeled.
@@ -59,7 +59,7 @@ impl GlassMaterial {
     ///                       distribution function parameter values that range
     ///                       from near-perfect-specular at 0 to very rough at 1.
     ///                       Otherwise the roughness parameters are used directly
-    ///                       for the alpha parameters of the microfacet 
+    ///                       for the alpha parameters of the microfacet
     ///                       distribution function.
     pub fn new(
         kr: ArcTexture<Spectrum>,
@@ -132,10 +132,7 @@ impl Material for GlassMaterial {
                     }
 
                     if !t.is_black() {
-                        let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
-                        bsdf.add(SpecularTransmission::alloc(
-                            arena, t, fresnel, 1.0, eta, mode,
-                        ));
+                        bsdf.add(SpecularTransmission::alloc(arena, t, 1.0, eta, mode));
                     }
                 } else {
                     if !r.is_black() {
