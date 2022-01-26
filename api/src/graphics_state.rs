@@ -269,9 +269,10 @@ impl GraphicsState {
     /// * `mp`   - Parameter set.
     pub fn make_material(&self, name: &str, mp: &TextureParams) -> Result<ArcMaterial, String> {
         match name {
-            "matte" => Ok(Arc::new(MatteMaterial::from(mp))),
-            "plastic" => Ok(Arc::new(PlasticMaterial::from(mp))),
             "fourier" => Ok(Arc::new(FourierMaterial::from((mp, self.cwd.as_ref())))),
+            "glass" => Ok(Arc::new(GlassMaterial::from(mp))),
+            "matte" => Ok(Arc::new(MatteMaterial::from(mp))),
+            "mirror" => Ok(Arc::new(MirrorMaterial::from(mp))),
             "mix" => {
                 let m1 = mp.find_string("namedmaterial1", String::from(""));
                 let mat1 = match self.named_materials.get(&m1) {
@@ -293,9 +294,9 @@ impl GraphicsState {
 
                 Ok(Arc::new(MixMaterial::from((mp, mat1, mat2))))
             }
-            "glass" => Ok(Arc::new(GlassMaterial::from(mp))),
-            "" => Err(String::from("Unable to create material with no name")),
+            "plastic" => Ok(Arc::new(PlasticMaterial::from(mp))),
             "none" => Err(String::from("Unable to create material 'none'.")),
+            "" => Err(String::from("Unable to create material with no name")),
             _ => {
                 warn!("Material '{}' unknown. Using 'matte'.", name);
                 Ok(Arc::new(MatteMaterial::from(mp)))

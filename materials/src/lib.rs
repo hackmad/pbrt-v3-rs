@@ -6,6 +6,7 @@ extern crate lazy_static;
 mod fourier;
 mod glass;
 mod matte;
+mod mirror;
 mod mix;
 mod plastic;
 
@@ -13,5 +14,6 @@ mod plastic;
 pub use fourier::*;
 pub use glass::*;
 pub use matte::*;
+pub use mirror::*;
 pub use mix::*;
 pub use plastic::*;
