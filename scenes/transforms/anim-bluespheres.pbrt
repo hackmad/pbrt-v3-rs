@@ -1,0 +1,63 @@
+# Reference: https://www.pbrt.org/scenes-v3
+
+LookAt 0 2 -5   0 -0.3 0   0 1 0
+Camera "perspective" "float fov" [22]
+
+Film "image" "integer xresolution" [800] "integer yresolution" [400]
+     "string filename" "renders/transforms/anim-bluespheres.png"
+
+Sampler "sobol" "integer pixelsamples" 1024
+Integrator "whitted"
+
+WorldBegin
+
+    AttributeBegin
+        Rotate -90 1 0 0
+        LightSource "infinite" 
+                    "string mapname" ["../../../pbrt-v3-scenes/simple/textures/skylight-day.exr"]
+    AttributeEnd
+    
+    Texture "lines-tex" "color" "imagemap" 
+            "string filename" "../../../pbrt-v3-scenes/simple/textures/lines.png"
+    Material "plastic"
+             "texture Kd" "lines-tex"
+             "color Ks" [.3 .3 .3]
+             "float roughness" [.002]
+    
+    AttributeBegin
+        Translate -1.25 0 0
+        Rotate 40 1 1 0
+        Shape "sphere" "float radius" [.5]
+    AttributeEnd
+    
+    AttributeBegin
+        Rotate 40 1 1 0
+        ActiveTransform EndTime
+        Rotate 7 0 0 1
+        ActiveTransform All
+        Shape "sphere" "float radius" [.5]
+    AttributeEnd
+    
+    AttributeBegin
+        Translate 1.25 0 0
+        Rotate 40 1 1 0
+        ActiveTransform EndTime
+        Rotate 20 0 0 1
+        Shape "sphere" "float radius" [.5]
+    AttributeEnd
+    
+    AttributeBegin
+        Material "plastic" 
+                 "color Kd" [.2 .2 .2]
+                 "color Ks" [ 0 0 0]
+                 "float roughness" [.03]
+        Material "mirror"
+        Translate 0 0 1
+        Rotate 45 1 0 0
+        Shape "trianglemesh" 
+              "integer indices" [0 1 2] 
+              "point P" [-10 -10 0   10 -10 0   0 10 0]
+    AttributeEnd
+
+WorldEnd
+

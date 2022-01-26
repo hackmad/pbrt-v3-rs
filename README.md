@@ -65,6 +65,8 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Glass" href="renders/materials/glass.png"><img src="renders/materials/glass.png" style="height: 100px"/></a>
 <a title="Plastic" href="renders/materials/plastic.png"><img src="renders/materials/plastic.png" style="height: 100px"/></a>
 <a title="Fourier" href="renders/materials/fourier.png"><img src="renders/materials/fourier.png" style="height: 100px"/></a>
+<a title="Mirror" href="renders/materials/mirror.png"><img src="renders/materials/mirror.png" style="height: 100px"/></a>
+<a title="Uber" href="renders/materials/uber.png"><img src="renders/materials/uber.png" style="height: 100px"/></a>
 <a title="Bump Map" href="renders/materials/bump.png"><img src="renders/materials/bump.png" style="height: 100px"/></a>
 
 ### Cameras
@@ -90,6 +92,10 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Maximized Minimal Distance" href="renders/samplers/maxmindist.png"><img src="renders/samplers/maxmindist.png" style="height: 100px"/></a>
 <a title="Random" href="renders/samplers/random.png"><img src="renders/samplers/random.png" style="height: 100px"/></a>
 <a title="Stratified" href="renders/samplers/stratified.png"><img src="renders/samplers/stratified.png" style="height: 100px"/></a>
+
+### Transforms
+
+<a title="Animation" href="renders/transforms/anim-bluespheres.png"><img src="renders/transforms/anim-bluespheres.png" style="height: 100px"/></a>
 
 ## Building
 
