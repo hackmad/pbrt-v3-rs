@@ -12,7 +12,8 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements purely diffuse surfaces.
+/// Implements a material that supports diffuse, glossy specular and specular
+/// reflection.
 pub struct UberMaterial {
     /// Coefficient of glossy reflection.
     ks: ArcTexture<Spectrum>,
