@@ -11,7 +11,7 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements simple specular reflector.
+/// Implements a simple mirror, modeled with perfect specular reflection.
 pub struct MirrorMaterial {
     /// Reflectivity of the mirror.
     kr: ArcTexture<Spectrum>,

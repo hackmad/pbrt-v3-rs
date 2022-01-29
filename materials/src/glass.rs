@@ -12,7 +12,8 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements purely specular surfaces.
+/// Implements perfect or glossy specular reflection and transmission, weighted
+/// by Fresnel terms for accurate angular-dependent variation.
 pub struct GlassMaterial {
     /// Reflectivity of the surface.
     kr: ArcTexture<Spectrum>,

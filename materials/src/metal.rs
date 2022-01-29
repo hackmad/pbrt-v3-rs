@@ -12,7 +12,8 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements metal surfaces.
+/// Implements metal material, based on the Fresnel equations for conductors and
+/// the Torrance–Sparrow model.
 pub struct MetalMaterial {
     /// Index of refraction to use in computing the material's reflectance.
     index: ArcTexture<Spectrum>,

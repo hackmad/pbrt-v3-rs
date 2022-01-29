@@ -12,8 +12,10 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements a material that supports diffuse, glossy specular and specular
-/// reflection.
+/// Implements a “kitchen sink” material representing the union of many of the
+/// preceding materials. This is a highly parameterized material that is
+/// particularly useful when converting scenes from other file formats into
+/// pbrt’s.
 pub struct UberMaterial {
     /// Coefficient of glossy reflection.
     ks: ArcTexture<Spectrum>,

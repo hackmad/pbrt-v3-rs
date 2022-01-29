@@ -12,7 +12,9 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements plastic material.
+/// Implements plastic material as a mixture of a diffuse and glossy scattering
+/// function with parameters controlling the particular colors and specular
+/// highlight size.
 pub struct PlasticMaterial {
     /// Spectral diffuse reflection.
     kd: ArcTexture<Spectrum>,
