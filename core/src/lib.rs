@@ -8,6 +8,8 @@ extern crate hexf;
 extern crate lazy_static;
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate pest_derive;
 
 // Re-export.
 pub mod app;
@@ -17,6 +19,7 @@ pub mod efloat;
 pub mod fileutil;
 pub mod film;
 pub mod filter;
+pub mod float_file;
 pub mod geometry;
 pub mod image_io;
 pub mod integrator;

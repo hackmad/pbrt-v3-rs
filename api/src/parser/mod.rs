@@ -205,7 +205,7 @@ impl PbrtFileParser {
                 let texture_type = self.parse_quoted_str(&mut inner_rules);
                 let texture_class = self.parse_quoted_str(&mut inner_rules);
                 let params = inner_rules.next().map_or(ParamSet::new(), |param_list| {
-                    self.parse_param_list(param_list.into_inner())
+                    self.parse_param_list(param_list.into_inner(), &api.cwd)
                 });
                 debug!(
                     "Texture: '{}', '{}', '{}' {:}",
@@ -369,7 +369,7 @@ impl PbrtFileParser {
     fn parse_named_param_list(&self, pairs: &mut Pairs<Rule>, option_name: &str, api: &mut Api) {
         let name = self.parse_quoted_str(pairs);
         let params = pairs.next().map_or(ParamSet::new(), |param_list| {
-            self.parse_param_list(param_list.into_inner())
+            self.parse_param_list(param_list.into_inner(), &api.cwd)
         });
 
         debug!("{} '{}' {:}", option_name, name, params);
@@ -393,14 +393,16 @@ impl PbrtFileParser {
     /// Parse a `param_list` rule of the grammar and return a `ParamSet`.
     ///
     /// * `pairs` - The inner token pairs for matched `param_list` rule.
-    fn parse_param_list(&self, pairs: Pairs<Rule>) -> ParamSet {
+    /// * `api`   - The PBRT API interface.
+    /// * `cwd`    - Current working directory for relative path handling.
+    fn parse_param_list(&self, pairs: Pairs<Rule>, cwd: &str) -> ParamSet {
         let mut paramset = ParamSet::new();
 
         for pair in pairs {
             let rule = pair.as_rule();
             let mut inner_rules = pair.into_inner();
             match rule {
-                Rule::param => self.parse_param(&mut inner_rules, &mut paramset),
+                Rule::param => self.parse_param(&mut inner_rules, &mut paramset, cwd),
                 Rule::comment => (), // Ignore
                 _ => unreachable!(),
             }
@@ -413,7 +415,8 @@ impl PbrtFileParser {
     ///
     /// * `pairs`  - The inner token pairs for matched `param_list` rule.
     /// * `params` - The `ParamSet` to update.
-    fn parse_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
+    /// * `cwd`    - Current working directory for relative path handling.
+    fn parse_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet, cwd: &str) {
         let next_pair = pairs.next().unwrap();
         let rule = next_pair.as_rule();
         let mut inner_rules = next_pair.into_inner();
@@ -428,7 +431,7 @@ impl PbrtFileParser {
             Rule::float_param => self.parse_float_param(&mut inner_rules, params),
             Rule::int_param => self.parse_int_param(&mut inner_rules, params),
             Rule::colour_param => self.parse_colour_param(&mut inner_rules, params),
-            Rule::spectrum_param => self.parse_spectrum_param(&mut inner_rules, params),
+            Rule::spectrum_param => self.parse_spectrum_param(&mut inner_rules, params, cwd),
             Rule::blackbody_param => self.parse_blackbody_param(&mut inner_rules, params),
             Rule::texture_param => self.parse_texture_param(&mut inner_rules, params),
             _ => unreachable!(),
@@ -706,7 +709,8 @@ impl PbrtFileParser {
     ///
     /// * `pairs`  - The inner token pairs for matched `spectrum_param` rule.
     /// * `params` - The `ParamSet` to update.
-    fn parse_spectrum_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
+    /// * `cwd`    - Current working directory for relative path handling.
+    fn parse_spectrum_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet, cwd: &str) {
         let param_type = pairs.next().unwrap().as_str();
         assert!(param_type == "spectrum");
 
@@ -723,7 +727,7 @@ impl PbrtFileParser {
             Rule::quoted_str_expr => {
                 let mut inner_rules = value.into_inner();
                 let filename = self.parse_quoted_str(&mut inner_rules);
-                params.add_sampled_spectrum_files(ident, &[filename]);
+                params.add_sampled_spectrum_files(ident, &[filename], cwd);
             }
             _ => unreachable!(),
         };

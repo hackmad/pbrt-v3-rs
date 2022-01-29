@@ -1,6 +1,7 @@
 //! Parameter Sets
 
 use crate::fileutil::*;
+use crate::float_file::parse_float_file;
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::spectrum::*;
@@ -277,16 +278,48 @@ impl ParamSet {
     ///
     /// * `name`  - Parameter name.
     /// * `paths` - List of paths to the data files.
-    pub fn add_sampled_spectrum_files(&mut self, name: &str, paths: &[String]) {
+    /// * `cwd`   - Current working directory for relative path resolution.
+    pub fn add_sampled_spectrum_files(&mut self, name: &str, paths: &[String], cwd: &str) {
         let mut spectra: Vec<Spectrum> = vec![];
 
         for path in paths {
-            match absolute_path(path) {
+            let p = if is_relative_path(path) && !cwd.is_empty() {
+                cwd.to_string() + "/" + &path
+            } else {
+                path.to_string()
+            };
+
+            match absolute_path(&p) {
                 Ok(abs_path) => {
                     if let Some(spectrum) = self.cached_spectra.get(&abs_path) {
                         spectra.push(*spectrum);
                         continue;
                     }
+
+                    let spectrum = match parse_float_file(&abs_path) {
+                        Ok(vals) => {
+                            if vals.len() % 2 > 0 {
+                                warn!(
+                                    "Extra value found in spectrum file '{}'. Ignoring it.",
+                                    path
+                                );
+                            }
+                            let mut samples: Vec<Sample> = Vec::with_capacity(vals.len() / 2);
+                            for j in 0..vals.len() / 2 {
+                                samples.push(Sample::new(vals[2 * j], vals[2 * j + 1]));
+                            }
+                            Spectrum::from(&samples)
+                        }
+                        Err(e) => {
+                            warn!(
+                                "Unable to read SPD file '{}'. Using black distribution. {}",
+                                path, e
+                            );
+                            Spectrum::new(0.0)
+                        }
+                    };
+                    self.cached_spectra.insert(abs_path, spectrum);
+                    spectra.push(spectrum);
                 }
                 Err(err) => {
                     error!(

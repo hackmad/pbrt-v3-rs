@@ -1,9 +1,9 @@
 //! Realistic Camera
 
-use super::parse_float_file;
 use core::camera::*;
 use core::efloat::*;
 use core::film::*;
+use core::float_file::parse_float_file;
 use core::geometry::*;
 use core::low_discrepency::*;
 use core::medium::*;

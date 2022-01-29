@@ -1,13 +1,13 @@
 //! Float File Parser
 
-use core::pbrt::Float;
+use crate::pbrt::Float;
 use pest::iterators::Pair;
 use pest::Parser;
 use std::fs;
 use std::result::Result;
 
 #[derive(Parser)]
-#[grammar = "parser/grammar.pest"]
+#[grammar = "float_file/grammar.pest"]
 struct FloatParser;
 
 /// Reads a file containing floating point values. If a line contains `#`
