@@ -68,7 +68,7 @@ impl Material for MirrorMaterial {
 }
 
 impl From<&TextureParams> for MirrorMaterial {
-    /// Create a matte material from given parameter set.
+    /// Create a mirror material from given parameter set.
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {

@@ -199,7 +199,7 @@ impl Material for UberMaterial {
 }
 
 impl From<&TextureParams> for UberMaterial {
-    /// Create a matte material from given parameter set.
+    /// Create an uber material from given parameter set.
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {

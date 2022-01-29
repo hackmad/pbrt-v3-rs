@@ -143,7 +143,7 @@ impl Material for MetalMaterial {
 }
 
 impl From<&TextureParams> for MetalMaterial {
-    /// Create a Metal material from given parameter set.
+    /// Create a metal material from given parameter set.
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {

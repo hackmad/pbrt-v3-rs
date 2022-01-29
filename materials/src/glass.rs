@@ -160,7 +160,7 @@ impl Material for GlassMaterial {
 }
 
 impl From<&TextureParams> for GlassMaterial {
-    /// Create a matte material from given parameter set.
+    /// Create a glass material from given parameter set.
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
