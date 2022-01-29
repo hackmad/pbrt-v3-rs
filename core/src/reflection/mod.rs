@@ -17,6 +17,7 @@ mod fresnel;
 mod fresnel_blend;
 mod fresnel_specular;
 mod lambertian_reflection;
+mod lambertian_transmission;
 mod microfacet_reflection;
 mod microfacet_transmission;
 mod oren_nayar;
@@ -34,6 +35,7 @@ pub use fresnel::*;
 pub use fresnel_blend::*;
 pub use fresnel_specular::*;
 pub use lambertian_reflection::*;
+pub use lambertian_transmission::*;
 pub use microfacet_reflection::*;
 pub use microfacet_transmission::*;
 pub use oren_nayar::*;
@@ -47,6 +49,7 @@ pub enum BxDF<'arena> {
     FresnelBlend(&'arena mut FresnelBlend<'arena>),
     FresnelSpecular(&'arena mut FresnelSpecular),
     LambertianReflection(&'arena mut LambertianReflection),
+    LambertianTransmission(&'arena mut LambertianTransmission),
     MicrofacetReflection(&'arena mut MicrofacetReflection<'arena>),
     MicrofacetTransmission(&'arena mut MicrofacetTransmission<'arena>),
     OrenNayar(&'arena mut OrenNayar),
@@ -66,6 +69,7 @@ impl<'arena> BxDF<'arena> {
             BxDF::FresnelBlend(bxdf) => bxdf.clone_alloc(arena),
             BxDF::FresnelSpecular(bxdf) => bxdf.clone_alloc(arena),
             BxDF::LambertianReflection(bxdf) => bxdf.clone_alloc(arena),
+            BxDF::LambertianTransmission(bxdf) => bxdf.clone_alloc(arena),
             BxDF::MicrofacetReflection(bxdf) => bxdf.clone_alloc(arena),
             BxDF::MicrofacetTransmission(bxdf) => bxdf.clone_alloc(arena),
             BxDF::OrenNayar(bxdf) => bxdf.clone_alloc(arena),
@@ -82,6 +86,7 @@ impl<'arena> BxDF<'arena> {
             BxDF::FresnelBlend(bxdf) => bxdf.get_type(),
             BxDF::FresnelSpecular(bxdf) => bxdf.get_type(),
             BxDF::LambertianReflection(bxdf) => bxdf.get_type(),
+            BxDF::LambertianTransmission(bxdf) => bxdf.get_type(),
             BxDF::MicrofacetReflection(bxdf) => bxdf.get_type(),
             BxDF::MicrofacetTransmission(bxdf) => bxdf.get_type(),
             BxDF::OrenNayar(bxdf) => bxdf.get_type(),
@@ -110,6 +115,7 @@ impl<'arena> BxDF<'arena> {
             BxDF::FresnelBlend(bxdf) => bxdf.f(wo, wi),
             BxDF::FresnelSpecular(bxdf) => bxdf.f(wo, wi),
             BxDF::LambertianReflection(bxdf) => bxdf.f(wo, wi),
+            BxDF::LambertianTransmission(bxdf) => bxdf.f(wo, wi),
             BxDF::MicrofacetReflection(bxdf) => bxdf.f(wo, wi),
             BxDF::MicrofacetTransmission(bxdf) => bxdf.f(wo, wi),
             BxDF::OrenNayar(bxdf) => bxdf.f(wo, wi),
@@ -129,6 +135,7 @@ impl<'arena> BxDF<'arena> {
             BxDF::FourierBSDF(bxdf) => bxdf.sample_f(wo, u),
             BxDF::FresnelBlend(bxdf) => bxdf.sample_f(wo, u),
             BxDF::FresnelSpecular(bxdf) => bxdf.sample_f(wo, u),
+            BxDF::LambertianTransmission(bxdf) => bxdf.sample_f(wo, u),
             BxDF::MicrofacetReflection(bxdf) => bxdf.sample_f(wo, u),
             BxDF::MicrofacetTransmission(bxdf) => bxdf.sample_f(wo, u),
             BxDF::ScaledBxDF(bxdf) => bxdf.sample_f(wo, u),
@@ -156,6 +163,7 @@ impl<'arena> BxDF<'arena> {
             BxDF::FourierBSDF(bxdf) => bxdf.pdf(wo, wi),
             BxDF::FresnelBlend(bxdf) => bxdf.pdf(wo, wi),
             BxDF::FresnelSpecular(bxdf) => bxdf.pdf(wo, wi),
+            BxDF::LambertianTransmission(bxdf) => bxdf.pdf(wo, wi),
             BxDF::MicrofacetReflection(bxdf) => bxdf.pdf(wo, wi),
             BxDF::MicrofacetTransmission(bxdf) => bxdf.pdf(wo, wi),
             BxDF::ScaledBxDF(bxdf) => bxdf.pdf(wo, wi),
@@ -178,6 +186,7 @@ impl<'arena> BxDF<'arena> {
     pub fn rho_hd(&self, wo: &Vector3f, u: &[Point2f]) -> Spectrum {
         match self {
             BxDF::LambertianReflection(bxdf) => bxdf.rho_hd(wo, u),
+            BxDF::LambertianTransmission(bxdf) => bxdf.rho_hd(wo, u),
             BxDF::ScaledBxDF(bxdf) => bxdf.rho_hd(wo, u),
             _ => {
                 let mut r = Spectrum::new(0.0);
@@ -200,6 +209,7 @@ impl<'arena> BxDF<'arena> {
     pub fn rho_hh(&self, u1: &[Point2f], u2: &[Point2f]) -> Spectrum {
         match self {
             BxDF::LambertianReflection(bxdf) => bxdf.rho_hh(u1, u2),
+            BxDF::LambertianTransmission(bxdf) => bxdf.rho_hh(u1, u2),
             BxDF::ScaledBxDF(bxdf) => bxdf.rho_hh(u1, u2),
             _ => {
                 assert!(u1.len() == u2.len());
