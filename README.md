@@ -69,6 +69,7 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Uber" href="renders/materials/uber.png"><img src="renders/materials/uber.png" style="height: 100px"/></a>
 <a title="Metal" href="renders/materials/metal.png"><img src="renders/materials/metal.png" style="height: 100px"/></a>
 <a title="Translucent" href="renders/materials/translucent.png"><img src="renders/materials/translucent.png" style="height: 100px"/></a>
+<a title="Substrate" href="renders/materials/substrate.png"><img src="renders/materials/substrate.png" style="height: 100px"/></a>
 <a title="Bump Map" href="renders/materials/bump.png"><img src="renders/materials/bump.png" style="height: 100px"/></a>
 
 ### Cameras

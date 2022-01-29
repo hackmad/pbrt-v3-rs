@@ -10,6 +10,7 @@ mod metal;
 mod mirror;
 mod mix;
 mod plastic;
+mod substrate;
 mod translucent;
 mod uber;
 
@@ -21,5 +22,6 @@ pub use metal::*;
 pub use mirror::*;
 pub use mix::*;
 pub use plastic::*;
+pub use substrate::*;
 pub use translucent::*;
 pub use uber::*;
