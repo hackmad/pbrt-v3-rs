@@ -49,13 +49,16 @@ impl DistantLight {
         emitted_radiance: Spectrum,
         w_light: Vector3f,
     ) -> Self {
+        let light_to_world = Arc::clone(&light_to_world);
+        let w_light = light_to_world.transform_vector(&w_light).normalize();
+
         Self {
             light_type: LightType::DELTA_DIRECTION_LIGHT,
-            light_to_world: Arc::clone(&light_to_world),
+            light_to_world,
             medium_interface: MediumInterface::vacuum(),
             world_center: Arc::new(RwLock::new(Point3f::default())), // Calculated in preprocess().
             world_radius: Arc::new(RwLock::new(1.0)),                // Calculated in preprocess().
-            w_light: light_to_world.transform_vector(&w_light).normalize(),
+            w_light,
             emitted_radiance,
         }
     }

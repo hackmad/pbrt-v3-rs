@@ -63,7 +63,8 @@ impl InfiniteAreaLight {
         n_samples: usize,
         texmap: Option<&str>,
     ) -> Self {
-        let world_to_light = Arc::clone(&light_to_world).inverse();
+        let light_to_world = Arc::clone(&light_to_world);
+        let world_to_light = Arc::new(light_to_world.inverse());
 
         let lrgb = l.to_rgb_spectrum();
 
@@ -117,8 +118,8 @@ impl InfiniteAreaLight {
         Self {
             light_type: LightType::INFINITE_LIGHT,
             medium_interface: MediumInterface::vacuum(),
-            light_to_world: Arc::clone(&light_to_world),
-            world_to_light: Arc::new(world_to_light),
+            light_to_world,
+            world_to_light,
             n_samples,
             l_map,
             distribution,

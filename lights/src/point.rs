@@ -45,13 +45,15 @@ impl PointLight {
         medium_interface: MediumInterface,
         intensity: Spectrum,
     ) -> Self {
-        let world_to_light = Arc::clone(&light_to_world).inverse();
-        let p_light = Arc::clone(&light_to_world).transform_point(&Point3f::default());
+        let light_to_world = Arc::clone(&light_to_world);
+        let world_to_light = Arc::new(light_to_world.inverse());
+        let p_light = light_to_world.transform_point(&Point3f::default());
+
         Self {
             light_type: LightType::DELTA_POSITION_LIGHT,
             medium_interface: medium_interface.clone(),
-            light_to_world: Arc::clone(&light_to_world),
-            world_to_light: Arc::new(world_to_light),
+            light_to_world,
+            world_to_light,
             p_light,
             intensity,
         }
