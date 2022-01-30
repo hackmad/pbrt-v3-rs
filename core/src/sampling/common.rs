@@ -104,7 +104,7 @@ pub fn uniform_sample_hemisphere(u: &Point2f) -> Vector3f {
 
 /// Returns the PDF for uniformly sampling a direction from a hemisphere.
 #[inline]
-pub fn uniform_hemisphere_pdf() -> Float {
+pub const fn uniform_hemisphere_pdf() -> Float {
     INV_TWO_PI
 }
 
@@ -119,8 +119,7 @@ pub fn uniform_sample_sphere(u: &Point2f) -> Vector3f {
 }
 
 /// Returns the PDF for uniformly sampling a direction from a sphere.
-#[inline]
-pub fn uniform_sphere_pdf() -> Float {
+pub const fn uniform_sphere_pdf() -> Float {
     INV_FOUR_PI
 }
 

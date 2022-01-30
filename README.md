@@ -89,6 +89,7 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Infinite With Map" href="renders/lights/infinite-with-map.png"><img src="renders/lights/infinite-with-map.png" style="height: 100px"/></a>
 <a title="Spot" href="renders/lights/spot.png"><img src="renders/lights/spot.png" style="height: 100px"/></a>
 <a title="Projection" href="renders/lights/projection.png"><img src="renders/lights/projection.png" style="height: 100px"/></a>
+<a title="Goniophotometric" href="renders/lights/goniometric.png"><img src="renders/lights/goniometric.png" style="height: 100px"/></a>
 
 ### Samplers
 

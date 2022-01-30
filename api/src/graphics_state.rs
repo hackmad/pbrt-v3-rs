@@ -429,6 +429,15 @@ impl GraphicsState {
                 let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref());
                 Ok(Arc::new(InfiniteAreaLight::from(p)))
             }
+            "goniometric" => {
+                let p = (
+                    paramset,
+                    Arc::clone(&light2world),
+                    medium_interface.outside.as_ref().map(Arc::clone),
+                    self.cwd.as_ref(),
+                );
+                Ok(Arc::new(GonioPhotometricLight::from(p)))
+            }
             "infinite" => {
                 let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref());
                 Ok(Arc::new(InfiniteAreaLight::from(p)))
