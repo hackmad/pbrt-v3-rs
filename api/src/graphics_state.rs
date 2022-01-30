@@ -421,6 +421,18 @@ impl GraphicsState {
         paramset: &ParamSet,
     ) -> Result<ArcLight, String> {
         match name {
+            "distant" => {
+                let p = (paramset, Arc::clone(&light2world));
+                Ok(Arc::new(DistantLight::from(p)))
+            }
+            "exinfinite" => {
+                let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref());
+                Ok(Arc::new(InfiniteAreaLight::from(p)))
+            }
+            "infinite" => {
+                let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref());
+                Ok(Arc::new(InfiniteAreaLight::from(p)))
+            }
             "point" => {
                 let p = (
                     paramset,
@@ -429,17 +441,13 @@ impl GraphicsState {
                 );
                 Ok(Arc::new(PointLight::from(p)))
             }
-            "distant" => {
-                let p = (paramset, Arc::clone(&light2world));
-                Ok(Arc::new(DistantLight::from(p)))
-            }
-            "infinite" => {
-                let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref());
-                Ok(Arc::new(InfiniteAreaLight::from(p)))
-            }
-            "exinfinite" => {
-                let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref());
-                Ok(Arc::new(InfiniteAreaLight::from(p)))
+            "spot" => {
+                let p = (
+                    paramset,
+                    Arc::clone(&light2world),
+                    medium_interface.outside.clone(),
+                );
+                Ok(Arc::new(SpotLight::from(p)))
             }
             _ => Err(format!("Light '{}' unknown.", name)),
         }
