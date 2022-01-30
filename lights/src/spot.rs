@@ -146,13 +146,15 @@ impl Light for SpotLight {
             time,
             self.medium_interface.inside.clone(),
         );
+        let n_light = Normal3f::from(&ray.d);
+        let falloff = self.falloff(&ray.d);
 
         Le::new(
             ray,
-            Normal3f::from(w),
+            n_light,
             1.0,
             uniform_cone_pdf(self.cos_total_width),
-            self.intensity * self.falloff(&w),
+            self.intensity * falloff,
         )
     }
 
