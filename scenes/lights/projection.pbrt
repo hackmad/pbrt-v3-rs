@@ -1,0 +1,44 @@
+LookAt 0 5 3  # eye
+       0 0 0  # look at point
+       0 0 1  # up vector
+Camera "perspective" "float fov" 90
+
+Sampler "halton" "integer pixelsamples" 128
+Integrator "whitted"
+Film "image" "string filename" "renders/lights/projection.png"
+     "integer xresolution" [400] "integer yresolution" [400]
+
+WorldBegin
+
+  AttributeBegin
+    Translate -5 0 5
+    Rotate 145 0 1 0
+    LightSource "projection" 
+            "rgb I" [.4 .45 .5] 
+            "rgb scale" [200 200 200]
+            "float fov" 45
+            "string mapname" "../../../pbrt-v3-scenes/simple/textures/lines.png"
+  AttributeEnd
+
+  AttributeBegin
+    Rotate 45 0 0 1
+    Material "matte" "rgb Kd" [.2 .01 .01]
+    Include "../geometry/cube.pbrt"
+  AttributeEnd
+  
+  AttributeBegin
+    Translate 0 0 -1
+
+    Texture "checks" "spectrum" "checkerboard"
+            "float uscale" [24] "float vscale" [24]
+            "rgb tex1" [.3 .3 .3] "rgb tex2" [.8 .8 .8]
+    
+    Material "matte" "texture Kd" "checks"
+
+    Shape "trianglemesh"
+          "point P" [ -20 -20 0   20 -20 0   20 20 0   -20 20 0 ]
+          "float st" [ 0 0   1 0   1 1   0 1 ]
+          "integer indices" [ 0 1 2   0 2 3 ]
+  AttributeEnd
+  
+WorldEnd

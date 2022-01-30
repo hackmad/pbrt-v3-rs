@@ -14,8 +14,8 @@ use std::sync::Arc;
 /// Implements an spot light source that emits light in a cone of directions from
 /// its position.
 ///
-/// The spotlight light coordinate system to always be at position (0, 0, 0) and
-/// pointing down the +z axis.
+/// The light coordinate system to always be at position (0, 0, 0) and pointing 
+/// down the +z axis.
 #[derive(Clone)]
 pub struct SpotLight {
     /// Light source type.

@@ -437,15 +437,24 @@ impl GraphicsState {
                 let p = (
                     paramset,
                     Arc::clone(&light2world),
-                    medium_interface.outside.clone(),
+                    medium_interface.outside.as_ref().map(Arc::clone),
                 );
                 Ok(Arc::new(PointLight::from(p)))
+            }
+            "projection" => {
+                let p = (
+                    paramset,
+                    Arc::clone(&light2world),
+                    medium_interface.outside.as_ref().map(Arc::clone),
+                    self.cwd.as_ref(),
+                );
+                Ok(Arc::new(ProjectionLight::from(p)))
             }
             "spot" => {
                 let p = (
                     paramset,
                     Arc::clone(&light2world),
-                    medium_interface.outside.clone(),
+                    medium_interface.outside.as_ref().map(Arc::clone),
                 );
                 Ok(Arc::new(SpotLight::from(p)))
             }
