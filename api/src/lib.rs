@@ -15,6 +15,7 @@ use accelerators::*;
 use core::geometry::*;
 use core::light::*;
 use core::medium::*;
+use core::mipmap::clear_mipmap_caches;
 use core::paramset::*;
 use core::pbrt::*;
 use core::primitive::*;
@@ -471,8 +472,8 @@ impl Api {
             self.active_transform_bits = ALL_TRANSFORM_BITS;
             self.named_coordinate_systems.clear();
 
-            // TODO Clear image texture caches for float and spectrum textures
-            // once we add this functionality to crate::textures::image_map
+            // Clear caches for float and spectrum textures.
+            clear_mipmap_caches();
         }
     }
 
