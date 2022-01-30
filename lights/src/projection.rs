@@ -228,7 +228,7 @@ impl Light for ProjectionLight {
             self.light_to_world.transform_vector(&v),
             INFINITY,
             time,
-            self.medium_interface.inside.clone(),
+            self.medium_interface.inside.as_ref().map(Arc::clone),
         );
         let n_light = Normal3f::from(&ray.d);
         let projection = self.projection(&ray.d);

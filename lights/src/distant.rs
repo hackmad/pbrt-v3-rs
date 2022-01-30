@@ -130,7 +130,7 @@ impl Light for DistantLight {
             dir,
             INFINITY,
             time,
-            self.medium_interface.inside.clone(),
+            self.medium_interface.inside.as_ref().map(Arc::clone),
         );
         Le::new(
             ray,

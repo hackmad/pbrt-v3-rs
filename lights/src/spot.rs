@@ -144,7 +144,7 @@ impl Light for SpotLight {
             self.light_to_world.transform_vector(&w),
             INFINITY,
             time,
-            self.medium_interface.inside.clone(),
+            self.medium_interface.inside.as_ref().map(Arc::clone),
         );
         let n_light = Normal3f::from(&ray.d);
         let falloff = self.falloff(&ray.d);
