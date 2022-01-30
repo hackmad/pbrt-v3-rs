@@ -164,11 +164,11 @@ impl From<&TextureParams> for GlassMaterial {
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
-        let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::new(1.0), |v| {
+        let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::ONE, |v| {
             Arc::new(ConstantTexture::new(v))
         });
 
-        let kt = tp.get_spectrum_texture_or_else("Kt", Spectrum::new(1.0), |v| {
+        let kt = tp.get_spectrum_texture_or_else("Kt", Spectrum::ONE, |v| {
             Arc::new(ConstantTexture::new(v))
         });
 

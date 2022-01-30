@@ -31,14 +31,18 @@ impl RGBSpectrum {
         assert!(!ret.has_nans());
         ret
     }
+
+    /// Spectrum with all values set to 0.
+    pub const ZERO: Self = Self { c: [0.0, 0.0, 0.0] };
+
+    /// Spectrum with all values set to 1.
+    pub const ONE: Self = Self { c: [1.0, 1.0, 1.0] };
 }
 
 impl Default for RGBSpectrum {
     /// Return a black `RGBSpectrum`.
     fn default() -> Self {
-        Self {
-            c: [0.0; RGB_SAMPLES],
-        }
+        Self::ZERO
     }
 }
 

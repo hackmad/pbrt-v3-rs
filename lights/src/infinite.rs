@@ -152,7 +152,7 @@ impl Light for InfiniteAreaLight {
         // Find `(u,v)` sample coordinates in infinite light texture.
         let (uv, map_pdf) = self.distribution.sample_continuous(u);
         if map_pdf == 0.0 {
-            Li::new(Vector3f::default(), 0.0, None, Spectrum::new(0.0))
+            Li::new(Vector3f::default(), 0.0, None, Spectrum::ZERO)
         } else {
             // Convert infinite light sample point to direction.
             let theta = uv[1] * PI;
@@ -252,7 +252,7 @@ impl Light for InfiniteAreaLight {
                 Normal3f::default(),
                 0.0,
                 0.0,
-                Spectrum::new(0.0),
+                Spectrum::ZERO,
             )
         } else {
             let world_center = *self.world_center.read().unwrap();
@@ -317,8 +317,8 @@ impl From<(&ParamSet, ArcTransform, &str)> for InfiniteAreaLight {
     fn from(p: (&ParamSet, ArcTransform, &str)) -> Self {
         let (params, light_to_world, cwd) = p;
 
-        let l = params.find_one_spectrum("L", Spectrum::new(1.0));
-        let sc = params.find_one_spectrum("scale", Spectrum::new(1.0));
+        let l = params.find_one_spectrum("L", Spectrum::ONE);
+        let sc = params.find_one_spectrum("scale", Spectrum::ONE);
         let texmap = params.find_one_filename("mapname", Some(cwd));
 
         let mut n_samples = params.find_one_int("samples", params.find_one_int("nsamples", 1));

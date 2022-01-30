@@ -126,14 +126,14 @@ impl Material for MetalMaterial {
 
         let frmf = FresnelConductor::alloc(
             arena,
-            Spectrum::new(1.0),
+            Spectrum::ONE,
             self.index.evaluate(&si.hit, &si.uv, &si.der),
             self.k.evaluate(&si.hit, &si.uv, &si.der),
         );
         let distrib = TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
         bsdf.add(MicrofacetReflection::alloc(
             arena,
-            Spectrum::new(1.0),
+            Spectrum::ONE,
             distrib,
             frmf,
         ));

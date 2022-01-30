@@ -85,7 +85,7 @@ impl<'arena> SpecularTransmission<'arena> {
     /// * `wi` - Incident direction.
     pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         // No scattering is returned.
-        Spectrum::new(0.0)
+        Spectrum::ZERO
     }
 
     /// Returns the value of the BxDF given the outgpoing direction.
@@ -106,7 +106,7 @@ impl<'arena> SpecularTransmission<'arena> {
             eta_i / eta_t,
         ) {
             let pdf = 1.0;
-            let mut ft = self.t * (Spectrum::new(1.0) - self.fresnel.evaluate(cos_theta(&wi)));
+            let mut ft = self.t * (Spectrum::ONE - self.fresnel.evaluate(cos_theta(&wi)));
 
             // Account for non-symmetry with transmission to different medium
             if self.mode == TransportMode::Radiance {

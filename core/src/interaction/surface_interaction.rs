@@ -252,7 +252,7 @@ impl<'primitive, 'arena> SurfaceInteraction<'primitive, 'arena> {
         if let Some(area_light) = self.primitive.and_then(|p| p.get_area_light()) {
             area_light.l(&self.hit, w)
         } else {
-            Spectrum::new(0.0)
+            Spectrum::ZERO
         }
     }
 

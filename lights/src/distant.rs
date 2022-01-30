@@ -158,8 +158,8 @@ impl From<(&ParamSet, ArcTransform)> for DistantLight {
     fn from(p: (&ParamSet, ArcTransform)) -> Self {
         let (params, light_to_world) = p;
 
-        let emitted_radiance = params.find_one_spectrum("L", Spectrum::new(1.0));
-        let sc = params.find_one_spectrum("scale", Spectrum::new(1.0));
+        let emitted_radiance = params.find_one_spectrum("L", Spectrum::ONE);
+        let sc = params.find_one_spectrum("scale", Spectrum::ONE);
         let from = params.find_one_point3f("from", Point3f::new(0.0, 0.0, 0.0));
         let to = params.find_one_point3f("to", Point3f::new(0.0, 0.0, 1.0));
         let dir = from - to;

@@ -183,8 +183,8 @@ impl From<(&ParamSet, ArcTransform, Option<ArcMedium>)> for SpotLight {
     fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>)) -> Self {
         let (params, light_to_world, medium) = p;
 
-        let intensity = params.find_one_spectrum("I", Spectrum::new(1.0));
-        let sc = params.find_one_spectrum("scale", Spectrum::new(1.0));
+        let intensity = params.find_one_spectrum("I", Spectrum::ONE);
+        let sc = params.find_one_spectrum("scale", Spectrum::ONE);
         let cone_angle = params.find_one_float("coneangle", 30.0);
         let cone_delta = params.find_one_float("conedeltaangle", 5.0);
 

@@ -97,12 +97,12 @@ impl<'arena> MicrofacetTransmission<'arena> {
     /// * `wi` - Incident direction.
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         if same_hemisphere(wo, wi) {
-            Spectrum::new(0.0) // transmission only
+            Spectrum::ZERO // transmission only
         } else {
             let cos_theta_o = cos_theta(wo);
             let cos_theta_i = cos_theta(wi);
             if cos_theta_i == 0.0 || cos_theta_o == 0.0 {
-                Spectrum::new(0.0)
+                Spectrum::ZERO
             } else {
                 // Compute `wh` from `wo` and `wi` for microfacet transmission.
                 let eta = if cos_theta(wo) > 0.0 {
@@ -117,7 +117,7 @@ impl<'arena> MicrofacetTransmission<'arena> {
 
                 // Same side?
                 if wo.dot(&wh) * wi.dot(&wh) > 0.0 {
-                    Spectrum::new(0.0)
+                    Spectrum::ZERO
                 } else {
                     let f = self.fresnel.evaluate(wo.dot(&wh));
 
@@ -128,7 +128,7 @@ impl<'arena> MicrofacetTransmission<'arena> {
                         1.0
                     };
 
-                    (Spectrum::new(1.0) - f)
+                    (Spectrum::ONE - f)
                         * self.t
                         * abs(self.distribution.d(&wh)
                             * self.distribution.g(wo, wi)

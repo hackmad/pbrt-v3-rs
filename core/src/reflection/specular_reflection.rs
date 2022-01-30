@@ -61,7 +61,7 @@ impl<'arena> SpecularReflection<'arena> {
     /// * `wi` - Incident direction.
     pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         // No scattering is returned.
-        Spectrum::new(0.0)
+        Spectrum::ZERO
     }
 
     /// Returns the value of the BxDF given the outgpoing direction.

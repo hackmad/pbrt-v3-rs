@@ -189,7 +189,7 @@ impl<'arena> BxDF<'arena> {
             BxDF::LambertianTransmission(bxdf) => bxdf.rho_hd(wo, u),
             BxDF::ScaledBxDF(bxdf) => bxdf.rho_hd(wo, u),
             _ => {
-                let mut r = Spectrum::new(0.0);
+                let mut r = Spectrum::ZERO;
                 for s in u {
                     // Estimate one term of `rho_hd`.
                     let sample = self.sample_f(wo, s);
@@ -214,7 +214,7 @@ impl<'arena> BxDF<'arena> {
             _ => {
                 assert!(u1.len() == u2.len());
 
-                let mut r = Spectrum::new(0.0);
+                let mut r = Spectrum::ZERO;
                 for (s1, s2) in u1.iter().zip(u2.iter()) {
                     // Estimate one term of `rho_hh`.
                     let wo = uniform_sample_hemisphere(s1);

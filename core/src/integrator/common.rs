@@ -57,7 +57,7 @@ pub fn uniform_sample_all_lights(
             );
         } else {
             // Estimate direct lighting using sample arrays
-            let mut ld = Spectrum::new(0.0);
+            let mut ld = Spectrum::ZERO;
             for k in 0..n_samples {
                 ld += estimate_direct(
                     it,
@@ -104,7 +104,7 @@ pub fn uniform_sample_one_light(
         let sample = sampler_mut.get_1d();
         let (ln, pdf, _) = ld.sample_discrete(sample);
         if pdf == 0.0 {
-            return Spectrum::new(0.0);
+            return Spectrum::ZERO;
         }
         (ln, pdf)
     } else {
@@ -159,7 +159,7 @@ pub fn estimate_direct(
     } else {
         BxDFType::all() & !BxDFType::BSDF_SPECULAR
     };
-    let mut ld = Spectrum::new(0.0);
+    let mut ld = Spectrum::ZERO;
     let hit = it.get_hit();
     let mut scattering_pdf = 0.0;
 
@@ -172,7 +172,7 @@ pub fn estimate_direct(
     } = light.sample_li(hit, u_light);
     if light_pdf > 0.0 && !li.is_black() {
         // Compute BSDF or phase function's value for light sample.
-        let mut f = Spectrum::new(0.0);
+        let mut f = Spectrum::ZERO;
         match it {
             Interaction::Surface { si } => {
                 // Evaluate BSDF for light sampling strategy.
@@ -198,7 +198,7 @@ pub fn estimate_direct(
                     li *= vis.tr(scene, Arc::clone(sampler));
                 } else if !vis.unoccluded(scene) {
                     debug!("  visiblity tester: shadow ray blocked");
-                    li = Spectrum::new(0.0);
+                    li = Spectrum::ZERO;
                 } else {
                     debug!("  visiblity tester: shadow ray unoccluded");
                 }
@@ -220,7 +220,7 @@ pub fn estimate_direct(
 
     // Sample BSDF with multiple importance sampling
     if !light.is_delta_light() {
-        let mut f = Spectrum::new(0.0);
+        let mut f = Spectrum::ZERO;
         let mut sampled_specular = false;
         match it {
             Interaction::Surface { si } => {
@@ -269,12 +269,12 @@ pub fn estimate_direct(
             } else {
                 scene
                     .intersect(&mut ray)
-                    .map(|light_isect| (light_isect, Spectrum::new(1.0)))
+                    .map(|light_isect| (light_isect, Spectrum::ONE))
             };
 
             // Add light contribution from material sampling.
-            let mut li = Spectrum::new(0.0);
-            let mut tr = Spectrum::new(1.0);
+            let mut li = Spectrum::ZERO;
+            let mut tr = Spectrum::ONE;
             if let Some((light_isect, tr1)) = light_isect_and_tr {
                 tr = tr1;
                 if let Some(primitive) = light_isect.primitive {

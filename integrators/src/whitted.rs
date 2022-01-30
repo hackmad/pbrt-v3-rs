@@ -76,7 +76,7 @@ impl Integrator for WhittedIntegrator {
         sampler: &mut ArcSampler,
         depth: usize,
     ) -> Spectrum {
-        let mut l = Spectrum::new(0.0);
+        let mut l = Spectrum::ZERO;
 
         // Find closest ray intersection or return background radiance.
         if let Some(mut isect) = scene.intersect(ray) {
@@ -113,7 +113,7 @@ impl Integrator for WhittedIntegrator {
                 let f = isect
                     .bsdf
                     .as_ref()
-                    .map_or(Spectrum::new(0.0), |bsdf| bsdf.f(&wo, &wi, BxDFType::all()));
+                    .map_or(Spectrum::ZERO, |bsdf| bsdf.f(&wo, &wi, BxDFType::all()));
                 if !f.is_black() {
                     // If no visiblity tester, then unoccluded = true.
                     let unoccluded = visibility.map_or(true, |vis| vis.unoccluded(scene));

@@ -315,7 +315,7 @@ impl ParamSet {
                                 "Unable to read SPD file '{}'. Using black distribution. {}",
                                 path, e
                             );
-                            Spectrum::new(0.0)
+                            Spectrum::ZERO
                         }
                     };
                     self.cached_spectra.insert(abs_path, spectrum);
@@ -326,7 +326,7 @@ impl ParamSet {
                         "Error reading {}. Using black distribution.\n{}.",
                         path, err
                     );
-                    spectra.push(Spectrum::new(0.0));
+                    spectra.push(Spectrum::ZERO);
                 }
             }
         }
