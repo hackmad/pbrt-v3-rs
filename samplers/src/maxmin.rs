@@ -27,7 +27,7 @@ impl MaxMinDistSampler {
     pub fn new(samples_per_pixel: usize, n_sampled_dimensions: usize, seed: Option<u64>) -> Self {
         let mut spp = samples_per_pixel;
 
-        let mut c_index = Log2::log2(spp);
+        let mut c_index = spp.log2int();
         let max_c_index = C_MAX_MIN_DIST.len();
 
         if c_index as usize >= max_c_index {
@@ -48,7 +48,7 @@ impl MaxMinDistSampler {
             spp = spp2;
         }
 
-        c_index = Log2::log2(spp);
+        c_index = spp.log2int();
         assert!(c_index >= 0_i64 && c_index < max_c_index as i64);
 
         Self {

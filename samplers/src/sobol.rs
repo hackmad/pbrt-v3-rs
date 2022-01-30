@@ -54,7 +54,7 @@ impl SobolSampler {
             gdata: GlobalSamplerData::new(),
             sample_bounds,
             resolution,
-            log_2_resolution: Log2::log2(resolution),
+            log_2_resolution: resolution.log2int(),
         }
     }
 }

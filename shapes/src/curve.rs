@@ -633,8 +633,8 @@ impl Curve {
 
         let eps = max(self.common.width[0], self.common.width[1]) * 0.05; // width / 20
 
-        // Compute log base 4 by dividing log2 in half.
-        let r0 = Log2::log2(1.41421356237 * 6.0 * l0 / (8.0 * eps)) / 2;
+        // Compute log base 4 by dividing log2int in half.
+        let r0 = (1.41421356237 * 6.0 * l0 / (8.0 * eps)).log2int() / 2;
         let max_depth = clamp(r0, 0, 10);
 
         self.recursive_intersect(

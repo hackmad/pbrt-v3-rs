@@ -452,6 +452,9 @@ impl Api {
                 self.pushed_transforms.pop();
             }
 
+            self.pushed_graphics_states.shrink_to_fit();
+            self.pushed_transforms.shrink_to_fit();
+
             // Create scene and render.
             let integrator = match self.render_options.make_integrator(&self.graphics_state) {
                 Ok(integrator) => integrator,
@@ -465,12 +468,15 @@ impl Api {
             let mut transform_cache = self.transform_cache.lock().unwrap();
             transform_cache.clear();
 
-            self.graphics_state = GraphicsState::new(Arc::clone(&self.transform_cache), &self.cwd);
+            self.graphics_state.clear();
             self.current_api_state = ApiState::OptionsBlock;
             self.current_transforms.reset();
 
             self.active_transform_bits = ALL_TRANSFORM_BITS;
             self.named_coordinate_systems.clear();
+            self.named_coordinate_systems.shrink_to_fit();
+            self.pushed_active_transform_bits.clear();
+            self.pushed_active_transform_bits.shrink_to_fit();
 
             // Clear caches for float and spectrum textures.
             clear_mipmap_caches();

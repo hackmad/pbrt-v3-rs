@@ -373,6 +373,19 @@ impl ParamSet {
         self.strings.clear();
         self.textures.clear();
         self.cached_spectra.clear();
+
+        self.bools.shrink_to_fit();
+        self.ints.shrink_to_fit();
+        self.floats.shrink_to_fit();
+        self.point2fs.shrink_to_fit();
+        self.vector2fs.shrink_to_fit();
+        self.point3fs.shrink_to_fit();
+        self.vector3fs.shrink_to_fit();
+        self.normal3fs.shrink_to_fit();
+        self.spectra.shrink_to_fit();
+        self.strings.shrink_to_fit();
+        self.textures.shrink_to_fit();
+        self.cached_spectra.shrink_to_fit();
     }
 }
 
