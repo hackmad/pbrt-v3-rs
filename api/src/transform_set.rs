@@ -49,7 +49,7 @@ impl TransformSet {
     /// Reset transforms to identity.
     pub fn reset(&mut self) {
         for i in 0..self.t.len() {
-            self.t[i] = Arc::new(Transform::default());
+            self.t[i] = Arc::new(Transform::IDENTITY);
         }
     }
 }

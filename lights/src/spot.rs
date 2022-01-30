@@ -61,7 +61,7 @@ impl SpotLight {
     ) -> Self {
         let light_to_world = Arc::clone(&light_to_world);
         let world_to_light = Arc::new(light_to_world.inverse());
-        let p_light = light_to_world.transform_point(&Point3f::default());
+        let p_light = light_to_world.transform_point(&Point3f::ZERO);
 
         Self {
             light_type: LightType::DELTA_POSITION_LIGHT,

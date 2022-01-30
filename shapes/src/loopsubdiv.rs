@@ -142,7 +142,7 @@ impl Default for SDVertex {
     /// Return a default value for `SDVertex`.
     fn default() -> Self {
         Self {
-            p: Point3f::default(),
+            p: Point3f::ZERO,
             start_face: -1,
             child: -1,
             regular: false,
@@ -627,8 +627,8 @@ impl LoopSubDiv {
         // Compute vertex tangents on limit surface.
         let mut ns: Vec<Normal3f> = Vec::with_capacity(verts.len());
         for (i, vertex) in verts.iter().enumerate() {
-            let mut s = Vector3f::default();
-            let mut t = Vector3f::default();
+            let mut s = Vector3f::ZERO;
+            let mut t = Vector3f::ZERO;
             let valence = vertex.valence(i as i64, &faces);
             let p_ring = vertex.one_ring(i as i64, &verts, &faces);
             if !vertex.boundary {

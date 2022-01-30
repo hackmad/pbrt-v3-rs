@@ -123,8 +123,8 @@ impl InfiniteAreaLight {
             n_samples,
             l_map,
             distribution,
-            world_center: Arc::new(RwLock::new(Point3f::default())), // Calculated in preprocess().
-            world_radius: Arc::new(RwLock::new(1.0)),                // Calculated in preprocess().
+            world_center: Arc::new(RwLock::new(Point3f::ZERO)), // Calculated in preprocess().
+            world_radius: Arc::new(RwLock::new(1.0)),           // Calculated in preprocess().
         }
     }
 }
@@ -152,7 +152,7 @@ impl Light for InfiniteAreaLight {
         // Find `(u,v)` sample coordinates in infinite light texture.
         let (uv, map_pdf) = self.distribution.sample_continuous(u);
         if map_pdf == 0.0 {
-            Li::new(Vector3f::default(), 0.0, None, Spectrum::ZERO)
+            Li::new(Vector3f::ZERO, 0.0, None, Spectrum::ZERO)
         } else {
             // Convert infinite light sample point to direction.
             let theta = uv[1] * PI;
@@ -247,13 +247,7 @@ impl Light for InfiniteAreaLight {
         // Find `(u,v)` sample coordinates in infinite light texture.
         let (uv, map_pdf) = self.distribution.sample_continuous(&u);
         if map_pdf == 0.0 {
-            Le::new(
-                Ray::default(),
-                Normal3f::default(),
-                0.0,
-                0.0,
-                Spectrum::ZERO,
-            )
+            Le::new(Ray::default(), Normal3f::ZERO, 0.0, 0.0, Spectrum::ZERO)
         } else {
             let world_center = *self.world_center.read().unwrap();
             let world_radius = *self.world_radius.read().unwrap();

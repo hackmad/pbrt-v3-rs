@@ -42,7 +42,7 @@ impl SamplerData {
     pub fn new(samples_per_pixel: usize) -> Self {
         Self {
             samples_per_pixel,
-            current_pixel: Point2i::default(),
+            current_pixel: Point2i::ZERO,
             current_pixel_sample_index: 0,
             samples_1d_array_sizes: vec![],
             samples_2d_array_sizes: vec![],

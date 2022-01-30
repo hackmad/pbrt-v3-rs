@@ -46,7 +46,7 @@ impl PixelSampler {
 
         for _i in 0..n_sampled_dimensions {
             samples_1d.push(vec![0.0; samples_per_pixel]);
-            samples_2d.push(vec![Point2f::default(); samples_per_pixel]);
+            samples_2d.push(vec![Point2f::ZERO; samples_per_pixel]);
         }
 
         let rng = match seed {

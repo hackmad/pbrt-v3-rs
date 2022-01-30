@@ -376,11 +376,11 @@ impl Shape for Sphere {
     /// Sample a point on the surface and return the PDF with respect to area on
     /// the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
+    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
-        let mut p_obj = Point3f::default() + self.radius * uniform_sample_sphere(u);
+        let mut p_obj = Point3f::ZERO + self.radius * uniform_sample_sphere(u);
 
         let mut n = self
             .data
@@ -392,13 +392,13 @@ impl Shape for Sphere {
         }
 
         // Reproject `p_obj` to sphere surface and compute `p_obj_error`.
-        p_obj *= self.radius / p_obj.distance(Point3f::default());
+        p_obj *= self.radius / p_obj.distance(Point3f::ZERO);
         let p_obj_error = gamma(5) * Vector3f::from(p_obj).abs();
         let (p, p_error) = self
             .data
             .object_to_world
             .transform_point_with_abs_error(&p_obj, &p_obj_error);
-        let it = Hit::new(p, 0.0, p_error, Vector3f::default(), n, None);
+        let it = Hit::new(p, 0.0, p_error, Vector3f::ZERO, n, None);
         let pdf = 1.0 / self.area();
         (it, pdf)
     }

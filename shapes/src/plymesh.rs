@@ -177,9 +177,9 @@ impl PLYMesh {
     ///
     /// * `elem` - A map of property names and values.
     fn parse_vertex(elem: &KeyMap<Property>) -> Vertex {
-        let mut p = Point3f::default();
-        let mut n = Normal3f::default();
-        let mut uv = Point2f::default();
+        let mut p = Point3f::ZERO;
+        let mut n = Normal3f::ZERO;
+        let mut uv = Point2f::ZERO;
         let mut nc = 0;
         let mut uvc = 0;
 

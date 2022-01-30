@@ -139,7 +139,7 @@ impl Api {
         if self.verify_initialized("Identity") {
             for i in 0..MAX_TRANSFORMS {
                 if self.active_transform_bits & (1 << i) > 0 {
-                    self.current_transforms[i] = Arc::new(Transform::default());
+                    self.current_transforms[i] = Arc::new(Transform::IDENTITY);
                 }
             }
         }
@@ -428,7 +428,7 @@ impl Api {
         if self.verify_options("WorldBegin") {
             self.current_api_state = ApiState::WorldBlock;
             for i in 0..MAX_TRANSFORMS {
-                self.current_transforms[i] = Arc::new(Transform::default());
+                self.current_transforms[i] = Arc::new(Transform::IDENTITY);
             }
             self.active_transform_bits = ALL_TRANSFORM_BITS;
             self.named_coordinate_systems
@@ -768,7 +768,7 @@ impl Api {
                 }
 
                 let mut transform_cache = self.transform_cache.lock().unwrap();
-                let identity = transform_cache.lookup(&Transform::default());
+                let identity = transform_cache.lookup(&Transform::IDENTITY);
                 let shapes = self
                     .graphics_state
                     .make_shape(

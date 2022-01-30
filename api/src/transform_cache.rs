@@ -48,10 +48,16 @@ impl TransformCache {
     }
 }
 
+/// Initialize a Transform for which space is allocated by memory arena.
+///
+/// * `uninit` - Uninitialized Transform.
+/// * `source` - Transform to use for initialization.
 fn initialize_data<'a>(
     uninit: &'a mut MaybeUninit<Transform>,
     source: &Transform,
 ) -> &'a Transform {
+    // SAFETY: uninit contains Transform and source points to Transform; so same size.
+    //         Memory arena allocated space for a Transform.
     unsafe {
         let ptr = uninit.as_mut_ptr();
         std::ptr::copy(source, ptr, 1);

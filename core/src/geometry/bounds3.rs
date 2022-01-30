@@ -21,9 +21,15 @@ pub struct Bounds3<T: Num> {
 
 /// 3-D bounding box containing `Float` points.
 pub type Bounds3f = Bounds3<Float>;
-
-/// 3-D bounding box containing `Int` points.
-pub type Bounds3i = Bounds3<Int>;
+impl Bounds3f {
+    /// 3-D bounding box where minimum and maximum bounds are maximum and minimum
+    /// floating point values. This is so we can easily grow the bounding box
+    /// from nothing iteratively.
+    pub const EMPTY: Self = Self {
+        p_min: Point3f::MAX,
+        p_max: Point3f::MIN,
+    };
+}
 
 impl<T: Num + PartialOrd + Copy> From<Point3<T>> for Bounds3<T> {
     /// Use a 3-D point as minimum and maximum 3-D bounds.
@@ -31,30 +37,6 @@ impl<T: Num + PartialOrd + Copy> From<Point3<T>> for Bounds3<T> {
     /// * `p` - 3-D point.
     fn from(p: Point3<T>) -> Self {
         Bounds3 { p_min: p, p_max: p }
-    }
-}
-
-impl From<Bounds3i> for Bounds3f {
-    /// Convert a `Bounds3i` to `Bounds3f`.
-    ///
-    /// * `b` - The `Bounds3i` to convert.
-    fn from(b: Bounds3i) -> Self {
-        Self {
-            p_min: b.p_min.into(),
-            p_max: b.p_max.into(),
-        }
-    }
-}
-
-impl From<Bounds3f> for Bounds3i {
-    /// Convert a `Bounds3f` to `Bounds3i`.
-    ///
-    /// * `b` - The `Bounds3f` to convert.
-    fn from(b: Bounds3f) -> Self {
-        Self {
-            p_min: b.p_min.into(),
-            p_max: b.p_max.into(),
-        }
     }
 }
 

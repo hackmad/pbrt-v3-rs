@@ -26,9 +26,14 @@ pub struct Vector3<T> {
 
 /// 3-D vector containing `Float` values.
 pub type Vector3f = Vector3<Float>;
-
-/// 3-D vector containing `Int` values.
-pub type Vector3i = Vector3<Int>;
+impl Vector3f {
+    /// Zero vector.
+    pub const ZERO: Self = Self {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    };
+}
 
 impl<T: Num> Vector3<T> {
     /// Creates a new 3-D vector.

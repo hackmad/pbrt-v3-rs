@@ -21,9 +21,27 @@ pub struct Bounds2<T: Num> {
 
 /// 2D bounding box containing `Float` points.
 pub type Bounds2f = Bounds2<Float>;
+impl Bounds2f {
+    /// 2-D bounding box where minimum and maximum bounds are maximum and minimum
+    /// floating point values. This is so we can easily grow the bounding box
+    /// from nothing iteratively.
+    pub const EMPTY: Self = Self {
+        p_min: Point2f::MAX,
+        p_max: Point2f::MIN,
+    };
+}
 
 /// 2D bounding box containing `Int` points.
 pub type Bounds2i = Bounds2<Int>;
+impl Bounds2i {
+    /// 2-D bounding box where minimum and maximum bounds are maximum and minimum
+    /// floating point values. This is so we can easily grow the bounding box
+    /// from nothing iteratively.
+    pub const EMPTY: Self = Self {
+        p_min: Point2i::MAX,
+        p_max: Point2i::MIN,
+    };
+}
 
 impl<T: Num + PartialOrd + Copy> From<Point2<T>> for Bounds2<T> {
     /// Use a 2D point as minimum and maximum 2D bounds.
