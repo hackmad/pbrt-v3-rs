@@ -22,6 +22,7 @@ use lights::*;
 use materials::*;
 use samplers::*;
 use shapes::*;
+use std::rc::Rc;
 use std::result::Result;
 use std::sync::{Arc, Mutex};
 use textures::*;
@@ -30,7 +31,7 @@ use textures::*;
 #[derive(Clone)]
 pub struct GraphicsState {
     /// Transform cache.
-    pub transform_cache: Arc<Mutex<TransformCache>>,
+    pub transform_cache: Rc<Mutex<TransformCache>>,
 
     /// Tracks the inside medium at a surface boundary.
     pub current_inside_medium: Option<String>,
@@ -77,14 +78,14 @@ impl GraphicsState {
     ///
     /// * `transform_cache` - The `TransformCache`.
     /// * `cwd`             - Current working directory.
-    pub fn new(transform_cache: Arc<Mutex<TransformCache>>, cwd: &str) -> Self {
+    pub fn new(transform_cache: Rc<Mutex<TransformCache>>, cwd: &str) -> Self {
         // Create a default material.
         let mp = TextureParams::default();
         let matte = Arc::new(MatteMaterial::from(&mp));
         let current_material = Arc::new(MaterialInstance::new("matte", matte, &ParamSet::new()));
 
         Self {
-            transform_cache: Arc::clone(&transform_cache),
+            transform_cache: Rc::clone(&transform_cache),
             current_inside_medium: None,
             current_outside_medium: None,
             float_textures: FloatTextureMap::new(),
@@ -99,32 +100,6 @@ impl GraphicsState {
             reverse_orientation: false,
             cwd: cwd.to_string(),
         }
-    }
-
-    /// Clears the graphics state.
-    /// Note: transform_cache should be cleared by Api.
-    pub fn clear(&mut self) {
-        let mp = TextureParams::default();
-        let matte = Arc::new(MatteMaterial::from(&mp));
-        let current_material = Arc::new(MaterialInstance::new("matte", matte, &ParamSet::new()));
-        self.current_material = Some(current_material);
-
-        self.current_inside_medium = None;
-        self.current_outside_medium = None;
-        self.area_light = None;
-
-        self.float_textures_shared = false;
-        self.spectrum_textures_shared = false;
-        self.named_materials_shared = false;
-        self.reverse_orientation = false;
-
-        self.float_textures.clear();
-        self.float_textures.shrink_to_fit();
-        self.spectrum_textures.clear();
-        self.spectrum_textures.shrink_to_fit();
-        self.named_materials.clear();
-        self.named_materials.shrink_to_fit();
-        self.area_light_params.clear();
     }
 
     /// Set current working directory.

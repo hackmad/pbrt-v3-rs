@@ -73,10 +73,10 @@ pub struct RenderOptions {
     pub primitives: Vec<ArcPrimitive>,
 
     /// Object instances (each is a collection of primitives).
-    pub instances: HashMap<String, Arc<Vec<ArcPrimitive>>>,
+    pub instances: HashMap<String, Vec<ArcPrimitive>>,
 
     /// Current instance (a collection of primitives).
-    pub current_instance: Option<Arc<Vec<ArcPrimitive>>>,
+    pub current_instance: Option<String>,
 
     /// Is there scattering media in the scene.
     pub have_scattering_media: bool,

@@ -24,6 +24,7 @@ use graphics_state::*;
 use material_instance::*;
 use render_options::*;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use transform_cache::*;
 use transform_set::*;
@@ -75,7 +76,7 @@ pub struct Api {
     pushed_active_transform_bits: Vec<usize>,
 
     /// Caches the transforms.
-    transform_cache: Arc<Mutex<TransformCache>>,
+    transform_cache: Rc<Mutex<TransformCache>>,
 
     /// Current working directory. Used to resolve relative paths.
     cwd: String,
@@ -84,13 +85,14 @@ pub struct Api {
 impl Api {
     /// Returns a newly initialized API.
     pub fn new() -> Self {
-        let transform_cache = Arc::new(Mutex::new(TransformCache::new()));
+        let transform_cache = Rc::new(Mutex::new(TransformCache::new()));
         let cwd = std::env::current_dir()
             .unwrap()
             .as_path()
             .to_str()
             .unwrap()
             .to_string();
+        let graphics_state = GraphicsState::new(Rc::clone(&transform_cache), &cwd);
 
         Self {
             current_api_state: ApiState::Uninitialized,
@@ -98,11 +100,11 @@ impl Api {
             active_transform_bits: ALL_TRANSFORM_BITS,
             named_coordinate_systems: HashMap::new(),
             render_options: RenderOptions::new(),
-            graphics_state: GraphicsState::new(Arc::clone(&transform_cache), &cwd),
+            graphics_state,
             pushed_graphics_states: vec![],
             pushed_transforms: vec![],
             pushed_active_transform_bits: vec![],
-            transform_cache: Arc::clone(&transform_cache),
+            transform_cache,
             cwd,
         }
     }
@@ -468,7 +470,15 @@ impl Api {
             let mut transform_cache = self.transform_cache.lock().unwrap();
             transform_cache.clear();
 
-            self.graphics_state.clear();
+            let cwd = std::env::current_dir()
+                .unwrap()
+                .as_path()
+                .to_str()
+                .unwrap()
+                .to_string();
+            self.graphics_state = GraphicsState::new(Rc::clone(&self.transform_cache), &cwd);
+            self.cwd = cwd;
+
             self.current_api_state = ApiState::OptionsBlock;
             self.current_transforms.reset();
 
@@ -480,6 +490,8 @@ impl Api {
 
             // Clear caches for float and spectrum textures.
             clear_mipmap_caches();
+
+            self.render_options = RenderOptions::new();
         }
     }
 
@@ -834,16 +846,19 @@ impl Api {
             }
 
             // Add `prims` and `area_lights` to scene or current instance.
-            if let Some(mut current_instance) = self.render_options.current_instance.clone() {
-                if !area_lights.is_empty() {
-                    warn!("Area lights not supported with object instancing.");
-                    Arc::get_mut(&mut current_instance)
-                        .unwrap()
-                        .append(&mut prims);
+            if let Some(name) = self.render_options.current_instance.as_ref() {
+                if let Some(ci) = self.render_options.instances.get_mut(name) {
+                    if !area_lights.is_empty() {
+                        warn!("Area lights not supported with object instancing.");
+                        ci.append(&mut prims);
+                    }
+                    ci.append(&mut prims);
+                } else {
+                    self.render_options.primitives.append(&mut prims);
+                    if !area_lights.is_empty() {
+                        self.render_options.lights.append(&mut area_lights);
+                    }
                 }
-                Arc::get_mut(&mut current_instance)
-                    .unwrap()
-                    .append(&mut prims);
             } else {
                 self.render_options.primitives.append(&mut prims);
                 if !area_lights.is_empty() {
@@ -868,14 +883,11 @@ impl Api {
         if self.verify_world("ObjectBegin") {
             self.pbrt_attribute_begin();
 
-            if let Some(_current_instance) = self.render_options.current_instance.clone() {
+            if self.render_options.current_instance.is_some() {
                 error!("ObjectBegin called inside of an instance definition.");
             } else {
-                let new_instance: Arc<Vec<ArcPrimitive>> = Arc::new(vec![]);
-                self.render_options
-                    .instances
-                    .insert(name, Arc::clone(&new_instance));
-                self.render_options.current_instance = Some(Arc::clone(&new_instance));
+                self.render_options.instances.insert(name.clone(), vec![]);
+                self.render_options.current_instance = Some(name);
             }
         }
     }
@@ -883,11 +895,10 @@ impl Api {
     /// End the definition of a named object instance.
     pub fn pbrt_object_end(&mut self) {
         if self.verify_world("ObjectEnd") {
-            if let Some(_current_instance) = self.render_options.current_instance.clone() {
+            if self.render_options.current_instance.is_none() {
                 error!("ObjectEnd called outside of instance definition.");
             }
             self.render_options.current_instance = None;
-
             self.pbrt_attribute_end();
         }
     }
@@ -898,11 +909,11 @@ impl Api {
     pub fn pbrt_object_instance(&mut self, name: String) {
         if self.verify_world("ObjectInstance") {
             // Perform object instance error checking.
-            if let Some(_current_instance) = self.render_options.current_instance.clone() {
+            if self.render_options.current_instance.is_some() {
                 error!("ObjectInstance can't be called inside of instance definition.");
                 return;
             }
-            if let Some(instance) = self.render_options.instances.get(&name).cloned() {
+            if let Some(instance) = self.render_options.instances.get(&name) {
                 let inst = match instance.len() {
                     0 => {
                         return;

@@ -103,6 +103,10 @@ pngquant --ext .png --force renders/shapes/*.png
 
 <a title="Animation" href="renders/transforms/anim-bluespheres.png"><img src="renders/transforms/anim-bluespheres.png" style="height: 100px"/></a>
 
+### Object Instancing
+
+<a title="Instances" href="renders/objects/instances.png"><img src="renders/objects/instances.png" style="height: 100px"/></a>
+
 ## Building
 
 Build debug profile. The executable will be `target/debug/pbr_rust`.
