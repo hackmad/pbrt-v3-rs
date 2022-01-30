@@ -101,6 +101,32 @@ impl GraphicsState {
         }
     }
 
+    /// Clears the graphics state.
+    /// Note: transform_cache should be cleared by Api.
+    pub fn clear(&mut self) {
+        let mp = TextureParams::default();
+        let matte = Arc::new(MatteMaterial::from(&mp));
+        let current_material = Arc::new(MaterialInstance::new("matte", matte, &ParamSet::new()));
+        self.current_material = Some(current_material);
+
+        self.current_inside_medium = None;
+        self.current_outside_medium = None;
+        self.area_light = None;
+
+        self.float_textures_shared = false;
+        self.spectrum_textures_shared = false;
+        self.named_materials_shared = false;
+        self.reverse_orientation = false;
+
+        self.float_textures.clear();
+        self.float_textures.shrink_to_fit();
+        self.spectrum_textures.clear();
+        self.spectrum_textures.shrink_to_fit();
+        self.named_materials.clear();
+        self.named_materials.shrink_to_fit();
+        self.area_light_params.clear();
+    }
+
     /// Set current working directory.
     ///
     /// * `path` - The path.

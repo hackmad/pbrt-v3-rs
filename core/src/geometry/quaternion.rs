@@ -70,7 +70,7 @@ impl Default for Quaternion {
     /// Returns the default quaternion [0, 0, 0, 1].
     fn default() -> Self {
         Self {
-            v: Vector3f::zero(),
+            v: Vector3f::ZERO,
             w: 1.0,
         }
     }
@@ -158,7 +158,7 @@ impl From<&Quaternion> for Transform {
         let wy = q.v.y * q.w;
         let wz = q.v.z * q.w;
 
-        let mut m = IDENTITY_MATRIX;
+        let mut m = Matrix4x4::IDENTITY;
         m.m[0][0] = 1.0 - 2.0 * (yy + zz);
         m.m[0][1] = 2.0 * (xy + wz);
         m.m[0][2] = 2.0 * (xz - wy);

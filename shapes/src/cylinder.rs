@@ -330,7 +330,7 @@ impl Shape for Cylinder {
     /// Sample a point on the surface and return the PDF with respect to area on
     /// the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
+    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
@@ -356,7 +356,7 @@ impl Shape for Cylinder {
             .data
             .object_to_world
             .transform_point_with_abs_error(&p_obj, &p_obj_error);
-        let it = Hit::new(p, 0.0, p_error, Vector3f::default(), n, None);
+        let it = Hit::new(p, 0.0, p_error, Vector3f::ZERO, n, None);
         let pdf = 1.0 / self.area();
         (it, pdf)
     }

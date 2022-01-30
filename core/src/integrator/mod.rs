@@ -35,6 +35,6 @@ pub trait Integrator {
         _sampler: &mut ArcSampler,
         _depth: usize,
     ) -> Spectrum {
-        Spectrum::new(0.0)
+        Spectrum::ZERO
     }
 }

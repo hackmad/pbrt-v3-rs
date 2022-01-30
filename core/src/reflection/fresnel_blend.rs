@@ -64,7 +64,7 @@ impl<'arena> FresnelBlend<'arena> {
     ///
     /// * `cos_theta` - Angle made by incident direction.
     fn schlick_fresnel(&self, cos_theta: Float) -> Spectrum {
-        self.rs + (Spectrum::new(1.0) - self.rs) * pow5(1.0 - cos_theta)
+        self.rs + (Spectrum::ONE - self.rs) * pow5(1.0 - cos_theta)
     }
 
     /// Returns the BxDF type.
@@ -80,12 +80,12 @@ impl<'arena> FresnelBlend<'arena> {
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let diffuse = (28.0 / (23.0 * PI))
             * self.rd
-            * (Spectrum::new(1.0) - self.rs)
+            * (Spectrum::ONE - self.rs)
             * (1.0 - pow5(1.0 - 0.5 * abs_cos_theta(wi)))
             * (1.0 - pow5(1.0 - 0.5 * abs_cos_theta(wo)));
         let wh = wi + wo;
         if wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0 {
-            Spectrum::new(0.0)
+            Spectrum::ZERO
         } else {
             let wh = wh.normalize();
             let specular = self.distribution.d(&wh)
@@ -120,7 +120,7 @@ impl<'arena> FresnelBlend<'arena> {
             let wi = reflect(wo, &wh);
 
             if !same_hemisphere(wo, &wi) {
-                return BxDFSample::new(Spectrum::new(0.0), 0.0, wi, self.bxdf_type);
+                return BxDFSample::new(Spectrum::ZERO, 0.0, wi, self.bxdf_type);
             }
             wi
         };

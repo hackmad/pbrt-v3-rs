@@ -178,11 +178,11 @@ impl<'arena> BSDF<'arena> {
         let wo = self.world_to_local(wo_w);
 
         if wo.z == 0.0 {
-            return Spectrum::new(0.0);
+            return Spectrum::ZERO;
         }
 
         let reflect = wi_w.dot(&self.ng) * wo_w.dot(&self.ng) > 0.0;
-        let mut f = Spectrum::new(0.0);
+        let mut f = Spectrum::ZERO;
         for bxdf in self.bxdfs.iter() {
             let curr_type = bxdf.get_type();
             if bxdf.matches_flags(bxdf_type)
@@ -259,7 +259,7 @@ impl<'arena> BSDF<'arena> {
             if sample.pdf > 0.0 {
                 sample.f / sample.pdf // Potential for NaN if sample.pdf == 0
             } else {
-                Spectrum::new(0.0)
+                Spectrum::ZERO
             },
             sample.wi
         );
@@ -286,7 +286,7 @@ impl<'arena> BSDF<'arena> {
         // Compute value of BSDF for sampled direction.
         if sample.bxdf_type & BxDFType::BSDF_SPECULAR == BxDFType::BSDF_NONE {
             let reflect = wi_world.dot(&self.ng) * wo_world.dot(&self.ng) > 0.0;
-            sample.f = Spectrum::new(0.0);
+            sample.f = Spectrum::ZERO;
             for bxdf in self.bxdfs.iter() {
                 if bxdf.matches_flags(bxdf_type)
                     && ((reflect
@@ -307,7 +307,7 @@ impl<'arena> BSDF<'arena> {
             if sample.pdf > 0.0 {
                 sample.f / sample.pdf
             } else {
-                Spectrum::new(0.0)
+                Spectrum::ZERO
             }
         );
 
@@ -323,7 +323,7 @@ impl<'arena> BSDF<'arena> {
     /// * `bxdf_type` - The `BxdFType` to evaluate.
     pub fn rho_hd(&self, wo_world: &Vector3f, u: &[Point2f], bxdf_type: BxDFType) -> Spectrum {
         let wo = self.world_to_local(wo_world);
-        let mut l = Spectrum::new(0.0);
+        let mut l = Spectrum::ZERO;
         for bxdf in self.bxdfs.iter() {
             if bxdf.matches_flags(bxdf_type) {
                 l += bxdf.rho_hd(&wo, u);
@@ -338,7 +338,7 @@ impl<'arena> BSDF<'arena> {
     /// * `u2`        - Samples used b Monte Carlo algorithm.
     /// * `bxdf_type` - The `BxdFType` to evaluate.
     pub fn rho_hh(&self, u1: &[Point2f], u2: &[Point2f], bxdf_type: BxDFType) -> Spectrum {
-        let mut l = Spectrum::new(0.0);
+        let mut l = Spectrum::ZERO;
         for bxdf in self.bxdfs.iter() {
             if bxdf.matches_flags(bxdf_type) {
                 l += bxdf.rho_hh(u1, u2);

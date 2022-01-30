@@ -25,6 +25,14 @@ pub struct Normal3<T> {
 
 /// 3-D normal containing `Float` values.
 pub type Normal3f = Normal3<Float>;
+impl Normal3f {
+    /// Zero normal.
+    pub const ZERO: Self = Self {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    };
+}
 
 impl<T: Num> Normal3<T> {
     /// Creates a new 3-D normal.

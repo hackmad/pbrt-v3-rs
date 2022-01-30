@@ -30,6 +30,12 @@ fn not_one(x: Float) -> bool {
 }
 
 impl Transform {
+    /// Ientity transform.
+    pub const IDENTITY: Self = Self {
+        m: Matrix4x4::IDENTITY,
+        m_inv: Matrix4x4::IDENTITY,
+    };
+
     /// Create a transformation from a 2-dimensional array representing a 4x4 matrix.
     ///
     /// * `mat` - A matrix representing a transformation.
@@ -152,7 +158,7 @@ impl Transform {
         let r = theta.to_radians();
         let sin_theta = r.sin();
         let cos_theta = r.cos();
-        let mut m = Matrix4x4::default();
+        let mut m = Matrix4x4::IDENTITY;
 
         // Compute rotation of first basis vector.
         m.m[0][0] = a.x * a.x + (1.0 - a.x * a.x) * cos_theta;
@@ -261,7 +267,7 @@ impl Transform {
 
     // Returns true if matrix is identity matrix.
     pub fn is_identity(&self) -> bool {
-        self.m == IDENTITY_MATRIX
+        self.m == Matrix4x4::IDENTITY
     }
 
     /// Checks if transformation has a scaling term by transforming the

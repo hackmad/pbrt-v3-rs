@@ -88,7 +88,7 @@ impl DiffuseAreaLight {
         if self.two_sided || intr.n.dot(w) > 0.0 {
             self.l_emit
         } else {
-            Spectrum::new(0.0)
+            Spectrum::ZERO
         }
     }
 }
@@ -111,7 +111,7 @@ impl Light for DiffuseAreaLight {
         if pdf == 0.0 || wi.length_squared() == 0.0 {
             let pdf = 0.0;
             let vis = None;
-            let value = Spectrum::new(0.0);
+            let value = Spectrum::ZERO;
             Li::new(wi, pdf, vis, value)
         } else {
             let p0 = hit.clone();
@@ -200,8 +200,8 @@ impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape)> for DiffuseAre
     fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape)) -> Self {
         let (params, light_to_world, medium, shape) = p;
 
-        let l = params.find_one_spectrum("L", Spectrum::new(1.0));
-        let sc = params.find_one_spectrum("scale", Spectrum::new(1.0));
+        let l = params.find_one_spectrum("L", Spectrum::ONE);
+        let sc = params.find_one_spectrum("scale", Spectrum::ONE);
         let two_sided = params.find_one_bool("twosided", false);
 
         let mut n_samples = params.find_one_int("samples", params.find_one_int("nsamples", 1));

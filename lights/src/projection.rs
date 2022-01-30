@@ -81,7 +81,7 @@ impl ProjectionLight {
     ) -> Self {
         let light_to_world = Arc::clone(&light_to_world);
         let world_to_light = Arc::new(light_to_world.inverse());
-        let p_light = light_to_world.transform_point(&Point3f::default());
+        let p_light = light_to_world.transform_point(&Point3f::ZERO);
 
         // Create `ProjectionLight` MIP map.
         let (projection_map, aspect) = match texmap {
@@ -150,7 +150,7 @@ impl ProjectionLight {
 
         // Discard directions behind projection light
         if wl.z < NEAR {
-            return Spectrum::new(0.0);
+            return Spectrum::ZERO;
         }
 
         // Project point onto projection plane and compute light
@@ -158,11 +158,11 @@ impl ProjectionLight {
             .light_projection
             .transform_point(&Point3f::new(wl.x, wl.y, wl.z));
         if !self.screen_bounds.contains(&Point2f::new(p.x, p.y)) {
-            return Spectrum::new(0.0);
+            return Spectrum::ZERO;
         }
 
         match self.projection_map.as_ref() {
-            None => Spectrum::new(1.0),
+            None => Spectrum::ONE,
             Some(projection_map) => {
                 let st = Point2f::from(self.screen_bounds.offset(&Point2f::new(p.x, p.y)));
                 let rgb = projection_map.lookup_triangle(&st, 0.0).to_rgb();
@@ -197,7 +197,7 @@ impl Light for ProjectionLight {
     /// Return the total emitted power.
     fn power(&self) -> Spectrum {
         let spectrum = match self.projection_map.as_ref() {
-            None => Spectrum::new(1.0),
+            None => Spectrum::ONE,
             Some(projection_map) => {
                 let st = Point2f::new(0.5, 0.5);
                 let rgb = projection_map.lookup_triangle(&st, 0.5).to_rgb();
@@ -266,8 +266,8 @@ impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, &str)> for ProjectionLigh
     fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, &str)) -> Self {
         let (params, light_to_world, medium, cwd) = p;
 
-        let intensity = params.find_one_spectrum("I", Spectrum::new(1.0));
-        let sc = params.find_one_spectrum("scale", Spectrum::new(1.0));
+        let intensity = params.find_one_spectrum("I", Spectrum::ONE);
+        let sc = params.find_one_spectrum("scale", Spectrum::ONE);
         let fov = params.find_one_float("fov", 45.0);
         let texmap = params.find_one_filename("mapname", Some(cwd));
 

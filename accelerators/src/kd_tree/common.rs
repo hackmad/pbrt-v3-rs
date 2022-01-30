@@ -22,9 +22,9 @@ impl KdAccelNode {
         // First set lower 2 bits to `3` for flag to indicate leaf node.
         self.node.flags = 3;
 
-        // Set the higher 30 bits for n_prims by first shifting `np` by 2 bits.
-        // SAFETY: We are accessing a union field.
+        // SAFETY: Self::default() is called to initialize union fields.
         unsafe {
+            // Set the higher 30 bits for n_prims by first shifting `np` by 2 bits.
             self.node.n_prims |= np << 2;
         }
 
@@ -53,14 +53,16 @@ impl KdAccelNode {
         // First set lower 2 bits to `axis` for flag to indicate split axis.
         self.node.flags = axis;
 
-        // Set the higher 30 bits for `above_child` by first shifting `ac` by 2 bits.
+        // SAFETY: Self::default() is called to initialize union fields.
         unsafe {
+            // Set the higher 30 bits for `above_child` by first shifting `ac` by 2 bits.
             self.node.above_child |= ac << 2;
         }
     }
 
     /// Returns the position along the split axis.
     pub fn split_pos(&self) -> Float {
+        // SAFETY: Self::default() is called to initialize union fields.
         let pos: Float;
         unsafe {
             pos = self.split.pos;
@@ -70,6 +72,7 @@ impl KdAccelNode {
 
     /// Returns the split axis.
     pub fn split_axis(&self) -> u32 {
+        // SAFETY: Self::default() is called to initialize union fields.
         let axis: u32;
         unsafe {
             axis = self.node.flags & 3;
@@ -79,6 +82,7 @@ impl KdAccelNode {
 
     /// Returns the number of primitives overlapping the leaf node.
     pub fn n_primitives(&self) -> u32 {
+        // SAFETY: Self::default() is called to initialize union fields.
         let n_prims: u32;
         unsafe {
             n_prims = self.node.n_prims;
@@ -88,6 +92,7 @@ impl KdAccelNode {
 
     /// Returns whether the node is a leaf node.
     pub fn is_leaf(&self) -> bool {
+        // SAFETY: Self::default() is called to initialize union fields.
         let flags: u32;
         unsafe {
             flags = self.node.flags;
@@ -98,6 +103,7 @@ impl KdAccelNode {
     /// For an interior node, returns the position, in the nodes list, of the
     /// child representing the space above the splitting plane.
     pub fn above_child(&self) -> u32 {
+        // SAFETY: Self::default() is called to initialize union fields.
         let ac: u32;
         unsafe {
             ac = self.node.above_child;
@@ -107,6 +113,7 @@ impl KdAccelNode {
 
     /// For leaf nodes, returns primitive ids or 0 if there are none.
     pub fn one_primitive(&self) -> u32 {
+        // SAFETY: Self::default() is called to initialize union fields.
         let op: u32;
         unsafe { op = self.split.one_primitive }
         op
@@ -114,6 +121,7 @@ impl KdAccelNode {
 
     /// For leaf nodes, returns the offset to the first index for the leaf node.
     pub fn primitive_indices_offset(&self) -> u32 {
+        // SAFETY: Self::default() is called to initialize union fields.
         let offset: u32;
         unsafe { offset = self.split.primitive_indices_offset }
         offset

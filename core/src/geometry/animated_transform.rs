@@ -59,9 +59,9 @@ impl AnimatedTransform {
         let start_transform = Arc::clone(&start_transform);
         let end_transform = Arc::clone(&end_transform);
         let actually_animated = start_transform != end_transform;
-        let mut t = [Vector3f::default(); 2];
+        let mut t = [Vector3f::ZERO; 2];
         let mut r = [Quaternion::default(); 2];
-        let mut s = [Matrix4x4::default(); 2];
+        let mut s = [Matrix4x4::IDENTITY; 2];
         let mut has_rotation = false;
         let mut c1 = [DerivativeTerm::default(); 3];
         let mut c2 = [DerivativeTerm::default(); 3];
@@ -1232,7 +1232,7 @@ impl AnimatedTransform {
         let rotate = self.r[0].slerp(dt, self.r[1]);
 
         // Interpolate scale at dt.
-        let mut scale = Matrix4x4::default();
+        let mut scale = Matrix4x4::IDENTITY;
         for i in 0..3 {
             for j in 0..3 {
                 scale.m[i][j] = lerp(dt, self.s[0].m[i][j], self.s[1].m[i][j]);
@@ -1378,7 +1378,7 @@ fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut M
     let mut count = 0;
     loop {
         // Compute the next matrix R_next in series
-        let mut r_next = Matrix4x4::default();
+        let mut r_next = Matrix4x4::IDENTITY;
         let r_it = r.transpose().inverse();
         for i in 0..4 {
             for j in 0..4 {

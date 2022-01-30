@@ -164,7 +164,7 @@ impl FresnelNoOp {
     /// * `cos_thata_i` - Cosine of the angle made by incident direction and
     ///                   surface normal.
     pub fn evaluate(&self, _cos_theta_i: Float) -> Spectrum {
-        Spectrum::new(1.0)
+        Spectrum::ONE
     }
 }
 

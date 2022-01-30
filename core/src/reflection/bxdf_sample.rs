@@ -39,6 +39,6 @@ impl From<BxDFType> for BxDFSample {
     ///
     /// * `sampled_type` - The type of BxDF.
     fn from(sampled_type: BxDFType) -> Self {
-        Self::new(Spectrum::default(), 0.0, Vector3f::default(), sampled_type)
+        Self::new(Spectrum::default(), 0.0, Vector3f::ZERO, sampled_type)
     }
 }

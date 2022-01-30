@@ -79,7 +79,7 @@ impl<'arena> MicrofacetReflection<'arena> {
         // Handle degenerate cases for microfacet reflection.
         if (cos_theta_i == 0.0 || cos_theta_o == 0.0) || (wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0)
         {
-            Spectrum::new(0.0)
+            Spectrum::ZERO
         } else {
             let wh = wh.normalize();
 
@@ -111,7 +111,7 @@ impl<'arena> MicrofacetReflection<'arena> {
             } else {
                 let wi = reflect(wo, &wh);
                 if !same_hemisphere(wo, &wi) {
-                    BxDFSample::new(Spectrum::new(0.0), 0.0, wi, self.bxdf_type)
+                    BxDFSample::new(Spectrum::ZERO, 0.0, wi, self.bxdf_type)
                 } else {
                     // Compute PDF of `wi` for microfacet reflection.
                     let pdf = self.distribution.pdf(wo, &wh) / (4.0 * wo.dot(&wh));

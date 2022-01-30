@@ -21,9 +21,41 @@ pub struct Point2<T> {
 
 /// 2-D point containing `Float` values.
 pub type Point2f = Point2<Float>;
+impl Point2f {
+    /// Zero point.
+    pub const ZERO: Self = Self { x: 0.0, y: 0.0 };
+
+    /// Point with all coordinates set to minimum floating point value.
+    pub const MIN: Self = Self {
+        x: Float::MIN,
+        y: Float::MIN,
+    };
+
+    /// Point with all coordinates set to maximum floating point value.
+    pub const MAX: Self = Self {
+        x: Float::MAX,
+        y: Float::MAX,
+    };
+}
 
 /// 2-D point containing `Int` values.
 pub type Point2i = Point2<Int>;
+impl Point2i {
+    /// Zero point.
+    pub const ZERO: Self = Self { x: 0, y: 0 };
+
+    /// Point with all coordinates set to minimum floating point value.
+    pub const MIN: Self = Self {
+        x: Int::MIN,
+        y: Int::MIN,
+    };
+
+    /// Point with all coordinates set to maximum floating point value.
+    pub const MAX: Self = Self {
+        x: Int::MAX,
+        y: Int::MAX,
+    };
+}
 
 impl<T: Num> Point2<T> {
     /// Creates a new 2-D point.

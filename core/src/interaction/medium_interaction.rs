@@ -37,9 +37,9 @@ impl MediumInteraction {
             hit: Hit::new(
                 p,
                 time,
-                Vector3f::default(),
+                Vector3f::ZERO,
                 wo,
-                Normal3f::default(),
+                Normal3f::ZERO,
                 Some(MediumInterface::from(medium)),
             ),
             phase: Arc::clone(&phase),

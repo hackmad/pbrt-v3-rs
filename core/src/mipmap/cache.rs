@@ -59,6 +59,19 @@ macro_rules! cache_provider {
 cache_provider!(RGBSpectrum, RGB_SPECTRUM_MIPMAPS);
 cache_provider!(Float, FLOAT_MIPMAPS);
 
+/// Clears all MIPMap caches.
+pub fn clear_mipmap_caches() {
+    let mut mipmaps = RGB_SPECTRUM_MIPMAPS
+        .lock()
+        .expect("Unable to access RGB_SPECTRUM_MIPMAPS mutex");
+    mipmaps.clear();
+
+    let mut mipmaps = FLOAT_MIPMAPS
+        .lock()
+        .expect("Unable to access FLOAT_MIPMAPS mutex");
+    mipmaps.clear();
+}
+
 /// Load an image texture from file and build the `MIPMap`.
 ///
 /// * `info` - Texture information.

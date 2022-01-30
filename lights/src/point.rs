@@ -47,7 +47,7 @@ impl PointLight {
     ) -> Self {
         let light_to_world = Arc::clone(&light_to_world);
         let world_to_light = Arc::new(light_to_world.inverse());
-        let p_light = light_to_world.transform_point(&Point3f::default());
+        let p_light = light_to_world.transform_point(&Point3f::ZERO);
 
         Self {
             light_type: LightType::DELTA_POSITION_LIGHT,
@@ -137,9 +137,9 @@ impl From<(&ParamSet, ArcTransform, Option<ArcMedium>)> for PointLight {
     fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>)) -> Self {
         let (params, light_to_world, medium) = p;
 
-        let intensity = params.find_one_spectrum("I", Spectrum::new(1.0));
-        let sc = params.find_one_spectrum("scale", Spectrum::new(1.0));
-        let p = params.find_one_point3f("from", Point3f::default());
+        let intensity = params.find_one_spectrum("I", Spectrum::ONE);
+        let sc = params.find_one_spectrum("scale", Spectrum::ONE);
+        let p = params.find_one_point3f("from", Point3f::ZERO);
         let l2w = Transform::translate(&Vector3f::new(p.x, p.y, p.z)) * light_to_world.as_ref();
         Self::new(Arc::new(l2w), MediumInterface::from(medium), intensity * sc)
     }

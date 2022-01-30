@@ -52,7 +52,7 @@ pub trait Shape {
     /// Sample a point on the surface and return the PDF with respect to area on
     /// the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
+    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample_area(&self, u: &Point2f) -> (Hit, Float);
@@ -129,9 +129,9 @@ pub trait Shape {
         let hit = Hit::new(
             *p,
             0.0,
-            Vector3f::default(),
+            Vector3f::ZERO,
             Vector3f::new(0.0, 0.0, 1.0),
-            Normal3f::default(),
+            Normal3f::ZERO,
             None,
         );
 

@@ -411,7 +411,7 @@ impl From<(&ParamSet, ArcFilter)> for Film {
 
         let cr = params.find_float("cropwindow");
         let cwi = cr.len();
-        let mut crop = Bounds2f::default();
+        let mut crop = Bounds2f::EMPTY;
         if cwi == 4 {
             crop.p_min.x = clamp(min(cr[0], cr[1]), 0.0, 1.0);
             crop.p_max.x = clamp(max(cr[0], cr[1]), 0.0, 1.0);

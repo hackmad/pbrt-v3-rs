@@ -38,7 +38,7 @@ pub fn build(
     ordered_prims: Arc<Mutex<Vec<ArcPrimitive>>>,
 ) -> ArenaArc<BVHBuildNode> {
     // Compute bounds of all primitives in BVH node.
-    let mut bounds = Bounds3f::empty();
+    let mut bounds = Bounds3f::EMPTY;
     for info in primitive_info.iter().take(end).skip(start) {
         bounds = bounds.union(&info.bounds);
     }
@@ -52,7 +52,7 @@ pub fn build(
         None
     } else {
         // Compute bound of primitive centroids, choose split dimension dim.
-        let mut centroid_bounds = Bounds3f::empty();
+        let mut centroid_bounds = Bounds3f::EMPTY;
         for info in primitive_info.iter().take(end).skip(start) {
             centroid_bounds = centroid_bounds.union(&info.centroid);
         }
@@ -267,7 +267,7 @@ fn split_sah(
         // Compute costs for splitting after each bucket.
         let mut cost = [0.0_f32; N_BUCKETS - 1];
         for (i, cost_i) in cost.iter_mut().enumerate().take(N_BUCKETS - 1) {
-            let (mut b0, mut b1) = (Bounds3f::empty(), Bounds3f::empty());
+            let (mut b0, mut b1) = (Bounds3f::EMPTY, Bounds3f::EMPTY);
             let (mut count0, mut count1) = (0, 0);
 
             for bucket in buckets.iter().take(i + 1) {

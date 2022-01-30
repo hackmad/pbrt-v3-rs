@@ -213,7 +213,7 @@ impl Curve {
         // updated after each loop iteration depending on the current basis.
         let mut cp_base = 0;
         for seg in 0..n_segments {
-            let mut seg_cp_bezier = [Point3f::default(); 4];
+            let mut seg_cp_bezier = [Point3f::ZERO; 4];
 
             // First, compute the cubic Bezier control points for the current
             // segment and store them in segCpBezier. (It is admittedly
@@ -453,7 +453,7 @@ impl Curve {
             // Compute u coordinate of curve intersection point and hit_width.
             let u = clamp(lerp(w, u0, u1), u0, u1);
             let mut hit_width = lerp(u, self.common.width[0], self.common.width[1]);
-            let mut n_hit = Normal3f::default();
+            let mut n_hit = Normal3f::ZERO;
             if self.common.curve_type == CurveType::Ribbon {
                 // Scale hit_width based on ribbon orientation.
                 let sin0 =
@@ -492,7 +492,7 @@ impl Curve {
             // Compute dpdu and dpdv for curve intersection.
             let (_, dpdu) = eval_bezier(&self.common.cp_obj, u);
             assert!(
-                dpdu != Vector3f::default(),
+                dpdu != Vector3f::ZERO,
                 "u={}, cp=[{:?}]",
                 u,
                 self.common.cp_obj
@@ -521,8 +521,8 @@ impl Curve {
                 -ray.d,
                 dpdu,
                 dpdv,
-                Normal3f::default(),
-                Normal3f::default(),
+                Normal3f::ZERO,
+                Normal3f::ZERO,
                 ray.time,
                 Arc::clone(&self.data),
                 0,
@@ -633,8 +633,8 @@ impl Curve {
 
         let eps = max(self.common.width[0], self.common.width[1]) * 0.05; // width / 20
 
-        // Compute log base 4 by dividing log2 in half.
-        let r0 = Log2::log2(1.41421356237 * 6.0 * l0 / (8.0 * eps)) / 2;
+        // Compute log base 4 by dividing log2int in half.
+        let r0 = (1.41421356237 * 6.0 * l0 / (8.0 * eps)).log2int() / 2;
         let max_depth = clamp(r0, 0, 10);
 
         self.recursive_intersect(
@@ -714,7 +714,7 @@ impl Shape for Curve {
     /// Sample a point on the surface and return the PDF with respect to area on
     /// the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
+    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample_area(&self, _u: &Point2f) -> (Hit, Float) {
@@ -760,7 +760,7 @@ impl CurveData {
     ) -> Self {
         let n = match norm {
             Some([n1, n2]) => [n1.normalize(), n2.normalize()],
-            _ => [Normal3f::default(), Normal3f::default()],
+            _ => [Normal3f::ZERO, Normal3f::ZERO],
         };
 
         let normal_angle = clamp(n[0].dot(&n[1]), 0.0, 1.0).acos();

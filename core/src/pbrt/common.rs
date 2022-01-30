@@ -162,6 +162,7 @@ where
 ///
 /// * `f` - The 32-bit floating point number.
 pub fn float_to_bits(f: f32) -> u32 {
+    // SAFETY: f32 and u32 have same size (32-bits).
     let result: u32;
     unsafe {
         let i: u32 = std::mem::transmute_copy(&f);
@@ -175,6 +176,7 @@ pub fn float_to_bits(f: f32) -> u32 {
 ///
 /// * `i` - The 32-bit unsigned interger.
 pub fn bits_to_float(i: u32) -> f32 {
+    // SAFETY: f32 and u32 have same size (32-bits).
     let result: f32;
     unsafe {
         let f: f32 = std::mem::transmute_copy(&i);

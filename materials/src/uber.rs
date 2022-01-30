@@ -143,7 +143,7 @@ impl Material for UberMaterial {
             .opacity
             .evaluate(&si.hit, &si.uv, &si.der)
             .clamp_default();
-        let t = (-op + Spectrum::new(1.0)).clamp_default();
+        let t = (-op + Spectrum::ONE).clamp_default();
         let bsdf = if !t.is_black() {
             let bsdf = BSDF::alloc(arena, &si, Some(1.0));
             let tr = SpecularTransmission::alloc(arena, t, 1.0, 1.0, mode);
@@ -209,10 +209,10 @@ impl From<&TextureParams> for UberMaterial {
         let ks = tp.get_spectrum_texture_or_else("Ks", Spectrum::new(0.25), |v| {
             Arc::new(ConstantTexture::new(v))
         });
-        let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::new(0.0), |v| {
+        let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::ZERO, |v| {
             Arc::new(ConstantTexture::new(v))
         });
-        let kt = tp.get_spectrum_texture_or_else("Kt", Spectrum::new(0.0), |v| {
+        let kt = tp.get_spectrum_texture_or_else("Kt", Spectrum::ZERO, |v| {
             Arc::new(ConstantTexture::new(v))
         });
 
@@ -228,7 +228,7 @@ impl From<&TextureParams> for UberMaterial {
             Some(tex) => tex,
         };
 
-        let opacity = tp.get_spectrum_texture_or_else("opacity", Spectrum::new(1.0), |v| {
+        let opacity = tp.get_spectrum_texture_or_else("opacity", Spectrum::ONE, |v| {
             Arc::new(ConstantTexture::new(v))
         });
 

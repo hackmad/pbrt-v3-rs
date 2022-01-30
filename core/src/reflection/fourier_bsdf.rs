@@ -77,11 +77,11 @@ impl FourierBSDF {
         // Determine offsets and weights for `(μi, μo)`.
         let (weights_i, offset_i) = match self.bsdf_table.get_weights_and_offset(mu_i) {
             Some((weights, offset)) => (weights, offset),
-            None => return Spectrum::new(0.0),
+            None => return Spectrum::ZERO,
         };
         let (weights_o, offset_o) = match self.bsdf_table.get_weights_and_offset(mu_o) {
             Some((weights, offset)) => (weights, offset),
-            None => return Spectrum::new(0.0),
+            None => return Spectrum::ZERO,
         };
 
         // Allocate storage to accumulate `ak` coefficients.

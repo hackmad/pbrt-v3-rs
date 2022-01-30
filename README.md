@@ -137,13 +137,13 @@ through the book.
 The debug version can be run as:
 
 ```
-cargo run -- <input file>
+cargo run -- [OPTIONS] <FILE1> <FILE2> ...
 ```
 
 The release version can be run as:
 
 ```
-cargo run --release -- <input file>
+cargo run --release -- [OPTIONS] <FILE1> <FILE2> ...
 ```
 
 ## Profiling / Performance
@@ -154,7 +154,7 @@ Use `--features dhat-rs` to get heap profiling stats. Note that this will be a
 lot slower to run.
 
 ```
-cargo run --release --features dhat-rs -- <input file>
+cargo run --release --features dhat-rs -- [OPTIONS] <FILE1> <FILE2> ...
 ```
 
 This will generate a file `dhat-heap.json` which can be viewed using the DHAT
@@ -167,7 +167,7 @@ Use `--features jemalloc` to use jemalloc on Linux/MacOS. On Windows, it will
 use default global allocator. This is mutually exclusive with `dhat-rs` feature.
 
 ```
-cargo run --release --features jemalloc -- <input file>
+cargo run --release --features jemalloc -- [OPTIONS] <FILE1> <FILE2> ...
 ```
 
 ### Profile guided optimization

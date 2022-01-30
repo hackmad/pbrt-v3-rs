@@ -577,8 +577,8 @@ impl Shape for Triangle {
         let dp12 = p1 - p2;
         let determinant = duv02[0] * duv12[1] - duv02[1] * duv12[0];
         let degenerate_uv = determinant.abs() < 1e-8;
-        let mut dpdu = Vector3f::default();
-        let mut dpdv = Vector3f::default();
+        let mut dpdu = Vector3f::ZERO;
+        let mut dpdv = Vector3f::ZERO;
         if !degenerate_uv {
             let invdet = 1.0 / determinant;
             dpdu = (duv12[1] * dp02 - duv02[1] * dp12) * invdet;
@@ -610,13 +610,13 @@ impl Shape for Triangle {
         if test_alpha_texture && !self.mesh.alpha_mask.is_none() {
             let isect_local = SurfaceInteraction::new(
                 p_hit,
-                Vector3f::default(),
+                Vector3f::ZERO,
                 uv_hit,
                 -r.d,
                 dpdu,
                 dpdv,
-                Normal3f::default(),
-                Normal3f::default(),
+                Normal3f::ZERO,
+                Normal3f::ZERO,
                 r.time,
                 Arc::clone(&self.data),
                 0,
@@ -636,8 +636,8 @@ impl Shape for Triangle {
             -r.d,
             dpdu,
             dpdv,
-            Normal3f::default(),
-            Normal3f::default(),
+            Normal3f::ZERO,
+            Normal3f::ZERO,
             r.time,
             Arc::clone(&self.data),
             self.face_index,
@@ -721,7 +721,7 @@ impl Shape for Triangle {
                     // parameterizations are still reasonable.
                     let dn = (n2 - n0).cross(&(n1 - n0));
                     if dn.length_squared() == 0.0 {
-                        (Normal3f::default(), Normal3f::default())
+                        (Normal3f::ZERO, Normal3f::ZERO)
                     } else {
                         let (dndu2, dndv2) = coordinate_system(&dn.into());
                         (Normal3::from(dndu2), Normal3::from(dndv2))
@@ -734,7 +734,7 @@ impl Shape for Triangle {
                     )
                 }
             } else {
-                (Normal3f::default(), Normal3f::default())
+                (Normal3f::ZERO, Normal3f::ZERO)
             };
 
             if self.get_data().reverse_orientation {
@@ -872,8 +872,8 @@ impl Shape for Triangle {
             let determinant = duv02[0] * duv12[1] - duv02[1] * duv12[0];
             let degenerate_uv = determinant.abs() < 1e-8;
 
-            let mut dpdu = Vector3f::default();
-            let mut dpdv = Vector3f::default();
+            let mut dpdu = Vector3f::ZERO;
+            let mut dpdv = Vector3f::ZERO;
             if !degenerate_uv {
                 let invdet = 1.0 / determinant;
                 dpdu = (duv12[1] * dp02 - duv02[1] * dp12) * invdet;
@@ -897,13 +897,13 @@ impl Shape for Triangle {
 
             let isect_local = SurfaceInteraction::new(
                 p_hit,
-                Vector3f::default(),
+                Vector3f::ZERO,
                 uv_hit,
                 -r.d,
                 dpdu,
                 dpdv,
-                Normal3f::default(),
-                Normal3f::default(),
+                Normal3f::ZERO,
+                Normal3f::ZERO,
                 r.time,
                 Arc::clone(&self.data),
                 0,
@@ -929,7 +929,7 @@ impl Shape for Triangle {
     /// Sample a point on the surface and return the PDF with respect to area on
     /// the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
+    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
@@ -960,7 +960,7 @@ impl Shape for Triangle {
         // Compute error bounds for sampled point on triangle.
         let p_abs_sum = (b[0] * p0).abs() + (b[1] * p1).abs() + ((1.0 - b[0] - b[1]) * p2).abs();
         let p_error = gamma(6) * Vector3f::new(p_abs_sum.x, p_abs_sum.y, p_abs_sum.z);
-        let it = Hit::new(p, 0.0, p_error, Vector3f::default(), n, None);
+        let it = Hit::new(p, 0.0, p_error, Vector3f::ZERO, n, None);
         let pdf = 1.0 / self.area();
         (it, pdf)
     }

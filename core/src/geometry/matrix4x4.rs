@@ -15,21 +15,21 @@ pub struct Matrix4x4 {
     pub m: [[Float; 4]; 4],
 }
 
-/// Zero matrix.
-pub const ZERO_MATRIX: Matrix4x4 = Matrix4x4 { m: [[0.0; 4]; 4] };
-
-/// Ientity matrix.
-pub const IDENTITY_MATRIX: Matrix4x4 = Matrix4x4 {
-    m: [
-        [1.0, 0.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [0.0, 0.0, 0.0, 1.0],
-    ],
-};
-
 #[rustfmt::skip]
 impl Matrix4x4 {
+    /// Zero matrix.
+    pub const ZERO: Self = Self { m: [[0.0; 4]; 4] };
+    
+    /// Ientity matrix.
+    pub const IDENTITY: Self = Self {
+        m: [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ],
+    };
+
     /// Create a 4x4 matrix using the following order of the parameters:
     ///
     /// * `t00`, `t01`, `t02`, `t03` - Row 1
@@ -148,7 +148,7 @@ impl Matrix4x4 {
 impl Default for Matrix4x4 {
     /// Returns the default as identity matrix.
     fn default() -> Self {
-        IDENTITY_MATRIX
+        Self::IDENTITY
     }
 }
 
@@ -187,7 +187,7 @@ impl Mul<Matrix4x4> for Matrix4x4 {
     ///
     /// * `other` - The other matrix
     fn mul(self, other: Matrix4x4) -> Self::Output {
-        let mut m = Matrix4x4::default();
+        let mut m = Matrix4x4::IDENTITY;
 
         for i in 0..4 {
             for j in 0..4 {
@@ -209,7 +209,7 @@ impl Mul<&Matrix4x4> for Matrix4x4 {
     ///
     /// * `other` - The other matrix
     fn mul(self, other: &Matrix4x4) -> Self::Output {
-        let mut m = Matrix4x4::default();
+        let mut m = Matrix4x4::IDENTITY;
 
         for i in 0..4 {
             for j in 0..4 {
@@ -231,7 +231,7 @@ impl Mul for &Matrix4x4 {
     ///
     /// * `other` - The other matrix
     fn mul(self, other: Self) -> Self::Output {
-        let mut m = Matrix4x4::default();
+        let mut m = Matrix4x4::IDENTITY;
 
         for i in 0..4 {
             for j in 0..4 {
@@ -253,7 +253,7 @@ impl Mul<Matrix4x4> for &Matrix4x4 {
     ///
     /// * `other` - The other matrix
     fn mul(self, other: Matrix4x4) -> Self::Output {
-        let mut m = Matrix4x4::default();
+        let mut m = Matrix4x4::IDENTITY;
 
         for i in 0..4 {
             for j in 0..4 {
@@ -335,12 +335,12 @@ mod tests {
     #[test]
     #[should_panic]
     fn inverse_panics_when_matrix_is_zero() {
-        let _ = ZERO_MATRIX.inverse();
+        let _ = Matrix4x4::ZERO.inverse();
     }
 
     #[test]
     fn inverse_returns_identity_when_matrix_is_idenitity() {
-        assert_eq!(IDENTITY_MATRIX.inverse(), IDENTITY_MATRIX);
+        assert_eq!(Matrix4x4::IDENTITY.inverse(), Matrix4x4::IDENTITY);
     }
 
     proptest! {
@@ -378,7 +378,7 @@ mod tests {
                     prop_assert!(approx_eq!(
                             Float,
                             prod.m[i][j],
-                            IDENTITY_MATRIX.m[i][j],
+                            Matrix4x4::IDENTITY.m[i][j],
                             epsilon = 0.0001
                     ));
                 }
@@ -390,7 +390,7 @@ mod tests {
                     prop_assert!(approx_eq!(
                             Float,
                             prod.m[i][j],
-                            IDENTITY_MATRIX.m[i][j],
+                            Matrix4x4::IDENTITY.m[i][j],
                             epsilon = 0.0001
                     ));
                 }

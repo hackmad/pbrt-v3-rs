@@ -71,13 +71,13 @@ impl KDTreeAccel {
         let n_alloced_nodes = 0;
 
         let max_depth = if max_depth < 0 {
-            (8.0 + 1.3 * Log2::log2(count as i64) as Float).round() as i32
+            (8.0 + 1.3 * (count as i64).log2int() as Float).round() as i32
         } else {
             max_depth
         };
 
         // Compute bounds for kd-tree construction.
-        let mut bounds = Bounds3f::empty();
+        let mut bounds = Bounds3f::EMPTY;
         let mut prim_bounds = Vec::<Bounds3f>::with_capacity(count);
         for prim in primitives.iter() {
             let b = prim.world_bound();

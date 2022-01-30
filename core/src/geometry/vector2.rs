@@ -22,9 +22,10 @@ pub struct Vector2<T> {
 
 /// 2-D vector containing `Float` values.
 pub type Vector2f = Vector2<Float>;
-
-/// 2-D vector containing `Int` values.
-pub type Vector2i = Vector2<Int>;
+impl Vector2f {
+    /// Zero vector.
+    pub const ZERO: Self = Self { x: 0.0, y: 0.0 };
+}
 
 impl<T: Num> Vector2<T> {
     /// Creates a new 2-D vector.

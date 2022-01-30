@@ -202,7 +202,7 @@ impl RealisticCamera {
 
             // Compute intersection of ray with lens element.
             let t: Float;
-            let mut n = Normal3f::default();
+            let mut n = Normal3f::ZERO;
             let is_stop = element.curvature_radius == 0.0;
             if is_stop {
                 // The reflected ray computed in the previous lens element
@@ -275,7 +275,7 @@ impl RealisticCamera {
         for (i, element) in self.element_interfaces.iter().enumerate() {
             // Compute intersection of ray with lens element.
             let t: Float;
-            let mut n = Normal3f::default();
+            let mut n = Normal3f::ZERO;
             let is_stop = element.curvature_radius == 0.0;
             if is_stop {
                 t = (element_z - r_lens.o.z) / r_lens.d.z;
@@ -488,7 +488,7 @@ impl RealisticCamera {
     /// * `p_film_x0` - First point along x-axis of film plane.
     /// * `p_film_x1` - Second point along x-axis of film plane.
     fn bound_exit_pupil(&self, p_film_x0: Float, p_film_x1: Float) -> Bounds2f {
-        let mut pupil_bounds = Bounds2f::empty();
+        let mut pupil_bounds = Bounds2f::EMPTY;
         const N_SAMPLES: usize = 1024 * 1024;
         const N_SAMPLES_SQRT: usize = 1024;
 

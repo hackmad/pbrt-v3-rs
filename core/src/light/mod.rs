@@ -143,7 +143,7 @@ pub trait Light {
     ///
     /// * `ray` - The ray with differentials.
     fn le(&self, _ray: &Ray) -> Spectrum {
-        Spectrum::new(0.0)
+        Spectrum::ZERO
     }
 
     /// Returns the probability density with respect to solid angle for the light’s

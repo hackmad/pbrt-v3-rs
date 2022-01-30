@@ -162,7 +162,7 @@ impl Primitive for BVHAccel {
         if !self.nodes.is_empty() {
             self.nodes[0].bounds
         } else {
-            Bounds3f::empty()
+            Bounds3f::EMPTY
         }
     }
 

@@ -74,7 +74,7 @@ impl Scene {
         ray: &mut Ray,
         sampler: ArcSampler,
     ) -> Option<(SurfaceInteraction, Spectrum)> {
-        let mut tr = Spectrum::new(1.0);
+        let mut tr = Spectrum::ONE;
 
         loop {
             let hit_surface = self.intersect(ray);

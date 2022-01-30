@@ -18,8 +18,7 @@ pub struct RGB {
 impl RGB {
     /// Creates the RGB struct. This is useful for initializing at startup time.
     pub fn new() -> Self {
-        let mut spds =
-            [[SampledSpectrum::default(); NUM_RGB_SPECTRUM_COLOURS]; NUM_RGB_SPECTRUM_TYPES];
+        let mut spds = [[SampledSpectrum::ZERO; NUM_RGB_SPECTRUM_COLOURS]; NUM_RGB_SPECTRUM_TYPES];
 
         for j in 0..NUM_RGB_SPECTRUM_TYPES {
             for k in 0..NUM_RGB_SPECTRUM_COLOURS {

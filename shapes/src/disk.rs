@@ -218,7 +218,7 @@ impl Shape for Disk {
     /// Sample a point on the surface and return the PDF with respect to area on
     /// the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::default().
+    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
@@ -237,8 +237,8 @@ impl Shape for Disk {
         let (p, p_error) = self
             .data
             .object_to_world
-            .transform_point_with_abs_error(&p_obj, &Vector3f::default());
-        let it = Hit::new(p, 0.0, p_error, Vector3f::default(), n, None);
+            .transform_point_with_abs_error(&p_obj, &Vector3f::ZERO);
+        let it = Hit::new(p, 0.0, p_error, Vector3f::ZERO, n, None);
         let pdf = 1.0 / self.area();
         (it, pdf)
     }

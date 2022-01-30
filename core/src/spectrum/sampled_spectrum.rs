@@ -40,14 +40,22 @@ impl SampledSpectrum {
         assert!(!ret.has_nans());
         ret
     }
+
+    /// Spectrum with all values set to 0.
+    pub const ZERO: Self = Self {
+        c: [0.0; SPECTRAL_SAMPLES],
+    };
+
+    /// Spectrum with all values set to 1.
+    pub const ONE: Self = Self {
+        c: [1.0; SPECTRAL_SAMPLES],
+    };
 }
 
 impl Default for SampledSpectrum {
     /// Return a black `SampledSpectrum`.
     fn default() -> Self {
-        Self {
-            c: [0.0; SPECTRAL_SAMPLES],
-        }
+        Self::ZERO
     }
 }
 

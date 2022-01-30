@@ -37,7 +37,7 @@ pub fn build(
     // Compute bounds of all primitives in BVH node.
     let bounds = primitive_info
         .iter()
-        .fold(Bounds3f::empty(), |b, pi| b.union(&pi.bounds));
+        .fold(Bounds3f::EMPTY, |b, pi| b.union(&pi.bounds));
 
     // Compute Morton indices of primitives.
     let morton_prims: Vec<MortonPrimitive> = primitive_info
@@ -139,7 +139,7 @@ fn emit_lbvh(
 
     if bit_index.is_none() || n_primitives < max_prims_in_node {
         // Create and return leaf node of LBVH treelet.
-        let mut bounds = Bounds3f::empty();
+        let mut bounds = Bounds3f::EMPTY;
         let first_prim_offset = ordered_prims_offset.fetch_add(n_primitives, Ordering::SeqCst);
 
         let prims = Arc::clone(&ordered_prims);
@@ -260,13 +260,13 @@ fn build_upper_sah(
     *total_nodes += 1;
 
     // Compute bounds of all nodes under this HLBVH node
-    let mut bounds = Bounds3f::empty();
+    let mut bounds = Bounds3f::EMPTY;
     for treelet_root in treelet_roots.iter().take(end).skip(start) {
         bounds = bounds.union(&treelet_root.bounds);
     }
 
     // Compute bound of HLBVH node centroids, choose split dimension dim.
-    let mut centroid_bounds = Bounds3f::empty();
+    let mut centroid_bounds = Bounds3f::EMPTY;
     for treelet_root in treelet_roots.iter().take(end).skip(start) {
         let centroid = (treelet_root.bounds.p_min + treelet_root.bounds.p_max) * 0.5;
         centroid_bounds = centroid_bounds.union(&centroid);
@@ -301,7 +301,7 @@ fn build_upper_sah(
     // Compute costs for splitting after each bucket
     let mut cost = [0.0; N_BUCKETS - 1];
     for (i, cost_i) in cost.iter_mut().enumerate().take(N_BUCKETS - 1) {
-        let (mut b0, mut b1) = (Bounds3f::empty(), Bounds3f::empty());
+        let (mut b0, mut b1) = (Bounds3f::EMPTY, Bounds3f::EMPTY);
         let (mut count0, mut count1) = (0, 0);
 
         for bucket in buckets.iter().take(i + 1) {

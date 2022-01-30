@@ -15,6 +15,7 @@ use accelerators::*;
 use core::geometry::*;
 use core::light::*;
 use core::medium::*;
+use core::mipmap::clear_mipmap_caches;
 use core::paramset::*;
 use core::pbrt::*;
 use core::primitive::*;
@@ -139,7 +140,7 @@ impl Api {
         if self.verify_initialized("Identity") {
             for i in 0..MAX_TRANSFORMS {
                 if self.active_transform_bits & (1 << i) > 0 {
-                    self.current_transforms[i] = Arc::new(Transform::default());
+                    self.current_transforms[i] = Arc::new(Transform::IDENTITY);
                 }
             }
         }
@@ -428,7 +429,7 @@ impl Api {
         if self.verify_options("WorldBegin") {
             self.current_api_state = ApiState::WorldBlock;
             for i in 0..MAX_TRANSFORMS {
-                self.current_transforms[i] = Arc::new(Transform::default());
+                self.current_transforms[i] = Arc::new(Transform::IDENTITY);
             }
             self.active_transform_bits = ALL_TRANSFORM_BITS;
             self.named_coordinate_systems
@@ -451,6 +452,9 @@ impl Api {
                 self.pushed_transforms.pop();
             }
 
+            self.pushed_graphics_states.shrink_to_fit();
+            self.pushed_transforms.shrink_to_fit();
+
             // Create scene and render.
             let integrator = match self.render_options.make_integrator(&self.graphics_state) {
                 Ok(integrator) => integrator,
@@ -464,15 +468,18 @@ impl Api {
             let mut transform_cache = self.transform_cache.lock().unwrap();
             transform_cache.clear();
 
-            self.graphics_state = GraphicsState::new(Arc::clone(&self.transform_cache), &self.cwd);
+            self.graphics_state.clear();
             self.current_api_state = ApiState::OptionsBlock;
             self.current_transforms.reset();
 
             self.active_transform_bits = ALL_TRANSFORM_BITS;
             self.named_coordinate_systems.clear();
+            self.named_coordinate_systems.shrink_to_fit();
+            self.pushed_active_transform_bits.clear();
+            self.pushed_active_transform_bits.shrink_to_fit();
 
-            // TODO Clear image texture caches for float and spectrum textures
-            // once we add this functionality to crate::textures::image_map
+            // Clear caches for float and spectrum textures.
+            clear_mipmap_caches();
         }
     }
 
@@ -768,7 +775,7 @@ impl Api {
                 }
 
                 let mut transform_cache = self.transform_cache.lock().unwrap();
-                let identity = transform_cache.lookup(&Transform::default());
+                let identity = transform_cache.lookup(&Transform::IDENTITY);
                 let shapes = self
                     .graphics_state
                     .make_shape(

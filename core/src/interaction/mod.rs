@@ -106,9 +106,9 @@ impl Hit {
         Self {
             p,
             time,
-            p_error: Vector3f::default(),
-            wo: Vector3f::default(),
-            n: Normal3f::default(),
+            p_error: Vector3f::ZERO,
+            wo: Vector3f::ZERO,
+            n: Normal3f::ZERO,
             medium_interface,
         }
     }
