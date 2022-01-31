@@ -87,8 +87,10 @@ pub struct BSDF<'arena> {
     /// The `BxDFs`.
     ///
     /// NOTE: This is `&'arena mut BxDF` because it is allocated from a memory
-    /// arena (bumpalo::Bump).
-    pub bxdfs: Vec<&'arena mut BxDF<'arena>>,
+    /// arena (bumpalo::Bump). Using bumpalo's collection vector for efficient
+    /// allocations from the memory arena instead of standard library Vec
+    /// allocating from heap.
+    pub bxdfs: bumpalo::collections::Vec<'arena, &'arena mut BxDF<'arena>>,
 
     /// Relative index of refraction over the surfaceboundary.
     pub eta: Float,
@@ -113,7 +115,7 @@ impl<'arena> BSDF<'arena> {
         let ng = si.hit.n;
         let ss = si.shading.dpdu.normalize();
         let ts = Vector3::from(ns).cross(&ss);
-        let bxdfs = Vec::with_capacity(MAX_BXDFS);
+        let bxdfs = bumpalo::collections::Vec::with_capacity_in(MAX_BXDFS, arena);
 
         arena.alloc(Self {
             eta,
