@@ -367,8 +367,9 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         );
 
         /*
-           We could use threadlocals here so the allocator is not dropped every
-           time a tile finishes rendering. This is what it looks like:
+           We could use threadlocals here so the bump allocator is not created
+           and dropped every time for each tile. This way it will maintain one
+           per thread in the threadpool:
 
            thread_local! {
                static ARENA: RefCell<Bump> = RefCell::new(Bump::with_capacity(262144));
