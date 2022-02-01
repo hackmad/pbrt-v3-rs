@@ -366,6 +366,26 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
             tile_x, tile_y, tile_bounds
         );
 
+        /*
+           We could use threadlocals here so the allocator is not dropped every
+           time a tile finishes rendering. This is what it looks like:
+
+           thread_local! {
+               static ARENA: RefCell<Bump> = RefCell::new(Bump::with_capacity(262144));
+           }
+           ARENA.with(|arena| {
+               let mut arena = arena.borrow_mut();
+               ...
+               ...
+               arena.reset()
+               film_tile
+           })
+
+           However, it keeps allocated chunks around for re-use so over time the
+           process will show memory increasing and doesn't actually have any
+           performance benefits for render times. Stack allocating the arena shows
+           the process uses lower memory over time as the drop frees up memory.
+        */
         let mut arena = Bump::with_capacity(262144); // 256 KiB
 
         let mut film_tile = camera_data.film.get_film_tile(tile_bounds);
