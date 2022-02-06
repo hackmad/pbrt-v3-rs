@@ -111,15 +111,14 @@ impl Film {
         );
 
         // Precompute filter weight table.
-        let filter = Arc::clone(&filter);
         let filter_data = filter.get_data();
         let mut filter_table = [0.0; FILTER_TABLE_SIZE];
         let mut offset = 0;
         for y in 0..FILTER_TABLE_WIDTH {
             for x in 0..FILTER_TABLE_WIDTH {
                 let p = Point2f::new(
-                    (x as Float + 0.5) * filter_data.radius.x / INV_FILTER_TABLE_WIDTH,
-                    (y as Float + 0.5) * filter_data.radius.y / INV_FILTER_TABLE_WIDTH,
+                    (x as Float + 0.5) * filter_data.radius.x * INV_FILTER_TABLE_WIDTH,
+                    (y as Float + 0.5) * filter_data.radius.y * INV_FILTER_TABLE_WIDTH,
                 );
                 filter_table[offset] = filter.evaluate(&p);
                 offset += 1;
@@ -440,7 +439,7 @@ impl From<(&ParamSet, ArcFilter)> for Film {
         Self::new(
             &Point2i::new(xres, yres),
             &crop,
-            Arc::clone(&filter),
+            filter,
             diagonal,
             &filename,
             Some(scale),

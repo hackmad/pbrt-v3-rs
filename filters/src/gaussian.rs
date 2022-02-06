@@ -41,7 +41,7 @@ impl GaussianFilter {
     /// * `d`    - Distance in x or y direction.
     /// * `expv` - Corresponding exponent `exp_x` or `exp_y`.
     fn gaussian(&self, d: Float, expv: Float) -> Float {
-        max(0.0, ((-self.alpha * d * d) - expv).exp())
+        max(0.0, (-self.alpha * d * d).exp() - expv)
     }
 }
 
