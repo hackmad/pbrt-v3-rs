@@ -7,7 +7,7 @@ MakeNamedMedium "vol"
 MediumInterface "" "vol"
 
 Film "image"
-     "integer xresolution" 350 "integer yresolution" 175
+     "integer xresolution" 800 "integer yresolution" 400
      "string filename" "renders/media/spotfog.png" 
 
 PixelFilter "triangle"
@@ -17,6 +17,7 @@ Camera "perspective" "float fov" 70
 
 Sampler "02sequence" "integer pixelsamples" 256
 Integrator "whitted"
+#Integrator "bdpt" "integer maxdepth" 8
 
 WorldBegin
 

@@ -10,3 +10,4 @@ edition = "2021"
 core = { path = "../core" }
 
 bumpalo = "3.9.1"
+log = "0.4.14"

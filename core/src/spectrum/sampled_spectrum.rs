@@ -22,7 +22,7 @@ pub const SPECTRAL_SAMPLES: usize = 60;
 ///
 /// The wavelength range covers human visual range of 400 nm to 700 nm and
 /// 60 samples is more than enough to accurately represent complex SPDs.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct SampledSpectrum {
     /// The sampled spectral values.
     c: [Float; SPECTRAL_SAMPLES],

@@ -13,7 +13,7 @@ pub const RGB_SAMPLES: usize = 3;
 
 /// RGBSpectrum represents an spectral power distribution (SPD) with
 /// a weighted sum of red, green and blue components.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct RGBSpectrum {
     /// The sampled spectral values.
     c: [Float; 3],
