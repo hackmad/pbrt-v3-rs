@@ -97,9 +97,13 @@ impl PbrtFileParser {
         }
     }
 
-    /// Parse a `include_stmt` rule of the grammar and call the API.
-    /// This will create a new parser to parse the included file and
-    /// parse it entirely while calling the API before returning.
+    /// Parse a `include_stmt` rule of the grammar and call the API. This will
+    /// create a new parser to parse the included file and parse it entirely while
+    /// calling the API before returning.
+    ///
+    /// The following is not supported yet:
+    ///
+    ///   Include "some.pbrt" "color Kd" [1 1 1]
     ///
     /// * `pairs` - The inner token pairs for matched `include_stmt` rule.
     /// * `api`   - The PBRT API interface.
