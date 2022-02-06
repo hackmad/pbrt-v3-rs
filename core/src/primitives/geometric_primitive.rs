@@ -38,14 +38,14 @@ impl GeometricPrimitive {
     ///                        inside and outside the primitive.
     pub fn new(
         shape: ArcShape,
-        material: ArcMaterial,
+        material: Option<ArcMaterial>,
         area_light: Option<ArcAreaLight>,
         medium_interface: MediumInterface,
     ) -> Self {
         Self {
-            shape: Arc::clone(&shape),
-            material: Some(Arc::clone(&material)),
-            area_light: area_light.clone(),
+            shape,
+            material,
+            area_light,
             medium_interface,
         }
     }

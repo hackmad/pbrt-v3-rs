@@ -113,25 +113,33 @@ impl GraphicsState {
     /// Returns a material for given shape parameters.
     ///
     /// * `geom_params` - Shape parameters.
-    pub fn get_material_for_shape(&self, geom_params: &ParamSet) -> Result<ArcMaterial, String> {
-        let current_material = self
-            .current_material
-            .as_ref()
-            .expect("GraphicsState has no current material");
-
-        if self.shape_may_set_material_parameters(geom_params) {
-            // Only create a unique material for the shape if the shape's
-            // parameters are (apparently) going to provide values for some of
-            // the material parameters.
-            let mp = TextureParams::new(
-                geom_params.clone(),
-                current_material.params.clone(),
-                self.float_textures.clone(),
-                self.spectrum_textures.clone(),
-            );
-            self.make_material(&current_material.name, &mp)
+    pub fn get_material_for_shape(&self, geom_params: &ParamSet) -> Option<ArcMaterial> {
+        if let Some(current_material) = self.current_material.as_ref() {
+            if self.shape_may_set_material_parameters(geom_params) {
+                // Only create a unique material for the shape if the shape's
+                // parameters are (apparently) going to provide values for some of
+                // the material parameters.
+                let mp = TextureParams::new(
+                    geom_params.clone(),
+                    current_material.params.clone(),
+                    self.float_textures.clone(),
+                    self.spectrum_textures.clone(),
+                );
+                match self.make_material(&current_material.name, &mp) {
+                    Ok(mat) => Some(mat),
+                    Err(err) => {
+                        error!(
+                            "Unable to create material '{}'. {}",
+                            current_material.name, err
+                        );
+                        None
+                    }
+                }
+            } else {
+                Some(Arc::clone(&current_material.material))
+            }
         } else {
-            Ok(Arc::clone(&current_material.material))
+            None
         }
     }
 
@@ -403,7 +411,7 @@ impl GraphicsState {
     /// * `paramset`     - Parameter set.
     pub fn make_medium(
         name: &str,
-        _medium2world: ArcTransform,
+        medium2world: ArcTransform,
         paramset: &ParamSet,
     ) -> Result<ArcMedium, String> {
         const SIG_A_RGB: [Float; 3] = [0.0011, 0.0024, 0.014];
@@ -438,21 +446,24 @@ impl GraphicsState {
                 if data.is_empty() {
                     Err("No 'density' values provided for heterogeneous medium.".to_string())
                 } else {
-                    let nx = paramset.find_one_int("nx", 1);
-                    let ny = paramset.find_one_int("ny", 1);
-                    let nz = paramset.find_one_int("nz", 1);
-                    let _p0 = paramset.find_one_point3f("p0", Point3f::new(0.0, 0.0, 0.0));
-                    let _p1 = paramset.find_one_point3f("p1", Point3f::new(1.0, 1.0, 1.0));
-                    if data.len() as Int != nx * ny * nz {
+                    let nx = paramset.find_one_int("nx", 1) as usize;
+                    let ny = paramset.find_one_int("ny", 1) as usize;
+                    let nz = paramset.find_one_int("nz", 1) as usize;
+                    let p0 = paramset.find_one_point3f("p0", Point3f::new(0.0, 0.0, 0.0));
+                    let p1 = paramset.find_one_point3f("p1", Point3f::new(1.0, 1.0, 1.0));
+                    if data.len() != nx * ny * nz {
                         Err(format!(
                             "GridDensityMedium has {} density values; expected nx * ny * nz = {}",
                             data.len(),
                             nx * ny * nz
                         ))
                     } else {
-                        //let data2medium = Transform::translate(&Vector3f::from(&p0)) * &Transform::scale(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z);
-                        //Ok(Arc::new(GridDensityMedium::new(sig_a, sig_s, g, nx, ny, nz, medium2world * data2medium, data));
-                        Err("GridDensityMedium mot implemented".to_string())
+                        let data2medium = Transform::translate(&Vector3f::from(p0))
+                            * &Transform::scale(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z);
+                        let m2w = medium2world * &data2medium;
+                        Ok(Arc::new(GridDensityMedium::new(
+                            sig_a, sig_s, g, nx, ny, nz, m2w, data,
+                        )))
                     }
                 }
             }

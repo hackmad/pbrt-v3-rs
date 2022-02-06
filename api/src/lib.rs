@@ -392,6 +392,10 @@ impl Api {
             self.render_options.camera_name = name;
             self.render_options.camera_params = params.clone();
             self.render_options.camera_to_world = self.current_transforms.inverse();
+            self.named_coordinate_systems.insert(
+                "camera".to_string(),
+                self.render_options.camera_to_world.clone(),
+            );
         }
     }
 
@@ -646,6 +650,8 @@ impl Api {
                     Arc::clone(&mtl),
                     params,
                 )))
+            } else {
+                self.graphics_state.current_material = None
             }
         }
     }
@@ -761,7 +767,7 @@ impl Api {
                     return;
                 }
 
-                let mtl = self.graphics_state.get_material_for_shape(params).unwrap();
+                let mtl = self.graphics_state.get_material_for_shape(params);
                 let mi = self.create_medium_interface();
 
                 for shape in shapes.iter() {
@@ -780,7 +786,7 @@ impl Api {
 
                     let prim = GeometricPrimitive::new(
                         Arc::clone(shape),
-                        Arc::clone(&mtl),
+                        mtl.as_ref().map(Arc::clone),
                         None,
                         mi.clone(),
                     );
@@ -812,13 +818,13 @@ impl Api {
                 }
 
                 // Create `GeometricPrimitive`(s) for animated shape.
-                let mtl = self.graphics_state.get_material_for_shape(params).unwrap();
+                let mtl = self.graphics_state.get_material_for_shape(params);
                 let mi = self.create_medium_interface();
 
                 for shape in shapes.iter() {
                     let prim = GeometricPrimitive::new(
                         Arc::clone(shape),
-                        Arc::clone(&mtl),
+                        mtl.as_ref().map(Arc::clone),
                         None,
                         mi.clone(),
                     );
