@@ -19,7 +19,7 @@ pub struct Bounds2<T: Num> {
     pub p_max: Point2<T>,
 }
 
-/// 2D bounding box containing `Float` points.
+/// 2-D bounding box containing `Float` points.
 pub type Bounds2f = Bounds2<Float>;
 impl Bounds2f {
     /// 2-D bounding box where minimum and maximum bounds are maximum and minimum
@@ -31,7 +31,7 @@ impl Bounds2f {
     };
 }
 
-/// 2D bounding box containing `Int` points.
+/// 2-D bounding box containing `Int` points.
 pub type Bounds2i = Bounds2<Int>;
 impl Bounds2i {
     /// 2-D bounding box where minimum and maximum bounds are maximum and minimum

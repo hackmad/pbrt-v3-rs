@@ -31,6 +31,18 @@ impl Bounds3f {
     };
 }
 
+/// 3-D bounding box containing `Int` points.
+pub type Bounds3i = Bounds3<Int>;
+impl Bounds3i {
+    /// 3-D bounding box where minimum and maximum bounds are maximum and minimum
+    /// floating point values. This is so we can easily grow the bounding box
+    /// from nothing iteratively.
+    pub const EMPTY: Self = Self {
+        p_min: Point3i::MAX,
+        p_max: Point3i::MIN,
+    };
+}
+
 impl<T: Num + PartialOrd + Copy> From<Point3<T>> for Bounds3<T> {
     /// Use a 3-D point as minimum and maximum 3-D bounds.
     ///

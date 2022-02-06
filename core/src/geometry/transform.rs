@@ -682,6 +682,36 @@ impl Mul<&Transform> for &Transform {
     }
 }
 
+impl Mul<&Transform> for ArcTransform {
+    type Output = Transform;
+
+    /// Composes this transformation with another one. The resulting transform
+    /// is the same as applying `self` then `rhs`.
+    ///
+    /// * `rhs` - The transformation to compose.
+    fn mul(self, rhs: &Transform) -> Self::Output {
+        Self::Output {
+            m: self.m * rhs.m,
+            m_inv: rhs.m_inv * self.m_inv,
+        }
+    }
+}
+
+impl Mul<ArcTransform> for Transform {
+    type Output = Transform;
+
+    /// Composes this transformation with another one. The resulting transform
+    /// is the same as applying `self` then `rhs`.
+    ///
+    /// * `rhs` - The transformation to compose.
+    fn mul(self, rhs: ArcTransform) -> Self::Output {
+        Self::Output {
+            m: self.m * rhs.m,
+            m_inv: rhs.m_inv * self.m_inv,
+        }
+    }
+}
+
 impl Hash for Transform {
     /// Feeds this value into the given `Hasher`.
     fn hash<H: Hasher>(&self, state: &mut H) {

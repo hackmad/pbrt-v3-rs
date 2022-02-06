@@ -47,6 +47,27 @@ impl Point3f {
     };
 }
 
+/// 3-D point containing `Int` values.
+pub type Point3i = Point3<Int>;
+impl Point3i {
+    /// Zero point.
+    pub const ZERO: Self = Self { x: 0, y: 0, z: 0 };
+
+    /// Point with all coordinates set to minimum floating point value.
+    pub const MIN: Self = Self {
+        x: Int::MIN,
+        y: Int::MIN,
+        z: Int::MIN,
+    };
+
+    /// Point with all coordinates set to maximum floating point value.
+    pub const MAX: Self = Self {
+        x: Int::MAX,
+        y: Int::MAX,
+        z: Int::MAX,
+    };
+}
+
 impl<T: Num> Point3<T> {
     /// Creates a new 3-D point.
     ///
@@ -496,6 +517,32 @@ impl<T> From<Vector3<T>> for Point3<T> {
             x: v.x,
             y: v.y,
             z: v.z,
+        }
+    }
+}
+
+impl From<Point3i> for Point3f {
+    /// Convert a `Point3i` to `Point3f`.
+    ///
+    /// * `b` - The `Point3i` to convert.
+    fn from(p: Point3i) -> Self {
+        Self {
+            x: p.x as Float,
+            y: p.y as Float,
+            z: p.z as Float,
+        }
+    }
+}
+
+impl From<Point3f> for Point3i {
+    /// Convert a `Point3f` to `Point3i`.
+    ///
+    /// * `b` - The `Point3f` to convert.
+    fn from(p: Point3f) -> Self {
+        Self {
+            x: p.x as Int,
+            y: p.y as Int,
+            z: p.z as Int,
         }
     }
 }
