@@ -12,6 +12,7 @@ filters = { path = "../filters" }
 integrators = { path = "../integrators" }
 lights = { path = "../lights" }
 materials = { path = "../materials" }
+media = { path = "../media" }
 samplers = { path = "../samplers" }
 shapes = { path = "../shapes" }
 textures = { path = "../textures" }

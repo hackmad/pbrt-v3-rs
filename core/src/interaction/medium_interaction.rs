@@ -5,19 +5,17 @@ use super::Hit;
 use crate::geometry::*;
 use crate::medium::*;
 use crate::pbrt::*;
-use std::sync::Arc;
 
 /// MediumInteraction represents an interaction point in a scattering medium.
-#[derive(Clone)]
-pub struct MediumInteraction {
+pub struct MediumInteraction<'arena> {
     /// The common interaction data.
     pub hit: Hit,
 
     /// The phase function.
-    pub phase: ArcPhaseFunction,
+    pub phase: &'arena mut PhaseFunction<'arena>,
 }
 
-impl MediumInteraction {
+impl<'arena> MediumInteraction<'arena> {
     /// Create a new medium interaction.
     ///
     /// * `p`      - The point of interaction.
@@ -30,8 +28,8 @@ impl MediumInteraction {
         p: Point3f,
         wo: Vector3f,
         time: Float,
-        medium: ArcMedium,
-        phase: ArcPhaseFunction,
+        medium: Option<ArcMedium>,
+        phase: &'arena mut PhaseFunction<'arena>,
     ) -> Self {
         Self {
             hit: Hit::new(
@@ -40,9 +38,9 @@ impl MediumInteraction {
                 Vector3f::ZERO,
                 wo,
                 Normal3f::ZERO,
-                Some(MediumInterface::from(medium)),
+                medium.map(|m| MediumInterface::from(m)),
             ),
-            phase: Arc::clone(&phase),
+            phase,
         }
     }
 }

@@ -17,6 +17,10 @@ pub use sampled_spectrum::*;
 #[cfg(not(feature = "sampled-spectrum"))]
 pub type Spectrum = RGBSpectrum;
 
+/// Number of samples used in `Spectrum`.
+#[cfg(not(feature = "sampled-spectrum"))]
+pub const SPECTRUM_SAMPLES: usize = RGB_SAMPLES;
+
 /// Use `SampledSpectrum` for rendering.
 ///
 /// Add the following to use SampledSpetrum in Cargo.toml
@@ -24,3 +28,7 @@ pub type Spectrum = RGBSpectrum;
 /// sampled-spectrum = []
 #[cfg(feature = "sampled-spectrum")]
 pub type Spectrum = SampledSpectrum;
+
+/// Number of samples used in `Spectrum`.
+#[cfg(feature = "sampled-spectrum")]
+pub const SPECTRUM_SAMPLES: usize = SPECTRAL_SAMPLES;

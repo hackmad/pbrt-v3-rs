@@ -195,7 +195,7 @@ pub fn estimate_direct(
             // Compute effect of visibility for light source sample.
             if let Some(vis) = visibility {
                 if handle_media {
-                    li *= vis.tr(scene, Arc::clone(sampler));
+                    li *= vis.tr(scene, sampler);
                 } else if !vis.unoccluded(scene) {
                     debug!("  visiblity tester: shadow ray blocked");
                     li = Spectrum::ZERO;
@@ -265,7 +265,7 @@ pub fn estimate_direct(
             // Find intersection and compute transmittance.
             let mut ray = hit.spawn_ray(&wi);
             let light_isect_and_tr = if handle_media {
-                scene.intersect_tr(&mut ray, Arc::clone(sampler))
+                scene.intersect_tr(&mut ray, sampler)
             } else {
                 scene
                     .intersect(&mut ray)

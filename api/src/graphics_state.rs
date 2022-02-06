@@ -20,6 +20,7 @@ use core::texture::*;
 use filters::*;
 use lights::*;
 use materials::*;
+use media::*;
 use samplers::*;
 use shapes::*;
 use std::rc::Rc;
@@ -401,11 +402,62 @@ impl GraphicsState {
     /// * `medium2world` - Medium to world space transform.
     /// * `paramset`     - Parameter set.
     pub fn make_medium(
-        _name: &str,
+        name: &str,
         _medium2world: ArcTransform,
-        _paramset: &ParamSet,
+        paramset: &ParamSet,
     ) -> Result<ArcMedium, String> {
-        Err(String::from("GraphicsState::make_medium() not implemented"))
+        const SIG_A_RGB: [Float; 3] = [0.0011, 0.0024, 0.014];
+        const SIG_S_RGB: [Float; 3] = [2.55, 3.21, 3.77];
+
+        let default_sig_a = Spectrum::from_rgb(&SIG_A_RGB, None);
+        let default_sig_s = Spectrum::from_rgb(&SIG_S_RGB, None);
+
+        let preset = paramset.find_one_string("preset", "".to_string());
+        let (sig_a, sig_s) = if !preset.is_empty() {
+            if let Some(mss) = get_medium_scattering_properties(&preset) {
+                // TODO: sigma_prime_s is `σs(1 − g)`. So applying it to sig_s
+                // seems incorrect.
+                (mss.sigma_a, mss.sigma_prime_s)
+            } else {
+                warn!("Material preset '{}' not found. Using defaults.", preset);
+                (default_sig_a, default_sig_s)
+            }
+        } else {
+            (default_sig_a, default_sig_s)
+        };
+
+        let scale = paramset.find_one_float("scale", 1.0);
+        let g = paramset.find_one_float("g", 0.0);
+        let sig_a = paramset.find_one_spectrum("sigma_a", sig_a) * scale;
+        let sig_s = paramset.find_one_spectrum("sigma_s", sig_s) * scale;
+
+        match name {
+            "homogeneous" => Ok(Arc::new(HomogeneousMedium::new(sig_a, sig_s, g))),
+            "heterogeneous" => {
+                let data = paramset.find_float("density");
+                if data.is_empty() {
+                    Err("No 'density' values provided for heterogeneous medium.".to_string())
+                } else {
+                    let nx = paramset.find_one_int("nx", 1);
+                    let ny = paramset.find_one_int("ny", 1);
+                    let nz = paramset.find_one_int("nz", 1);
+                    let _p0 = paramset.find_one_point3f("p0", Point3f::new(0.0, 0.0, 0.0));
+                    let _p1 = paramset.find_one_point3f("p1", Point3f::new(1.0, 1.0, 1.0));
+                    if data.len() as Int != nx * ny * nz {
+                        Err(format!(
+                            "GridDensityMedium has {} density values; expected nx * ny * nz = {}",
+                            data.len(),
+                            nx * ny * nz
+                        ))
+                    } else {
+                        //let data2medium = Transform::translate(&Vector3f::from(&p0)) * &Transform::scale(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z);
+                        //Ok(Arc::new(GridDensityMedium::new(sig_a, sig_s, g, nx, ny, nz, medium2world * data2medium, data));
+                        Err("GridDensityMedium mot implemented".to_string())
+                    }
+                }
+            }
+            _ => Err(format!("Medium '{}' unknown.", name)),
+        }
     }
 
     /// Creates a light.
@@ -557,7 +609,7 @@ impl GraphicsState {
                     paramset,
                     &animated_cam2world,
                     film,
-                    medium_interface.outside.clone(),
+                    medium_interface.outside.as_ref().map(Arc::clone),
                     self.cwd.as_ref(),
                 );
                 Ok(Arc::new(RealisticCamera::from(p)))
@@ -567,7 +619,7 @@ impl GraphicsState {
                     paramset,
                     &animated_cam2world,
                     film,
-                    medium_interface.outside.clone(),
+                    medium_interface.outside.as_ref().map(Arc::clone),
                 );
                 match name {
                     "environment" => Ok(Arc::new(EnvironmentCamera::from(p))),
@@ -614,7 +666,7 @@ impl GraphicsState {
             "mitchell" => Ok(Arc::new(MitchellFilter::from(paramset))),
             "sinc" => Ok(Arc::new(LanczosSincFilter::from(paramset))),
             "triangle" => Ok(Arc::new(TriangleFilter::from(paramset))),
-            _ => Err(format!("Sampler '{}' unknown.", name)),
+            _ => Err(format!("Filter '{}' unknown.", name)),
         }
     }
 

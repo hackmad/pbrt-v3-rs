@@ -8,6 +8,7 @@ members = [
     "integrators",
     "lights",
     "materials",
+    "media",
     "pbr-rust",
     "samplers",
     "shapes",

@@ -4,7 +4,6 @@ use crate::interaction::*;
 use crate::sampler::*;
 use crate::scene::*;
 use crate::spectrum::*;
-use std::sync::Arc;
 
 /// VisibilityTester allows lights to return a radiance value under the
 /// assumption that the reference point and light source are mutually
@@ -41,7 +40,7 @@ impl VisibilityTester {
     ///
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
-    pub fn tr(&self, scene: &Scene, sampler: ArcSampler) -> Spectrum {
+    pub fn tr(&self, scene: &Scene, sampler: &mut ArcSampler) -> Spectrum {
         let mut ray = self.p0.spawn_ray_to_hit(&self.p1);
         let mut tr = Spectrum::ONE;
 
@@ -54,7 +53,7 @@ impl VisibilityTester {
 
                 // Update transmittance for current ray segment.
                 let medium = ray.medium.clone();
-                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, Arc::clone(&sampler))) {
+                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, sampler)) {
                     tr *= tr2;
                 }
 
@@ -63,7 +62,7 @@ impl VisibilityTester {
             } else {
                 // Update transmittance for current ray segment.
                 let medium = ray.medium.clone();
-                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, Arc::clone(&sampler))) {
+                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, sampler)) {
                     tr *= tr2;
                 }
                 break;

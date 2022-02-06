@@ -216,6 +216,11 @@ pub trait CoefficientSpectrum:
         }
         debug_assert!(!self.has_nans());
     }
+
+    /// Sets sample values `v` to `e^v`.
+    ///
+    /// * `other` - The other SPD.
+    fn exp(&self) -> Self;
 }
 
 /// Determines if given vector containing wavelengths is sorted.

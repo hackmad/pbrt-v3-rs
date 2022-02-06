@@ -233,6 +233,18 @@ impl CoefficientSpectrum for SampledSpectrum {
     fn to_rgb_spectrum(&self) -> RGBSpectrum {
         RGBSpectrum::from(self.to_rgb())
     }
+
+    /// Sets sample values `v` to `e^v`.
+    ///
+    /// * `other` - The other SPD.
+    fn exp(&self) -> Self {
+        let mut ret = self.clone();
+        for s in ret.samples_mut().iter_mut() {
+            *s = s.exp();
+        }
+        debug_assert!(!ret.has_nans());
+        ret
+    }
 }
 
 impl Add for SampledSpectrum {

@@ -159,7 +159,6 @@ impl PbrtFileParser {
         let rule = next_pair.as_rule();
         let mut inner_rules = next_pair.into_inner();
 
-        // TODO Create the appropriate objects via the API.
         match rule {
             Rule::accelerator_stmt => {
                 self.parse_named_param_list(&mut inner_rules, "Accelerator", api)
@@ -174,6 +173,9 @@ impl PbrtFileParser {
                 self.parse_named_param_list(&mut inner_rules, "MakeNamedMedium", api)
             }
             Rule::sampler_stmt => self.parse_named_param_list(&mut inner_rules, "Sampler", api),
+            Rule::pixel_filter_stmt => {
+                self.parse_named_param_list(&mut inner_rules, "PixelFilter", api)
+            }
             _ => unreachable!(),
         }
     }
@@ -187,7 +189,6 @@ impl PbrtFileParser {
         let rule = next_pair.as_rule();
         let mut inner_rules = next_pair.into_inner();
 
-        // TODO Create the appropriate objects via the API.
         match rule {
             Rule::area_light_source_stmt => {
                 self.parse_named_param_list(&mut inner_rules, "AreaLightSource", api)
@@ -221,8 +222,12 @@ impl PbrtFileParser {
             }
             Rule::reverse_orientation_stmt => api.pbrt_reverse_orientation(),
             Rule::medium_interface_stmt => {
-                let inside_medium = inner_rules.next().unwrap().as_str().to_string();
-                let outside_medium = inner_rules.next().unwrap().as_str().to_string();
+                let inside_medium = self.parse_quoted_str(&mut inner_rules);
+                let outside_medium = if inner_rules.peek().is_some() {
+                    self.parse_quoted_str(&mut inner_rules)
+                } else {
+                    "".to_string()
+                };
                 debug!("MediumInterface: '{}', '{}'", inside_medium, outside_medium);
                 api.pbrt_medium_interface(inside_medium, outside_medium);
             }
@@ -386,6 +391,7 @@ impl PbrtFileParser {
             "MakeNamedMaterial" => api.pbrt_make_named_material(name, &params),
             "Material" => api.pbrt_material(name, &params),
             "Shape" => api.pbrt_shape(name, &params),
+            "PixelFilter" => api.pbrt_pixel_filter(name, &params),
             _ => warn!("'{}' not supported", option_name),
         }
     }
@@ -781,7 +787,7 @@ impl PbrtFileParser {
 
     /// Parse an `float_list_expr` rule of the grammar and return a `Vec<Float>`.
     ///
-    /// * `pairs`  - The inner token pairs for matched `float_list_expr` rule.
+    /// * `pairs` - The inner token pairs for matched `float_list_expr` rule.
     fn parse_float_list(&self, pairs: Pairs<Rule>) -> Vec<Float> {
         let mut v: Vec<Float> = vec![];
         for pair in pairs {
@@ -795,7 +801,7 @@ impl PbrtFileParser {
 
     /// Parse an `int_list_expr` rule of the grammar and return a `Vec<Int>`.
     ///
-    /// * `pairs`  - The inner token pairs for matched `int_list_expr` rule.
+    /// * `pairs` - The inner token pairs for matched `int_list_expr` rule.
     fn parse_int_list(&self, pairs: Pairs<Rule>) -> Vec<Int> {
         let mut v: Vec<Int> = vec![];
         for pair in pairs {
@@ -809,7 +815,7 @@ impl PbrtFileParser {
 
     /// Parse an `quoted_str_list_expr` rule of the grammar and return a `Vec<String>`.
     ///
-    /// * `pairs`  - The inner token pairs for matched `quoted_str_list_expr` rule.
+    /// * `pairs` - The inner token pairs for matched `quoted_str_list_expr` rule.
     fn parse_quoted_str_list(&self, pairs: Pairs<Rule>) -> Vec<String> {
         let mut v: Vec<String> = vec![];
         for pair in pairs {
@@ -826,7 +832,7 @@ impl PbrtFileParser {
 
     /// Parse an `quoted_bool_list_expr` rule of the grammar and return a `Vec<String>`.
     ///
-    /// * `pairs`  - The inner token pairs for matched `quoted_bool_list_expr` rule.
+    /// * `pairs` - The inner token pairs for matched `quoted_bool_list_expr` rule.
     fn parse_quoted_bool_list(&self, pairs: Pairs<Rule>) -> Vec<bool> {
         let mut v: Vec<bool> = vec![];
         for pair in pairs {
@@ -844,7 +850,7 @@ impl PbrtFileParser {
     /// Parse a `quoted_str` rule of the grammar and return the unquoted
     /// `String` value.
     ///
-    /// * `pairs`  - The inner token pairs for matched `quoted_str` rule.
+    /// * `pairs` - The inner token pairs for matched `quoted_str` rule.
     fn parse_quoted_str(&self, pairs: &mut Pairs<Rule>) -> String {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
@@ -859,7 +865,7 @@ impl PbrtFileParser {
     /// Parse a `quoted_ident` rule of the grammar and return the unquoted
     /// `String` value.
     ///
-    /// * `pairs`  - The inner token pairs for matched `quoted_ident` rule.
+    /// * `pairs` - The inner token pairs for matched `quoted_ident` rule.
     fn parse_quoted_ident(&self, pairs: &mut Pairs<Rule>) -> String {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
@@ -874,7 +880,7 @@ impl PbrtFileParser {
     /// Parse a `quoted_bool` rule of the grammar and return the unquoted
     /// `bool` value.
     ///
-    /// * `pairs`  - The inner token pairs for matched `quoted_bool` rule.
+    /// * `pairs` - The inner token pairs for matched `quoted_bool` rule.
     fn parse_quoted_bool(&self, pairs: &mut Pairs<Rule>) -> bool {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
@@ -888,7 +894,7 @@ impl PbrtFileParser {
 
     /// Parse an `float_expr` or `float` rule of the grammar and return an `Float`.
     ///
-    /// * `pairs`  - The inner token pairs for matched `float_expr` or `float` rule.
+    /// * `pairs` - The inner token pairs for matched `float_expr` or `float` rule.
     fn parse_float(&self, pair: Pair<Rule>) -> Float {
         // Parse string to float. The unwrap shouldn't fail if our pest
         // grammar is correct.
@@ -905,7 +911,7 @@ impl PbrtFileParser {
 
     /// Parse an `int_expr` or `int` rule of the grammar and return an `Int`.
     ///
-    /// * `pairs`  - The inner token pairs for matched `int_expr` or `int` rule.
+    /// * `pairs` - The inner token pairs for matched `int_expr` or `int` rule.
     fn parse_int(&self, pair: Pair<Rule>) -> Int {
         // Parse string to int. The unwrap shouldn't fail if our pest
         // grammar is correct.
@@ -922,7 +928,7 @@ impl PbrtFileParser {
 
     /// Parse a `str` rule of the grammar and return the `String` value.
     ///
-    /// * `pairs`  - The inner token pairs for matched `str` rule.
+    /// * `pairs` - The inner token pairs for matched `str` rule.
     fn parse_str(&self, pairs: &mut Pairs<Rule>) -> String {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
@@ -933,7 +939,7 @@ impl PbrtFileParser {
 
     /// Parse an `ident` rule of the grammar and return the `String` value.
     ///
-    /// * `pairs`  - The inner token pairs for matched `ident` rule.
+    /// * `pairs` - The inner token pairs for matched `ident` rule.
     fn parse_ident(&self, pairs: &mut Pairs<Rule>) -> String {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {
@@ -944,7 +950,7 @@ impl PbrtFileParser {
 
     /// Parse a `bool` rule of the grammar and return a `bool`.
     ///
-    /// * `pairs`  - The inner token pairs for matched `bool` rule.
+    /// * `pairs` - The inner token pairs for matched `bool` rule.
     fn parse_bool(&self, pairs: &mut Pairs<Rule>) -> bool {
         let next_pair = pairs.next().unwrap();
         match next_pair.as_rule() {

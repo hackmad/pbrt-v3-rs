@@ -26,7 +26,7 @@ pub enum Interaction<'primitive, 'arena> {
     },
 
     /// Represents an interaction point in a scattering medium.
-    Medium { mi: MediumInteraction },
+    Medium { mi: MediumInteraction<'arena> },
 }
 
 impl<'primitive, 'arena> Interaction<'primitive, 'arena> {

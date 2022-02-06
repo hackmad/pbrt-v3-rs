@@ -403,11 +403,11 @@ impl Api {
         if self.verify_initialized("MakeNamedMedium") {
             self.warn_if_animated_transform("MakeNamedMedium");
 
-            let medium_type = params.find_one_string("type", String::new());
-            if medium_type.is_empty() {
+            let medium_name = params.find_one_string("type", String::new());
+            if medium_name.is_empty() {
                 error!("No parameter string 'type' found in MakeNamedMedium.");
             } else if let Ok(medium) =
-                GraphicsState::make_medium(&name, self.current_transforms[0].clone(), params)
+                GraphicsState::make_medium(&medium_name, self.current_transforms[0].clone(), params)
             {
                 self.render_options.named_media.insert(name, medium);
             }
@@ -420,8 +420,16 @@ impl Api {
     /// * `outside_name` - Outside medium name.
     pub fn pbrt_medium_interface(&mut self, inside_name: String, outside_name: String) {
         if self.verify_initialized("MediumInterface") {
-            self.graphics_state.current_inside_medium = Some(inside_name);
-            self.graphics_state.current_outside_medium = Some(outside_name);
+            self.graphics_state.current_inside_medium = if !inside_name.is_empty() {
+                Some(inside_name)
+            } else {
+                None
+            };
+            self.graphics_state.current_outside_medium = if !outside_name.is_empty() {
+                Some(outside_name)
+            } else {
+                None
+            };
             self.render_options.have_scattering_media = true;
         }
     }
@@ -1021,35 +1029,24 @@ impl Api {
         }
     }
 
-    /// Returns a named medium or `None` for the given name.
-    ///
-    /// * `name` - Medium name.
-    /// * `side` - Used to report an error if medium not found.
-    fn get_named_medium(&self, name: Option<String>, side: &str) -> Option<ArcMedium> {
+    /// Returns named medium or None.
+    fn get_named_medium(&self, name: &Option<String>) -> Option<ArcMedium> {
         match name {
-            Some(n) => {
-                if n.is_empty() {
-                    error!("Medium name is empty string for side '{}'.", side);
-                    None
-                } else if let Some(medium) = self.render_options.named_media.get(&n) {
-                    Some(medium.clone())
-                } else {
-                    error!("Named medium '{}' undefined for side '{}'.", n, side);
-                    None
+            Some(name) if !name.is_empty() => {
+                let medium = self.render_options.named_media.get(name).map(Arc::clone);
+                if medium.is_none() {
+                    error!("Named medium '{}' undefined.", name);
                 }
+                medium
             }
-            None => None,
+            _ => None,
         }
     }
 
     /// Creates a new medium interface.
     fn create_medium_interface(&self) -> MediumInterface {
-        let inside =
-            self.get_named_medium(self.graphics_state.current_inside_medium.clone(), "inside");
-        let outside = self.get_named_medium(
-            self.graphics_state.current_outside_medium.clone(),
-            "outside",
-        );
+        let inside = self.get_named_medium(&self.graphics_state.current_inside_medium);
+        let outside = self.get_named_medium(&self.graphics_state.current_outside_medium);
         MediumInterface::new(inside, outside)
     }
 }

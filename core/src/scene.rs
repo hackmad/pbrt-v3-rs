@@ -72,7 +72,7 @@ impl Scene {
     pub fn intersect_tr(
         &self,
         ray: &mut Ray,
-        sampler: ArcSampler,
+        sampler: &mut ArcSampler,
     ) -> Option<(SurfaceInteraction, Spectrum)> {
         let mut tr = Spectrum::ONE;
 
@@ -81,7 +81,7 @@ impl Scene {
 
             // Accumulate beam transmittance for ray segment
             if let Some(medium) = &ray.medium {
-                tr *= medium.tr(ray, Arc::clone(&sampler));
+                tr *= medium.tr(ray, sampler);
             }
 
             // Initialize next ray segment or terminate transmittance computation.

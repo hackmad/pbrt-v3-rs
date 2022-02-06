@@ -2,15 +2,19 @@
 
 #![allow(dead_code)]
 use crate::geometry::*;
+use crate::interaction::MediumInteraction;
 use crate::sampler::*;
 use crate::spectrum::*;
+use bumpalo::Bump;
 use std::sync::Arc;
 
 mod henyey_greenstein;
+mod measured_ss;
 mod phase_function;
 
 // Re-exports
 pub use henyey_greenstein::*;
+pub use measured_ss::*;
 pub use phase_function::*;
 
 /// Medium trait to handle volumetric scattering properties.
@@ -19,7 +23,26 @@ pub trait Medium {
     ///
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
-    fn tr(&self, ray: &Ray, sampler: ArcSampler) -> Spectrum;
+    fn tr(&self, ray: &Ray, sampler: &mut ArcSampler) -> Spectrum;
+
+    /// Samples a medium scattering interaction along a world-space ray.
+    ///
+    /// The ray will generally have been intersected against the scene geometry;
+    /// thus, implementations of this method shouldn’t ever sample a medium
+    /// interaction at a point on the ray beyond its `t_max` value.
+    ///
+    /// NOTE: Calling code will need to assign this medium as we cannot pass
+    /// back and `ArcMedium` out of here for `Self`.
+    ///
+    /// * `arena`   - The arena for memory allocations.
+    /// * `ray`     - The ray.
+    /// * `sampler` - The sampler.
+    fn sample<'arena>(
+        &self,
+        arena: &'arena Bump,
+        ray: &Ray,
+        sampler: &mut ArcSampler,
+    ) -> (Spectrum, Option<MediumInteraction<'arena>>);
 }
 
 /// Atomic reference counted `Medium`.

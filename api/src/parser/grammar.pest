@@ -7,15 +7,18 @@ stmt = {
 
 empty_stmt = { WHITESPACE* ~ NEWLINE }
 
+
 comment_stmt = @{ comment }
 comment = { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE? }
 
 stmt_end = _{ WHITESPACE_OR_NEWLINE+ | comment? }
 
+
 block_stmt = {
     world_begin_stmt | world_end_stmt | attribute_begin_stmt | attribute_end_stmt
     | object_begin_stmt | object_end_stmt | transform_begin_stmt | transform_end_stmt
 }
+
 world_begin_stmt = { "WorldBegin" ~ stmt_end }
 world_end_stmt = { "WorldEnd" ~ stmt_end }
 
@@ -30,10 +33,12 @@ object_end_stmt = { "ObjectEnd" ~ stmt_end }
 
 include_stmt = { "Include" ~ quoted_str_expr }
 
+
 option_stmt = {
     accelerator_stmt | camera_stmt | film_stmt | filter_stmt | integrator_stmt
-    | make_named_medium_stmt | sampler_stmt
+    | make_named_medium_stmt | sampler_stmt | pixel_filter_stmt
 }
+
 accelerator_stmt = { "Accelerator" ~ quoted_str ~ stmt_end? ~ param_list? }
 camera_stmt = { "Camera" ~ quoted_str ~ stmt_end? ~ param_list? }
 film_stmt = { "Film" ~ quoted_str ~ stmt_end? ~ param_list? }
@@ -41,6 +46,8 @@ filter_stmt = { "Filter" ~ quoted_str ~ stmt_end? ~ param_list? }
 integrator_stmt = { "Integrator" ~ quoted_str ~ stmt_end? ~ param_list? }
 make_named_medium_stmt = { "MakeNamedMedium" ~ quoted_str ~ stmt_end? ~ param_list? }
 sampler_stmt = { "Sampler" ~ quoted_str ~ stmt_end? ~ param_list? }
+pixel_filter_stmt = { "PixelFilter" ~ quoted_str ~ stmt_end? ~ param_list? }
+
 
 scene_stmt = {
     area_light_source_stmt | light_source_stmt | make_named_material_stmt
@@ -48,6 +55,7 @@ scene_stmt = {
     | object_instance_stmt | reverse_orientation_stmt | medium_interface_stmt 
     | active_transform_stmt | transform_type
 }
+
 area_light_source_stmt = { "AreaLightSource" ~ quoted_str ~ stmt_end?  ~ param_list? }
 light_source_stmt = { "LightSource" ~ quoted_str ~ stmt_end?  ~ param_list? }
 make_named_material_stmt = { "MakeNamedMaterial" ~ quoted_str ~ stmt_end?  ~ param_list? }
@@ -65,18 +73,18 @@ named_material_stmt = { "NamedMaterial" ~ quoted_ident_expr }
 object_instance_stmt = { "ObjectInstance" ~ quoted_ident_expr }
 reverse_orientation_stmt = { "ReverseOrientation" ~ stmt_end }
 
-medium_interface_stmt = { "MediumInterface" ~ quoted_medium_type ~ quoted_ident_expr }
-quoted_medium_type = { QUOTATION_MARK ~ medium_type ~ QUOTATION_MARK }
-medium_type = { "inside" | "outside" | "" }
+medium_interface_stmt = { "MediumInterface" ~ quoted_str ~ (stmt_end? ~ quoted_str)? ~ stmt_end }
 
 active_transform_stmt = { "ActiveTransform" ~ transform_type ~ stmt_end }
 transform_type = { "StartTime" | "EndTime" | "All" }
+
 
 ctm_stmt = {
     identity_stmt | translate_stmt | scale_stmt | rotate_stmt | look_at_stmt
     | coordinate_system_stmt | coord_sys_transform_stmt | transform_stmt
     | concat_transform_stmt | transform_times_stmt
 }
+
 identity_stmt = { "Identity" ~ stmt_end }
 translate_stmt = { "Translate" ~ float_expr{3} }
 scale_stmt = { "Scale" ~ float_expr{3} }
@@ -178,7 +186,7 @@ blackbody_type = { "blackbody" }
 texture_type = { "texture" }
 
 float = @{ float_no_int_before_period | float_int_before_period }
-float_no_int_before_period = { "." ~ ASCII_DIGIT+ ~ (^"e" ~ int)?  }
+float_no_int_before_period = { ("+" | "-")? ~ "." ~ ASCII_DIGIT+ ~ (^"e" ~ int)?  }
 float_int_before_period = { int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
 int = { ("+" | "-")? ~ ASCII_DIGIT+ }
 str = { (!QUOTATION_MARK ~ ANY)* }
@@ -233,6 +241,7 @@ quoted_bool_list_expr = {
     ~ "]"
     ~ stmt_end
 }
+
 
 WHITESPACE = _{ " " | "\t" }
 WHITESPACE_OR_NEWLINE = _{ WHITESPACE | NEWLINE }
