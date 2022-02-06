@@ -8,6 +8,7 @@ use core::paramset::*;
 use core::pbrt::*;
 use core::sampling::*;
 use std::mem::swap;
+use std::sync::Arc;
 
 /// Perspective camera.
 pub struct PerspectiveCamera {
@@ -131,7 +132,7 @@ impl Camera for PerspectiveCamera {
             Vector3f::from(p_camera).normalize(),
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            self.data.medium.clone(),
+            self.data.medium.as_ref().map(Arc::clone),
         );
 
         // Modify ray for depth of field.
@@ -170,7 +171,7 @@ impl Camera for PerspectiveCamera {
             Vector3f::from(p_camera).normalize(),
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            self.data.medium.clone(),
+            self.data.medium.as_ref().map(Arc::clone),
         );
 
         // Modify ray for depth of field.
@@ -295,7 +296,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Perspect
             focal_distance,
             fov,
             film,
-            medium.clone(),
+            medium,
         )
     }
 }

@@ -8,6 +8,7 @@ use core::paramset::*;
 use core::pbrt::*;
 use core::sampling::*;
 use std::mem::swap;
+use std::sync::Arc;
 
 /// Orthographic camera.
 pub struct OrthographicCamera {
@@ -94,7 +95,7 @@ impl Camera for OrthographicCamera {
             Vector3f::new(0.0, 0.0, 1.0),
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            self.data.medium.clone(),
+            self.data.medium.as_ref().map(Arc::clone),
         );
 
         // Modify ray for depth of field.
@@ -133,7 +134,7 @@ impl Camera for OrthographicCamera {
             Vector3f::new(0.0, 0.0, 1.0),
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            self.data.medium.clone(),
+            self.data.medium.as_ref().map(Arc::clone),
         );
 
         // Modify ray for depth of field.
@@ -246,7 +247,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Orthogra
             lens_radius,
             focal_distance,
             film,
-            medium.clone(),
+            medium,
         )
     }
 }

@@ -7,6 +7,7 @@ use core::medium::*;
 use core::paramset::*;
 use core::pbrt::*;
 use std::mem::swap;
+use std::sync::Arc;
 
 // Environment camera.
 pub struct EnvironmentCamera {
@@ -58,7 +59,7 @@ impl Camera for EnvironmentCamera {
             dir,
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            self.data.medium.clone(),
+            self.data.medium.as_ref().map(Arc::clone),
         );
 
         (self.data.camera_to_world.transform_ray(&ray), 1.0)
@@ -94,12 +95,6 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Environm
             swap(&mut shutter_close, &mut shutter_open);
         }
 
-        Self::new(
-            cam2world.clone(),
-            shutter_open,
-            shutter_close,
-            film,
-            medium.clone(),
-        )
+        Self::new(cam2world.clone(), shutter_open, shutter_close, film, medium)
     }
 }

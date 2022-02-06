@@ -12,6 +12,7 @@ use core::pbrt::*;
 use core::reflection::*;
 use rayon::prelude::*;
 use std::mem::swap;
+use std::sync::Arc;
 
 /// Number of samples for exit pupil bounds.
 const N_SAMPLES: usize = 64_usize;
@@ -642,7 +643,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>, &str)> for Re
             simple_weighting,
             &lens_data,
             film,
-            medium.clone(),
+            medium,
         )
     }
 }
@@ -676,7 +677,7 @@ impl Camera for RealisticCamera {
             p_rear - p_film,
             INFINITY,
             lerp(sample.time, self.data.shutter_open, self.data.shutter_close),
-            self.data.medium.clone(),
+            self.data.medium.as_ref().map(Arc::clone),
         );
 
         if let Some(ray) = self.trace_lenses_from_film(&r_film) {
