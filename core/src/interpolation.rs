@@ -348,8 +348,7 @@ pub fn integrate_catmull_rom(x: &[Float], values: &[Float]) -> (Vec<Float>, Floa
 /// * `values` - Value of the function.
 /// * `u`      - Uniform random variate ξ.
 #[allow(non_snake_case)]
-#[allow(unused)]
-fn invert_catmull_rom(x: &[Float], values: &[Float], u: Float) -> Float {
+pub fn invert_catmull_rom(x: &[Float], values: &[Float], u: Float) -> Float {
     let n = x.len();
 
     // Stop when `u` is out of bounds.

@@ -12,7 +12,7 @@ pub struct MeasuredSS {
     /// for Henyey-Greenstein phase function.
     pub sigma_prime_s: Spectrum,
 
-    /// Absorption cross section `σa` in mm^-1.
+    /// Absorption coefficient `σa` in mm^-1.
     pub sigma_a: Spectrum,
 }
 
@@ -23,7 +23,7 @@ impl MeasuredSS {
     ///                     Where `σs` is the scattering coefficient and `g`
     ///                     is the asymmetry parameter for Henyey-Greenstein
     ///                     phase function.
-    /// * `sigma_a`       - Absorption cross section `σa` in mm^-1.
+    /// * `sigma_a`       - Absorption coefficient `σa` in mm^-1.
     pub fn new(sigma_prime_s: &[Float; 3], sigma_a: &[Float; 3]) -> Self {
         Self {
             sigma_prime_s: Spectrum::from_rgb(sigma_prime_s, None),

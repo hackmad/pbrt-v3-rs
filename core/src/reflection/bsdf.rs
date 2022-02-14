@@ -5,6 +5,7 @@ use super::*;
 use crate::interaction::*;
 use crate::rng::*;
 use bitflags::bitflags;
+use bumpalo::collections::vec::Vec as BumpVec;
 use bumpalo::Bump;
 use std::fmt;
 
@@ -90,7 +91,7 @@ pub struct BSDF<'arena> {
     /// arena (bumpalo::Bump). Using bumpalo's collection vector for efficient
     /// allocations from the memory arena instead of standard library Vec
     /// allocating from heap.
-    pub bxdfs: bumpalo::collections::Vec<'arena, &'arena mut BxDF<'arena>>,
+    pub bxdfs: BumpVec<'arena, &'arena mut BxDF<'arena>>,
 
     /// Relative index of refraction over the surfaceboundary.
     pub eta: Float,
@@ -115,7 +116,7 @@ impl<'arena> BSDF<'arena> {
         let ng = si.hit.n;
         let ss = si.shading.dpdu.normalize();
         let ts = Vector3::from(ns).cross(&ss);
-        let bxdfs = bumpalo::collections::Vec::with_capacity_in(MAX_BXDFS, arena);
+        let bxdfs = BumpVec::with_capacity_in(MAX_BXDFS, arena);
 
         arena.alloc(Self {
             eta,

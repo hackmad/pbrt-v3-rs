@@ -2,7 +2,6 @@
 
 #![allow(dead_code)]
 use super::Hit;
-use crate::bssrdf::*;
 use crate::geometry::*;
 use crate::material::*;
 use crate::pbrt::*;
@@ -37,9 +36,6 @@ pub struct SurfaceInteraction<'primitive, 'arena> {
 
     /// The BSDF.
     pub bsdf: Option<&'arena mut BSDF<'arena>>,
-
-    /// The BSSRDF.
-    pub bssrdf: Option<ArcBSSRDF>,
 
     /// The primitive.
     pub primitive: Option<&'primitive dyn Primitive>,
@@ -103,7 +99,6 @@ impl<'primitive, 'arena> SurfaceInteraction<'primitive, 'arena> {
             shading: Shading::new(n, dpdu, dpdv, dndu, dndv),
             shape_data,
             bsdf: None,
-            bssrdf: None,
             primitive: None,
             face_index,
         }
@@ -256,8 +251,8 @@ impl<'primitive, 'arena> SurfaceInteraction<'primitive, 'arena> {
         }
     }
 
-    /// Clones all the fields except for BSDF which should be allocated with
-    /// a memory arena.
+    /// Clones all the fields except for BSDF/BSSRDF which should be allocated
+    /// with a memory arena.
     pub fn clone_without_bsdf(&self) -> Self {
         Self {
             hit: self.hit.clone(),
@@ -266,7 +261,6 @@ impl<'primitive, 'arena> SurfaceInteraction<'primitive, 'arena> {
             shading: self.shading.clone(),
             shape_data: self.shape_data.clone(),
             bsdf: None,
-            bssrdf: self.bssrdf.as_ref().map(Arc::clone),
             primitive: self.primitive,
             face_index: self.face_index,
         }

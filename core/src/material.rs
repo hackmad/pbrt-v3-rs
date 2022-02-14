@@ -7,7 +7,7 @@ use crate::texture::*;
 use bumpalo::Bump;
 use std::sync::Arc;
 
-// TransportMode enumeration.
+// Light transport mode enumeration.
 #[derive(Copy, Clone, PartialEq)]
 pub enum TransportMode {
     /// Indicates incident ray that intersected a point started at the camera.
