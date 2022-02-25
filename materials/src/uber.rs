@@ -145,12 +145,12 @@ impl Material for UberMaterial {
             .clamp_default();
         let t = (-op + Spectrum::ONE).clamp_default();
         let bsdf = if !t.is_black() {
-            let bsdf = BSDF::alloc(arena, &si, Some(1.0));
+            let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, Some(1.0));
             let tr = SpecularTransmission::alloc(arena, t, 1.0, 1.0, mode);
             bsdf.add(tr);
             bsdf
         } else {
-            BSDF::alloc(arena, &si, Some(e))
+            BSDF::alloc(arena, &si.hit, &si.shading, Some(e))
         };
 
         let kd = op * self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();

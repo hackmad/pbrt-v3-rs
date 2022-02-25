@@ -100,21 +100,23 @@ pub struct BSDF<'arena> {
 impl<'arena> BSDF<'arena> {
     /// Allocates a new `BSDF`.
     ///
-    /// * `arena` - The arena for memory allocations.
-    /// * `si`    - The differential geometry at the point on a surface.
-    /// * `eta`   - Optional relative index of refraction over the surface
-    ///             boundary. If not provided, defaults to 1.0; used for
-    ///             opaque surfaces.
+    /// * `arena`   - The arena for memory allocations.
+    /// * `hit`     - The surface interaction hit.
+    /// * `shading` - The surface interacton shading.
+    /// * `eta`     - Optional relative index of refraction over the surface
+    ///               boundary. If not provided, defaults to 1.0; used for
+    ///               opaque surfaces.
     #[allow(clippy::mut_from_ref)]
     pub fn alloc(
         arena: &'arena Bump,
-        si: &SurfaceInteraction,
+        hit: &Hit,
+        shading: &Shading,
         eta: Option<Float>,
     ) -> &'arena mut Self {
         let eta = eta.map_or_else(|| 1.0, |e| e);
-        let ns = si.shading.n;
-        let ng = si.hit.n;
-        let ss = si.shading.dpdu.normalize();
+        let ns = shading.n.clone();
+        let ng = hit.n.clone();
+        let ss = shading.dpdu.normalize();
         let ts = Vector3::from(ns).cross(&ss);
         let bxdfs = BumpVec::with_capacity_in(MAX_BXDFS, arena);
 

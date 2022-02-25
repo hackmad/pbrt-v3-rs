@@ -65,7 +65,7 @@ impl Material for MatteMaterial {
             Material::bump(self, bump_map, si);
         }
 
-        let bsdf = BSDF::alloc(arena, &si, None);
+        let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, None);
 
         // Evaluate textures for `MatteMaterial` material and allocate BRDF.
         let r = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();

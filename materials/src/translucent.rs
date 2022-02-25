@@ -96,7 +96,7 @@ impl Material for TranslucentMaterial {
         }
 
         const ETA: Float = 1.5;
-        let bsdf = BSDF::alloc(arena, &si, Some(ETA));
+        let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, Some(ETA));
 
         // Evaluate textures for `TranslucentMaterial` material and allocate BRDF.
         let r = self

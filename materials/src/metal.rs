@@ -106,7 +106,7 @@ impl Material for MetalMaterial {
             Material::bump(self, bump_map, si);
         }
 
-        let bsdf = BSDF::alloc(arena, &si, None);
+        let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, None);
 
         // Evaluate textures for `MetalMaterial` material and allocate BRDF.
         let mut urough = self.u_roughness.as_ref().map_or_else(

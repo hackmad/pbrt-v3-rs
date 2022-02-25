@@ -80,7 +80,7 @@ impl Material for FourierMaterial {
             Material::bump(self, bump_map, si);
         }
 
-        let bsdf = BSDF::alloc(arena, &si, None);
+        let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, None);
 
         // Checking for zero channels works as a proxy for checking whether the
         // table was successfully read from the file.

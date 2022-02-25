@@ -53,7 +53,7 @@ impl Material for MirrorMaterial {
             Material::bump(self, bump_map, si);
         }
 
-        let bsdf = BSDF::alloc(arena, &si, None);
+        let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, None);
 
         // Evaluate textures for `MirrorMaterial` material and allocate BRDF.
         let r = self.kr.evaluate(&si.hit, &si.uv, &si.der).clamp_default();

@@ -11,6 +11,7 @@ use crate::medium::phase_hg;
 use crate::scene::*;
 use bumpalo::collections::vec::Vec as BumpVec;
 use bumpalo::Bump;
+use std::sync::Arc;
 
 /// A tabulated BSSRDF representation that can handle a wide range of scattering
 /// profiles including measured real-world BSSRDFs.
@@ -106,7 +107,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
     pub fn f(&self, _wo: &Vector3f, wi: &Vector3f) -> Spectrum {
-        let f = self.bssrdf.sw(wi);
+        let f = self.sw(wi);
 
         // Update BSSRDF transmission term to account for adjoint light
         // transport.
@@ -122,36 +123,35 @@ impl<'arena> TabulatedBSSRDF<'arena> {
     ///
     /// * `pi` - Interaction point for incident differential flux.
     /// * `wi` - Direction for incident different flux.
-    /// * `sr` - Evaluates the radial profile function based on distance between points.
-    pub fn s<Sr>(&self, pi: &SurfaceInteraction, wi: &Vector3f, sr: Sr) -> Spectrum
-    where
-        Sr: Fn(Float) -> Spectrum,
-    {
-        self.bssrdf.s(pi, wi, sr)
+    pub fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum {
+        let ft = 1.0
+            - fr_dielectric(
+                self.bssrdf.po_hit.wo.dot(&self.bssrdf.po_shading.n),
+                1.0,
+                self.bssrdf.eta,
+            );
+        ft * self.sp(pi.hit.p) * self.sw(wi)
     }
 
     /// Evaluates the spatial term for the distribution function.
     ///
-    /// * `pi` - Interaction point for incident differential flux.
-    /// * `sr` - Evaluates the radial profile function based on distance between points.
-    pub fn sp<Sr>(&self, pi: &SurfaceInteraction, sr: Sr) -> Spectrum
-    where
-        Sr: Fn(Float) -> Spectrum,
-    {
-        self.bssrdf.sp(pi, sr)
+    /// * `pi` - Hit point for incident differential flux.
+    pub fn sp(&self, pi: Point3f) -> Spectrum {
+        self.sr(self.bssrdf.po_hit.p.distance(pi))
     }
 
     /// Evaluates the directional term for the distribution function.
     ///
     /// * `w` - Direction for incident different flux.
     pub fn sw(&self, w: &Vector3f) -> Spectrum {
-        self.bssrdf.sw(w)
+        let c = 1.0 - 2.0 * fresnel_moment_1(1.0 / self.bssrdf.eta);
+        Spectrum::new((1.0 - fr_dielectric(cos_theta(w), 1.0, self.bssrdf.eta)) / (c * PI))
     }
 
     /// Evaluates the radial profile function based on distance between points.
     ///
     /// * `r` - Distance between points.
-    pub fn sr(&self, r: Float) -> Spectrum {
+    pub fn sr(&self, _r: Float) -> Spectrum {
         todo!()
     }
 
@@ -162,26 +162,29 @@ impl<'arena> TabulatedBSSRDF<'arena> {
     /// * `scene` - The scene.
     /// * `u1`    - Sample values for Monte Carlo.
     /// * `u2`    - Sample values for Monte Carlo.
-    /// * `si`    - The surface position where a ray re-emerges following internal
-    ///             scattering.
-    pub fn sample_s(
+    pub fn sample_s<'scene>(
         &self,
         arena: &'arena Bump,
-        scene: &Scene,
+        scene: &'scene Scene,
         u1: Float,
         u2: &Point2f,
-        si: &mut SurfaceInteraction<'_, 'arena>,
-    ) -> (Spectrum, Float) {
-        self.bssrdf.sample_s(
-            arena,
-            scene,
-            u1,
-            u2,
-            si,
-            |ch, u| self.sample_sr(ch, u),
-            |si| self.pdf_sp(si),
-            |r| self.sr(r),
-        )
+    ) -> (Option<SurfaceInteraction<'scene, 'scene>>, Spectrum, Float)
+    where
+        'arena: 'scene,
+    {
+        let (si, sp, pdf) = self.sample_sp(scene, u1, u2);
+
+        if let Some(mut isect) = si {
+            if !sp.is_black() {
+                // Initialize material model at sampled surface interaction.
+                let bsdf = Some(BSDF::alloc(arena, &isect.hit, &isect.shading, None));
+                isect.bsdf = bsdf;
+                isect.hit.wo = Vector3f::from(isect.shading.n);
+            }
+            return (Some(isect), sp, pdf);
+        }
+
+        (None, sp, pdf)
     }
 
     /// Use a different sampling technique per wavelength to deal with spectral
@@ -194,31 +197,151 @@ impl<'arena> TabulatedBSSRDF<'arena> {
     /// * `scene` - The scene.
     /// * `u1`    - Sample values for Monte Carlo.
     /// * `u2`    - Sample values for Monte Carlo.
-    /// * `si`    - Surface interaction.
     pub fn sample_sp<'scene>(
         &self,
         scene: &'scene Scene,
         u1: Float,
         u2: &Point2f,
-        si: &'scene mut SurfaceInteraction,
-    ) -> (Spectrum, Float) {
-        self.bssrdf.sample_sp(
-            scene,
-            u1,
-            u2,
-            si,
-            |ch, u| self.sample_sr(ch, u),
-            |si| self.pdf_sp(si),
-            |r| self.sr(r),
-        )
+    ) -> (Option<SurfaceInteraction<'scene, 'scene>>, Spectrum, Float) {
+        // Choose projection axis for BSSRDF sampling.
+        let (vx, vy, vz, mut u1) = if u1 < 0.5 {
+            (
+                self.bssrdf.ss,
+                self.bssrdf.ts,
+                Vector3f::from(self.bssrdf.ns),
+                u1 * 2.0,
+            )
+        } else if u1 < 0.75 {
+            // Prepare for sampling rays with respect to `ss`.
+            (
+                self.bssrdf.ts,
+                Vector3f::from(self.bssrdf.ns),
+                self.bssrdf.ss,
+                (u1 - 0.5) * 4.0,
+            )
+        } else {
+            // Prepare for sampling rays with respect to `ts`.
+            (
+                Vector3f::from(self.bssrdf.ns),
+                self.bssrdf.ss,
+                self.bssrdf.ts,
+                (u1 - 0.75) * 4.0,
+            )
+        };
+
+        // Choose spectral channel for BSSRDF sampling.
+        let ch = clamp(
+            (u1 * SPECTRUM_SAMPLES as Float) as usize,
+            0,
+            SPECTRUM_SAMPLES - 1,
+        );
+        u1 = u1 * (SPECTRUM_SAMPLES - ch) as Float;
+
+        // Sample BSSRDF profile in polar coordinates.
+        let r = self.sample_sr(ch, u2[0]);
+        if r < 0.0 {
+            return (None, Spectrum::ZERO, 0.0);
+        }
+        let phi = TWO_PI * u2[1];
+
+        // Compute BSSRDF profile bounds and intersection height.
+        let r_max = self.sample_sr(ch, 0.999);
+        if r >= r_max {
+            return (None, Spectrum::ZERO, 0.0);
+        }
+        let l = 2.0 * (r_max * r_max - r * r).sqrt();
+
+        // Compute BSSRDF sampling ray segment
+        let base_p = self.bssrdf.po_hit.p + r * (vx * cos(phi) + vy * sin(phi)) - l * vz * 0.5;
+        let base_time = self.bssrdf.po_hit.time;
+        let mut base = Hit::new(
+            base_p,
+            base_time,
+            Vector3f::ZERO,
+            Vector3f::ZERO,
+            Normal3f::ZERO,
+            None,
+        );
+        let p_target = base.p + l * vz;
+
+        // Intersect BSSRDF sampling ray against the scene geometry.
+
+        // Declare `IntersectionChain` and linked list.
+        let mut chain = Vec::new();
+
+        // Accumulate chain of intersections along ray.
+        let mut n_found = 0;
+        loop {
+            let mut r = base.spawn_ray_to_point(&p_target);
+            if r.d == Vector3f::ZERO {
+                break;
+            }
+            let isect = scene.intersect(&mut r);
+            if let Some(it) = isect {
+                base = it.hit.clone();
+                // Append admissible intersection to `IntersectionChain`.
+                if let Some(material) = it.primitive.map(|p| p.get_material()).flatten() {
+                    if Arc::ptr_eq(&material, &self.bssrdf.material) {
+                        chain.push(it);
+                        n_found += 1;
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+
+        // Randomly choose one of several intersections during BSSRDF sampling.
+        if n_found == 0 {
+            return (None, Spectrum::ZERO, 0.0);
+        }
+
+        let idx = clamp((u1 * n_found as Float) as Int, 0, n_found as Int - 1) as usize;
+
+        // Compute sample PDF and return the spatial BSSRDF term `Sp`.
+        let pdf = self.pdf_sp(&chain[idx].hit) / n_found as Float;
+        let term = self.sp(chain[idx].hit.p);
+
+        let si = chain[idx].clone_without_bsdf();
+        (Some(si), term, pdf)
     }
 
     /// Evaluate the combined PDF that takes all of the sampling strategies
     /// `sample_sp()` into account.
     ///
-    /// * `si` - Surface interaction.
-    pub fn pdf_sp(&self, si: &SurfaceInteraction) -> Float {
-        self.bssrdf.pdf_sp(si)
+    /// * `pi_hit` - Surface interaction hit point.
+    pub fn pdf_sp(&self, pi_hit: &Hit) -> Float {
+        // Express `pti-pto` and `n_i` with respect to local coordinates at `pto`.
+        let d = self.bssrdf.po_hit.p - pi_hit.p;
+        let d_local = Vector3f::new(
+            self.bssrdf.ss.dot(&d),
+            self.bssrdf.ts.dot(&d),
+            self.bssrdf.ns.dot(&d),
+        );
+        let n_local = Normal3f::new(
+            self.bssrdf.ss.dot(&pi_hit.n),
+            self.bssrdf.ts.dot(&pi_hit.n),
+            self.bssrdf.ns.dot(&pi_hit.n),
+        );
+
+        // Compute BSSRDF profile radius under projection along each axis.
+        let r_proj = [
+            (d_local.y * d_local.y + d_local.z * d_local.z).sqrt(),
+            (d_local.z * d_local.z + d_local.x * d_local.x).sqrt(),
+            (d_local.x * d_local.x + d_local.y * d_local.y).sqrt(),
+        ];
+
+        // Return combined probability from all BSSRDF sampling strategies
+        let mut pdf = 0.0;
+        let axis_prob = [0.25, 0.25, 0.5];
+        let ch_prob = 1.0 / SPECTRUM_SAMPLES as Float;
+        for axis in 0..3 {
+            for ch in 0..SPECTRUM_SAMPLES {
+                pdf +=
+                    self.pdf_sr(ch, r_proj[axis]) * abs(n_local[axis]) * ch_prob * axis_prob[axis];
+            }
+        }
+        pdf
     }
 
     /// Samples radius values proportional to the radial profile function.

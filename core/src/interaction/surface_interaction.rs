@@ -256,7 +256,7 @@ impl<'primitive, 'arena> SurfaceInteraction<'primitive, 'arena> {
     pub fn clone_without_bsdf(&self) -> Self {
         Self {
             hit: self.hit.clone(),
-            uv: self.uv,
+            uv: self.uv.clone(),
             der: self.der.clone(),
             shading: self.shading.clone(),
             shape_data: self.shape_data.clone(),
