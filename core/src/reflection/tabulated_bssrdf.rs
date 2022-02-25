@@ -151,8 +151,42 @@ impl<'arena> TabulatedBSSRDF<'arena> {
     /// Evaluates the radial profile function based on distance between points.
     ///
     /// * `r` - Distance between points.
-    pub fn sr(&self, _r: Float) -> Spectrum {
-        todo!()
+    pub fn sr(&self, r: Float) -> Spectrum {
+        let mut sr = Spectrum::ZERO;
+        for ch in 0..SPECTRUM_SAMPLES {
+            // Convert `r` into unitless optical radius `r_optical`.
+            let r_optical = r * self.sigma_t[ch];
+
+            // Compute spline weights to interpolate BSSRDF on channel `ch`.
+            let rho = catmull_rom_weights(&self.table.rho_samples, self.rho[ch]);
+            let radius = catmull_rom_weights(&self.table.radius_samples, r_optical);
+            if rho.is_none() || radius.is_none() {
+                continue;
+            }
+            let (rho_weights, rho_offset) = rho.unwrap();
+            let (radius_weights, radius_offset) = radius.unwrap();
+
+            // Set BSSRDF value `Sr[ch]` using tensor spline interpolation.
+            let mut srv = 0.0;
+            for i in 0..4 {
+                for j in 0..4 {
+                    let weight = rho_weights[i] * radius_weights[j];
+                    if weight != 0.0 {
+                        srv += weight * self.table.eval_profile(rho_offset + i, radius_offset + j);
+                    }
+                }
+            }
+
+            // Cancel marginal PDF factor from tabulated BSSRDF profile.
+            if r_optical != 0.0 {
+                srv /= TWO_PI * r_optical;
+            }
+            sr[ch] = srv;
+        }
+
+        // Transform BSSRDF value into world space units.
+        sr *= self.sigma_t * self.sigma_t;
+        return sr.clamp_default();
     }
 
     /// Returns the value of the BSSRDF, the surface position where a ray
@@ -302,7 +336,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         let pdf = self.pdf_sp(&chain[idx].hit) / n_found as Float;
         let term = self.sp(chain[idx].hit.p);
 
-        let si = chain[idx].clone_without_bsdf();
+        let si = chain[idx].clone_without_bsdf(); // data owned by Vec
         (Some(si), term, pdf)
     }
 
