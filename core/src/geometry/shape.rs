@@ -32,11 +32,11 @@ pub trait Shape {
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests.
-    fn intersect<'primitive, 'arena>(
+    fn intersect<'scene, 'arena>(
         &self,
         r: &Ray,
         test_alpha_texture: bool,
-    ) -> Option<Intersection<'primitive, 'arena>>;
+    ) -> Option<Intersection<'scene, 'arena>>;
 
     /// Returns `true` if a ray-shape intersection succeeds; otherwise `false`.
     ///
@@ -153,20 +153,20 @@ pub trait Shape {
 pub type ArcShape = Arc<dyn Shape + Send + Sync>;
 
 /// Stores geometric information about a single ray-shape intersection.
-pub struct Intersection<'primitive, 'arena> {
+pub struct Intersection<'scene, 'arena> {
     /// The parameter along the ray where intersection occurred.
     pub t: Float,
 
     /// The surface interaction details.
-    pub isect: SurfaceInteraction<'primitive, 'arena>,
+    pub isect: SurfaceInteraction<'scene, 'arena>,
 }
 
-impl<'primitive, 'arena> Intersection<'primitive, 'arena> {
+impl<'scene, 'arena> Intersection<'scene, 'arena> {
     /// Create a new intersection.
     ///
     /// * `t`     - The parameter along the ray where intersection occurred.
     /// * `isect` - The surface interaction details.
-    pub fn new(t: Float, isect: SurfaceInteraction<'primitive, 'arena>) -> Self {
+    pub fn new(t: Float, isect: SurfaceInteraction<'scene, 'arena>) -> Self {
         Self { t, isect }
     }
 }

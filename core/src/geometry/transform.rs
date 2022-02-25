@@ -573,9 +573,9 @@ impl Transform {
     /// Applies transformation to a given surface interaction.
     ///
     /// * `si` - The surface interaction.
-    pub fn transform_surface_interaction<'primitive, 'arena>(
+    pub fn transform_surface_interaction<'scene, 'arena>(
         &self,
-        si: &mut SurfaceInteraction<'primitive, 'arena>,
+        si: &mut SurfaceInteraction<'scene, 'arena>,
     ) {
         // Transform p and p_error in SurfaceInteraction.
         let (p, p_error) = self.transform_point_with_abs_error(&si.hit.p, &si.hit.p_error);

@@ -15,21 +15,21 @@ pub use surface_interaction::*;
 /// Interaction enumeration.
 ///
 /// The lifetime specifiers are from `SurfaceInteraction`:
-/// * `'primitive` - Shared reference to the primitive.
-/// * `'arena`     - Shared mutable reference to values allocated by a memory arena.
-///                  Because we use bumpalo::Bump, this is how it returns allocated
-///                  values.
-pub enum Interaction<'primitive, 'arena> {
+/// * `'scene` - Shared reference to the scene containing primitive.
+/// * `'arena` - Shared mutable reference to values allocated by a memory arena.
+///              Because we use bumpalo::Bump, this is how it returns allocated
+///              values.
+pub enum Interaction<'scene, 'arena> {
     /// Represents geometry of a particular point on a surface.
     Surface {
-        si: SurfaceInteraction<'primitive, 'arena>,
+        si: SurfaceInteraction<'scene, 'arena>,
     },
 
     /// Represents an interaction point in a scattering medium.
     Medium { mi: MediumInteraction<'arena> },
 }
 
-impl<'primitive, 'arena> Interaction<'primitive, 'arena> {
+impl<'scene, 'arena> Interaction<'scene, 'arena> {
     /// Returns the interaction hit point.
     pub fn get_hit(&self) -> &Hit {
         match self {

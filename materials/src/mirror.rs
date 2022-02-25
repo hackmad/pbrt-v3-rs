@@ -41,10 +41,10 @@ impl Material for MirrorMaterial {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
-    fn compute_scattering_functions<'primtive, 'arena>(
+    fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'primtive, 'arena>,
+        si: &mut SurfaceInteraction<'scene, 'arena>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
     ) {

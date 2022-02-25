@@ -109,10 +109,10 @@ impl Primitive for TransformedPrimitive {
     /// * `_si`                   - The surface interaction at the intersection.
     /// * `_mode`                 - Transport mode.
     /// * `_allow_multiple_lobes` - Allow multiple lobes.
-    fn compute_scattering_functions<'primtive, 'arena>(
+    fn compute_scattering_functions<'scene, 'arena>(
         &self,
         _arena: &'arena Bump,
-        _si: &mut SurfaceInteraction<'primtive, 'arena>,
+        _si: &mut SurfaceInteraction<'scene, 'arena>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
     ) {

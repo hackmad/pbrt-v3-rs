@@ -14,11 +14,11 @@ use std::sync::Arc;
 /// SurfaceInteraction represents geometry of a particular point on a surface.
 ///
 /// The lifetime specifiers:
-/// * `'primitive` - Shared reference to the primitive.
-/// * `'arena`     - Shared mutable reference to values allocated by a memory arena.
-///                  Because we use bumpalo::Bump, this is how it returns allocated
-///                  values.
-pub struct SurfaceInteraction<'primitive, 'arena> {
+/// * `'scene` - Shared reference to the scene containing primitive.
+/// * `'arena` - Shared mutable reference to values allocated by a memory arena.
+///              Because we use bumpalo::Bump, this is how it returns allocated
+///              values.
+pub struct SurfaceInteraction<'scene, 'arena> {
     /// The common interaction data.
     pub hit: Hit,
 
@@ -38,13 +38,13 @@ pub struct SurfaceInteraction<'primitive, 'arena> {
     pub bsdf: Option<&'arena mut BSDF<'arena>>,
 
     /// The primitive.
-    pub primitive: Option<&'primitive dyn Primitive>,
+    pub primitive: Option<&'scene dyn Primitive>,
 
     /// Face index in a triangle mesh where hit occurred.
     pub face_index: usize,
 }
 
-impl<'primitive, 'arena> SurfaceInteraction<'primitive, 'arena> {
+impl<'scene, 'arena> SurfaceInteraction<'scene, 'arena> {
     /// Create a new surface interaction.
     ///
     /// * `p`          - Point of interaction.

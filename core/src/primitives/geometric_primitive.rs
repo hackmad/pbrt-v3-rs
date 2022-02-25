@@ -119,10 +119,10 @@ impl Primitive for GeometricPrimitive {
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Allow multiple lobes.
-    fn compute_scattering_functions<'primtive, 'arena>(
+    fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'primtive, 'arena>,
+        si: &mut SurfaceInteraction<'scene, 'arena>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
     ) {

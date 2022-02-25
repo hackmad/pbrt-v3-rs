@@ -88,11 +88,11 @@ impl Shape for Cylinder {
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect<'primitive, 'arena>(
+    fn intersect<'scene, 'arena>(
         &self,
         r: &Ray,
         _test_alpha_texture: bool,
-    ) -> Option<Intersection<'primitive, 'arena>> {
+    ) -> Option<Intersection<'scene, 'arena>> {
         // Transform ray to object space
         let (ray, o_err, d_err) = self
             .data
