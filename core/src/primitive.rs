@@ -4,6 +4,7 @@ use crate::geometry::*;
 use crate::interaction::*;
 use crate::light::*;
 use crate::material::*;
+use crate::reflection::*;
 use bumpalo::Bump;
 use std::sync::Arc;
 
@@ -46,13 +47,16 @@ pub trait Primitive {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available.
+    /// * `bsdf`                 - The computed BSDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'scene, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-    );
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene;
 }
 
 /// Atomic referenced counted `Primitive`.

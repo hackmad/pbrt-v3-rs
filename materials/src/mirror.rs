@@ -41,29 +41,33 @@ impl Material for MirrorMaterial {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
+    /// * `bsdf`                 - The computed BSDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'scene, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-    ) {
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene,
+    {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
         }
 
-        let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, None);
+        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
 
         // Evaluate textures for `MirrorMaterial` material and allocate BRDF.
         let r = self.kr.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !r.is_black() {
             let fresnel = FresnelNoOp::alloc(arena);
             let bxdf = SpecularReflection::alloc(arena, r, fresnel);
-            bsdf.add(bxdf);
+            result.add(bxdf);
         }
 
-        si.bsdf = Some(bsdf);
+        *bsdf = Some(result);
     }
 }
 

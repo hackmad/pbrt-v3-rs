@@ -6,6 +6,7 @@ use crate::light::*;
 use crate::material::*;
 use crate::medium::*;
 use crate::primitive::*;
+use crate::reflection::*;
 use bumpalo::Bump;
 use std::sync::Arc;
 
@@ -119,15 +120,19 @@ impl Primitive for GeometricPrimitive {
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Allow multiple lobes.
+    /// * `bsdf`                 - The computed BSDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'scene, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-    ) {
-        if let Some(material) = self.material.as_ref() {
-            material.compute_scattering_functions(arena, si, mode, allow_multiple_lobes);
-        }
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene,
+    {
+        self.material.as_ref().map(|material| {
+            material.compute_scattering_functions(arena, si, mode, allow_multiple_lobes, bsdf)
+        });
     }
 }

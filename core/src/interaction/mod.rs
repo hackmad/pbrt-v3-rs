@@ -21,9 +21,7 @@ pub use surface_interaction::*;
 ///              values.
 pub enum Interaction<'scene, 'arena> {
     /// Represents geometry of a particular point on a surface.
-    Surface {
-        si: SurfaceInteraction<'scene, 'arena>,
-    },
+    Surface { si: SurfaceInteraction<'scene> },
 
     /// Represents an interaction point in a scattering medium.
     Medium { mi: MediumInteraction<'arena> },

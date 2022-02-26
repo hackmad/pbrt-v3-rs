@@ -5,6 +5,7 @@ use crate::interaction::*;
 use crate::light::*;
 use crate::material::*;
 use crate::primitive::*;
+use crate::reflection::*;
 use bumpalo::Bump;
 use std::sync::Arc;
 
@@ -109,13 +110,17 @@ impl Primitive for TransformedPrimitive {
     /// * `_si`                   - The surface interaction at the intersection.
     /// * `_mode`                 - Transport mode.
     /// * `_allow_multiple_lobes` - Allow multiple lobes.
+    /// * `bsdf`                  - The computed BSDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         _arena: &'arena Bump,
-        _si: &mut SurfaceInteraction<'scene, 'arena>,
+        _si: &mut SurfaceInteraction<'scene>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-    ) {
+        _bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene,
+    {
         error!(
             "TransformedPrimitive::compute_scattering_functions() shouldn't be \
             called; should've gone to GeometricPrimitive."

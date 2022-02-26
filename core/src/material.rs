@@ -3,6 +3,7 @@
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::pbrt::*;
+use crate::reflection::*;
 use crate::texture::*;
 use bumpalo::Bump;
 use std::sync::Arc;
@@ -30,13 +31,16 @@ pub trait Material {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available.
+    /// * `bsdf`                 - The computed BSDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'scene, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-    );
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene;
 
     /// Update the normal at the surface interaction using a bump map.
     ///

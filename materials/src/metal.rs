@@ -94,19 +94,23 @@ impl Material for MetalMaterial {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
+    /// * `bsdf`                 - The computed BSDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'scene, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-    ) {
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene,
+    {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
         }
 
-        let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, None);
+        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
 
         // Evaluate textures for `MetalMaterial` material and allocate BRDF.
         let mut urough = self.u_roughness.as_ref().map_or_else(
@@ -131,14 +135,14 @@ impl Material for MetalMaterial {
             self.k.evaluate(&si.hit, &si.uv, &si.der),
         );
         let distrib = TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
-        bsdf.add(MicrofacetReflection::alloc(
+        result.add(MicrofacetReflection::alloc(
             arena,
             Spectrum::ONE,
             distrib,
             frmf,
         ));
 
-        si.bsdf = Some(bsdf);
+        *bsdf = Some(result);
     }
 }
 

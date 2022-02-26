@@ -202,23 +202,28 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         scene: &'scene Scene,
         u1: Float,
         u2: &Point2f,
-    ) -> (Option<SurfaceInteraction<'scene, 'scene>>, Spectrum, Float)
+    ) -> (
+        Option<SurfaceInteraction<'scene>>,
+        Option<&'arena mut BSDF>,
+        Spectrum,
+        Float,
+    )
     where
         'arena: 'scene,
     {
         let (si, sp, pdf) = self.sample_sp(scene, u1, u2);
+        let mut bsdf: Option<&'arena mut BSDF> = None;
 
         if let Some(mut isect) = si {
             if !sp.is_black() {
                 // Initialize material model at sampled surface interaction.
-                let bsdf = Some(BSDF::alloc(arena, &isect.hit, &isect.shading, None));
-                isect.bsdf = bsdf;
+                bsdf = Some(BSDF::alloc(arena, &isect.hit, &isect.shading, None));
                 isect.hit.wo = Vector3f::from(isect.shading.n);
             }
-            return (Some(isect), sp, pdf);
+            return (Some(isect), bsdf, sp, pdf);
         }
 
-        (None, sp, pdf)
+        (None, bsdf, sp, pdf)
     }
 
     /// Use a different sampling technique per wavelength to deal with spectral
@@ -236,7 +241,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         scene: &'scene Scene,
         u1: Float,
         u2: &Point2f,
-    ) -> (Option<SurfaceInteraction<'scene, 'scene>>, Spectrum, Float) {
+    ) -> (Option<SurfaceInteraction<'scene>>, Spectrum, Float) {
         // Choose projection axis for BSSRDF sampling.
         let (vx, vy, vz, mut u1) = if u1 < 0.5 {
             (
@@ -336,8 +341,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         let pdf = self.pdf_sp(&chain[idx].hit) / n_found as Float;
         let term = self.sp(chain[idx].hit.p);
 
-        let si = chain[idx].clone_without_bsdf(); // data owned by Vec
-        (Some(si), term, pdf)
+        (Some(chain[idx].clone()), term, pdf)
     }
 
     /// Evaluate the combined PDF that takes all of the sampling strategies

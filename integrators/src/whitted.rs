@@ -83,8 +83,15 @@ impl Integrator for WhittedIntegrator {
             // Compute emitted and reflected light at ray intersection point.
 
             // Compute scattering functions for surface interaction.
-            isect.compute_scattering_functions(arena, ray, false, TransportMode::Radiance);
-            if isect.bsdf.is_none() {
+            let mut bsdf: Option<&mut BSDF> = None;
+            isect.compute_scattering_functions(
+                arena,
+                ray,
+                false,
+                TransportMode::Radiance,
+                &mut bsdf,
+            );
+            if bsdf.is_none() {
                 let mut new_ray = isect.hit.spawn_ray(&ray.d);
                 return self.li(arena, &mut new_ray, scene, sampler, depth);
             }
@@ -110,8 +117,7 @@ impl Integrator for WhittedIntegrator {
                     continue;
                 }
 
-                let f = isect
-                    .bsdf
+                let f = bsdf
                     .as_ref()
                     .map_or(Spectrum::ZERO, |bsdf| bsdf.f(&wo, &wi, BxDFType::all()));
                 if !f.is_black() {
@@ -125,8 +131,9 @@ impl Integrator for WhittedIntegrator {
             }
             if depth + 1 < self.data.max_depth {
                 // Trace rays for specular reflection and refraction.
-                let refl = self.specular_reflect(arena, ray, &isect, scene, sampler, depth);
-                let trans = self.specular_transmit(arena, ray, &isect, scene, sampler, depth);
+                let refl = self.specular_reflect(arena, ray, &isect, &bsdf, scene, sampler, depth);
+                let trans =
+                    self.specular_transmit(arena, ray, &isect, &bsdf, scene, sampler, depth);
                 l += refl + trans;
             }
         } else {

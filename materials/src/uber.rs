@@ -124,13 +124,17 @@ impl Material for UberMaterial {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
+    /// * `bsdf`                 - The computed BSDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'scene, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-    ) {
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene,
+    {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
@@ -144,7 +148,7 @@ impl Material for UberMaterial {
             .evaluate(&si.hit, &si.uv, &si.der)
             .clamp_default();
         let t = (-op + Spectrum::ONE).clamp_default();
-        let bsdf = if !t.is_black() {
+        let result = if !t.is_black() {
             let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, Some(1.0));
             let tr = SpecularTransmission::alloc(arena, t, 1.0, 1.0, mode);
             bsdf.add(tr);
@@ -156,7 +160,7 @@ impl Material for UberMaterial {
         let kd = op * self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kd.is_black() {
             let diff = LambertianReflection::alloc(arena, kd);
-            bsdf.add(diff);
+            result.add(diff);
         }
 
         let ks = op * self.ks.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
@@ -180,21 +184,21 @@ impl Material for UberMaterial {
 
             let distrib = TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
             let spec = MicrofacetReflection::alloc(arena, ks, distrib, fresnel);
-            bsdf.add(spec);
+            result.add(spec);
         }
 
         let kr = op * self.kr.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kr.is_black() {
             let fresnel = FresnelDielectric::alloc(arena, 1.0, e);
-            bsdf.add(SpecularReflection::alloc(arena, kr, fresnel));
+            result.add(SpecularReflection::alloc(arena, kr, fresnel));
         }
 
         let kt = op * self.kt.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kt.is_black() {
-            bsdf.add(SpecularTransmission::alloc(arena, kt, 1.0, e, mode));
+            result.add(SpecularTransmission::alloc(arena, kt, 1.0, e, mode));
         }
 
-        si.bsdf = Some(bsdf);
+        *bsdf = Some(result);
     }
 }
 

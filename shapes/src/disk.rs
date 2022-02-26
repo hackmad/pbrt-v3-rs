@@ -89,7 +89,7 @@ impl Shape for Disk {
         &self,
         r: &Ray,
         _test_alpha_texture: bool,
-    ) -> Option<Intersection<'scene, 'arena>> {
+    ) -> Option<Intersection<'scene>> {
         // Transform ray to object space
         //
         // We could just use transform_ray() but there is minor adjustment in

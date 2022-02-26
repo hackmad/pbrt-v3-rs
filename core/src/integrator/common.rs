@@ -14,6 +14,7 @@ use std::sync::Arc;
 /// Uniformly sample all lights in the scene for direct lighting.
 ///
 /// * `it`              - The intersection information.
+/// * `bsdf`          - The BSDF at the intersection.
 /// * `scene`           - The scene.
 /// * `sampler`         - The sampler.
 /// * `n_light_samples` - The number of samples to take for each light.
@@ -21,6 +22,7 @@ use std::sync::Arc;
 ///                       should be considered.
 pub fn uniform_sample_all_lights(
     it: &Interaction,
+    bsdf: &Option<&mut BSDF>,
     scene: &Scene,
     sampler: &mut ArcSampler,
     n_light_samples: &[usize],
@@ -47,6 +49,7 @@ pub fn uniform_sample_all_lights(
 
             l += estimate_direct(
                 it,
+                bsdf,
                 &u_scattering,
                 Arc::clone(light),
                 &u_light,
@@ -61,6 +64,7 @@ pub fn uniform_sample_all_lights(
             for k in 0..n_samples {
                 ld += estimate_direct(
                     it,
+                    bsdf,
                     &u_scattering_array[k],
                     Arc::clone(light),
                     &u_light_array[k],
@@ -80,6 +84,7 @@ pub fn uniform_sample_all_lights(
 /// multiply result by number of lights to compensate.
 ///
 /// * `it`            - The intersection information.
+/// * `bsdf`          - The BSDF at the intersection.
 /// * `scene`         - The scene.
 /// * `sampler`       - The sampler.
 /// * `handle_media`  - Indicates whether effects of volumetric attenuation
@@ -87,6 +92,7 @@ pub fn uniform_sample_all_lights(
 /// * `light_distrib` - PDF for the light's distribution.
 pub fn uniform_sample_one_light(
     it: &Interaction,
+    bsdf: &Option<&mut BSDF>,
     scene: &Scene,
     sampler: &mut ArcSampler,
     handle_media: bool,
@@ -120,6 +126,7 @@ pub fn uniform_sample_one_light(
 
     let estimate = estimate_direct(
         it,
+        bsdf,
         &u_scattering,
         light,
         &u_light,
@@ -135,6 +142,7 @@ pub fn uniform_sample_one_light(
 /// multiple importance sampling.
 ///
 /// * `it`           - The intersection information.
+/// * `bsdf`         - The BSDF at the intersection.
 /// * `u_scattering` - Scattering sample.
 /// * `light`        - The light.
 /// * `u_light`      - Light sample.
@@ -146,6 +154,7 @@ pub fn uniform_sample_one_light(
 ///                    considered (default to false).
 pub fn estimate_direct(
     it: &Interaction,
+    bsdf: &Option<&mut BSDF>,
     u_scattering: &Point2f,
     light: ArcLight,
     u_light: &Point2f,
@@ -176,7 +185,7 @@ pub fn estimate_direct(
         match it {
             Interaction::Surface { si } => {
                 // Evaluate BSDF for light sampling strategy.
-                if let Some(bsdf) = &si.bsdf {
+                if let Some(bsdf) = bsdf.as_deref() {
                     f = bsdf.f(&hit.wo, &wi, bsdf_flags) * wi.abs_dot(&si.shading.n);
                     scattering_pdf = bsdf.pdf(&hit.wo, &wi, bsdf_flags);
                     info!("  surf f*dot : {:}, scatteringPdf: {}", f, scattering_pdf);
@@ -225,7 +234,7 @@ pub fn estimate_direct(
         match it {
             Interaction::Surface { si } => {
                 // Sample scattered direction for surface interactions.
-                if let Some(bsdf) = &si.bsdf {
+                if let Some(bsdf) = bsdf.as_deref() {
                     let BxDFSample {
                         f: f1,
                         pdf: _scattering_pdf,

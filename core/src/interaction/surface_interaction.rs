@@ -15,10 +15,8 @@ use std::sync::Arc;
 ///
 /// The lifetime specifiers:
 /// * `'scene` - Shared reference to the scene containing primitive.
-/// * `'arena` - Shared mutable reference to values allocated by a memory arena.
-///              Because we use bumpalo::Bump, this is how it returns allocated
-///              values.
-pub struct SurfaceInteraction<'scene, 'arena> {
+#[derive(Clone)]
+pub struct SurfaceInteraction<'scene> {
     /// The common interaction data.
     pub hit: Hit,
 
@@ -34,9 +32,6 @@ pub struct SurfaceInteraction<'scene, 'arena> {
     /// The shape data.
     pub shape_data: Arc<ShapeData>,
 
-    /// The BSDF.
-    pub bsdf: Option<&'arena mut BSDF<'arena>>,
-
     /// The primitive.
     pub primitive: Option<&'scene dyn Primitive>,
 
@@ -44,7 +39,7 @@ pub struct SurfaceInteraction<'scene, 'arena> {
     pub face_index: usize,
 }
 
-impl<'scene, 'arena> SurfaceInteraction<'scene, 'arena> {
+impl<'scene> SurfaceInteraction<'scene> {
     /// Create a new surface interaction.
     ///
     /// * `p`          - Point of interaction.
@@ -98,7 +93,6 @@ impl<'scene, 'arena> SurfaceInteraction<'scene, 'arena> {
             ),
             shading: Shading::new(n, dpdu, dpdv, dndu, dndv),
             shape_data,
-            bsdf: None,
             primitive: None,
             face_index,
         }
@@ -143,17 +137,21 @@ impl<'scene, 'arena> SurfaceInteraction<'scene, 'arena> {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available.
-    pub fn compute_scattering_functions(
+    /// * `bsdf`                 - The computed BSDF.
+    pub fn compute_scattering_functions<'arena>(
         &mut self,
         arena: &'arena Bump,
         ray: &Ray,
         allow_multiple_lobes: bool,
         mode: TransportMode,
-    ) {
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene,
+    {
         self.compute_differentials(ray);
-        if let Some(primitive) = self.primitive {
-            primitive.compute_scattering_functions(arena, self, mode, allow_multiple_lobes);
-        }
+        self.primitive.map(|primitive| {
+            primitive.compute_scattering_functions(arena, self, mode, allow_multiple_lobes, bsdf)
+        });
     }
 
     /// Use offset rays to estimate the partial derivatives mapping p(x, y) from
@@ -248,21 +246,6 @@ impl<'scene, 'arena> SurfaceInteraction<'scene, 'arena> {
             area_light.l(&self.hit, w)
         } else {
             Spectrum::ZERO
-        }
-    }
-
-    /// Clones all the fields except for BSDF/BSSRDF which should be allocated
-    /// with a memory arena.
-    pub fn clone_without_bsdf(&self) -> Self {
-        Self {
-            hit: self.hit.clone(),
-            uv: self.uv.clone(),
-            der: self.der.clone(),
-            shading: self.shading.clone(),
-            shape_data: self.shape_data.clone(),
-            bsdf: None,
-            primitive: self.primitive,
-            face_index: self.face_index,
         }
     }
 }

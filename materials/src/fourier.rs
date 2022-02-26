@@ -68,31 +68,35 @@ impl Material for FourierMaterial {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
+    /// * `bsdf`                 - The computed BSDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'scene, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-    ) {
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene,
+    {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
         }
 
-        let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, None);
+        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
 
         // Checking for zero channels works as a proxy for checking whether the
         // table was successfully read from the file.
         if self.bsdf_table.n_channels > 0 {
-            bsdf.add(FourierBSDF::alloc(
+            result.add(FourierBSDF::alloc(
                 arena,
                 Arc::clone(&self.bsdf_table),
                 mode,
             ));
         }
 
-        si.bsdf = Some(bsdf);
+        *bsdf = Some(result);
     }
 }
 

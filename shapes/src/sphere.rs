@@ -99,7 +99,7 @@ impl Shape for Sphere {
         &self,
         r: &Ray,
         _test_alpha_texture: bool,
-    ) -> Option<Intersection<'scene, 'arena>> {
+    ) -> Option<Intersection<'scene>> {
         // Transform ray to object space
         let (ray, o_err, d_err) = self
             .data

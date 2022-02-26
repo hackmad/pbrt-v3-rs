@@ -334,7 +334,7 @@ impl Curve {
         u1: Float,
         depth: u32,
         is_shadow_ray: bool,
-    ) -> Option<Intersection<'scene, 'arena>> {
+    ) -> Option<Intersection<'scene>> {
         let ray_length = ray.d.length();
 
         if depth > 0 {
@@ -345,7 +345,7 @@ impl Curve {
             // overlaps the segment before recursively checking for
             // intersection with it.
             let u = [u0, (u0 + u1) / 2.0, u1];
-            let mut hit: Option<Intersection<'scene, 'arena>> = None;
+            let mut hit: Option<Intersection<'scene>> = None;
             let mut cps = 0;
             for seg in 0..2 {
                 // Splice containing the 4 control poitns for the current segment.
@@ -544,7 +544,7 @@ impl Curve {
         &self,
         r: &Ray,
         is_shadow_ray: bool,
-    ) -> Option<Intersection<'scene, 'arena>> {
+    ) -> Option<Intersection<'scene>> {
         // Transform ray to object space.
         //
         // We could just use transform_ray() but there is minor adjustment in
@@ -688,7 +688,7 @@ impl Shape for Curve {
         &self,
         r: &Ray,
         _test_alpha_texture: bool,
-    ) -> Option<Intersection<'scene, 'arena>> {
+    ) -> Option<Intersection<'scene>> {
         Self::intersect(self, r, false)
     }
 

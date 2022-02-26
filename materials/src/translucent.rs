@@ -83,20 +83,24 @@ impl Material for TranslucentMaterial {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
+    /// * `bsdf`                 - The computed BSDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'scene, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-    ) {
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene,
+    {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
         }
 
         const ETA: Float = 1.5;
-        let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, Some(ETA));
+        let result = BSDF::alloc(arena, &si.hit, &si.shading, Some(ETA));
 
         // Evaluate textures for `TranslucentMaterial` material and allocate BRDF.
         let r = self
@@ -114,10 +118,10 @@ impl Material for TranslucentMaterial {
         let kd = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kd.is_black() {
             if !r.is_black() {
-                bsdf.add(LambertianReflection::alloc(arena, r * kd));
+                result.add(LambertianReflection::alloc(arena, r * kd));
             }
             if !t.is_black() {
-                bsdf.add(LambertianTransmission::alloc(arena, t * kd));
+                result.add(LambertianTransmission::alloc(arena, t * kd));
             }
         }
 
@@ -131,13 +135,13 @@ impl Material for TranslucentMaterial {
             if !r.is_black() {
                 let distrib = TrowbridgeReitzDistribution::alloc(arena, rough, rough, true);
                 let fresnel = FresnelDielectric::alloc(arena, 1.0, ETA);
-                bsdf.add(MicrofacetReflection::alloc(arena, r * ks, distrib, fresnel));
+                result.add(MicrofacetReflection::alloc(arena, r * ks, distrib, fresnel));
             }
 
             if !t.is_black() {
                 let distrib = TrowbridgeReitzDistribution::alloc(arena, rough, rough, true);
                 let fresnel = FresnelDielectric::alloc(arena, 1.0, ETA);
-                bsdf.add(MicrofacetTransmission::alloc(
+                result.add(MicrofacetTransmission::alloc(
                     arena,
                     t * ks,
                     distrib,
@@ -149,7 +153,7 @@ impl Material for TranslucentMaterial {
             }
         }
 
-        si.bsdf = Some(bsdf);
+        *bsdf = Some(result);
     }
 }
 
