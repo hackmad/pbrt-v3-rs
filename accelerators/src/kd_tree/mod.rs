@@ -8,7 +8,7 @@ use core::material::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::primitive::*;
-use core::reflection::BSDF;
+use core::reflection::*;
 use std::sync::Arc;
 
 mod common;
@@ -569,7 +569,8 @@ impl Primitive for KDTreeAccel {
     /// * `_si`                   - The surface interaction at the intersection.
     /// * `_mode`                 - Transport mode.
     /// * `_allow_multiple_lobes` - Allow multiple lobes.
-    /// * `bsdf`                  - The computed BSDF.
+    /// * `_bsdf`                 - The computed BSDF.
+    /// * `_bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         _arena: &'arena Bump,
@@ -577,6 +578,7 @@ impl Primitive for KDTreeAccel {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        _bssrdf: &mut Option<&'arena mut BSDF<'scene>>,
     ) where
         'arena: 'scene,
     {

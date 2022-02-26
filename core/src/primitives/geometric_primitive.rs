@@ -1,5 +1,6 @@
 //! Geometric Primitives
 
+use crate::bssrdf::BSSRDFType;
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::light::*;
@@ -121,6 +122,7 @@ impl Primitive for GeometricPrimitive {
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Allow multiple lobes.
     /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
@@ -128,11 +130,40 @@ impl Primitive for GeometricPrimitive {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<&'arena mut BSDF<'scene>>,
     ) where
         'arena: 'scene,
     {
+        let mut bssrdf_type: Option<BSSRDFType> = None;
         self.material.as_ref().map(|material| {
-            material.compute_scattering_functions(arena, si, mode, allow_multiple_lobes, bsdf)
+            material.compute_scattering_functions(
+                arena,
+                si,
+                mode,
+                allow_multiple_lobes,
+                bsdf,
+                &mut bssrdf_type,
+            )
         });
+
+        *bssrdf = match bssrdf_type {
+            Some(t) => match t {
+                BSSRDFType::Tabulated {
+                    eta,
+                    sigma_a,
+                    sigma_s,
+                    table,
+                } => {
+                    let material = Arc::clone(self.material.as_ref().unwrap());
+                    let bxdf = TabulatedBSSRDF::alloc(
+                        arena, si, eta, material, mode, sigma_a, sigma_s, table,
+                    );
+                    let bssrdf = BSDF::alloc(arena, &si.hit, &si.shading, Some(eta));
+                    bssrdf.add(bxdf);
+                    Some(bssrdf)
+                }
+            },
+            None => None,
+        };
     }
 }

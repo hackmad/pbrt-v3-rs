@@ -1,6 +1,7 @@
 //! Translucent Material
 
 use bumpalo::Bump;
+use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
 use core::microfacet::TrowbridgeReitzDistribution;
@@ -84,6 +85,7 @@ impl Material for TranslucentMaterial {
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
@@ -91,6 +93,7 @@ impl Material for TranslucentMaterial {
         mode: TransportMode,
         _allow_multiple_lobes: bool,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<BSSRDFType>,
     ) where
         'arena: 'scene,
     {
@@ -140,12 +143,10 @@ impl Material for TranslucentMaterial {
 
             if !t.is_black() {
                 let distrib = TrowbridgeReitzDistribution::alloc(arena, rough, rough, true);
-                let fresnel = FresnelDielectric::alloc(arena, 1.0, ETA);
                 result.add(MicrofacetTransmission::alloc(
                     arena,
                     t * ks,
                     distrib,
-                    fresnel,
                     1.0,
                     ETA,
                     mode,
@@ -154,6 +155,7 @@ impl Material for TranslucentMaterial {
         }
 
         *bsdf = Some(result);
+        *bssrdf = None;
     }
 }
 

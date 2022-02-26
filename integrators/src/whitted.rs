@@ -84,12 +84,14 @@ impl Integrator for WhittedIntegrator {
 
             // Compute scattering functions for surface interaction.
             let mut bsdf: Option<&mut BSDF> = None;
+            let mut bssrdf: Option<&mut BSDF> = None;
             isect.compute_scattering_functions(
                 arena,
                 ray,
                 false,
                 TransportMode::Radiance,
                 &mut bsdf,
+                &mut bssrdf,
             );
             if bsdf.is_none() {
                 let mut new_ray = isect.hit.spawn_ray(&ray.d);

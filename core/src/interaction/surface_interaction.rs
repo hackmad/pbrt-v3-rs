@@ -138,6 +138,7 @@ impl<'scene> SurfaceInteraction<'scene> {
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available.
     /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
     pub fn compute_scattering_functions<'arena>(
         &mut self,
         arena: &'arena Bump,
@@ -145,12 +146,20 @@ impl<'scene> SurfaceInteraction<'scene> {
         allow_multiple_lobes: bool,
         mode: TransportMode,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<&'arena mut BSDF<'scene>>,
     ) where
         'arena: 'scene,
     {
         self.compute_differentials(ray);
         self.primitive.map(|primitive| {
-            primitive.compute_scattering_functions(arena, self, mode, allow_multiple_lobes, bsdf)
+            primitive.compute_scattering_functions(
+                arena,
+                self,
+                mode,
+                allow_multiple_lobes,
+                bsdf,
+                bssrdf,
+            )
         });
     }
 

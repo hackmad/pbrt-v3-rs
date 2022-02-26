@@ -1,6 +1,7 @@
 //! Glass Material
 
 use bumpalo::Bump;
+use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
 use core::microfacet::*;
@@ -95,6 +96,7 @@ impl Material for GlassMaterial {
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
@@ -102,6 +104,7 @@ impl Material for GlassMaterial {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<BSSRDFType>,
     ) where
         'arena: 'scene,
     {
@@ -135,7 +138,6 @@ impl Material for GlassMaterial {
                         let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
                         result.add(SpecularReflection::alloc(arena, r, fresnel));
                     }
-
                     if !t.is_black() {
                         result.add(SpecularTransmission::alloc(arena, t, 1.0, eta, mode));
                     }
@@ -146,13 +148,11 @@ impl Material for GlassMaterial {
                         let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
                         result.add(MicrofacetReflection::alloc(arena, r, distrib, fresnel));
                     }
-
                     if !t.is_black() {
                         let distrib =
                             TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
-                        let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
                         result.add(MicrofacetTransmission::alloc(
-                            arena, t, distrib, fresnel, 1.0, eta, mode,
+                            arena, t, distrib, 1.0, eta, mode,
                         ));
                     }
                 };
@@ -160,6 +160,7 @@ impl Material for GlassMaterial {
         }
 
         *bsdf = Some(result);
+        *bssrdf = None;
     }
 }
 

@@ -2,6 +2,8 @@
 
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
 
 mod fourier;
 mod glass;
@@ -11,6 +13,7 @@ mod mirror;
 mod mix;
 mod plastic;
 mod substrate;
+mod subsurface;
 mod translucent;
 mod uber;
 
@@ -23,5 +26,6 @@ pub use mirror::*;
 pub use mix::*;
 pub use plastic::*;
 pub use substrate::*;
+pub use subsurface::*;
 pub use translucent::*;
 pub use uber::*;

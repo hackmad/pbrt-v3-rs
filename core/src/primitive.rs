@@ -48,6 +48,7 @@ pub trait Primitive {
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available.
     /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
@@ -55,6 +56,7 @@ pub trait Primitive {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<&'arena mut BSDF<'scene>>,
     ) where
         'arena: 'scene;
 }

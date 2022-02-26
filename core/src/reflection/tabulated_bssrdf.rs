@@ -9,7 +9,6 @@ use crate::interpolation::*;
 use crate::material::*;
 use crate::medium::phase_hg;
 use crate::scene::*;
-use bumpalo::collections::vec::Vec as BumpVec;
 use bumpalo::Bump;
 use std::sync::Arc;
 
@@ -20,7 +19,7 @@ pub struct TabulatedBSSRDF<'arena> {
     bxdf_type: BxDFType,
 
     /// Scattering profile details.
-    table: &'arena mut BSSRDFTable<'arena>,
+    table: Arc<BSSRDFTable>,
 
     /// Total reduction in radiance due to absorption and out-scattering
     /// `σt = σs + σa`. This combined effect of absorption and out-scattering is
@@ -54,7 +53,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         mode: TransportMode,
         sigma_a: Spectrum,
         sigma_s: Spectrum,
-        table: &'arena mut BSSRDFTable<'arena>,
+        table: Arc<BSSRDFTable>,
     ) -> &'arena mut BxDF<'arena> {
         let sigma_t = sigma_a + sigma_s;
 
@@ -84,7 +83,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
     /// * `arena` - The arena for memory allocations.
     #[allow(clippy::mut_from_ref)]
     pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let table = self.table.clone_alloc(arena);
+        let table = self.table.clone();
         let bssrdf = self.bssrdf.clone_alloc(arena);
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
@@ -306,7 +305,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         // Intersect BSSRDF sampling ray against the scene geometry.
 
         // Declare `IntersectionChain` and linked list.
-        let mut chain = Vec::new();
+        let mut chain = Vec::new(); // TODO: use BumpVec.
 
         // Accumulate chain of intersections along ray.
         let mut n_found = 0;
@@ -447,21 +446,22 @@ impl<'arena> TabulatedBSSRDF<'arena> {
 }
 
 /// Stores detailed information about the scattering profile `Sr`.
-pub struct BSSRDFTable<'arena> {
+#[derive(Clone)]
+pub struct BSSRDFTable {
     /// Single scattering albedos.
-    rho_samples: BumpVec<'arena, Float>,
+    rho_samples: Vec<Float>,
 
     /// Radii samples.
-    radius_samples: BumpVec<'arena, Float>,
+    radius_samples: Vec<Float>,
 
     /// Sample values for each of the n_rho_samples X n_radius_samples.
-    profile: BumpVec<'arena, Float>,
+    profile: Vec<Float>,
 
     /// CDF for the sample values `profile`.
-    profile_cdf: BumpVec<'arena, Float>,
+    profile_cdf: Vec<Float>,
 
     /// Effective albedo.
-    rho_eff: BumpVec<'arena, Float>,
+    rho_eff: Vec<Float>,
 
     /// Number of single scattering albedos.
     n_rho_samples: usize,
@@ -470,24 +470,19 @@ pub struct BSSRDFTable<'arena> {
     n_radius_samples: usize,
 }
 
-impl<'arena> BSSRDFTable<'arena> {
-    /// Allocate a new instance of `BSSRDFTable`.
+impl BSSRDFTable {
+    /// Create a new instance of `BSSRDFTable`.
     ///
-    /// * `arena`            - The arena for memory allocations.
     /// * `n_rho_samples`    - Number of single scattering albedos.
     /// * `n_radius_samples` - Number of radii albedos.
-    pub fn alloc(
-        arena: &'arena Bump,
-        n_rho_samples: usize,
-        n_radius_samples: usize,
-    ) -> &'arena mut Self {
-        let rho_samples = BumpVec::with_capacity_in(n_rho_samples, arena);
-        let radius_samples = BumpVec::with_capacity_in(n_radius_samples, arena);
-        let profile = BumpVec::with_capacity_in(n_radius_samples * n_rho_samples, arena);
-        let profile_cdf = BumpVec::with_capacity_in(n_radius_samples * n_rho_samples, arena);
-        let rho_eff = BumpVec::with_capacity_in(n_rho_samples, arena);
+    pub fn new(n_rho_samples: usize, n_radius_samples: usize) -> Self {
+        let rho_samples = Vec::with_capacity(n_rho_samples);
+        let radius_samples = Vec::with_capacity(n_radius_samples);
+        let profile = Vec::with_capacity(n_radius_samples * n_rho_samples);
+        let profile_cdf = Vec::with_capacity(n_radius_samples * n_rho_samples);
+        let rho_eff = Vec::with_capacity(n_rho_samples);
 
-        arena.alloc(Self {
+        Self {
             rho_samples,
             radius_samples,
             profile,
@@ -495,45 +490,7 @@ impl<'arena> BSSRDFTable<'arena> {
             profile_cdf,
             n_rho_samples,
             n_radius_samples,
-        })
-    }
-
-    /// Clone into a newly allocated a new instance of `TabulatedBSSRDF`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut Self {
-        let mut rho_samples = BumpVec::with_capacity_in(self.n_rho_samples, arena);
-        let mut radius_samples = BumpVec::with_capacity_in(self.n_radius_samples, arena);
-        let mut profile =
-            BumpVec::with_capacity_in(self.n_radius_samples * self.n_rho_samples, arena);
-        let mut profile_cdf =
-            BumpVec::with_capacity_in(self.n_radius_samples * self.n_rho_samples, arena);
-        let mut rho_eff = BumpVec::with_capacity_in(self.n_rho_samples, arena);
-
-        for i in 0..self.n_rho_samples {
-            rho_samples[i] = self.rho_samples[i];
         }
-        for i in 0..self.n_radius_samples {
-            radius_samples[i] = self.radius_samples[i];
-        }
-        for i in 0..self.n_radius_samples * self.n_rho_samples {
-            profile[i] = self.profile[i];
-            profile_cdf[i] = self.profile_cdf[i];
-        }
-        for i in 0..self.n_rho_samples {
-            rho_eff[i] = self.rho_eff[i];
-        }
-
-        arena.alloc(Self {
-            rho_samples,
-            radius_samples,
-            profile,
-            rho_eff,
-            profile_cdf,
-            n_rho_samples: self.n_rho_samples,
-            n_radius_samples: self.n_radius_samples,
-        })
     }
 
     /// Finds profile values for a given albedo and radius sample index.

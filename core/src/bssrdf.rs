@@ -4,6 +4,8 @@ use crate::geometry::*;
 use crate::interaction::*;
 use crate::material::*;
 use crate::pbrt::*;
+use crate::reflection::BSSRDFTable;
+use crate::spectrum::RGBSpectrum;
 use bumpalo::Bump;
 use std::sync::Arc;
 
@@ -81,6 +83,17 @@ impl SeparableBSSRDF {
             mode: self.mode,
         })
     }
+}
+
+/// Types of BSSRDFs.
+pub enum BSSRDFType {
+    /// Tabulated BSSRDF (Separable BSSRDF).
+    Tabulated {
+        eta: Float,
+        sigma_a: RGBSpectrum,
+        sigma_s: RGBSpectrum,
+        table: Arc<BSSRDFTable>,
+    },
 }
 
 /// Evaluate first moment of the Fresnel reflectance function.

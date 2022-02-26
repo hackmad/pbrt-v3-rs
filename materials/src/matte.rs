@@ -1,6 +1,7 @@
 //! Matte Material
 
 use bumpalo::Bump;
+use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
 use core::paramset::*;
@@ -54,6 +55,7 @@ impl Material for MatteMaterial {
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
@@ -61,6 +63,7 @@ impl Material for MatteMaterial {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<BSSRDFType>,
     ) where
         'arena: 'scene,
     {
@@ -84,6 +87,7 @@ impl Material for MatteMaterial {
         }
 
         *bsdf = Some(result);
+        *bssrdf = None;
     }
 }
 

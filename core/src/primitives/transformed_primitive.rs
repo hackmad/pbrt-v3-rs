@@ -110,7 +110,8 @@ impl Primitive for TransformedPrimitive {
     /// * `_si`                   - The surface interaction at the intersection.
     /// * `_mode`                 - Transport mode.
     /// * `_allow_multiple_lobes` - Allow multiple lobes.
-    /// * `bsdf`                  - The computed BSDF.
+    /// * `_bsdf`                 - The computed BSDF.
+    /// * `_bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         _arena: &'arena Bump,
@@ -118,6 +119,7 @@ impl Primitive for TransformedPrimitive {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        _bssrdf: &mut Option<&'arena mut BSDF<'scene>>,
     ) where
         'arena: 'scene,
     {

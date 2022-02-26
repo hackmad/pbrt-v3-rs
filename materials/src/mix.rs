@@ -1,6 +1,7 @@
 //! Mix Material
 
 use bumpalo::Bump;
+use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
 use core::paramset::*;
@@ -50,6 +51,7 @@ impl Material for MixMaterial {
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available.
     /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
@@ -57,6 +59,7 @@ impl Material for MixMaterial {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<BSSRDFType>,
     ) where
         'arena: 'scene,
     {
@@ -70,16 +73,25 @@ impl Material for MixMaterial {
         let mut si2 = si.clone();
 
         let mut si_bsdf: Option<&mut BSDF> = None;
-        self.m1
-            .compute_scattering_functions(arena, si, mode, allow_multiple_lobes, &mut si_bsdf);
+        let mut si_bssrdf: Option<BSSRDFType> = None;
+        self.m1.compute_scattering_functions(
+            arena,
+            si,
+            mode,
+            allow_multiple_lobes,
+            &mut si_bsdf,
+            &mut si_bssrdf,
+        );
 
         let mut si2_bsdf: Option<&mut BSDF> = None;
+        let mut si2_bssrdf: Option<BSSRDFType> = None;
         self.m2.compute_scattering_functions(
             arena,
             &mut si2,
             mode,
             allow_multiple_lobes,
             &mut si2_bsdf,
+            &mut si2_bssrdf,
         );
 
         // Initialize `si.bsdf` with weighted mixture of BxDFs.
@@ -108,6 +120,7 @@ impl Material for MixMaterial {
         }
 
         *bsdf = Some(result);
+        *bssrdf = None; // NOTE: BSSRDFs are ignored.
     }
 }
 
