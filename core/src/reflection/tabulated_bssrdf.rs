@@ -476,11 +476,11 @@ impl BSSRDFTable {
     /// * `n_rho_samples`    - Number of single scattering albedos.
     /// * `n_radius_samples` - Number of radii albedos.
     pub fn new(n_rho_samples: usize, n_radius_samples: usize) -> Self {
-        let rho_samples = Vec::with_capacity(n_rho_samples);
-        let radius_samples = Vec::with_capacity(n_radius_samples);
-        let profile = Vec::with_capacity(n_radius_samples * n_rho_samples);
-        let profile_cdf = Vec::with_capacity(n_radius_samples * n_rho_samples);
-        let rho_eff = Vec::with_capacity(n_rho_samples);
+        let rho_samples = vec![0.0; n_rho_samples];
+        let radius_samples = vec![0.0; n_radius_samples];
+        let profile = vec![0.0; n_radius_samples * n_rho_samples];
+        let profile_cdf = vec![0.0; n_radius_samples * n_rho_samples];
+        let rho_eff = vec![0.0; n_rho_samples];
 
         Self {
             rho_samples,
@@ -554,12 +554,12 @@ impl BSSRDFTable {
             }
 
             // Compute effective albedo `rho_eff` and CDF for importance sampling.
-            let (profile_cdf, rho_eff) = integrate_catmull_rom(
-                &self.radius_samples,
-                &self.profile[i * self.n_radius_samples..],
-            );
+            let start = i * self.n_radius_samples;
+            let end = start + self.n_radius_samples;
+            let (profile_cdf, rho_eff) =
+                integrate_catmull_rom(&self.radius_samples, &self.profile[start..end]);
             self.rho_eff[i] = rho_eff;
-            self.profile_cdf[i * self.n_radius_samples..].copy_from_slice(&profile_cdf);
+            self.profile_cdf[start..end].copy_from_slice(&profile_cdf);
         });
     }
 }
