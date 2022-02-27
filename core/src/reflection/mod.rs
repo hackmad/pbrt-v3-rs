@@ -24,6 +24,7 @@ mod oren_nayar;
 mod scaled_bxdf;
 mod specular_reflection;
 mod specular_transmission;
+mod tabulated_bssrdf;
 
 // Re-export
 pub use bsdf::*;
@@ -42,8 +43,15 @@ pub use oren_nayar::*;
 pub use scaled_bxdf::*;
 pub use specular_reflection::*;
 pub use specular_transmission::*;
+pub use tabulated_bssrdf::*;
 
 /// BxDF for BRDFs and BTDFs.
+///
+/// NOTES:
+///
+/// The PBRT source code uses a `SeparableBSDFAdapter`. We bypass that by
+/// enumerating the BSSRDFs directly to avoid dealing with trait objects or
+/// nesting enumerations which will add more boiler plate code.
 pub enum BxDF<'arena> {
     FourierBSDF(&'arena mut FourierBSDF),
     FresnelBlend(&'arena mut FresnelBlend<'arena>),
@@ -56,6 +64,7 @@ pub enum BxDF<'arena> {
     ScaledBxDF(&'arena mut ScaledBxDF<'arena>),
     SpecularReflection(&'arena mut SpecularReflection<'arena>),
     SpecularTransmission(&'arena mut SpecularTransmission<'arena>),
+    TabulatedBSSRDF(&'arena mut TabulatedBSSRDF<'arena>),
 }
 
 impl<'arena> BxDF<'arena> {
@@ -76,6 +85,7 @@ impl<'arena> BxDF<'arena> {
             BxDF::ScaledBxDF(bxdf) => bxdf.clone_alloc(arena),
             BxDF::SpecularReflection(bxdf) => bxdf.clone_alloc(arena),
             BxDF::SpecularTransmission(bxdf) => bxdf.clone_alloc(arena),
+            BxDF::TabulatedBSSRDF(bxdf) => bxdf.clone_alloc(arena),
         }
     }
 
@@ -93,6 +103,7 @@ impl<'arena> BxDF<'arena> {
             BxDF::ScaledBxDF(bxdf) => bxdf.get_type(),
             BxDF::SpecularReflection(bxdf) => bxdf.get_type(),
             BxDF::SpecularTransmission(bxdf) => bxdf.get_type(),
+            BxDF::TabulatedBSSRDF(bxdf) => bxdf.get_type(),
         }
     }
 
@@ -122,6 +133,7 @@ impl<'arena> BxDF<'arena> {
             BxDF::ScaledBxDF(bxdf) => bxdf.f(wo, wi),
             BxDF::SpecularReflection(bxdf) => bxdf.f(wo, wi),
             BxDF::SpecularTransmission(bxdf) => bxdf.f(wo, wi),
+            BxDF::TabulatedBSSRDF(bxdf) => bxdf.f(wo, wi),
         }
     }
 

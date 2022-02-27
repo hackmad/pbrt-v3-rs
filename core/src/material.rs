@@ -1,13 +1,15 @@
 //! Material
 
+use crate::bssrdf::*;
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::pbrt::*;
+use crate::reflection::*;
 use crate::texture::*;
 use bumpalo::Bump;
 use std::sync::Arc;
 
-// TransportMode enumeration.
+// Light transport mode enumeration.
 #[derive(Copy, Clone, PartialEq)]
 pub enum TransportMode {
     /// Indicates incident ray that intersected a point started at the camera.
@@ -23,6 +25,17 @@ pub trait Material {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
+    /// NOTES:
+    ///
+    /// The `'arena: 'scene` bound doesn't make sense. The `Bump` allocator lives
+    /// in the rendering loop for each tile, `SamplerIntegrator::render_tile()`.
+    /// So it will not outlive the `Scene`. But somehow it satisfies Rust compiler.
+    /// Need to understand this better.
+    ///
+    /// This mutates `SurfaceInteraction` properties during bump mapping and
+    /// also returns BSDF and BSSRDF with different lifetimes. Easier to use
+    /// shared mutable refereces than return a value out of the function.
+    ///
     /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
@@ -30,13 +43,18 @@ pub trait Material {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available.
-    fn compute_scattering_functions<'primtive, 'arena>(
+    /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
+    fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'primtive, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-    );
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<BSSRDF>,
+    ) where
+        'arena: 'scene;
 
     /// Update the normal at the surface interaction using a bump map.
     ///

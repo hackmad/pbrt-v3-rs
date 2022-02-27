@@ -1,11 +1,13 @@
 //! Geometric Primitives
 
+use crate::bssrdf::*;
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::light::*;
 use crate::material::*;
 use crate::medium::*;
 use crate::primitive::*;
+use crate::reflection::*;
 use bumpalo::Bump;
 use std::sync::Arc;
 
@@ -119,15 +121,31 @@ impl Primitive for GeometricPrimitive {
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Allow multiple lobes.
-    fn compute_scattering_functions<'primtive, 'arena>(
+    /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
+    fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'primtive, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-    ) {
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene,
+    {
         if let Some(material) = self.material.as_ref() {
-            material.compute_scattering_functions(arena, si, mode, allow_multiple_lobes);
+            let mut bssrdf_type: Option<BSSRDF> = None;
+            material.compute_scattering_functions(
+                arena,
+                si,
+                mode,
+                allow_multiple_lobes,
+                bsdf,
+                &mut bssrdf_type,
+            );
+
+            *bssrdf = bssrdf_type.map(|b| b.alloc(arena, si, Arc::clone(material), mode));
         }
     }
 }

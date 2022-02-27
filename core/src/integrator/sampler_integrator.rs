@@ -73,6 +73,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `isect`   - The surface interaction.
+    /// * `bsdf`    - The BSDF at the surface interaction.
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursive depth.
@@ -81,11 +82,12 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         arena: &Bump,
         ray: &mut Ray,
         isect: &SurfaceInteraction,
+        bsdf: &Option<&mut BSDF>,
         scene: &Scene,
         sampler: &mut ArcSampler,
         depth: usize,
     ) -> Spectrum {
-        if let Some(bsdf) = &isect.bsdf {
+        if let Some(bsdf) = bsdf.as_deref() {
             // Compute specular reflection direction `wi` and BSDF value.
             let wo = isect.hit.wo;
 
@@ -141,6 +143,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `isect`   - The surface interaction.
+    /// * `bsdf`    - The BSDF at the surface interaction.
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursive depth.
@@ -149,11 +152,12 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         arena: &Bump,
         ray: &mut Ray,
         isect: &SurfaceInteraction,
+        bsdf: &Option<&mut BSDF>,
         scene: &Scene,
         sampler: &mut ArcSampler,
         depth: usize,
     ) -> Spectrum {
-        if let Some(bsdf) = &isect.bsdf {
+        if let Some(bsdf) = bsdf.as_deref() {
             let wo = isect.hit.wo;
             let p = isect.hit.p;
 

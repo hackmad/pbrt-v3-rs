@@ -4,6 +4,7 @@ use crate::geometry::*;
 use crate::interaction::*;
 use crate::light::*;
 use crate::material::*;
+use crate::reflection::*;
 use bumpalo::Bump;
 use std::sync::Arc;
 
@@ -39,6 +40,22 @@ pub trait Primitive {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
+    /// NOTES:
+    ///
+    /// The `'arena: 'scene` bound doesn't make sense. The `Bump` allocator lives
+    /// in the rendering loop for each tile, `SamplerIntegrator::render_tile()`.
+    /// So it will not outlive the `Scene`. But somehow it satisfies Rust compiler.
+    /// Need to understand this better.
+    ///
+    /// `Material::compute_scattering_functions()` mutates `SurfaceInteraction`
+    /// properties during bump mapping and also returns BSDF and BSSRDF with
+    /// different lifetimes. Easier to use shared mutable refereces than return
+    /// a value out of the function.
+    ///
+    /// The PBRT source code uses a `SeparableBSDFAdapter`. We bypass that by
+    /// enumerating the BSSRDFs in `BxDF` to avoid dealing with trait objects or
+    /// nesting / enumerations which will add more boiler plate code.
+    ///
     /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
@@ -46,13 +63,18 @@ pub trait Primitive {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available.
-    fn compute_scattering_functions<'primtive, 'arena>(
+    /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
+    fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'primtive, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-    );
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<&'arena mut BSDF<'scene>>,
+    ) where
+        'arena: 'scene;
 }
 
 /// Atomic referenced counted `Primitive`.

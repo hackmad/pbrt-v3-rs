@@ -12,7 +12,7 @@ pub struct MicrofacetTransmission<'arena> {
     /// BxDF type.
     bxdf_type: BxDFType,
 
-    /// Fresnel interface for dielectrics and conductors.
+    /// Fresnel interface for dielectrics.
     fresnel: &'arena mut Fresnel<'arena>,
 
     /// Spectrum used to scale the transmitted colour.
@@ -37,7 +37,6 @@ impl<'arena> MicrofacetTransmission<'arena> {
     /// * `arena`        - The arena for memory allocations.
     /// * `t`            - Spectrum used to scale the transmitted colour.
     /// * `distribution` - Microfacet distribution.
-    /// * `fresnel`      - Fresnel interface for dielectrics and conductors.
     /// * `eta_a`        - Index of refraction above the surface (same side as
     ///                    surface normal).
     /// * `eta_b`        - Index of refraction below the surface (opposite side
@@ -49,11 +48,11 @@ impl<'arena> MicrofacetTransmission<'arena> {
         arena: &'arena Bump,
         t: Spectrum,
         distribution: &'arena mut MicrofacetDistribution<'arena>,
-        fresnel: &'arena mut Fresnel<'arena>,
         eta_a: Float,
         eta_b: Float,
         mode: TransportMode,
     ) -> &'arena mut BxDF<'arena> {
+        let fresnel = FresnelDielectric::alloc(arena, eta_a, eta_b);
         let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_GLOSSY,
             distribution,

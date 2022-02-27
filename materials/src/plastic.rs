@@ -1,6 +1,7 @@
 //! Plastic Material
 
 use bumpalo::Bump;
+use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
 use core::microfacet::*;
@@ -72,24 +73,30 @@ impl Material for PlasticMaterial {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
-    fn compute_scattering_functions<'primtive, 'arena>(
+    /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
+    fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'primtive, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-    ) {
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<BSSRDF>,
+    ) where
+        'arena: 'scene,
+    {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
         }
 
-        let bsdf = BSDF::alloc(arena, &si, None);
+        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
 
         // Initialize diffuse component of plastic material.
         let kd = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kd.is_black() {
-            bsdf.add(LambertianReflection::alloc(arena, kd));
+            result.add(LambertianReflection::alloc(arena, kd));
         }
 
         // Initialize specular component of plastic material.
@@ -103,10 +110,11 @@ impl Material for PlasticMaterial {
                 rough = TrowbridgeReitzDistribution::roughness_to_alpha(rough);
             }
             let distrib = TrowbridgeReitzDistribution::alloc(arena, rough, rough, true);
-            bsdf.add(MicrofacetReflection::alloc(arena, ks, distrib, fresnel));
+            result.add(MicrofacetReflection::alloc(arena, ks, distrib, fresnel));
         }
 
-        si.bsdf = Some(bsdf);
+        *bsdf = Some(result);
+        *bssrdf = None;
     }
 }
 

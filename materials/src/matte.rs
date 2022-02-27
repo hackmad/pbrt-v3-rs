@@ -1,6 +1,7 @@
 //! Matte Material
 
 use bumpalo::Bump;
+use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
 use core::paramset::*;
@@ -53,19 +54,25 @@ impl Material for MatteMaterial {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
-    fn compute_scattering_functions<'primtive, 'arena>(
+    /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
+    fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'primtive, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-    ) {
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<BSSRDF>,
+    ) where
+        'arena: 'scene,
+    {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
         }
 
-        let bsdf = BSDF::alloc(arena, &si, None);
+        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
 
         // Evaluate textures for `MatteMaterial` material and allocate BRDF.
         let r = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
@@ -76,10 +83,11 @@ impl Material for MatteMaterial {
             } else {
                 OrenNayar::alloc(arena, r, sig)
             };
-            bsdf.add(bxdf);
+            result.add(bxdf);
         }
 
-        si.bsdf = Some(bsdf);
+        *bsdf = Some(result);
+        *bssrdf = None;
     }
 }
 

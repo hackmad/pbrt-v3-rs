@@ -1,6 +1,7 @@
 //! Glass Material
 
 use bumpalo::Bump;
+use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
 use core::microfacet::*;
@@ -94,13 +95,19 @@ impl Material for GlassMaterial {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
-    fn compute_scattering_functions<'primtive, 'arena>(
+    /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
+    fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'primtive, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-    ) {
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<BSSRDF>,
+    ) where
+        'arena: 'scene,
+    {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
@@ -113,13 +120,13 @@ impl Material for GlassMaterial {
         let t = self.kt.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
 
         // Initialize bsdf for smooth or rough dielectric.
-        let bsdf = BSDF::alloc(arena, &si, None);
+        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
 
         // Evaluate textures for `GlassMaterial` material and allocate BRDF
         if !(r.is_black() && t.is_black()) {
             let is_specular = urough == 0.0 && vrough == 0.0;
             if is_specular && allow_multiple_lobes {
-                bsdf.add(FresnelSpecular::alloc(arena, r, t, 1.0, eta, mode));
+                result.add(FresnelSpecular::alloc(arena, r, t, 1.0, eta, mode));
             } else {
                 if self.remap_roughness {
                     urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
@@ -129,33 +136,31 @@ impl Material for GlassMaterial {
                 if is_specular {
                     if !r.is_black() {
                         let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
-                        bsdf.add(SpecularReflection::alloc(arena, r, fresnel));
+                        result.add(SpecularReflection::alloc(arena, r, fresnel));
                     }
-
                     if !t.is_black() {
-                        bsdf.add(SpecularTransmission::alloc(arena, t, 1.0, eta, mode));
+                        result.add(SpecularTransmission::alloc(arena, t, 1.0, eta, mode));
                     }
                 } else {
                     if !r.is_black() {
                         let distrib =
                             TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
                         let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
-                        bsdf.add(MicrofacetReflection::alloc(arena, r, distrib, fresnel));
+                        result.add(MicrofacetReflection::alloc(arena, r, distrib, fresnel));
                     }
-
                     if !t.is_black() {
                         let distrib =
                             TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
-                        let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
-                        bsdf.add(MicrofacetTransmission::alloc(
-                            arena, t, distrib, fresnel, 1.0, eta, mode,
+                        result.add(MicrofacetTransmission::alloc(
+                            arena, t, distrib, 1.0, eta, mode,
                         ));
                     }
                 };
             }
         }
 
-        si.bsdf = Some(bsdf);
+        *bsdf = Some(result);
+        *bssrdf = None;
     }
 }
 

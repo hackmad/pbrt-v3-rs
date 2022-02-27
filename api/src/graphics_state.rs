@@ -281,6 +281,7 @@ impl GraphicsState {
         match name {
             "fourier" => Ok(Arc::new(FourierMaterial::from((mp, self.cwd.as_ref())))),
             "glass" => Ok(Arc::new(GlassMaterial::from(mp))),
+            "kdsubsurface" => Ok(Arc::new(KdSubsurfaceMaterial::from(mp))),
             "matte" => Ok(Arc::new(MatteMaterial::from(mp))),
             "metal" => Ok(Arc::new(MetalMaterial::from(mp))),
             "mirror" => Ok(Arc::new(MirrorMaterial::from(mp))),
@@ -307,6 +308,7 @@ impl GraphicsState {
             }
             "plastic" => Ok(Arc::new(PlasticMaterial::from(mp))),
             "substrate" => Ok(Arc::new(SubstrateMaterial::from(mp))),
+            "subsurface" => Ok(Arc::new(SubsurfaceMaterial::from(mp))),
             "translucent" => Ok(Arc::new(TranslucentMaterial::from(mp))),
             "uber" => Ok(Arc::new(UberMaterial::from(mp))),
             "none" => Err(String::from("Unable to create material 'none'.")),

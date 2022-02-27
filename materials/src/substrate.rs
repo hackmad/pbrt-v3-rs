@@ -1,6 +1,7 @@
 //! Substrate Material
 
 use bumpalo::Bump;
+use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
 use core::microfacet::TrowbridgeReitzDistribution;
@@ -87,19 +88,25 @@ impl Material for SubstrateMaterial {
     ///                            BxDFs that aggregate multiple types of
     ///                            scattering into a single BxDF when such BxDFs
     ///                            are available (ignored).
-    fn compute_scattering_functions<'primtive, 'arena>(
+    /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
+    fn compute_scattering_functions<'scene, 'arena>(
         &self,
         arena: &'arena Bump,
-        si: &mut SurfaceInteraction<'primtive, 'arena>,
+        si: &mut SurfaceInteraction<'scene>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-    ) {
+        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bssrdf: &mut Option<BSSRDF>,
+    ) where
+        'arena: 'scene,
+    {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
         }
 
-        let bsdf = BSDF::alloc(arena, &si, None);
+        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
 
         // Evaluate textures for `SubstrateMaterial` material and allocate BRDF.
         let d = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
@@ -114,10 +121,11 @@ impl Material for SubstrateMaterial {
                 vrough = TrowbridgeReitzDistribution::roughness_to_alpha(vrough);
             }
             let distrib = TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
-            bsdf.add(FresnelBlend::alloc(arena, d, s, distrib));
+            result.add(FresnelBlend::alloc(arena, d, s, distrib));
         }
 
-        si.bsdf = Some(bsdf);
+        *bsdf = Some(result);
+        *bssrdf = None;
     }
 }
 

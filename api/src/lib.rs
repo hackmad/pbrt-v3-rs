@@ -645,13 +645,25 @@ impl Api {
                 self.graphics_state.spectrum_textures.clone(),
             );
             if let Ok(mtl) = self.graphics_state.make_material(&name, &mp) {
+                if (name == "subsurface" || name == "kdsubsurface")
+                    && (self.render_options.integrator_name != "path"
+                        && self.render_options.integrator_name != "volpath")
+                {
+                    warn!(
+                        "Subsurface scattering material '{}' used, but '{}' \
+                          integrator doesn't support subsurface scattering. \
+                          Use 'path' or 'volpath'.",
+                        name, self.render_options.integrator_name
+                    );
+                }
+
                 self.graphics_state.current_material = Some(Arc::new(MaterialInstance::new(
                     &name,
                     Arc::clone(&mtl),
                     params,
-                )))
+                )));
             } else {
-                self.graphics_state.current_material = None
+                self.graphics_state.current_material = None;
             }
         }
     }
@@ -679,6 +691,19 @@ impl Api {
                 if self.graphics_state.named_materials.contains_key(&name) {
                     warn!("Named material '{}' redefined.", name);
                 }
+
+                if (mat_name == "subsurface" || mat_name == "kdsubsurface")
+                    && (self.render_options.integrator_name != "path"
+                        && self.render_options.integrator_name != "volpath")
+                {
+                    warn!(
+                        "Subsurface scattering material '{}' used, but '{}' \
+                          integrator doesn't support subsurface scattering. \
+                          Use 'path' or 'volpath'.",
+                        name, self.render_options.integrator_name
+                    );
+                }
+
                 if self.graphics_state.named_materials_shared {
                     let nm = self.graphics_state.named_materials.clone();
                     self.graphics_state.named_materials = nm;

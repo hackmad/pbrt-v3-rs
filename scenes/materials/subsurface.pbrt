@@ -1,0 +1,93 @@
+# Based on f9-5.pbrt/f11-15.pbrt scene from https://www.pbrt.org/scenes-v3
+
+Film "image" "string filename" "renders/materials/subsurface.png"
+     "integer xresolution" [300] "integer yresolution" [150]
+
+Sampler "sobol" "integer pixelsamples" [256]
+
+LookAt 0 -6 3  0 0 0  0 0 1
+Translate -1 0 0
+Camera "perspective" "float fov" 40
+
+Integrator "whitted"
+
+WorldBegin
+
+  AttributeBegin
+    Rotate 90 0 0 1
+    Rotate -90 1 0 0
+    LightSource "infinite"
+                "string mapname" "../../../pbrt-v3-scenes/figures/textures/20060807_wells6_hd.exr"
+                "color scale" [ 2.5 2.5 2.5 ]
+  AttributeEnd
+  
+  Translate .4 0 0
+  
+  AttributeBegin
+    Translate -2.1 0 0
+    Material "subsurface" "string name" "Ketchup"
+             "float uroughness" [0.05] 
+             "float vroughness" [0.05]
+             "bool remaproughness" ["false"]
+    Shape "sphere" "float radius" 1
+  AttributeEnd
+  
+  AttributeBegin
+    Translate .25 -.5 0
+    Material "subsurface" "string name" "Apple"
+             "float uroughness" [0.05] 
+             "float vroughness" [0.05]
+             "bool remaproughness" ["false"]
+    Shape "sphere" "float radius" 1
+  AttributeEnd
+  
+  AttributeBegin
+    Translate -1 3 0
+    Material "subsurface" "string name" "Skin1"
+             "float uroughness" [0.05] 
+             "float vroughness" [0.05]
+             "bool remaproughness" ["false"]
+    Shape "sphere" "float radius" 1
+  AttributeEnd
+  
+  AttributeBegin
+    Translate 2 2.25 0
+    Material "subsurface" "string name" "Coke"
+             "float uroughness" [0.05] 
+             "float vroughness" [0.05]
+             "bool remaproughness" ["false"]
+    Shape "sphere" "float radius" 1
+  AttributeEnd
+  
+  AttributeBegin
+    Translate 2.5 -1 0
+    
+
+    Texture "albedomap" "color" "imagemap"
+            "string filename" ["../../../pbrt-v3-scenes/head/textures/head_albedomap.png"]
+            
+
+    # mfp = inverse sigma_t value of Jensen's skin1 parameters (in meters)
+    Material "kdsubsurface"
+             "texture Kd" "albedomap"
+             "float eta" 1.33 
+             "color mfp" [ 1.2953e-03 9.5238e-04 6.7114e-04 ]
+             "float uroughness" [0.05] "float vroughness" [0.05]
+             "bool remaproughness" ["false"]
+
+    Shape "sphere" "float radius" 1
+  AttributeEnd
+  
+  AttributeBegin
+    Material "plastic" 
+             "color Kd" [.1 .1 .1]
+             "color Ks" [.7 .7 .7] 
+             "float roughness" .1
+    Translate 0 0 -1
+    Shape "trianglemesh"
+          "point P" [ -30 -30 0   30 -30 0   30 30 0 -30 30 0 ]
+          "float uv" [ 0 0 1 0 1 1 0 1 ]
+          "integer indices" [ 0 1 2 2 3 0 ]
+  AttributeEnd
+
+WorldEnd
