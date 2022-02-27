@@ -21,6 +21,12 @@ pub struct TabulatedBSSRDF<'arena> {
     /// Scattering profile details.
     table: Arc<BSSRDFTable>,
 
+    /// Absorption coefficient `σa`.
+    sigma_a: Spectrum,
+
+    /// Scattering coefficient `σs`.
+    sigma_s: Spectrum,
+
     /// Total reduction in radiance due to absorption and out-scattering
     /// `σt = σs + σa`. This combined effect of absorption and out-scattering is
     /// called attenuation or extinction./
@@ -71,6 +77,8 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_DIFFUSE,
             table,
+            sigma_a,
+            sigma_s,
             sigma_t,
             rho,
             bssrdf,
@@ -88,6 +96,8 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
             table,
+            sigma_a: self.sigma_a,
+            sigma_s: self.sigma_s,
             sigma_t: self.sigma_t,
             rho: self.rho,
             bssrdf,
@@ -108,8 +118,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
     pub fn f(&self, _wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let f = self.sw(wi);
 
-        // Update BSSRDF transmission term to account for adjoint light
-        // transport.
+        // Update BSSRDF transmission term to account for adjoint light transport.
         if self.bssrdf.mode == TransportMode::Radiance {
             f * self.bssrdf.eta * self.bssrdf.eta
         } else {
@@ -211,18 +220,31 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         'arena: 'scene,
     {
         let (si, sp, pdf) = self.sample_sp(scene, u1, u2);
-        let mut bsdf: Option<&'arena mut BSDF> = None;
+        let mut si_result: Option<SurfaceInteraction<'scene>> = None;
+        let mut bsdf_result: Option<&'arena mut BSDF> = None;
 
-        if let Some(mut isect) = si {
+        if let Some(mut si) = si {
             if !sp.is_black() {
                 // Initialize material model at sampled surface interaction.
-                bsdf = Some(BSDF::alloc(arena, &isect.hit, &isect.shading, None));
-                isect.hit.wo = Vector3f::from(isect.shading.n);
+                let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, None);
+                bsdf.add(TabulatedBSSRDF::alloc(
+                    arena,
+                    &si,
+                    self.bssrdf.eta,
+                    Arc::clone(&self.bssrdf.material),
+                    self.bssrdf.mode,
+                    self.sigma_a,
+                    self.sigma_s,
+                    Arc::clone(&self.table),
+                ));
+                bsdf_result = Some(bsdf);
+
+                si.hit.wo = Vector3f::from(si.shading.n);
             }
-            return (Some(isect), bsdf, sp, pdf);
+            si_result = Some(si);
         }
 
-        (None, bsdf, sp, pdf)
+        (si_result, bsdf_result, sp, pdf)
     }
 
     /// Use a different sampling technique per wavelength to deal with spectral
