@@ -6,6 +6,7 @@ use crate::material::*;
 use crate::pbrt::*;
 use crate::reflection::*;
 use crate::spectrum::RGBSpectrum;
+use bumpalo::boxed::Box as BumpBox;
 use bumpalo::Bump;
 use std::sync::Arc;
 
@@ -59,7 +60,7 @@ impl BSSRDF {
 }
 
 /// Implements a simple BSSRDF implementation that can support general `Shapes`.
-pub struct SeparableBSSRDF {
+pub struct SeparableBSSRDF<'arena> {
     /// Current outgoing surface interaction hit point.
     pub po_hit: Hit,
 
@@ -80,20 +81,22 @@ pub struct SeparableBSSRDF {
     pub ts: Vector3f,
 
     /// The underlying material.
-    pub material: ArcMaterial,
+    ///
+    /// NOTE: Wrapped in `bumpalo::boxed::Box` so it can be dropped.
+    pub material: BumpBox<'arena, ArcMaterial>,
 
     /// Light transport mode.
     pub mode: TransportMode,
 }
 
-impl SeparableBSSRDF {
+impl<'arena> SeparableBSSRDF<'arena> {
     /// Allocate a new instance of `SeparableBSSRDF`.
     ///
     /// * `po`       - Current outgoing surface interaction.
     /// * `eta`      - Index of refraction of the scattering medium.
     /// * `material` - The material.
     /// * `mode`     - Light transport mode.
-    pub fn alloc<'arena>(
+    pub fn alloc(
         arena: &'arena Bump,
         po: &SurfaceInteraction,
         eta: Float,
@@ -111,7 +114,7 @@ impl SeparableBSSRDF {
             ns,
             ss,
             ts,
-            material,
+            material: BumpBox::new_in(material, arena),
             mode,
         })
     }
@@ -120,7 +123,7 @@ impl SeparableBSSRDF {
     ///
     /// * `arena` - The arena for memory allocations.
     #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut Self {
+    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut Self {
         arena.alloc(Self {
             po_hit: self.po_hit.clone(),
             po_shading: self.po_shading.clone(),
@@ -128,7 +131,7 @@ impl SeparableBSSRDF {
             ns: self.ns.clone(),
             ss: self.ss.clone(),
             ts: self.ts.clone(),
-            material: Arc::clone(&self.material),
+            material: BumpBox::new_in(Arc::clone(&self.material), arena),
             mode: self.mode,
         })
     }
