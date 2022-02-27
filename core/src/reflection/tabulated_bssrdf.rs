@@ -21,12 +21,6 @@ pub struct TabulatedBSSRDF<'arena> {
     /// Scattering profile details.
     table: Arc<BSSRDFTable>,
 
-    /// Absorption coefficient `σa`.
-    sigma_a: Spectrum,
-
-    /// Scattering coefficient `σs`.
-    sigma_s: Spectrum,
-
     /// Total reduction in radiance due to absorption and out-scattering
     /// `σt = σs + σa`. This combined effect of absorption and out-scattering is
     /// called attenuation or extinction./
@@ -36,7 +30,7 @@ pub struct TabulatedBSSRDF<'arena> {
     rho: Spectrum,
 
     /// Separable BSSRDF.
-    bssrdf: &'arena mut SeparableBSSRDF,
+    bssrdf: &'arena mut SeparableBSSRDF<'arena>,
 }
 
 impl<'arena> TabulatedBSSRDF<'arena> {
@@ -77,8 +71,6 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         let model = arena.alloc(Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_DIFFUSE,
             table,
-            sigma_a,
-            sigma_s,
             sigma_t,
             rho,
             bssrdf,
@@ -96,8 +88,6 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         let model = arena.alloc(Self {
             bxdf_type: self.bxdf_type,
             table,
-            sigma_a: self.sigma_a,
-            sigma_s: self.sigma_s,
             sigma_t: self.sigma_t,
             rho: self.rho,
             bssrdf,
@@ -227,16 +217,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
             if !sp.is_black() {
                 // Initialize material model at sampled surface interaction.
                 let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, None);
-                bsdf.add(TabulatedBSSRDF::alloc(
-                    arena,
-                    &si,
-                    self.bssrdf.eta,
-                    Arc::clone(&self.bssrdf.material),
-                    self.bssrdf.mode,
-                    self.sigma_a,
-                    self.sigma_s,
-                    Arc::clone(&self.table),
-                ));
+                bsdf.add(self.clone_alloc(arena));
                 bsdf_result = Some(bsdf);
 
                 si.hit.wo = Vector3f::from(si.shading.n);
