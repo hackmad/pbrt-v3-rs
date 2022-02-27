@@ -460,7 +460,7 @@ pub struct BSSRDFTable {
     /// CDF for the sample values `profile`.
     profile_cdf: Vec<Float>,
 
-    /// Effective albedo.
+    /// Maps every albedo sample to its corresponding effective albedo.
     rho_eff: Vec<Float>,
 
     /// Number of single scattering albedos.

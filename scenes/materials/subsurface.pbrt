@@ -1,4 +1,4 @@
-# Based on f11-15.pbrt scene from https://www.pbrt.org/scenes-v3
+# Based on f9-5.pbrt/f11-15.pbrt scene from https://www.pbrt.org/scenes-v3
 
 Film "image" "string filename" "renders/materials/subsurface.png"
      "integer xresolution" [300] "integer yresolution" [150]
@@ -6,6 +6,7 @@ Film "image" "string filename" "renders/materials/subsurface.png"
 Sampler "sobol" "integer pixelsamples" [256]
 
 LookAt 0 -6 3  0 0 0  0 0 1
+Translate -1 0 0
 Camera "perspective" "float fov" 40
 
 Integrator "whitted"
@@ -16,7 +17,7 @@ WorldBegin
     Rotate 90 0 0 1
     Rotate -90 1 0 0
     LightSource "infinite"
-                "string mapname" "/Users/ahmad/Documents/Projects/Dev/rust/pbrt-v3-scenes/figures/textures/20060807_wells6_hd.exr"
+                "string mapname" "../../../pbrt-v3-scenes/figures/textures/20060807_wells6_hd.exr"
                 "color scale" [ 2.5 2.5 2.5 ]
   AttributeEnd
   
@@ -32,7 +33,6 @@ WorldBegin
   AttributeEnd
   
   AttributeBegin
-    # front left
     Translate .25 -.5 0
     Material "subsurface" "string name" "Apple"
              "float uroughness" [0.05] 
@@ -43,7 +43,6 @@ WorldBegin
   
   AttributeBegin
     Translate -1 3 0
-    # back rightn
     Material "subsurface" "string name" "Skin1"
              "float uroughness" [0.05] 
              "float vroughness" [0.05]
@@ -53,11 +52,29 @@ WorldBegin
   
   AttributeBegin
     Translate 2 2.25 0
-    # back left
     Material "subsurface" "string name" "Coke"
              "float uroughness" [0.05] 
              "float vroughness" [0.05]
              "bool remaproughness" ["false"]
+    Shape "sphere" "float radius" 1
+  AttributeEnd
+  
+  AttributeBegin
+    Translate 2.5 -1 0
+    
+
+    Texture "albedomap" "color" "imagemap"
+            "string filename" ["../../../pbrt-v3-scenes/head/textures/head_albedomap.png"]
+            
+
+    # mfp = inverse sigma_t value of Jensen's skin1 parameters (in meters)
+    Material "kdsubsurface"
+             "texture Kd" "albedomap"
+             "float eta" 1.33 
+             "color mfp" [ 1.2953e-03 9.5238e-04 6.7114e-04 ]
+             "float uroughness" [0.05] "float vroughness" [0.05]
+             "bool remaproughness" ["false"]
+
     Shape "sphere" "float radius" 1
   AttributeEnd
   

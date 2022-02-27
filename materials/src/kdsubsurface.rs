@@ -1,10 +1,9 @@
-//! Subsurface Material
+//! KdSubsurface Material
 
 use bumpalo::Bump;
 use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
-use core::medium::get_medium_scattering_properties;
 use core::microfacet::*;
 use core::paramset::*;
 use core::pbrt::*;
@@ -16,9 +15,12 @@ use textures::*;
 
 /// Implements subsurface scattering material that allows the scattering properties
 /// to vary as a function of the position on the surface.
-pub struct SubsurfaceMaterial {
+pub struct KdSubsurfaceMaterial {
     /// Scale factor for absorption and scattering coefficients.
     scale: Float,
+
+    /// Coefficient of diffuse reflection.
+    kd: ArcTexture<Spectrum>,
 
     /// Coefficient of glossy reflection.
     kr: ArcTexture<Spectrum>,
@@ -26,11 +28,8 @@ pub struct SubsurfaceMaterial {
     /// Coefficient of glossy transmission.
     kt: ArcTexture<Spectrum>,
 
-    /// Absorption coefficient `σa`.
-    sigma_a: ArcTexture<Spectrum>,
-
-    /// Scattering coefficient `σa`.
-    sigma_s: ArcTexture<Spectrum>,
+    /// Mean free path `1/σt`.
+    mfp: ArcTexture<Spectrum>,
 
     /// Optional microfacet roughness in the u direction. If zero, perfect
     /// specular reflection is modeled.
@@ -57,14 +56,14 @@ pub struct SubsurfaceMaterial {
     bump_map: Option<ArcTexture<Float>>,
 }
 
-impl SubsurfaceMaterial {
+impl KdSubsurfaceMaterial {
     /// Create a new `SubsurfaceMaterial`.
     ///
     /// * `scale`           - Scale factor for absorption and scattering coefficients.
+    /// * `kd`              - Coefficient of diffuse reflection.
     /// * `kr`              - Coefficient of glossy reflection.
     /// * `kt`              - Coefficient of glossy transmission.
-    /// * `sigma_a`         - Absorption coefficient `σa`.
-    /// * `sigma_s`         - Scattering coefficient `σa`.
+    /// * `mfp`             - Mean free path `1/σt`.
     /// * `g`               - Asymmetry parameter for Henyey-Greenstein phase function.
     /// * `eta`             - Index of refraction of the scattering medium.
     /// * `u_roughness`     - Optional microfacet roughness in the u direction.
@@ -81,10 +80,10 @@ impl SubsurfaceMaterial {
     /// * `bump_map`        - Optional bump map.
     pub fn new(
         scale: Float,
+        kd: ArcTexture<Spectrum>,
         kr: ArcTexture<Spectrum>,
         kt: ArcTexture<Spectrum>,
-        sigma_a: ArcTexture<Spectrum>,
-        sigma_s: ArcTexture<Spectrum>,
+        mfp: ArcTexture<Spectrum>,
         g: Float,
         eta: Float,
         u_roughness: ArcTexture<Float>,
@@ -97,10 +96,10 @@ impl SubsurfaceMaterial {
 
         Self {
             scale,
+            kd,
             kr,
             kt,
-            sigma_a,
-            sigma_s,
+            mfp,
             eta,
             table: Arc::new(table),
             u_roughness,
@@ -111,7 +110,7 @@ impl SubsurfaceMaterial {
     }
 }
 
-impl Material for SubsurfaceMaterial {
+impl Material for KdSubsurfaceMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
@@ -185,16 +184,9 @@ impl Material for SubsurfaceMaterial {
             }
         }
 
-        let sig_a = self.scale
-            * self
-                .sigma_a
-                .evaluate(&si.hit, &si.uv, &si.der)
-                .clamp_default();
-        let sig_s = self.scale
-            * self
-                .sigma_s
-                .evaluate(&si.hit, &si.uv, &si.der)
-                .clamp_default();
+        let mfree = self.scale * self.mfp.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
+        let kd = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
+        let (sig_a, sig_s) = self.table.subsurface_from_diffuse(&kd, &mfree);
 
         *bsdf = Some(result);
         *bssrdf = Some(BSSRDF::Tabulated {
@@ -206,43 +198,27 @@ impl Material for SubsurfaceMaterial {
     }
 }
 
-impl From<&TextureParams> for SubsurfaceMaterial {
+impl From<&TextureParams> for KdSubsurfaceMaterial {
     /// Create a Subsurface material from given parameter set.
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
-        let mut sig_a = RGBSpectrum::from_rgb(&[0.0011, 0.0024, 0.014], None);
-        let mut sig_s = RGBSpectrum::from_rgb(&[2.55, 3.21, 3.77], None);
-
-        let mut g = tp.find_float("g", 0.0);
-
-        let name = tp.find_string("name", String::new());
-        if name.is_empty() {
-            // Enforce g=0 (the database specifies reduced scattering coefficients).
-            g = 0.0;
-        } else {
-            if let Some(measured_ss) = get_medium_scattering_properties(&name) {
-                sig_a = measured_ss.sigma_a;
-                sig_s = measured_ss.sigma_prime_s;
-            } else {
-                if !name.is_empty() {
-                    warn!("Named material '{}' not found.  Using defaults.", name);
-                }
-            }
-        }
-
-        let scale = tp.find_float("scale", 1.0);
         let eta = tp.find_float("eta", 1.33);
+        let scale = tp.find_float("scale", 1.0);
+        let g = tp.find_float("g", 0.0);
 
-        let sigma_a = tp
-            .get_spectrum_texture_or_else("sigma_a", sig_a, |v| Arc::new(ConstantTexture::new(v)));
-        let sigma_s = tp
-            .get_spectrum_texture_or_else("sigma_a", sig_s, |v| Arc::new(ConstantTexture::new(v)));
-
+        let kd = tp.get_spectrum_texture_or_else(
+            "Kd",
+            RGBSpectrum::from_rgb(&[0.5, 0.5, 0.5], None),
+            |v| Arc::new(ConstantTexture::new(v)),
+        );
         let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::ONE, |v| {
             Arc::new(ConstantTexture::new(v))
         });
         let kt = tp.get_spectrum_texture_or_else("Kt", Spectrum::ONE, |v| {
+            Arc::new(ConstantTexture::new(v))
+        });
+        let mfp = tp.get_spectrum_texture_or_else("mfp", Spectrum::ONE, |v| {
             Arc::new(ConstantTexture::new(v))
         });
 
@@ -255,12 +231,12 @@ impl From<&TextureParams> for SubsurfaceMaterial {
         let bump_map = tp.get_float_texture_or_none("bumpmap");
         let remap_roughness = tp.find_bool("remaproughness", true);
 
-        SubsurfaceMaterial::new(
+        KdSubsurfaceMaterial::new(
             scale,
+            kd,
             kr,
             kt,
-            sigma_a,
-            sigma_s,
+            mfp,
             g,
             eta,
             u_roughness,

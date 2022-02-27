@@ -7,6 +7,7 @@ extern crate log;
 
 mod fourier;
 mod glass;
+mod kdsubsurface;
 mod matte;
 mod metal;
 mod mirror;
@@ -20,6 +21,7 @@ mod uber;
 // Re-export
 pub use fourier::*;
 pub use glass::*;
+pub use kdsubsurface::*;
 pub use matte::*;
 pub use metal::*;
 pub use mirror::*;

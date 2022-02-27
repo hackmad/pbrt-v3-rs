@@ -281,6 +281,7 @@ impl GraphicsState {
         match name {
             "fourier" => Ok(Arc::new(FourierMaterial::from((mp, self.cwd.as_ref())))),
             "glass" => Ok(Arc::new(GlassMaterial::from(mp))),
+            "kdsubsurface" => Ok(Arc::new(KdSubsurfaceMaterial::from(mp))),
             "matte" => Ok(Arc::new(MatteMaterial::from(mp))),
             "metal" => Ok(Arc::new(MetalMaterial::from(mp))),
             "mirror" => Ok(Arc::new(MirrorMaterial::from(mp))),
