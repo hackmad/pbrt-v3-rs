@@ -1,6 +1,6 @@
 //! Material
 
-use crate::bssrdf::BSSRDFType;
+use crate::bssrdf::*;
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::pbrt::*;
@@ -25,6 +25,17 @@ pub trait Material {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
+    /// NOTES:
+    ///
+    /// The `'arena: 'scene` bound doesn't make sense. The `Bump` allocator lives
+    /// in the rendering loop for each tile, `SamplerIntegrator::render_tile()`.
+    /// So it will not outlive the `Scene`. But somehow it satisfies Rust compiler.
+    /// Need to understand this better.
+    ///
+    /// This mutates `SurfaceInteraction` properties during bump mapping and
+    /// also returns BSDF and BSSRDF with different lifetimes. Easier to use
+    /// shared mutable refereces than return a value out of the function.
+    ///
     /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
@@ -41,7 +52,7 @@ pub trait Material {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
-        bssrdf: &mut Option<BSSRDFType>,
+        bssrdf: &mut Option<BSSRDF>,
     ) where
         'arena: 'scene;
 

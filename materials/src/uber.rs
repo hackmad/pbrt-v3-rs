@@ -134,7 +134,7 @@ impl Material for UberMaterial {
         mode: TransportMode,
         _allow_multiple_lobes: bool,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
-        bssrdf: &mut Option<BSSRDFType>,
+        bssrdf: &mut Option<BSSRDF>,
     ) where
         'arena: 'scene,
     {

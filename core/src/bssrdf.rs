@@ -4,10 +4,59 @@ use crate::geometry::*;
 use crate::interaction::*;
 use crate::material::*;
 use crate::pbrt::*;
-use crate::reflection::BSSRDFTable;
+use crate::reflection::*;
 use crate::spectrum::RGBSpectrum;
 use bumpalo::Bump;
 use std::sync::Arc;
+
+/// Used to encapsulate BSSRDF parameters.
+///
+/// NOTE: Some implementations of corresponding `BxDF` need an `ArcMaterial`
+/// and this cannot be returned from within `Material::compute_scattering_functions()`.
+pub enum BSSRDF {
+    /// Tabulated BSSRDF (Separable BSSRDF).
+    Tabulated {
+        /// Index of refraction of the scattering medium.
+        eta: Float,
+        ///  Absorption coefficient `σa`.
+        sigma_a: RGBSpectrum,
+        ///  Scattering coefficient `σs`.
+        sigma_s: RGBSpectrum,
+        /// Detailed BSSRDF information.
+        table: Arc<BSSRDFTable>,
+    },
+}
+
+impl BSSRDF {
+    /// Allocates a `BxDF` corresponding to the `BSSRDF`.
+    ///
+    /// * `arena`    - The arena for memory allocations.
+    /// * `si`       - The surface interaction.
+    /// * `material` - The material.
+    /// * `mode`     - Light transport mode.
+    pub fn alloc<'arena>(
+        self,
+        arena: &'arena Bump,
+        si: &SurfaceInteraction,
+        material: ArcMaterial,
+        mode: TransportMode,
+    ) -> &'arena mut BSDF<'arena> {
+        match self {
+            BSSRDF::Tabulated {
+                eta,
+                sigma_a,
+                sigma_s,
+                table,
+            } => {
+                let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, Some(eta));
+                bsdf.add(TabulatedBSSRDF::alloc(
+                    arena, si, eta, material, mode, sigma_a, sigma_s, table,
+                ));
+                bsdf
+            }
+        }
+    }
+}
 
 /// Implements a simple BSSRDF implementation that can support general `Shapes`.
 pub struct SeparableBSSRDF {
@@ -83,17 +132,6 @@ impl SeparableBSSRDF {
             mode: self.mode,
         })
     }
-}
-
-/// Types of BSSRDFs.
-pub enum BSSRDFType {
-    /// Tabulated BSSRDF (Separable BSSRDF).
-    Tabulated {
-        eta: Float,
-        sigma_a: RGBSpectrum,
-        sigma_s: RGBSpectrum,
-        table: Arc<BSSRDFTable>,
-    },
 }
 
 /// Evaluate first moment of the Fresnel reflectance function.

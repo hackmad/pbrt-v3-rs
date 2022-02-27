@@ -131,7 +131,7 @@ impl Material for SubsurfaceMaterial {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
-        bssrdf: &mut Option<BSSRDFType>,
+        bssrdf: &mut Option<BSSRDF>,
     ) where
         'arena: 'scene,
     {
@@ -197,7 +197,7 @@ impl Material for SubsurfaceMaterial {
                 .clamp_default();
 
         *bsdf = Some(result);
-        *bssrdf = Some(BSSRDFType::Tabulated {
+        *bssrdf = Some(BSSRDF::Tabulated {
             eta: self.eta,
             sigma_a: sig_a,
             sigma_s: sig_s,

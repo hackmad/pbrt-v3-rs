@@ -59,7 +59,7 @@ impl Material for MixMaterial {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
-        bssrdf: &mut Option<BSSRDFType>,
+        bssrdf: &mut Option<BSSRDF>,
     ) where
         'arena: 'scene,
     {
@@ -73,7 +73,7 @@ impl Material for MixMaterial {
         let mut si2 = si.clone();
 
         let mut si_bsdf: Option<&mut BSDF> = None;
-        let mut si_bssrdf: Option<BSSRDFType> = None;
+        let mut si_bssrdf: Option<BSSRDF> = None;
         self.m1.compute_scattering_functions(
             arena,
             si,
@@ -84,7 +84,7 @@ impl Material for MixMaterial {
         );
 
         let mut si2_bsdf: Option<&mut BSDF> = None;
-        let mut si2_bssrdf: Option<BSSRDFType> = None;
+        let mut si2_bssrdf: Option<BSSRDF> = None;
         self.m2.compute_scattering_functions(
             arena,
             &mut si2,
@@ -120,7 +120,7 @@ impl Material for MixMaterial {
         }
 
         *bsdf = Some(result);
-        *bssrdf = None; // NOTE: BSSRDFs are ignored.
+        *bssrdf = None; // TODO: Should the BSSRDFs be ignored?
     }
 }
 

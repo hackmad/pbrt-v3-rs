@@ -1,6 +1,6 @@
 //! Geometric Primitives
 
-use crate::bssrdf::BSSRDFType;
+use crate::bssrdf::*;
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::light::*;
@@ -134,8 +134,8 @@ impl Primitive for GeometricPrimitive {
     ) where
         'arena: 'scene,
     {
-        let mut bssrdf_type: Option<BSSRDFType> = None;
-        self.material.as_ref().map(|material| {
+        if let Some(material) = self.material.as_ref() {
+            let mut bssrdf_type: Option<BSSRDF> = None;
             material.compute_scattering_functions(
                 arena,
                 si,
@@ -143,27 +143,9 @@ impl Primitive for GeometricPrimitive {
                 allow_multiple_lobes,
                 bsdf,
                 &mut bssrdf_type,
-            )
-        });
+            );
 
-        *bssrdf = match bssrdf_type {
-            Some(t) => match t {
-                BSSRDFType::Tabulated {
-                    eta,
-                    sigma_a,
-                    sigma_s,
-                    table,
-                } => {
-                    let material = Arc::clone(self.material.as_ref().unwrap());
-                    let bxdf = TabulatedBSSRDF::alloc(
-                        arena, si, eta, material, mode, sigma_a, sigma_s, table,
-                    );
-                    let bssrdf = BSDF::alloc(arena, &si.hit, &si.shading, Some(eta));
-                    bssrdf.add(bxdf);
-                    Some(bssrdf)
-                }
-            },
-            None => None,
-        };
+            *bssrdf = bssrdf_type.map(|b| b.alloc(arena, si, Arc::clone(material), mode));
+        }
     }
 }

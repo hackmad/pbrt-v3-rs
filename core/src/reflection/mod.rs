@@ -46,6 +46,12 @@ pub use specular_transmission::*;
 pub use tabulated_bssrdf::*;
 
 /// BxDF for BRDFs and BTDFs.
+///
+/// NOTES:
+///
+/// The PBRT source code uses a `SeparableBSDFAdapter`. We bypass that by
+/// enumerating the BSSRDFs directly to avoid dealing with trait objects or
+/// nesting enumerations which will add more boiler plate code.
 pub enum BxDF<'arena> {
     FourierBSDF(&'arena mut FourierBSDF),
     FresnelBlend(&'arena mut FresnelBlend<'arena>),

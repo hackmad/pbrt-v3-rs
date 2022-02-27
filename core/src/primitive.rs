@@ -40,6 +40,22 @@ pub trait Primitive {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
+    /// NOTES:
+    ///
+    /// The `'arena: 'scene` bound doesn't make sense. The `Bump` allocator lives
+    /// in the rendering loop for each tile, `SamplerIntegrator::render_tile()`.
+    /// So it will not outlive the `Scene`. But somehow it satisfies Rust compiler.
+    /// Need to understand this better.
+    ///
+    /// `Material::compute_scattering_functions()` mutates `SurfaceInteraction`
+    /// properties during bump mapping and also returns BSDF and BSSRDF with
+    /// different lifetimes. Easier to use shared mutable refereces than return
+    /// a value out of the function.
+    ///
+    /// The PBRT source code uses a `SeparableBSDFAdapter`. We bypass that by
+    /// enumerating the BSSRDFs in `BxDF` to avoid dealing with trait objects or
+    /// nesting / enumerations which will add more boiler plate code.
+    ///
     /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.

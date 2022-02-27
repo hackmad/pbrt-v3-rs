@@ -104,7 +104,7 @@ impl Material for GlassMaterial {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         bsdf: &mut Option<&'arena mut BSDF<'scene>>,
-        bssrdf: &mut Option<BSSRDFType>,
+        bssrdf: &mut Option<BSSRDF>,
     ) where
         'arena: 'scene,
     {
