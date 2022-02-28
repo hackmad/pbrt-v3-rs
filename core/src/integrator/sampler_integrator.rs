@@ -64,9 +64,8 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
     /// Preprocess the scene.
     ///
-    /// * `scene`   - The scene
-    /// * `sampler` - The sampler.
-    fn preprocess(&self, scene: &Scene, sampler: &mut ArcSampler);
+    /// * `scene` - The scene
+    fn preprocess(&mut self, scene: &Scene);
 
     /// Trace rays for specular reflection.
     ///
@@ -267,13 +266,12 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&self, scene: &Scene) {
+    fn render(&mut self, scene: &Scene) {
         let data = self.get_data();
         let camera = Arc::clone(&data.camera);
         let camera_data = camera.get_data();
 
-        let mut sampler = Arc::clone(&data.sampler);
-        self.preprocess(scene, &mut sampler);
+        self.preprocess(scene);
 
         // Compute number of tiles, `n_tiles`, to use for parallel rendering.
         let sample_bounds = camera_data.film.get_sample_bounds();

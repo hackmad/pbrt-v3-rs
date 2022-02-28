@@ -300,6 +300,11 @@ impl Light for InfiniteAreaLight {
         let pdf_pos = 1.0 / (PI * world_radius * world_radius);
         Pdf::new(pdf_pos, pdf_dir)
     }
+
+    /// Returns the number of samples to use for the light source.
+    fn get_num_samples(&self) -> usize {
+        self.n_samples
+    }
 }
 
 impl From<(&ParamSet, ArcTransform, &str)> for InfiniteAreaLight {

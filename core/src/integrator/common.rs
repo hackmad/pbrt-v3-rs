@@ -19,7 +19,7 @@ use std::sync::Arc;
 /// * `sampler`         - The sampler.
 /// * `n_light_samples` - The number of samples to take for each light.
 /// * `handle_media`    - Indicates whether effects of volumetric attenuation
-///                       should be considered.
+///                       should be considered (default to false).
 pub fn uniform_sample_all_lights(
     it: &Interaction,
     bsdf: &Option<&mut BSDF>,
@@ -28,7 +28,7 @@ pub fn uniform_sample_all_lights(
     n_light_samples: &[usize],
     handle_media: bool,
 ) -> Spectrum {
-    let mut l = Spectrum::new(0.0);
+    let mut l = Spectrum::ZERO;
 
     for (j, light) in scene.lights.iter().enumerate() {
         let sampler_mut = Arc::get_mut(sampler).unwrap();
@@ -59,7 +59,7 @@ pub fn uniform_sample_all_lights(
                 false,
             );
         } else {
-            // Estimate direct lighting using sample arrays
+            // Estimate direct lighting using sample arrays.
             let mut ld = Spectrum::ZERO;
             for k in 0..n_samples {
                 ld += estimate_direct(
@@ -88,8 +88,8 @@ pub fn uniform_sample_all_lights(
 /// * `scene`         - The scene.
 /// * `sampler`       - The sampler.
 /// * `handle_media`  - Indicates whether effects of volumetric attenuation
-///                     should be considered.
-/// * `light_distrib` - PDF for the light's distribution.
+///                     should be considered (default to false).
+/// * `light_distrib` - PDF for the light's distribution. (default to None).
 pub fn uniform_sample_one_light(
     it: &Interaction,
     bsdf: &Option<&mut BSDF>,
@@ -101,7 +101,7 @@ pub fn uniform_sample_one_light(
     // Randomly choose a single light to sample, `light`.
     let n_lights = scene.lights.len();
     if n_lights == 0 {
-        return Spectrum::new(0.0);
+        return Spectrum::ZERO;
     }
 
     let sampler_mut = Arc::get_mut(sampler).unwrap();
@@ -179,6 +179,10 @@ pub fn estimate_direct(
         visibility,
         value: mut li,
     } = light.sample_li(hit, u_light);
+    debug!(
+        "EstimateDirect uLight: {} -> Li:  {}, wi: {}, pdf: {}",
+        u_light, li, wi, light_pdf
+    );
     if light_pdf > 0.0 && !li.is_black() {
         // Compute BSDF or phase function's value for light sample.
         let mut f = Spectrum::ZERO;
@@ -188,7 +192,7 @@ pub fn estimate_direct(
                 if let Some(bsdf) = bsdf.as_deref() {
                     f = bsdf.f(&hit.wo, &wi, bsdf_flags) * wi.abs_dot(&si.shading.n);
                     scattering_pdf = bsdf.pdf(&hit.wo, &wi, bsdf_flags);
-                    info!("  surf f*dot : {:}, scatteringPdf: {}", f, scattering_pdf);
+                    debug!("  surf f*dot : {:}, scatteringPdf: {}", f, scattering_pdf);
                 }
             }
             Interaction::Medium { mi } => {
@@ -196,7 +200,7 @@ pub fn estimate_direct(
                 let p = mi.phase.p(&mi.hit.wo, &wi);
                 f = Spectrum::new(p);
                 scattering_pdf = p;
-                info!("  medium p: {}", p);
+                debug!("  medium p: {}", p);
             }
         }
 
@@ -205,17 +209,18 @@ pub fn estimate_direct(
             if let Some(vis) = visibility {
                 if handle_media {
                     li *= vis.tr(scene, sampler);
+                    debug!("  after Tr, Li: {}", li);
                 } else if !vis.unoccluded(scene) {
-                    debug!("  visiblity tester: shadow ray blocked");
+                    debug!("  shadow ray blocked");
                     li = Spectrum::ZERO;
                 } else {
-                    debug!("  visiblity tester: shadow ray unoccluded");
+                    debug!("  shadow ray unoccluded");
                 }
             } else {
                 debug!("  no visiblity tester");
             }
 
-            // Add light's contribution to reflected radiance
+            // Add light's contribution to reflected radiance.
             if !li.is_black() {
                 if light.is_delta_light() {
                     ld += f * li / light_pdf;
@@ -227,7 +232,7 @@ pub fn estimate_direct(
         }
     }
 
-    // Sample BSDF with multiple importance sampling
+    // Sample BSDF with multiple importance sampling.
     if !light.is_delta_light() {
         let mut f = Spectrum::ZERO;
         let mut sampled_specular = false;
@@ -237,10 +242,11 @@ pub fn estimate_direct(
                 if let Some(bsdf) = bsdf.as_deref() {
                     let BxDFSample {
                         f: f1,
-                        pdf: _scattering_pdf,
+                        pdf: scatter_pdf,
                         wi: wi2,
                         bxdf_type: sampled_type,
                     } = bsdf.sample_f(&hit.wo, u_scattering, bsdf_flags);
+                    scattering_pdf = scatter_pdf;
                     wi = wi2;
                     f = f1 * wi.abs_dot(&si.shading.n);
                     sampled_specular =
@@ -295,7 +301,7 @@ pub fn estimate_direct(
                         }
                     }
                 }
-            } else if ray.differentials.is_some() {
+            } else {
                 li = light.le(&ray);
             }
 

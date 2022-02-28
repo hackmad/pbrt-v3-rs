@@ -1,4 +1,4 @@
-//! Whitted Integrator
+//! Direct Lighting Integrator
 
 #![allow(dead_code)]
 
@@ -6,7 +6,7 @@ use bumpalo::Bump;
 use core::camera::*;
 use core::geometry::*;
 use core::integrator::*;
-use core::light::*;
+use core::interaction::*;
 use core::material::*;
 use core::paramset::*;
 use core::reflection::*;
@@ -15,20 +15,39 @@ use core::scene::*;
 use core::spectrum::*;
 use std::sync::Arc;
 
-/// Implements Whitted's ray tracing algorithm.
-pub struct WhittedIntegrator {
-    /// Common data for sampler integrators.
-    pub data: SamplerIntegratorData,
+/// Light sampling strategy.
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub enum LightStrategy {
+    /// Loops over all of the lights and takes a number of samples based on
+    /// `n_samples` from each of them, summing the result.
+    UniformSampleAll,
+
+    /// Takes a single sample from just one of the lights, chosen at random.
+    UniformSampleOne,
 }
 
-impl WhittedIntegrator {
-    /// Create a new `WhittedIntegrator`.
+/// Implements the direct lighting integrator.
+pub struct DirectLightingIntegrator {
+    /// Common data for sampler integrators.
+    pub data: SamplerIntegratorData,
+
+    /// Light sampling strategy.
+    strategy: LightStrategy,
+
+    /// Number of samples to use for each light source.
+    n_light_samples: Vec<usize>,
+}
+
+impl DirectLightingIntegrator {
+    /// Create a new `DirectLightingIntegrator`.
     ///
+    /// * `strategy`     - Light sampling strategy.
     /// * `max_depth`    - Maximum recursion depth.
     /// * `camera`       - The camera.
     /// * `sampler`      - The sampler.
     /// * `pixel_bounds` - Pixel bounds for the image.
     pub fn new(
+        strategy: LightStrategy,
         max_depth: usize,
         camera: ArcCamera,
         sampler: ArcSampler,
@@ -36,11 +55,13 @@ impl WhittedIntegrator {
     ) -> Self {
         Self {
             data: SamplerIntegratorData::new(max_depth, camera, sampler, pixel_bounds),
+            strategy,
+            n_light_samples: vec![],
         }
     }
 }
 
-impl SamplerIntegrator for WhittedIntegrator {
+impl SamplerIntegrator for DirectLightingIntegrator {
     /// Returns the common data.
     fn get_data(&self) -> &SamplerIntegratorData {
         &self.data
@@ -49,10 +70,28 @@ impl SamplerIntegrator for WhittedIntegrator {
     /// Preprocess the scene.
     ///
     /// * `scene` - The scene
-    fn preprocess(&mut self, _scene: &Scene) {}
+    fn preprocess(&mut self, scene: &Scene) {
+        if self.strategy == LightStrategy::UniformSampleAll {
+            let sampler_mut = Arc::get_mut(&mut self.data.sampler).unwrap();
+
+            // Compute number of samples to use for each light.
+            for light in scene.lights.iter() {
+                self.n_light_samples
+                    .push(sampler_mut.round_count(light.get_num_samples()));
+            }
+
+            // Request samples for sampling all lights.
+            for _i in 0..self.data.max_depth {
+                for j in 0..scene.lights.len() {
+                    sampler_mut.request_2d_array(self.n_light_samples[j]);
+                    sampler_mut.request_2d_array(self.n_light_samples[j]);
+                }
+            }
+        }
+    }
 }
 
-impl Integrator for WhittedIntegrator {
+impl Integrator for DirectLightingIntegrator {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
@@ -79,8 +118,6 @@ impl Integrator for WhittedIntegrator {
 
         // Find closest ray intersection or return background radiance.
         if let Some(mut isect) = scene.intersect(ray) {
-            // Compute emitted and reflected light at ray intersection point.
-
             // Compute scattering functions for surface interaction.
             let mut bsdf: Option<&mut BSDF> = None;
             let mut bssrdf: Option<&mut BSDF> = None;
@@ -97,39 +134,39 @@ impl Integrator for WhittedIntegrator {
                 return self.li(arena, &mut new_ray, scene, sampler, depth);
             }
 
-            // Initialize common variables for `WhittedIntegrator`.
-            let n = isect.shading.n;
+            // Initialize common variables for `DirectLightingIntegrator`.
             let wo = isect.hit.wo;
 
-            // Compute emitted light if ray hit an area light source.
+            // Compute emitted light if ray hit an area light source
             l += isect.le(&wo);
 
-            // Add contribution of each light source.
-            for light in scene.lights.iter() {
-                let sample = Arc::get_mut(sampler).unwrap().get_2d();
-                let Li {
-                    wi,
-                    pdf,
-                    visibility,
-                    value: li,
-                } = light.sample_li(&isect.hit, &sample);
+            // Create an `Interaction` for sampling lights.
+            let it = Interaction::Surface { si: isect };
 
-                if li.is_black() || pdf == 0.0 {
-                    continue;
-                }
-
-                let f = bsdf
-                    .as_ref()
-                    .map_or(Spectrum::ZERO, |bsdf| bsdf.f(&wo, &wi, BxDFType::all()));
-                if !f.is_black() {
-                    // If no visiblity tester, then unoccluded = true.
-                    let unoccluded = visibility.map_or(true, |vis| vis.unoccluded(scene));
-
-                    if unoccluded {
-                        l += f * li * wi.abs_dot(&n) / pdf;
+            if !scene.lights.is_empty() {
+                // Compute direct lighting for `DirectLightingIntegrator`.
+                let light_sample = match self.strategy {
+                    LightStrategy::UniformSampleAll => uniform_sample_all_lights(
+                        &it,
+                        &bsdf,
+                        scene,
+                        sampler,
+                        &self.n_light_samples,
+                        false,
+                    ),
+                    LightStrategy::UniformSampleOne => {
+                        uniform_sample_one_light(&it, &bsdf, scene, sampler, false, None)
                     }
-                }
+                };
+                l += light_sample;
             }
+
+            // Need to move the `isect` back out of `it`.
+            let isect = match it {
+                Interaction::Surface { si } => si,
+                _ => unreachable!(), // isect was SurfaceInteraction. So this should not be possible.
+            };
+
             if depth + 1 < self.data.max_depth {
                 // Trace rays for specular reflection and refraction.
                 let refl = self.specular_reflect(arena, ray, &isect, &bsdf, scene, sampler, depth);
@@ -147,14 +184,27 @@ impl Integrator for WhittedIntegrator {
     }
 }
 
-impl From<(&ParamSet, ArcSampler, ArcCamera)> for WhittedIntegrator {
-    /// Create a `WhittedIntegrator` from given parameter set and camera.
+impl From<(&ParamSet, ArcSampler, ArcCamera)> for DirectLightingIntegrator {
+    /// Create a `DirectLightingIntegrator` from given parameter set and camera.
     ///
     /// * `p` - A tuple containing parameter set and camera.
     fn from(p: (&ParamSet, ArcSampler, ArcCamera)) -> Self {
         let (params, sampler, camera) = p;
 
         let max_depth = params.find_one_int("max_depth", 5) as usize;
+
+        let st = params.find_one_string("strategy", "all".to_string());
+        let strategy = match st.as_ref() {
+            "one" => LightStrategy::UniformSampleOne,
+            "all" => LightStrategy::UniformSampleAll,
+            _ => {
+                warn!(
+                    "Strategy '{}' for direct lighting unknown. Using 'all'.",
+                    st
+                );
+                LightStrategy::UniformSampleAll
+            }
+        };
 
         let pb = params.find_int("pixelbounds");
         let np = pb.len();
@@ -175,6 +225,7 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for WhittedIntegrator {
         }
 
         Self::new(
+            strategy,
             max_depth,
             Arc::clone(&camera),
             Arc::clone(&sampler),

@@ -470,7 +470,7 @@ impl Api {
             self.pushed_transforms.shrink_to_fit();
 
             // Create scene and render.
-            let integrator = match self.render_options.make_integrator(&self.graphics_state) {
+            let mut integrator = match self.render_options.make_integrator(&self.graphics_state) {
                 Ok(integrator) => integrator,
                 Err(err) => panic!("Error creating integrator. {}", err),
             };

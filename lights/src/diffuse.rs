@@ -189,6 +189,11 @@ impl Light for DiffuseAreaLight {
     fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f) -> Pdf {
         Pdf::new(0.0, uniform_sphere_pdf())
     }
+
+    /// Returns the number of samples to use for the light source.
+    fn get_num_samples(&self) -> usize {
+        self.n_samples
+    }
 }
 
 impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape)> for DiffuseAreaLight {

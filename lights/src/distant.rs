@@ -149,6 +149,11 @@ impl Light for DistantLight {
         let world_radius = *self.world_radius.read().unwrap();
         Pdf::new(1.0 / (PI * world_radius * world_radius), 0.0)
     }
+
+    /// Returns the number of samples to use for the light source.
+    fn get_num_samples(&self) -> usize {
+        1
+    }
 }
 
 impl From<(&ParamSet, ArcTransform)> for DistantLight {

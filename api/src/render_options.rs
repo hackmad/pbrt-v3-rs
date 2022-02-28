@@ -122,6 +122,10 @@ impl RenderOptions {
         )?;
 
         let integrator: Result<Box<dyn Integrator>, String> = match self.integrator_name.as_str() {
+            "directlighting" => {
+                let p = (&self.integrator_params, sampler, camera);
+                Ok(Box::new(DirectLightingIntegrator::from(p)))
+            }
             "whitted" => {
                 let p = (&self.integrator_params, sampler, camera);
                 Ok(Box::new(WhittedIntegrator::from(p)))

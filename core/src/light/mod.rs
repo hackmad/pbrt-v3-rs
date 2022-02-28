@@ -170,6 +170,9 @@ pub trait Light {
     fn is_delta_light(&self) -> bool {
         self.get_type().is_delta_light()
     }
+
+    /// Returns the number of samples to use for the light source.
+    fn get_num_samples(&self) -> usize;
 }
 
 /// Atomic reference counted `Light`.

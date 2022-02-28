@@ -171,6 +171,11 @@ impl Light for SpotLight {
             };
         Pdf::new(0.0, pdf_dir)
     }
+    
+    /// Returns the number of samples to use for the light source.
+    fn get_num_samples(&self) -> usize {
+        1
+    }
 }
 
 impl From<(&ParamSet, ArcTransform, Option<ArcMedium>)> for SpotLight {
