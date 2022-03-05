@@ -121,7 +121,7 @@ impl<T: Num + Copy> Bounds3<T> {
             T::zero()
         } else {
             let d = self.diagonal();
-            d.x * d.y + d.z
+            d.x * d.y * d.z
         }
     }
 
