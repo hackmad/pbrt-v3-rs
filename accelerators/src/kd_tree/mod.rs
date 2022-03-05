@@ -130,6 +130,10 @@ impl KDTreeAccel {
     /// * `prim_nums`       - Primitive indices.
     /// * `depth`           - Depth (decreases from max_depth to 0 from root to leaf).
     /// * `edges`           - Projections of bounding boxes along split axes.
+    ///                       NOTE: This could be statically allocated within the
+    ///                       function but it is being passed in to reduce those
+    ///                       allocations. Its use in each call does not affect
+    ///                       other branches of recursion.
     /// * `prims0`          - Primitives below split axis.
     /// * `prims1`          - Primitives above split axis.
     /// * `bad_refines`     - Keeps track of how many bad splits have been made
