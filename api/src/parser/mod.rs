@@ -336,28 +336,12 @@ impl PbrtFileParser {
                 self.parse_named_stmt(&mut inner_rules, api, "CoordSysTransform");
             }
             Rule::transform_stmt => {
-                let tr = self.parse_float_list(next_pair.into_inner());
-                assert!(
-                    tr.len() == 16,
-                    "float_list in transform_stmt not of len 16."
-                );
-                debug!("Transform: {:?}", tr);
-                api.pbrt_transform(&[
-                    tr[0], tr[1], tr[2], tr[3], tr[4], tr[5], tr[6], tr[7], tr[8], tr[9], tr[10],
-                    tr[11], tr[11], tr[12], tr[13], tr[14],
-                ]);
+                let mut inner_rules = next_pair.into_inner();
+                self.parse_transform_stmt(&mut inner_rules, api, "Transform");
             }
             Rule::concat_transform_stmt => {
-                let tr = self.parse_float_list(next_pair.into_inner());
-                assert!(
-                    tr.len() == 16,
-                    "float_list in concat_transform_stmt not of len 16."
-                );
-                debug!("ConcatTransform: {:?}", tr);
-                api.pbrt_concat_transform(&[
-                    tr[0], tr[1], tr[2], tr[3], tr[4], tr[5], tr[6], tr[7], tr[8], tr[9], tr[10],
-                    tr[11], tr[11], tr[12], tr[13], tr[14],
-                ]);
+                let mut inner_rules = next_pair.into_inner();
+                self.parse_transform_stmt(&mut inner_rules, api, "ConcatTransform");
             }
             Rule::transform_times_stmt => {
                 let mut inner_rules = next_pair.into_inner();
@@ -368,6 +352,23 @@ impl PbrtFileParser {
             }
             _ => unreachable!(),
         }
+    }
+
+    /// Parse a transform statament.
+    ///
+    /// * `pairs`       - The inner token pairs for matched `param_list` rule.
+    /// * `option_name` - The name of the option.
+    /// * `api`         - The PBRT API interface.
+    /// * `stmt_type`   - Statement type.
+    fn parse_transform_stmt(&self, pairs: &mut Pairs<Rule>, api: &mut Api, stmt_type: &str) {
+        let next_pair = pairs.next().unwrap();
+        let tr = self.parse_float_list(next_pair.into_inner());
+        assert!(tr.len() == 16, "float_list in {} not of len 16.", stmt_type);
+        debug!("{}: {:?}", stmt_type, tr);
+        api.pbrt_concat_transform(&[
+            tr[0], tr[1], tr[2], tr[3], tr[4], tr[5], tr[6], tr[7], tr[8], tr[9], tr[10], tr[11],
+            tr[12], tr[13], tr[14], tr[15],
+        ]);
     }
 
     /// Parse a named `param_list`.
