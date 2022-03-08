@@ -194,6 +194,23 @@ impl Light for DiffuseAreaLight {
     fn get_num_samples(&self) -> usize {
         self.n_samples
     }
+
+    /// Returns true if light is an area light source.
+    fn is_area_light(&self) -> bool {
+        true
+    }
+
+    /// Returns the area light's emitted radiance in a given outgoing direction.
+    ///
+    /// * `it` - Point on a surface to evaluate emitted radiance.
+    /// * `w`  - Outgoing direction.
+    fn l(&self, hit: &Hit, w: &Vector3f) -> Spectrum {
+        if self.two_sided || hit.n.dot(w) > 0.0 {
+            self.l_emit
+        } else {
+            Spectrum::ZERO
+        }
+    }
 }
 
 impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape)> for DiffuseAreaLight {

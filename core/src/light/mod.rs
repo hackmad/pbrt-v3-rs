@@ -173,22 +173,27 @@ pub trait Light {
 
     /// Returns the number of samples to use for the light source.
     fn get_num_samples(&self) -> usize;
-}
 
-/// Atomic reference counted `Light`.
-pub type ArcLight = Arc<dyn Light + Send + Sync>;
+    /// Returns true if light is an area light source.
+    fn is_area_light(&self) -> bool {
+        false
+    }
 
-/// AreaLight trait provides common behavior for area lights.
-pub trait AreaLight: Light {
     /// Returns the area light's emitted radiance in a given outgoing direction.
     ///
     /// * `it` - Point on a surface to evaluate emitted radiance.
     /// * `w`  - Outgoing direction.
-    fn l(&self, hit: &Hit, w: &Vector3f) -> Spectrum;
+    fn l(&self, _hit: &Hit, _w: &Vector3f) -> Spectrum {
+        if self.is_area_light() {
+            panic!("Light::l() not implemented for area light source.")
+        } else {
+            panic!("Invalid call to Light::l() for non area lights.")
+        }
+    }
 }
 
-/// Atomic reference counted `AreaLight`.
-pub type ArcAreaLight = Arc<dyn AreaLight + Send + Sync>;
+/// Atomic reference counted `Light`.
+pub type ArcLight = Arc<dyn Light + Send + Sync>;
 
 // Re-export
 pub use light_type::*;

@@ -28,7 +28,7 @@ pub trait Primitive {
     /// Returns a reference to the AreaLight that describes the primitive’s
     /// emission distribution, if the primitive is itself a light source.
     /// If the primitive is not emissive, this method should return `None`.  
-    fn get_area_light(&self) -> Option<ArcAreaLight>;
+    fn get_area_light(&self) -> Option<ArcLight>;
 
     /// Returns a reference to the material instance assigned to the primitive.
     /// If `None` is returned, ray intersections with the primitive should be

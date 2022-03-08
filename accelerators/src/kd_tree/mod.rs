@@ -573,7 +573,7 @@ impl Primitive for KDTreeAccel {
     ///
     /// *NOTE*: This should never be called. Calling code should directly call
     /// get_area_light() on the primitive from the ray-primitive intersection.
-    fn get_area_light(&self) -> Option<ArcAreaLight> {
+    fn get_area_light(&self) -> Option<ArcLight> {
         error!(
             "TransformedPrimitive::get_area_light() shouldn't be called; \
             should've gone to GeometricPrimitive."

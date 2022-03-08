@@ -561,7 +561,7 @@ impl GraphicsState {
             shape,
         );
         match name {
-            "diffuse" => Ok(Arc::new(DiffuseAreaLight::from(p))),
+            "area" | "diffuse" => Ok(Arc::new(DiffuseAreaLight::from(p))),
             _ => Err(format!("AreaLight '{}' unknown.", name)),
         }
     }

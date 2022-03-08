@@ -766,7 +766,7 @@ impl Api {
     pub fn pbrt_shape(&mut self, name: String, params: &ParamSet) {
         if self.verify_world("Shape") {
             let mut prims: Vec<ArcPrimitive> = vec![];
-            let mut area_lights: Vec<ArcLight> = vec![]; // Upcasting AreaLight -> Light not possible.
+            let mut area_lights: Vec<ArcLight> = vec![];
 
             if !self.current_transforms.is_animated() {
                 // Initialize `prims` and `area_lights` for static shape.
@@ -797,22 +797,23 @@ impl Api {
 
                 for shape in shapes.iter() {
                     // Possibly create area light for shape.
-                    if let Some(area_light) = self.graphics_state.area_light.clone() {
-                        if let Ok(area) = GraphicsState::make_area_light(
-                            &area_light,
+                    let mut area_light: Option<ArcLight> = None;
+                    if let Some(area) = self.graphics_state.area_light.as_ref() {
+                        if let Ok(al) = GraphicsState::make_area_light(
+                            area,
                             self.current_transforms[0].clone(),
                             &mi,
                             Arc::clone(shape),
                             params,
                         ) {
-                            area_lights.push(area);
+                            area_lights.push(Arc::clone(&al));
+                            area_light = Some(al);
                         }
                     }
-
                     let prim = GeometricPrimitive::new(
                         Arc::clone(shape),
                         mtl.as_ref().map(Arc::clone),
-                        None,
+                        area_light,
                         mi.clone(),
                     );
                     prims.push(Arc::new(prim));
@@ -821,8 +822,11 @@ impl Api {
                 // Initialize `prims` and `area_lights` for animated shape.
 
                 // Create initial shape or shapes for animated shape.
-                if self.graphics_state.area_light.is_none() {
-                    warn!("Ignoring currently set area light when creating 'animated shape'.");
+                match self.graphics_state.area_light.as_ref() {
+                    Some(area_light) if !area_light.is_empty() => {
+                        warn!("Ignoring currently set area light when creating 'animated shape'.");
+                    }
+                    _ => {}
                 }
 
                 let mut transform_cache = self.transform_cache.lock().unwrap();

@@ -10,6 +10,7 @@ mod medium_interaction;
 mod surface_interaction;
 
 pub use medium_interaction::*;
+use num_traits::Zero;
 pub use surface_interaction::*;
 
 /// Interaction enumeration.
@@ -85,11 +86,14 @@ impl Hit {
         n: Normal3f,
         medium_interface: Option<MediumInterface>,
     ) -> Self {
+        let l2 = wo.length_squared();
+        let wo = if l2.is_zero() { wo } else { wo / l2.sqrt() };
+
         Self {
             p,
             time,
             p_error,
-            wo: wo.normalize(),
+            wo,
             n,
             medium_interface,
         }

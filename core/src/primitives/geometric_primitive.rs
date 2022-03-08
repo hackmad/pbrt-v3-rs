@@ -22,7 +22,7 @@ pub struct GeometricPrimitive {
 
     /// Optional area light that describes emmission characterisitics if it
     /// emits light.
-    pub area_light: Option<ArcAreaLight>,
+    pub area_light: Option<ArcLight>,
 
     /// Information about the participating media on the inside and outside
     /// the primitive.
@@ -41,7 +41,7 @@ impl GeometricPrimitive {
     pub fn new(
         shape: ArcShape,
         material: Option<ArcMaterial>,
-        area_light: Option<ArcAreaLight>,
+        area_light: Option<ArcLight>,
         medium_interface: MediumInterface,
     ) -> Self {
         Self {
@@ -101,7 +101,7 @@ impl Primitive for GeometricPrimitive {
     /// Returns a reference to the AreaLight that describes the primitive’s
     /// emission distribution, if the primitive is itself a light source.
     /// If the primitive is not emissive, this method should return `None`.  
-    fn get_area_light(&self) -> Option<ArcAreaLight> {
+    fn get_area_light(&self) -> Option<ArcLight> {
         self.area_light.as_ref().map(Arc::clone)
     }
 
