@@ -260,6 +260,14 @@ impl Light for ProjectionLight {
     fn get_num_samples(&self) -> usize {
         1
     }
+
+    /// Returns the area light's emitted radiance in a given outgoing direction.
+    ///
+    /// * `it` - Point on a surface to evaluate emitted radiance.
+    /// * `w`  - Outgoing direction.
+    fn l(&self, _hit: &Hit, _w: &Vector3f) -> Spectrum {
+        panic!("Invalid call to Light::l() for non area lights.")
+    }
 }
 
 impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, &str)> for ProjectionLight {

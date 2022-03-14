@@ -175,6 +175,7 @@ impl Integrator for DirectLightingIntegrator {
                 l += refl + trans;
             }
         } else {
+            // Return background radiance.
             for light in scene.lights.iter() {
                 l += light.le(&ray);
             }

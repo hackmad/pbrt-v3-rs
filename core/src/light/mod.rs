@@ -176,20 +176,17 @@ pub trait Light {
 
     /// Returns true if light is an area light source.
     fn is_area_light(&self) -> bool {
-        false
+        match self.get_type() {
+            LightType::AREA_LIGHT => true,
+            _ => false,
+        }
     }
 
     /// Returns the area light's emitted radiance in a given outgoing direction.
     ///
-    /// * `it` - Point on a surface to evaluate emitted radiance.
-    /// * `w`  - Outgoing direction.
-    fn l(&self, _hit: &Hit, _w: &Vector3f) -> Spectrum {
-        if self.is_area_light() {
-            panic!("Light::l() not implemented for area light source.")
-        } else {
-            panic!("Invalid call to Light::l() for non area lights.")
-        }
-    }
+    /// * `hit` - Point on a surface to evaluate emitted radiance.
+    /// * `w`   - Outgoing direction.
+    fn l(&self, hit: &Hit, w: &Vector3f) -> Spectrum;
 }
 
 /// Atomic reference counted `Light`.

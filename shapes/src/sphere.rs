@@ -379,7 +379,7 @@ impl Shape for Sphere {
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
-    fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
+    fn sample(&self, u: &Point2f) -> (Hit, Float) {
         let mut p_obj = Point3f::ZERO + self.radius * uniform_sample_sphere(u);
 
         let mut n = self
@@ -401,6 +401,124 @@ impl Shape for Sphere {
         let it = Hit::new(p, 0.0, p_error, Vector3f::ZERO, n, None);
         let pdf = 1.0 / self.area();
         (it, pdf)
+    }
+
+    /// Sample a point on the shape given a reference point and return the PDF
+    /// with respect to the solid angle from ref.
+    ///
+    /// * `hit` - Reference point on shape.
+    /// * `u`   - Sample value to use.
+    fn sample_solid_angle(&self, hit: &Hit, u: &Point2f) -> (Hit, Float) {
+        let p_center = self.data.object_to_world.transform_point(&Point3f::ZERO);
+
+        // Sample uniformly on sphere if $\pt{}$ is inside it.
+        let p_origin = Ray::offset_origin(&hit.p, &hit.p_error, &hit.n, &(p_center - hit.p));
+        if p_origin.distance_squared(p_center) <= self.radius * self.radius {
+            let (intr, mut pdf) = self.sample(u);
+            let mut wi = intr.p - hit.p;
+            if wi.length_squared() == 0.0 {
+                pdf = 0.0;
+            } else {
+                // Convert from area measure returned by Sample() call above to
+                // solid angle measure.
+                wi = wi.normalize();
+                pdf *= hit.p.distance_squared(intr.p) / intr.n.abs_dot(&-wi);
+            }
+            if pdf.is_infinite() {
+                pdf = 0.0;
+            }
+            return (intr, pdf);
+        }
+
+        // Sample sphere uniformly inside subtended cone.
+
+        // Compute coordinate system for sphere sampling.
+        let dc = hit.p.distance(p_center);
+        let inv_dc = 1.0 / dc;
+        let wc = (p_center - hit.p) * inv_dc;
+        let (wc_x, wc_y) = coordinate_system(&wc);
+
+        // Compute $\theta$ and $\phi$ values for sample in cone
+        let sin_theta_max = self.radius * inv_dc;
+        let sin_theta_max2 = sin_theta_max * sin_theta_max;
+        let inv_sin_theta_max = 1.0 / sin_theta_max;
+        let cos_theta_max = max(0.0, 1.0 - sin_theta_max2).sqrt();
+
+        let mut cos_theta = (cos_theta_max - 1.0) * u[0] + 1.0;
+        let mut sin_theta2 = 1.0 - cos_theta * cos_theta;
+
+        // sin^2(1.5 deg) = 0.00068523
+        if sin_theta_max2 < 0.00068523 {
+            // Fall back to a Taylor series expansion for small angles, where
+            // the standard approach suffers from severe cancellation errors.
+            sin_theta2 = sin_theta_max2 * u[0];
+            cos_theta = (1.0 - sin_theta2).sqrt();
+        }
+
+        // Compute angle `alpha` from center of sphere to sampled point on surface.
+        let cos_alpha = sin_theta2 * inv_sin_theta_max
+            + cos_theta
+                * max(
+                    0.0,
+                    1.0 - sin_theta2 * inv_sin_theta_max * inv_sin_theta_max,
+                )
+                .sqrt();
+        let sin_alpha = max(0.0, 1.0 - cos_alpha * cos_alpha).sqrt();
+        let phi = u[1] * TWO_PI;
+
+        // Compute surface normal and sampled point on sphere.
+        let n_world =
+            spherical_direction_in_coord_frame(sin_alpha, cos_alpha, phi, &-wc_x, &-wc_y, &-wc);
+
+        let p_world = p_center + self.radius * Point3f::from(n_world);
+        let p_error = gamma(5) * Vector3f::from(&p_world).abs();
+
+        let mut n = Normal3f::from(&n_world);
+        if self.data.reverse_orientation {
+            n *= -1.0;
+        }
+
+        let it = Hit::new(p_world, 0.0, p_error, Vector3f::ZERO, n, None);
+        let pdf = uniform_cone_pdf(cos_theta_max);
+
+        (it, pdf)
+    }
+
+    /// Returns the PDF with respect to solid angle.
+    ///
+    /// * `hit` - The interaction hit point.
+    /// * `wi`  - The incident direction.
+    fn pdf_solid_angle(&self, hit: &Hit, wi: &Vector3f) -> Float {
+        let p_center = self.data.object_to_world.transform_point(&Point3f::ZERO);
+
+        // Return uniform PDF if point is inside sphere.
+        let p_origin = Ray::offset_origin(&hit.p, &hit.p_error, &hit.n, &(p_center - hit.p));
+        if p_origin.distance_squared(p_center) <= self.radius * self.radius {
+            return Shape::pdf_solid_angle(self, hit, wi);
+        }
+
+        // Compute general sphere PDF
+        let sin_theta_max2 = self.radius * self.radius / hit.p.distance_squared(p_center);
+        let cos_theta_max = max(0.0, 1.0 - sin_theta_max2).sqrt();
+        uniform_cone_pdf(cos_theta_max)
+    }
+
+    /// Returns the solid angle subtended by the shape w.r.t. the reference
+    /// point p, given in world space. Some shapes compute this value in
+    /// closed-form, while the default implementation uses Monte Carlo
+    /// integration.
+    ///
+    /// * `p`         - The reference point.
+    /// * `n_samples` - The number of samples to use for Monte-Carlo integration.
+    ///                 Default to 512.
+    fn solid_angle(&self, p: &Point3f, _n_samples: usize) -> Float {
+        let p_center = self.data.object_to_world.transform_point(&Point3f::ZERO);
+        if p.distance_squared(p_center) <= self.radius * self.radius {
+            return FOUR_PI;
+        }
+        let sin_theta2 = self.radius * self.radius / p.distance_squared(p_center);
+        let cos_theta = max(0.0, 1.0 - sin_theta2).sqrt();
+        TWO_PI * (1.0 - cos_theta)
     }
 }
 

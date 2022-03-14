@@ -521,6 +521,19 @@ impl<T> From<Vector3<T>> for Point3<T> {
     }
 }
 
+impl<T> From<Normal3<T>> for Point3<T> {
+    /// Convert a 3-D normal to a 3-D point.
+    ///
+    /// * `n` - 3-D normal.
+    fn from(n: Normal3<T>) -> Self {
+        Self {
+            x: n.x,
+            y: n.y,
+            z: n.z,
+        }
+    }
+}
+
 impl From<Point3i> for Point3f {
     /// Convert a `Point3i` to `Point3f`.
     ///

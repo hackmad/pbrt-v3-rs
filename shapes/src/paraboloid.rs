@@ -344,7 +344,7 @@ impl Shape for Paraboloid {
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
-    fn sample_area(&self, _u: &Point2f) -> (Hit, Float) {
+    fn sample(&self, _u: &Point2f) -> (Hit, Float) {
         todo!()
     }
 }

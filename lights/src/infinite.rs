@@ -305,6 +305,14 @@ impl Light for InfiniteAreaLight {
     fn get_num_samples(&self) -> usize {
         self.n_samples
     }
+
+    /// Returns the area light's emitted radiance in a given outgoing direction.
+    ///
+    /// * `it` - Point on a surface to evaluate emitted radiance.
+    /// * `w`  - Outgoing direction.
+    fn l(&self, _hit: &Hit, _w: &Vector3f) -> Spectrum {
+        panic!("Invalid call to Light::l() for non area lights.")
+    }
 }
 
 impl From<(&ParamSet, ArcTransform, &str)> for InfiniteAreaLight {

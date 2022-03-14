@@ -221,7 +221,7 @@ impl Shape for Disk {
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
-    fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
+    fn sample(&self, u: &Point2f) -> (Hit, Float) {
         let pd = concentric_sample_disk(u);
         let p_obj = Point3f::new(pd.x * self.radius, pd.y * self.radius, self.height);
 

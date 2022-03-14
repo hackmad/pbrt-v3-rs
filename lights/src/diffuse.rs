@@ -67,28 +67,27 @@ impl DiffuseAreaLight {
         let world_to_light = Arc::new(light_to_world.inverse());
         let area = shape.area();
 
+        // Warn if light has transformation with non-uniform scale, though not
+        // for Triangles, since this doesn't matter for them.
+        if world_to_light.has_scale() && shape.get_type() != "triangle" {
+            warn!(
+                "Scaling detected in world to light transformation! 
+                The system has numerous assumptions, implicit and explicit, 
+                that this transform will have no scale factors in it. 
+                Proceed at your own risk; your image may have errors."
+            );
+        }
+
         Self {
             light_type: LightType::AREA_LIGHT,
-            medium_interface: medium_interface.clone(),
+            medium_interface,
             light_to_world,
             world_to_light,
             l_emit,
             n_samples,
-            shape: Arc::clone(&shape),
+            shape,
             two_sided,
             area,
-        }
-    }
-
-    /// Returns emitted radiance based on `two_sided` flag.
-    ///
-    /// * `intr` - The interaction point.
-    /// * `w`    - Direction.
-    fn l(&self, intr: &Hit, w: &Vector3f) -> Spectrum {
-        if self.two_sided || intr.n.dot(w) > 0.0 {
-            self.l_emit
-        } else {
-            Spectrum::ZERO
         }
     }
 }
@@ -104,31 +103,26 @@ impl Light for DiffuseAreaLight {
     /// * `hit` - The interaction hit point.
     /// * `u`   - Sample value for Monte Carlo integration.
     fn sample_li(&self, hit: &Hit, u: &Point2f) -> Li {
-        let (mut p_shape_hit, pdf) = self.shape.sample_solid_angle(hit, u);
-        p_shape_hit.medium_interface = Some(self.medium_interface.clone());
+        let (mut p_shape, pdf) = self.shape.sample_solid_angle(hit, u);
+        p_shape.medium_interface = Some(self.medium_interface.clone());
 
-        let wi = p_shape_hit.p - hit.p;
-        if pdf == 0.0 || wi.length_squared() == 0.0 {
-            let pdf = 0.0;
-            let vis = None;
-            let value = Spectrum::ZERO;
-            Li::new(wi, pdf, vis, value)
-        } else {
-            let p0 = hit.clone();
-            let p1 = p_shape_hit.clone();
-            let vis = VisibilityTester::new(p0, p1);
-            let value = self.l(&p_shape_hit, &(-wi));
-            Li::new(wi, pdf, Some(vis), value)
+        let mut wi = p_shape.p - hit.p;
+        let wi_len_sq = wi.length_squared();
+        if pdf == 0.0 || wi_len_sq == 0.0 {
+            return Li::new(Vector3f::ZERO, 0.0, None, Spectrum::ZERO);
         }
+        wi /= wi_len_sq.sqrt(); // Normalize
+
+        let value = self.l(&p_shape, &-wi);
+        let vis = VisibilityTester::new(hit.clone(), p_shape);
+
+        Li::new(wi, pdf, Some(vis), value)
     }
 
     /// Return the total emitted power.
     fn power(&self) -> Spectrum {
-        if self.two_sided {
-            2.0 * self.l_emit * self.area * PI
-        } else {
-            self.l_emit * self.area * PI
-        }
+        let s = if self.two_sided { 2.0 } else { 1.0 };
+        s * self.l_emit * self.area * PI
     }
 
     /// Returns the probability density with respect to solid angle for the light’s
@@ -146,7 +140,7 @@ impl Light for DiffuseAreaLight {
     /// * `u2`   - Sample values for Monte Carlo.
     /// * `time` - Time to use for the ray.
     fn sample_le(&self, u1: &Point2f, u2: &Point2f, time: Float) -> Le {
-        let (mut p_shape_hit, pdf_pos) = self.shape.sample_area(u1);
+        let (mut p_shape_hit, pdf_pos) = self.shape.sample(u1);
         p_shape_hit.medium_interface = Some(self.medium_interface.clone());
         let n_light = p_shape_hit.n;
         let pdf_dir: Float;
@@ -186,8 +180,24 @@ impl Light for DiffuseAreaLight {
     ///
     /// * `ray`     - The ray.
     /// * `n_light` - The normal.
-    fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f) -> Pdf {
-        Pdf::new(0.0, uniform_sphere_pdf())
+    fn pdf_le(&self, ray: &Ray, n_light: &Normal3f) -> Pdf {
+        let it = Hit::new(
+            ray.o,
+            ray.time,
+            Vector3f::ZERO,
+            Vector3f::from(n_light),
+            n_light.clone(),
+            Some(self.medium_interface.clone()),
+        );
+
+        let pdf_pos = self.shape.pdf(&it);
+        let pdf_dir = if self.two_sided {
+            0.5 * cosine_hemisphere_pdf(n_light.abs_dot(&ray.d))
+        } else {
+            cosine_hemisphere_pdf(n_light.dot(&ray.d))
+        };
+
+        Pdf::new(pdf_pos, pdf_dir)
     }
 
     /// Returns the number of samples to use for the light source.
@@ -195,15 +205,10 @@ impl Light for DiffuseAreaLight {
         self.n_samples
     }
 
-    /// Returns true if light is an area light source.
-    fn is_area_light(&self) -> bool {
-        true
-    }
-
     /// Returns the area light's emitted radiance in a given outgoing direction.
     ///
-    /// * `it` - Point on a surface to evaluate emitted radiance.
-    /// * `w`  - Outgoing direction.
+    /// * `hit` - Point on a surface to evaluate emitted radiance.
+    /// * `w`   - Outgoing direction.
     fn l(&self, hit: &Hit, w: &Vector3f) -> Spectrum {
         if self.two_sided || hit.n.dot(w) > 0.0 {
             self.l_emit

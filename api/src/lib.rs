@@ -804,7 +804,7 @@ impl Api {
                             self.current_transforms[0].clone(),
                             &mi,
                             Arc::clone(shape),
-                            params,
+                            &self.graphics_state.area_light_params,
                         ) {
                             area_lights.push(Arc::clone(&al));
                             area_light = Some(al);

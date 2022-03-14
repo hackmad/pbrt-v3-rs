@@ -932,7 +932,7 @@ impl Shape for Triangle {
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
-    fn sample_area(&self, u: &Point2f) -> (Hit, Float) {
+    fn sample(&self, u: &Point2f) -> (Hit, Float) {
         let b = uniform_sample_triangle(u);
 
         // Get triangle vertices in `p0`, `p1`, and `p2`.
@@ -963,5 +963,58 @@ impl Shape for Triangle {
         let it = Hit::new(p, 0.0, p_error, Vector3f::ZERO, n, None);
         let pdf = 1.0 / self.area();
         (it, pdf)
+    }
+
+    /// Returns the solid angle subtended by the shape w.r.t. the reference
+    /// point p, given in world space. Some shapes compute this value in
+    /// closed-form, while the default implementation uses Monte Carlo
+    /// integration.
+    ///
+    /// * `p`         - The reference point.
+    /// * `n_samples` - The number of samples to use for Monte-Carlo integration.
+    ///                 Default to 512.
+    fn solid_angle(&self, p: &Point3f, _n_samples: usize) -> Float {
+        // Project the vertices into the unit sphere around p.
+        let p_sphere = [
+            (self.mesh.p[self.mesh.vertex_indices[self.v]] - p).normalize(),
+            (self.mesh.p[self.mesh.vertex_indices[self.v + 1]] - p).normalize(),
+            (self.mesh.p[self.mesh.vertex_indices[self.v + 2]] - p).normalize(),
+        ];
+
+        // http://math.stackexchange.com/questions/9819/area-of-a-spherical-triangle
+        // Girard's theorem: surface area of a spherical triangle on a unit
+        // sphere is the 'excess angle' alpha+beta+gamma-pi, where
+        // alpha/beta/gamma are the interior angles at the vertices.
+        //
+        // Given three vertices on the sphere, a, b, c, then we can compute,
+        // for example, the angle c->a->b by
+        //
+        // cos theta =  Dot(Cross(c, a), Cross(b, a)) /
+        //              (Length(Cross(c, a)) * Length(Cross(b, a))).
+        //
+        let mut cross01 = p_sphere[0].cross(&p_sphere[1]);
+        let mut cross12 = p_sphere[1].cross(&p_sphere[2]);
+        let mut cross20 = p_sphere[2].cross(&p_sphere[0]);
+
+        // Some of these vectors may be degenerate. In this case, we don't want
+        // to normalize them so that we don't hit an assert. This is fine,
+        // since the corresponding dot products below will be zero.
+        if cross01.length_squared() > 0.0 {
+            cross01 = cross01.normalize();
+        }
+        if cross12.length_squared() > 0.0 {
+            cross12 = cross12.normalize();
+        }
+        if cross20.length_squared() > 0.0 {
+            cross20 = cross20.normalize();
+        }
+
+        // We only need to do three cross products to evaluate the angles at
+        // all three vertices, though, since we can take advantage of the fact
+        // that Cross(a, b) = -Cross(b, a).
+        abs(acos(clamp(cross01.dot(&-cross12), -1.0, 1.0))
+            + acos(clamp(cross12.dot(&-cross20), -1.0, 1.0))
+            + acos(clamp(cross20.dot(&-cross01), -1.0, 1.0))
+            - PI)
     }
 }

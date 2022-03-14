@@ -51,7 +51,14 @@ pub trait Shape {
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
-    fn sample_area(&self, u: &Point2f) -> (Hit, Float);
+    fn sample(&self, u: &Point2f) -> (Hit, Float);
+
+    /// Return the PDF for the shape. By default it is 1/area.
+    ///
+    /// * `hit` - The interaction hit point.
+    fn pdf(&self, _hit: &Hit) -> Float {
+        1.0 / self.area()
+    }
 
     /// Sample a point on the shape given a reference point and return the PDF
     /// with respect to the solid angle from ref.
@@ -59,7 +66,7 @@ pub trait Shape {
     /// * `hit` - Reference point on shape.
     /// * `u`   - Sample value to use.
     fn sample_solid_angle(&self, hit: &Hit, u: &Point2f) -> (Hit, Float) {
-        let (intr, mut pdf) = self.sample_area(u);
+        let (intr, mut pdf) = self.sample(u);
         let mut wi = intr.p - hit.p;
 
         if wi.length_squared() == 0.0 {
@@ -75,13 +82,6 @@ pub trait Shape {
         }
 
         (intr, pdf)
-    }
-
-    /// Return the PDF for the shape. By default it is 1/area.
-    ///
-    /// * `hit` - The interaction hit point.
-    fn pdf(&self, _hit: &Hit) -> Float {
-        1.0 / self.area()
     }
 
     /// Returns the PDF with respect to solid angle.
@@ -102,7 +102,7 @@ pub trait Shape {
         {
             // Convert light sample weight to solid angle measure.
             let pdf = hit.p.distance_squared(isect_light.hit.p)
-                / (isect_light.hit.n.abs_dot(&(-*wi)) * self.area());
+                / (isect_light.hit.n.abs_dot(&-wi) * self.area());
             if pdf.is_infinite() {
                 0.0
             } else {
