@@ -6,7 +6,6 @@ use core::interaction::*;
 use core::paramset::*;
 use core::spectrum::*;
 use core::texture::*;
-use std::sync::Arc;
 
 /// Implements a texture that converts the surface's (u, v) coordinates
 /// into red and green components of a `Spectrum`.
@@ -21,9 +20,7 @@ impl UVTexture {
     ///
     /// * `mapping` - The 2D mapping.
     pub fn new(mapping: ArcTextureMapping2D) -> Self {
-        Self {
-            mapping: Arc::clone(&mapping),
-        }
+        Self { mapping }
     }
 }
 

@@ -607,24 +607,25 @@ impl Shape for Triangle {
         let uv_hit = b0 * uv[0] + b1 * uv[1] + b2 * uv[2];
 
         // Test intersection against alpha texture, if present.
-        if test_alpha_texture && !self.mesh.alpha_mask.is_none() {
-            let isect_local = SurfaceInteraction::new(
-                p_hit,
-                Vector3f::ZERO,
-                uv_hit,
-                -r.d,
-                dpdu,
-                dpdv,
-                Normal3f::ZERO,
-                Normal3f::ZERO,
-                r.time,
-                Arc::clone(&self.data),
-                0,
-            );
+        if test_alpha_texture {
+            if let Some(mask) = self.mesh.alpha_mask.as_ref() {
+                let isect_local = SurfaceInteraction::new(
+                    p_hit,
+                    Vector3f::ZERO,
+                    uv_hit,
+                    -r.d,
+                    dpdu,
+                    dpdv,
+                    Normal3f::ZERO,
+                    Normal3f::ZERO,
+                    r.time,
+                    Arc::clone(&self.data),
+                    0,
+                );
 
-            let alpha_mask = self.mesh.alpha_mask.clone().unwrap();
-            if alpha_mask.evaluate(&isect_local.hit, &isect_local.uv, &isect_local.der) == 0.0 {
-                return None;
+                if mask.evaluate(&isect_local.hit, &isect_local.uv, &isect_local.der) == 0.0 {
+                    return None;
+                }
             }
         }
 
@@ -860,7 +861,9 @@ impl Shape for Triangle {
         }
 
         // Test intersection against alpha texture, if present.
-        if test_alpha_texture && !self.mesh.alpha_mask.is_none() {
+        if test_alpha_texture
+            && (self.mesh.alpha_mask.is_some() || self.mesh.shadow_alpha_mask.is_some())
+        {
             // Compute triangle partial derivatives.
             let uv = self.get_uvs();
 
@@ -909,9 +912,15 @@ impl Shape for Triangle {
                 0,
             );
 
-            let alpha_mask = self.mesh.alpha_mask.clone().unwrap();
-            if alpha_mask.evaluate(&isect_local.hit, &isect_local.uv, &isect_local.der) == 0.0 {
-                return false;
+            if let Some(mask) = self.mesh.alpha_mask.as_ref() {
+                if mask.evaluate(&isect_local.hit, &isect_local.uv, &isect_local.der) == 0.0 {
+                    return false;
+                }
+            }
+            if let Some(mask) = self.mesh.shadow_alpha_mask.as_ref() {
+                if mask.evaluate(&isect_local.hit, &isect_local.uv, &isect_local.der) == 0.0 {
+                    return false;
+                }
             }
         }
 

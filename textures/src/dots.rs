@@ -33,9 +33,9 @@ impl<T> DotsTexture<T> {
         mapping: ArcTextureMapping2D,
     ) -> Self {
         Self {
-            outside_dot: Arc::clone(&outside_dot),
-            inside_dot: Arc::clone(&inside_dot),
-            mapping: Arc::clone(&mapping),
+            outside_dot,
+            inside_dot,
+            mapping,
         }
     }
 }
@@ -57,14 +57,12 @@ where
         let t_cell = (st[1] + 0.5).floor();
 
         // Return _insideDot_ result if point is inside dot
-        if noise(Point3f::new(s_cell + 0.5, t_cell + 0.5, 0.0)) > 0.0 {
+        if noise_2d(s_cell + 0.5, t_cell + 0.5) > 0.0 {
             let radius = 0.35;
             let max_shift = 0.5 - radius;
 
-            let s_center =
-                s_cell + max_shift * noise(Point3f::new(s_cell + 1.5, t_cell + 2.8, 0.0));
-            let t_center =
-                t_cell + max_shift * noise(Point3f::new(s_cell + 4.5, t_cell + 9.8, 0.0));
+            let s_center = s_cell + max_shift * noise_2d(s_cell + 1.5, t_cell + 2.8);
+            let t_center = t_cell + max_shift * noise_2d(s_cell + 4.5, t_cell + 9.8);
 
             let dst = st - Point2f::new(s_center, t_center);
             if dst.length_squared() < radius * radius {

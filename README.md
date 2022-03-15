@@ -40,6 +40,7 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="PLY Mesh" href="renders/shapes/plymesh.png"><img src="renders/shapes/plymesh.png" style="height: 100px;"/></a>
 <a title="Loop Subdivision Surface" href="renders/shapes/loopsubdiv.png"><img src="renders/shapes/loopsubdiv.png" style="height: 100px;"/></a>
 <a title="All Shapes" href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" style="height: 100px;"/></a>
+<a title="Triangles Alpha Mask" href="renders/shapes/triangles-alpha-mask.png"><img src="renders/shapes/triangles-alpha-mask.png" style="height: 100px"/></a>
 
 ### Textures
 

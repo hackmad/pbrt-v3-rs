@@ -29,11 +29,7 @@ impl<T> MixTexture<T> {
     /// * `tex2`   - The second texture.
     /// * `amount` - Scale amount.
     pub fn new(tex1: ArcTexture<T>, tex2: ArcTexture<T>, amount: ArcTexture<Float>) -> Self {
-        Self {
-            tex1: Arc::clone(&tex1),
-            tex2: Arc::clone(&tex2),
-            amount: Arc::clone(&amount),
-        }
+        Self { tex1, tex2, amount }
     }
 }
 

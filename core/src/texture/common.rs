@@ -36,13 +36,13 @@ const NOISE_PERM: [usize; 2 * NOISE_PERM_SIZE] = [
     222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180,
 ];
 
-/// Evaluates the Perlin Noise function for a point.
-///
-/// * `p` - The point.
+/// Evaluates the Perlin Noise function for a 3-D point.
+/// 
+/// * `x` - x-coordinate of point.
+/// * `y` - y-coordinate of point.
+/// * `z` - z-coordinate of point.
 #[rustfmt::skip]
-pub fn noise(p: Point3f) -> Float {
-    let Point3f { x, y, z } = p;
-
+pub fn noise_3d(x: Float, y: Float, z: Float) -> Float {
     // Compute noise cell coordinates and offsets.
     let mut ix = x.floor() as isize;
     let mut iy = y.floor() as isize;
@@ -76,6 +76,38 @@ pub fn noise(p: Point3f) -> Float {
     let y0 = lerp(wy, x00, x10);
     let y1 = lerp(wy, x01, x11);
     lerp(wz, y0, y1)
+}
+
+/// Evaluates the Perlin Noise function for a 2-D point. Evaluates `noise_3d()`
+/// at z = 0.5.
+///
+/// * `x` - x-coordinate of point.
+/// * `y` - y-coordinate of point.
+pub fn noise_2d(x: Float, y: Float) -> Float {
+    noise_3d(x, y, 0.5)
+}
+
+/// Evaluates the Perlin Noise function for a 1-D point. Evaluates `noise_1d()`
+/// at y = z = 0.5.
+///
+/// * `x` - x-coordinate of point.
+pub fn noise_1d(x: Float) -> Float {
+    noise_3d(x, 0.5, 0.5)
+}
+
+/// Evaluates the Perlin Noise function for a 3-D point.
+///
+/// * `p` - The 3-D point.
+pub fn noise_point3f(p: Point3f) -> Float {
+    noise_3d(p.x, p.y, p.z)
+}
+
+/// Evaluates the Perlin Noise function for a 2-D point. Evaluates `noise_3d()`
+/// at z = 0.5.
+///
+/// * `p` - The 2-D point.
+pub fn noise_point2f(p: Point2f) -> Float {
+    noise_2d(p.x, p.y)
 }
 
 /// Evaluate a smoothing interpolating function for a value between given bounds.
@@ -144,12 +176,12 @@ pub fn fbm(
     let mut lambda = 1.0;
     let mut o = 1.0;
     for _i in 0..n_int {
-        sum += o * noise(lambda * p);
+        sum += o * noise_point3f(lambda * p);
         lambda *= 1.99;
         o *= omega;
     }
     let n_partial = n - n_int as Float;
-    sum += o * smooth_step(0.3, 0.7, n_partial) * noise(lambda * p);
+    sum += o * smooth_step(0.3, 0.7, n_partial) * noise_point3f(lambda * p);
     sum
 }
 
@@ -177,7 +209,7 @@ pub fn turbulence(
     let mut lambda = 1.0;
     let mut o = 1.0;
     for _i in 0..n_int {
-        sum += o * abs(noise(lambda * p));
+        sum += o * abs(noise_point3f(lambda * p));
         lambda *= 1.99;
         o *= omega;
     }
@@ -187,7 +219,7 @@ pub fn turbulence(
     sum += o * lerp(
         smooth_step(0.3, 0.7, n_partial),
         0.2,
-        abs(noise(lambda * p)),
+        abs(noise_point3f(lambda * p)),
     );
     for _i in n_int..max_octaves {
         sum += o * 0.2;

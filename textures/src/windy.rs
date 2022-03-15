@@ -24,7 +24,7 @@ impl<T> WindyTexture<T> {
     /// * `mapping` - The 3D mapping.
     pub fn new(mapping: ArcTextureMapping3D) -> Self {
         Self {
-            mapping: Arc::clone(&mapping),
+            mapping,
             _marker: PhantomData,
         }
     }

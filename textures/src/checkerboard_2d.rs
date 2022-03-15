@@ -45,9 +45,9 @@ impl<T> CheckerboardTexture2D<T> {
         aa_method: AAMethod,
     ) -> Self {
         Self {
-            tex1: Arc::clone(&tex1),
-            tex2: Arc::clone(&tex2),
-            mapping: Arc::clone(&mapping),
+            tex1,
+            tex2,
+            mapping,
             aa_method,
         }
     }

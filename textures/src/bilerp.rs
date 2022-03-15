@@ -8,7 +8,6 @@ use core::pbrt::*;
 use core::spectrum::*;
 use core::texture::*;
 use std::ops::{Add, Mul};
-use std::sync::Arc;
 
 /// Implements a texture that bilinearly interpolates among four constant values.
 #[derive(Clone)]
@@ -43,7 +42,7 @@ impl<T: Copy> BilerpTexture<T> {
             v01,
             v10,
             v11,
-            mapping: Arc::clone(&mapping),
+            mapping,
         }
     }
 }
