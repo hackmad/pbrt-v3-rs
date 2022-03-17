@@ -226,21 +226,21 @@ pub fn cosine_hemisphere_pdf(cos_theta: Float) -> Float {
 
 /// Weight samples using the balance heuristic.
 ///
-/// * `nf`    - Number of samples taken from `f_pdf`.
-/// * `f_pdf` - First sampling distribution.
-/// * `ng`    - Number of samples taken from `g_pdf`.
-/// * `g_pdf` - Second sampling distribution.
+/// * `nf`    - Number of samples taken from sampling distribution `pf`.
+/// * `f_pdf` - PDF value from sampling distribution `pf`.
+/// * `ng`    - Number of samples taken from sampling distribution `pg`.
+/// * `g_pdf` - PDF value from sampling distribution `pg`.
 #[inline]
 pub fn balance_heuristic(nf: Int, f_pdf: Float, ng: Int, g_pdf: Float) -> Float {
     (nf as Float * f_pdf) / (nf as Float * f_pdf + ng as Float * g_pdf)
 }
 
-/// Weight samples using the power heuristic.
+/// Weight samples using the power heuristic with `β = 2`.
 ///
-/// * `nf`    - Number of samples taken from `f_pdf`.
-/// * `f_pdf` - First sampling distribution.
-/// * `ng`    - Number of samples taken from `g_pdf`.
-/// * `g_pdf` - Second sampling distribution.
+/// * `nf`    - Number of samples taken from sampling distribution `pf`.
+/// * `f_pdf` - PDF value from sampling distribution `pf`.
+/// * `ng`    - Number of samples taken from sampling distribution `pg`.
+/// * `g_pdf` - PDF value from sampling distribution `pg`.
 #[inline]
 pub fn power_heuristic(nf: Int, f_pdf: Float, ng: Int, g_pdf: Float) -> Float {
     let f = nf as Float * f_pdf;
