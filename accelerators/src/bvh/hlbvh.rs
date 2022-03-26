@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex};
 const N_BUCKETS: usize = 12;
 const FIRST_BIT_INDEX: usize = N_BITS - 1 - N_BUCKETS; // The index of the next bit to try splitting
 const MORTON_BITS: u32 = 10;
-const MORTON_SCALE: u32 = 1 << MORTON_BITS;
+const MORTON_SCALE: Float = (1 << MORTON_BITS) as Float;
 
 /// Build the BVH structure using HLBVH algorithm.
 ///
@@ -43,9 +43,9 @@ pub fn build(
     let morton_prims: Vec<MortonPrimitive> = primitive_info
         .par_iter()
         .map(|&pi| {
-            let v = bounds.offset(&pi.centroid) * MORTON_SCALE as Float;
-            let morton_code = encode_morton_3(&v);
-            MortonPrimitive::new(pi.primitive_number, morton_code)
+            let centroid_offset = bounds.offset(&pi.centroid);
+            let v = centroid_offset * MORTON_SCALE;
+            MortonPrimitive::new(pi.primitive_number, encode_morton_3(&v))
         })
         .collect();
 
@@ -55,14 +55,18 @@ pub fn build(
     let morton_prims = morton_prims_cell.into_inner();
 
     // Create LBVH treelets at bottom of BVH.
+    // Find intervals of primitives for each treelet.
     const MASK: u32 = 0b00111111111111000000000000000000;
-    let mut treelets_to_build: Vec<(usize, usize)> = vec![]; // (start, n_primitives)
-    let (mut start, mut end) = (0, 1);
+    let mut treelets_to_build: Vec<LBVHTreelet> = vec![];
+    let mut start = 0_usize;
+    let mut end = 1_usize;
     while end <= morton_prims.len() {
         if end == morton_prims.len()
             || ((morton_prims[start].morton_code & MASK) != (morton_prims[end].morton_code & MASK))
         {
-            treelets_to_build.push((start, end - start));
+            // Add entry to `treelets_to_build` for this treelet.
+            let n_primitives = end - start;
+            treelets_to_build.push(LBVHTreelet::new(start, n_primitives));
             start = end;
         }
 
@@ -72,22 +76,31 @@ pub fn build(
     // Create LBVHs for treelets in parallel.
     let atomic_total = AtomicUsize::new(0);
     let ordered_prims_offset = AtomicUsize::new(0);
+
+    // Need to pre-allocate ordered_prims so just clone reference to first
+    // primitive to use as default.
+    {
+        let mut prims = ordered_prims.lock().expect("Unable to lock ordered_prims");
+        prims.resize_with(primitives.len(), || Arc::clone(&primitives[0]));
+    }
+
     let mut treelets: Vec<ArenaArc<BVHBuildNode>> = treelets_to_build
         .par_iter()
-        .map(|&(start_index, n_primitives)| {
+        .map(|tr| {
             // Generate i^th LBVH treelet.
-            let mut nodes_created = 0;
+            let mut nodes_created = 0_usize;
+            let end_index = tr.start_index + tr.n_primitives;
             let build_node = emit_lbvh(
                 arena,
                 primitives,
                 max_prims_in_node as usize,
                 primitive_info,
-                &morton_prims[start_index..],
-                n_primitives,
+                &morton_prims[tr.start_index..end_index],
+                tr.n_primitives,
                 &mut nodes_created,
                 Arc::clone(&ordered_prims),
                 &ordered_prims_offset,
-                Some(FIRST_BIT_INDEX),
+                FIRST_BIT_INDEX as isize,
             );
             atomic_total.fetch_add(nodes_created, Ordering::SeqCst);
             build_node
@@ -133,20 +146,19 @@ fn emit_lbvh(
     total_nodes: &mut usize,
     ordered_prims: Arc<Mutex<Vec<ArcPrimitive>>>,
     ordered_prims_offset: &AtomicUsize,
-    bit_index: Option<usize>,
+    bit_index: isize,
 ) -> ArenaArc<BVHBuildNode> {
-    debug_assert!(n_primitives > 0);
+    assert!(n_primitives > 0);
 
-    if bit_index.is_none() || n_primitives < max_prims_in_node {
+    if bit_index == -1 || n_primitives < max_prims_in_node {
         // Create and return leaf node of LBVH treelet.
         let mut bounds = Bounds3f::EMPTY;
         let first_prim_offset = ordered_prims_offset.fetch_add(n_primitives, Ordering::SeqCst);
 
-        let prims = Arc::clone(&ordered_prims);
-        let mut prims2 = prims.lock().expect("unabled to lock ordered_prims");
+        let mut prims = ordered_prims.lock().expect("unabled to lock ordered_prims");
         for i in 0..n_primitives {
             let primitive_index = morton_prims[i].primitive_index;
-            prims2[first_prim_offset + i] = Arc::clone(&primitives[primitive_index]);
+            prims[first_prim_offset + i] = Arc::clone(&primitives[primitive_index]);
             bounds = bounds.union(&primitive_info[primitive_index].bounds);
         }
 
@@ -156,9 +168,9 @@ fn emit_lbvh(
             n_primitives,
             bounds,
         ))
-    } else if let Some(bit_idx) = bit_index {
-        let mask = 1 << bit_idx;
-        // Advance to next subtree level if there's no LBVH split for this bit
+    } else {
+        let mask = 1 << bit_index;
+        // Advance to next subtree level if there's no LBVH split for this bit.
         if (morton_prims[0].morton_code & mask)
             == (morton_prims[n_primitives - 1].morton_code & mask)
         {
@@ -170,16 +182,17 @@ fn emit_lbvh(
                 morton_prims,
                 n_primitives,
                 total_nodes,
-                Arc::clone(&ordered_prims),
+                ordered_prims,
                 ordered_prims_offset,
-                Some(bit_idx - 1),
+                bit_index - 1,
             );
         }
 
         // Find LBVH split point for this dimension
-        let (mut search_start, mut search_end) = (0, n_primitives - 1);
+        let mut search_start = 0_usize;
+        let mut search_end = n_primitives - 1;
         while search_start + 1 != search_end {
-            debug_assert!(search_start != search_end);
+            assert_ne!(search_start, search_end);
 
             let mid = (search_start + search_end) / 2;
             if (morton_prims[search_start].morton_code & mask)
@@ -187,21 +200,21 @@ fn emit_lbvh(
             {
                 search_start = mid;
             } else {
-                debug_assert!(
-                    morton_prims[mid].morton_code & mask
-                        == morton_prims[search_end].morton_code & mask
+                assert_eq!(
+                    morton_prims[mid].morton_code & mask,
+                    morton_prims[search_end].morton_code & mask
                 );
                 search_end = mid;
             }
         }
         let split_offset = search_end;
-        debug_assert!(split_offset < n_primitives - 1);
-        debug_assert!(
-            morton_prims[split_offset - 1].morton_code & mask
-                != morton_prims[split_offset].morton_code & mask
+        assert!(split_offset <= n_primitives - 1);
+        assert_ne!(
+            morton_prims[split_offset - 1].morton_code & mask,
+            morton_prims[split_offset].morton_code & mask
         );
 
-        // Create and return interior LBVH node
+        // Create and return interior LBVH node.
         let c0 = emit_lbvh(
             arena,
             primitives,
@@ -212,7 +225,7 @@ fn emit_lbvh(
             total_nodes,
             Arc::clone(&ordered_prims),
             ordered_prims_offset,
-            Some(bit_idx - 1),
+            bit_index - 1,
         );
         let c1 = emit_lbvh(
             arena,
@@ -222,18 +235,17 @@ fn emit_lbvh(
             &morton_prims[split_offset..],
             n_primitives - split_offset,
             total_nodes,
-            Arc::clone(&ordered_prims),
+            ordered_prims,
             ordered_prims_offset,
-            Some(bit_idx - 1),
+            bit_index - 1,
         );
 
+        *total_nodes += 1;
         arena.alloc_arc(BVHBuildNode::new_interior_node(
-            Axis::from(bit_idx % 3),
+            Axis::from((bit_index as usize) % 3),
             c0,
             c1,
         ))
-    } else {
-        panic!("HLBVH::emit_lbvh(): bit_index is none");
     }
 }
 
@@ -251,38 +263,39 @@ fn build_upper_sah(
     end: usize,
     total_nodes: &mut usize,
 ) -> ArenaArc<BVHBuildNode> {
-    debug_assert!(start < end);
+    assert!(start < end);
 
     let n_nodes = end - start;
     if n_nodes == 1 {
         return ArenaArc::clone(&treelet_roots[start]);
     }
-    *total_nodes += 1;
 
     // Compute bounds of all nodes under this HLBVH node
     let mut bounds = Bounds3f::EMPTY;
-    for treelet_root in treelet_roots.iter().take(end).skip(start) {
-        bounds = bounds.union(&treelet_root.bounds);
+    for i in start..end {
+        bounds = bounds.union(&treelet_roots[i].bounds);
     }
 
-    // Compute bound of HLBVH node centroids, choose split dimension dim.
+    // Compute bound of HLBVH node centroids, choose split dimension `dim`.
     let mut centroid_bounds = Bounds3f::EMPTY;
-    for treelet_root in treelet_roots.iter().take(end).skip(start) {
-        let centroid = (treelet_root.bounds.p_min + treelet_root.bounds.p_max) * 0.5;
+    for i in start..end {
+        let centroid = (treelet_roots[i].bounds.p_min + treelet_roots[i].bounds.p_max) * 0.5;
         centroid_bounds = centroid_bounds.union(&centroid);
     }
 
     let dim = centroid_bounds.maximum_extent();
 
+    // FIXME: if this hits, what do we need to do?
     // Make sure the SAH split below does something... ?
-    debug_assert!(centroid_bounds.p_max[dim] != centroid_bounds.p_min[dim]);
+    assert_ne!(centroid_bounds.p_max[dim], centroid_bounds.p_min[dim]);
 
     // Allocate BucketInfo for SAH partition buckets
     let mut buckets = [BucketInfo::default(); N_BUCKETS];
 
     // Initialize BucketInfo for HLBVH SAH partition buckets
-    for treelet_root in treelet_roots.iter().take(end).skip(start) {
-        let centroid = (treelet_root.bounds.p_min[dim] + treelet_root.bounds.p_max[dim]) * 0.5;
+    for i in start..end {
+        let centroid =
+            (treelet_roots[i].bounds.p_min[dim] + treelet_roots[i].bounds.p_max[dim]) * 0.5;
 
         let mut b = (N_BUCKETS as Float
             * ((centroid - centroid_bounds.p_min[dim])
@@ -291,11 +304,10 @@ fn build_upper_sah(
         if b == N_BUCKETS {
             b = N_BUCKETS - 1;
         }
-        debug_assert!(b > 0);
-        debug_assert!(b < N_BUCKETS);
+        assert!(b < N_BUCKETS);
 
         buckets[b].count += 1;
-        buckets[b].bounds = buckets[b].bounds.union(&treelet_root.bounds);
+        buckets[b].bounds = buckets[b].bounds.union(&treelet_roots[i].bounds);
     }
 
     // Compute costs for splitting after each bucket
@@ -340,18 +352,40 @@ fn build_upper_sah(
         if b == N_BUCKETS {
             b = N_BUCKETS - 1;
         }
-        debug_assert!(b > 0);
-        debug_assert!(b < N_BUCKETS);
+        assert!(b < N_BUCKETS);
         b <= min_cost_split_bucket
     });
 
     let mid = start + split;
-    debug_assert!(mid > start);
-    debug_assert!(mid < end);
+    assert!(mid > start);
+    assert!(mid < end);
 
+    *total_nodes += 1;
     arena.alloc_arc(BVHBuildNode::new_interior_node(
         dim,
         build_upper_sah(arena, treelet_roots, start, mid, total_nodes),
         build_upper_sah(arena, treelet_roots, mid, end, total_nodes),
     ))
+}
+
+/// Treelet to build.
+struct LBVHTreelet {
+    /// Starting index.
+    start_index: usize,
+
+    /// Number of primitives.
+    n_primitives: usize,
+}
+
+impl LBVHTreelet {
+    /// Create a new instance of `LBVHTreelet`.
+    ///
+    /// * `start_index`  - Starting index.
+    /// * `n_primitives` - Number of primitives.
+    fn new(start_index: usize, n_primitives: usize) -> Self {
+        Self {
+            start_index,
+            n_primitives,
+        }
+    }
 }
