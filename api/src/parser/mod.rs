@@ -20,8 +20,9 @@ struct PbrtParser;
 impl PbrtParser {
     /// Parse rule `pbrt`.
     fn pbrt(input: Node) -> Result<Pbrt> {
+        let scene_path = input.user_data().clone();
         Ok(match_nodes!(input.into_children();
-            [stmt(stmts).., EOI(_)] => Pbrt { stmts: stmts.collect() },
+            [stmt(stmts).., EOI(_)] => Pbrt { scene_path, stmts: stmts.collect() },
         ))
     }
 

@@ -8,6 +8,9 @@ use std::fs;
 
 /// Represents the `pbrt` rule of the PBRT file.
 pub(crate) struct Pbrt {
+    /// Absolute path to scene file.
+    pub(crate) scene_path: String,
+
     /// Parsed `stmt`s.
     pub(crate) stmts: Vec<Stmt>,
 }
@@ -17,6 +20,7 @@ impl Pbrt {
     ///
     /// * `api` - The PBRT API interface.
     pub(crate) fn process(&self, api: &mut Api) {
+        api.set_current_working_dir(&self.scene_path);
         self.stmts.iter().for_each(|stmt| stmt.process(api));
     }
 }
