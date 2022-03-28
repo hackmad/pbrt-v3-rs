@@ -1,9 +1,9 @@
 #[macro_use]
 extern crate log;
 
-use api::parser::*;
 use api::*;
 use core::app::*;
+use core::fileutil::*;
 
 #[cfg(all(feature = "dhat-rs", feature = "jemalloc"))]
 compile_error!("feature 'dhat-rs' and feature 'jemalloc' cannot be enabled at the same time");
@@ -42,13 +42,12 @@ fn main() {
     api.pbrt_init();
 
     // Process scene description.
-    for path in OPTIONS.paths.iter() {
-        let parser = PbrtFileParser::new(path);
-        match parser.parse(&mut api) {
-            Ok(_) => (),
-            Err(err) => error!("{}", err),
+    OPTIONS.paths.iter().for_each(|path| {
+        match absolute_path(path).and_then(|abs_path| parser::parse(&abs_path, &mut api)) {
+            Err(e) => error!("{}", e),
+            _ => (),
         }
-    }
+    });
 
     api.pbrt_cleanup();
 }

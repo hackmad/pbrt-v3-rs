@@ -2,8 +2,7 @@
 
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate pest_derive;
+extern crate pest_consume;
 
 mod graphics_state;
 mod material_instance;
