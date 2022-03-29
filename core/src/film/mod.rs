@@ -383,20 +383,15 @@ impl From<(&ParamSet, ArcFilter)> for Film {
     fn from(p: (&ParamSet, ArcFilter)) -> Self {
         let (params, filter) = p;
 
-        let image_file = OPTIONS.image_file();
-        let filename = if !image_file.is_empty() {
-            let params_filename = params.find_one_string("filename", String::from(""));
+        let filename = if let Some(image_file) = OPTIONS.image_file.as_ref() {
+            let params_filename = params.find_one_string("filename", "".to_owned());
             if !params_filename.is_empty() {
                 warn!(
-                    "Output filename supplied on command line, '{}' is overriding 
-                    filename provided in scene description file, '{}'.",
-                    OPTIONS.image_file(),
-                    params_filename
+                    "Output filename supplied on command line, '{}' is overriding filename provided in scene description file, '{}'.",
+                    image_file, params_filename
                 );
-                params_filename
-            } else {
-                String::from(image_file)
             }
+            image_file.clone()
         } else {
             params.find_one_string("filename", String::from("pbrt.exr"))
         };

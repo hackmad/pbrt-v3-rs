@@ -40,7 +40,7 @@ pub struct Options {
         value_name = "FILE",
         help = "Write the final image to the given filename."
     )]
-    img_file: Option<String>,
+    pub image_file: Option<String>,
 
     /// The crop window x0, x1, y0, y1.
     #[clap(
@@ -82,10 +82,5 @@ impl Options {
             }
             n => n,
         }
-    }
-
-    /// Returns the image file.
-    pub fn image_file(&self) -> &str {
-        self.img_file.as_ref().map_or("", |s| s)
     }
 }
