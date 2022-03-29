@@ -1,976 +1,786 @@
 //! PBRT File Parser
 
-#![allow(dead_code)]
+mod common;
 
 use super::*;
+use common::*;
 use core::fileutil::*;
-use pest::iterators::*;
-use pest::Parser;
-use std::fs;
-use std::result::Result;
+use pest::error::ErrorVariant::CustomError;
+use pest_consume::{match_nodes, Error, Parser};
 
-/// The `pest` parser generated from a grammar.
+type Result<T> = std::result::Result<T, Error<Rule>>;
+type Node<'i> = pest_consume::Node<'i, Rule, String>;
+
+/// The `pest_consume::Parser` generated from a grammar.
 #[derive(Parser)]
 #[grammar = "parser/grammar.pest"]
 struct PbrtParser;
 
-/// PBRT File Format Parser.
-pub struct PbrtFileParser {
-    /// Path to the file to parse.
-    file_path: String,
-
-    /// Parent path for navigating to includes and image files.
-    parent_path: String,
-}
-
-impl PbrtFileParser {
-    /// Returns a new instance of `PbrtFileParser`.
-    ///
-    /// * `path` - File path.
-    pub fn new(path: &str) -> Self {
-        if let Some(parent) = parent_path(path) {
-            Self {
-                file_path: String::from(path),
-                parent_path: parent,
-            }
-        } else {
-            // We were passed the root path itself which is not a file.
-            panic!("Invalid path '{}'", path);
-        }
+#[pest_consume::parser]
+impl PbrtParser {
+    /// Parse rule `pbrt`.
+    fn pbrt(input: Node) -> Result<Pbrt> {
+        let scene_path = input.user_data().clone();
+        Ok(match_nodes!(input.into_children();
+            [stmt(stmts).., EOI(_)] => Pbrt { scene_path, stmts: stmts.collect() },
+        ))
     }
 
-    /// Reads a PBRT file format and calls the API wrapper functions.
-    ///
-    /// * `api`  - The PBRT API interface.
-    pub fn parse(&self, api: &mut Api) -> Result<(), String> {
-        // Load the file and parse the `file` rule.
-        let unparsed_file = file_to_string(&self.file_path)?;
-
-        let cwd = parent_path(&self.file_path).unwrap();
-        api.set_current_working_dir(&cwd);
-
-        let pbrt = self.parse_pbrt_rule(&unparsed_file)?;
-
-        // Parse all the `stmt` rules.
-        for pair in pbrt.into_inner() {
-            match pair.as_rule() {
-                Rule::stmt => {
-                    let mut inner_rules = pair.into_inner();
-                    self.parse_stmt_rule(&mut inner_rules, api);
-                }
-                Rule::EOI => (), // Done
-                _ => unreachable!(),
-            }
-        }
-
+    /// Parse rule `EOI (end-of-input)`.
+    fn EOI(_input: Node) -> Result<()> {
         Ok(())
     }
 
-    /// Parse the initial `pbrt` rule of the grammar and return the resulting token
-    /// pairs for remaining rules.
-    ///
-    /// * `unparsed_file` - Contents of the file to parse.
-    fn parse_pbrt_rule<'a>(&self, unparsed_file: &'a str) -> Result<Pair<'a, Rule>, String> {
-        match PbrtParser::parse(Rule::pbrt, &unparsed_file) {
-            Ok(mut pairs) => Ok(pairs.next().unwrap()),
-            Err(err) => Err(format!("Error parsing pbrt rule. {}", err)),
-        }
+    /// Parse rule `stmt`.
+    fn stmt(input: Node) -> Result<Stmt> {
+        Ok(match_nodes!(input.into_children();
+            [include_stmt(stmt)] => stmt,
+            [block_stmt(stmt)] => Stmt::Block(stmt),
+            [option_stmt(stmt)] => Stmt::Option(stmt),
+            [scene_stmt(stmt)] => Stmt::Scene(stmt),
+            [ctm_stmt(stmt)] => Stmt::CTM(stmt),
+            [] => Stmt::Skipped // empty_stmt & comment_stmt get skipped and result in []
+        ))
     }
 
-    /// Parse a `stmt` rule of the grammar and call the API.
-    ///
-    /// * `pairs` - The inner token pairs for matched `stmt` rule.
-    fn parse_stmt_rule(&self, pairs: &mut Pairs<Rule>, api: &mut Api) {
-        let next_pair = pairs.next().unwrap();
-        let rule = next_pair.as_rule();
-        let mut inner_rules = next_pair.into_inner();
+    /// Parse rule `include_stmt`.
+    fn include_stmt(input: Node) -> Result<Stmt> {
+        let scene_path = input.user_data().clone();
+        let span = input.as_span();
 
-        match rule {
-            Rule::empty_stmt => (),   // Ignore
-            Rule::comment_stmt => (), // Ignore
-            Rule::include_stmt => self.parse_include_stmt(&mut inner_rules, api),
-            Rule::option_stmt => self.parse_option_stmt(&mut inner_rules, api),
-            Rule::scene_stmt => self.parse_scene_stmt(&mut inner_rules, api),
-            Rule::block_stmt => self.parse_block_stmt(&mut inner_rules, api),
-            Rule::ctm_stmt => self.parse_ctm_stmt(&mut inner_rules, api),
-            _ => unreachable!(),
-        }
-    }
-
-    /// Parse a `include_stmt` rule of the grammar and call the API. This will
-    /// create a new parser to parse the included file and parse it entirely while
-    /// calling the API before returning.
-    ///
-    /// The following is not supported yet:
-    ///
-    ///   Include "some.pbrt" "color Kd" [1 1 1]
-    ///
-    /// * `pairs` - The inner token pairs for matched `include_stmt` rule.
-    /// * `api`   - The PBRT API interface.
-    fn parse_include_stmt(&self, pairs: &mut Pairs<Rule>, api: &mut Api) {
-        let next_pair = pairs.next().unwrap();
-        match next_pair.as_rule() {
-            Rule::quoted_str_expr => {
-                let mut inner_rules = next_pair.into_inner();
-                let mut path = self.parse_quoted_str(&mut inner_rules);
-                debug!("Include: '{}'", path);
-
-                if is_relative_path(&path) && self.parent_path.len() > 0 {
-                    // Path is relative to the parent path of the file being parsed.
-                    path = self.parent_path.clone() + "/" + &path;
-                }
-
-                let parser = Self::new(&path);
-                match parser.parse(api) {
-                    Ok(()) => debug!("Finished parsing include '{}'", path),
-                    Err(err) => error!("{}", err),
-                }
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    /// Parse a `block_stmt` rule of the grammar and call the API.
-    ///
-    /// * `pairs` - The inner token pairs for matched `block_stmt` rule.
-    /// * `api`   - The PBRT API interface.
-    fn parse_block_stmt(&self, pairs: &mut Pairs<Rule>, api: &mut Api) {
-        let next_pair = pairs.next().unwrap();
-        match next_pair.as_rule() {
-            Rule::world_begin_stmt => api.pbrt_world_begin(),
-            Rule::world_end_stmt => api.pbrt_world_end(),
-            Rule::attribute_begin_stmt => api.pbrt_attribute_begin(),
-            Rule::attribute_end_stmt => api.pbrt_attribute_end(),
-            Rule::object_begin_stmt => {
-                let mut inner_rules = next_pair.into_inner();
-                let str = self.parse_quoted_str(&mut inner_rules);
-                debug!("ObjectBegin: '{}'", str);
-                api.pbrt_object_begin(str);
-            }
-            Rule::object_end_stmt => api.pbrt_object_end(),
-            Rule::transform_begin_stmt => api.pbrt_transform_begin(),
-            Rule::transform_end_stmt => api.pbrt_transform_end(),
-            _ => unreachable!(),
-        }
-    }
-
-    /// Parse an `option_stmt` rule of the grammar and call the API.
-    ///
-    /// * `pairs` - The inner token pairs for matched `option_stmt` rule.
-    /// * `api`   - The PBRT API interface.
-    fn parse_option_stmt(&self, pairs: &mut Pairs<Rule>, api: &mut Api) {
-        let next_pair = pairs.next().unwrap();
-        let rule = next_pair.as_rule();
-        let mut inner_rules = next_pair.into_inner();
-
-        match rule {
-            Rule::accelerator_stmt => {
-                self.parse_named_param_list(&mut inner_rules, "Accelerator", api)
-            }
-            Rule::camera_stmt => self.parse_named_param_list(&mut inner_rules, "Camera", api),
-            Rule::film_stmt => self.parse_named_param_list(&mut inner_rules, "Film", api),
-            Rule::filter_stmt => self.parse_named_param_list(&mut inner_rules, "Filter", api),
-            Rule::integrator_stmt => {
-                self.parse_named_param_list(&mut inner_rules, "Integrator", api)
-            }
-            Rule::make_named_medium_stmt => {
-                self.parse_named_param_list(&mut inner_rules, "MakeNamedMedium", api)
-            }
-            Rule::sampler_stmt => self.parse_named_param_list(&mut inner_rules, "Sampler", api),
-            Rule::pixel_filter_stmt => {
-                self.parse_named_param_list(&mut inner_rules, "PixelFilter", api)
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    /// Parse a `scene_stmt` rule of the grammar and call the API.
-    ///
-    /// * `pairs` - The inner token pairs for matched `scene_stmt` rule.
-    /// * `api`   - The PBRT API interface.
-    fn parse_scene_stmt(&self, pairs: &mut Pairs<Rule>, api: &mut Api) {
-        let next_pair = pairs.next().unwrap();
-        let rule = next_pair.as_rule();
-        let mut inner_rules = next_pair.into_inner();
-
-        match rule {
-            Rule::area_light_source_stmt => {
-                self.parse_named_param_list(&mut inner_rules, "AreaLightSource", api)
-            }
-            Rule::light_source_stmt => {
-                self.parse_named_param_list(&mut inner_rules, "LightSource", api)
-            }
-            Rule::make_named_material_stmt => {
-                self.parse_named_param_list(&mut inner_rules, "MakeNamedMaterial", api)
-            }
-            Rule::material_stmt => self.parse_named_param_list(&mut inner_rules, "Material", api),
-            Rule::shape_stmt => self.parse_named_param_list(&mut inner_rules, "Shape", api),
-            Rule::texture_stmt => {
-                let name = self.parse_quoted_str(&mut inner_rules);
-                let texture_type = self.parse_quoted_str(&mut inner_rules);
-                let texture_class = self.parse_quoted_str(&mut inner_rules);
-                let params = inner_rules.next().map_or(ParamSet::new(), |param_list| {
-                    self.parse_param_list(param_list.into_inner(), &api.cwd)
-                });
-                debug!(
-                    "Texture: '{}', '{}', '{}' {:}",
-                    name, texture_type, texture_class, params
-                );
-                api.pbrt_texture(name, texture_type, texture_class, &params)
-            }
-            Rule::named_material_stmt => {
-                self.parse_named_stmt(&mut inner_rules, api, "NamedMaterial")
-            }
-            Rule::object_instance_stmt => {
-                self.parse_named_stmt(&mut inner_rules, api, "ObjectInstance")
-            }
-            Rule::reverse_orientation_stmt => api.pbrt_reverse_orientation(),
-            Rule::medium_interface_stmt => {
-                let inside_medium = self.parse_quoted_str(&mut inner_rules);
-                let outside_medium = if inner_rules.peek().is_some() {
-                    self.parse_quoted_str(&mut inner_rules)
+        match_nodes!(input.into_children();
+            [quoted_str_expr(path)] => {
+                if is_relative_path(&path) && !scene_path.is_empty() {
+                    let p = format!("{}/{}", scene_path, path);
+                    match absolute_path(&p) {
+                        Ok(abs_path) => Ok(Stmt::Include(abs_path)),
+                        Err(e) => Err(Error::new_from_span(CustomError { message: e }, span))
+                    }
                 } else {
-                    "".to_string()
-                };
-                debug!("MediumInterface: '{}', '{}'", inside_medium, outside_medium);
-                api.pbrt_medium_interface(inside_medium, outside_medium);
-            }
-            Rule::ctm_stmt => self.parse_ctm_stmt(&mut inner_rules, api),
-            Rule::active_transform_stmt => {
-                let time = inner_rules.next().unwrap().as_str();
-                debug!("ActiveTransform: '{}'", time);
-                match time {
-                    "StartTime" => api.pbrt_active_transform_start_time(),
-                    "EndTime" => api.pbrt_active_transform_end_time(),
-                    "All" => api.pbrt_active_transform_all(),
-                    _ => warn!("Ignoring invalid ActiveTransform time '{}'", time),
+                    Ok(Stmt::Include(path.to_owned()))
+                }
+            },
+        )
+    }
+
+    /// Parse rule `block_stmt`.
+    fn block_stmt(input: Node) -> Result<BlockStmt> {
+        Ok(match_nodes!(input.into_children();
+            [world_begin_stmt(stmt)] => stmt,
+            [world_end_stmt(stmt)] => stmt,
+            [attribute_begin_stmt(stmt)] => stmt,
+            [attribute_end_stmt(stmt)] => stmt,
+            [object_begin_stmt(stmt)] => stmt,
+            [object_end_stmt(stmt)] => stmt,
+            [transform_begin_stmt(stmt)] => stmt,
+            [transform_end_stmt(stmt)] => stmt,
+        ))
+    }
+
+    /// Parse rule `world_begin_stmt`.
+    fn world_begin_stmt(input: Node) -> Result<BlockStmt> {
+        Ok(BlockStmt::WorldBegin)
+    }
+
+    /// Parse rule `world_end_stmt`.
+    fn world_end_stmt(input: Node) -> Result<BlockStmt> {
+        Ok(BlockStmt::WorldEnd)
+    }
+
+    /// Parse rule `attribute_begin_stmt`.
+    fn attribute_begin_stmt(input: Node) -> Result<BlockStmt> {
+        Ok(BlockStmt::AttributeBegin)
+    }
+
+    /// Parse rule `attribute_end_stmt`.
+    fn attribute_end_stmt(input: Node) -> Result<BlockStmt> {
+        Ok(BlockStmt::AttributeEnd)
+    }
+
+    /// Parse rule `transform_begin_stmt`.
+    fn transform_begin_stmt(input: Node) -> Result<BlockStmt> {
+        Ok(BlockStmt::TransformBegin)
+    }
+
+    /// Parse rule `transform_end_stmt`.
+    fn transform_end_stmt(input: Node) -> Result<BlockStmt> {
+        Ok(BlockStmt::TransformEnd)
+    }
+
+    /// Parse rule `object_begin_stmt`.
+    fn object_begin_stmt(input: Node) -> Result<BlockStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => BlockStmt::ObjectBegin(name),
+        ))
+    }
+
+    /// Parse rule `object_end_stmt`.
+    fn object_end_stmt(input: Node) -> Result<BlockStmt> {
+        Ok(BlockStmt::ObjectEnd)
+    }
+
+    /// Parse rule `option_stmt`.
+    fn option_stmt(input: Node) -> Result<OptionStmt> {
+        Ok(match_nodes!(input.into_children();
+            [accelerator_stmt(stmt)] => stmt,
+            [camera_stmt(stmt)] => stmt,
+            [film_stmt(stmt)] => stmt,
+            [integrator_stmt(stmt)] => stmt,
+            [make_named_medium_stmt(stmt)] => stmt,
+            [sampler_stmt(stmt)] => stmt,
+            [pixel_filter_stmt(stmt)] => stmt,
+        ))
+    }
+
+    /// Parse rule `accelerator_stmt`.
+    fn accelerator_stmt(input: Node) -> Result<OptionStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => OptionStmt::Accelerator(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::Accelerator(name, params),
+        ))
+    }
+
+    /// Parse rule `camera_stmt`.
+    fn camera_stmt(input: Node) -> Result<OptionStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => OptionStmt::Camera(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::Camera(name, params),
+        ))
+    }
+
+    /// Parse rule `film_stmt`.
+    fn film_stmt(input: Node) -> Result<OptionStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => OptionStmt::Film(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::Film(name, params),
+        ))
+    }
+
+    /// Parse rule `integrator_stmt`.
+    fn integrator_stmt(input: Node) -> Result<OptionStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => OptionStmt::Integrator(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::Integrator(name, params),
+        ))
+    }
+
+    /// Parse rule `make_named_medium_stmt`.
+    fn make_named_medium_stmt(input: Node) -> Result<OptionStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => OptionStmt::MakeNamedMedium(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::MakeNamedMedium(name, params),
+        ))
+    }
+
+    /// Parse rule `sampler_stmt`.
+    fn sampler_stmt(input: Node) -> Result<OptionStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => OptionStmt::Sampler(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::Sampler(name, params),
+        ))
+    }
+
+    /// Parse rule `pixel_filter_stmt`.
+    fn pixel_filter_stmt(input: Node) -> Result<OptionStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => OptionStmt::PixelFilter(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::PixelFilter(name, params),
+        ))
+    }
+
+    /// Parse rule `scene_stmt`.
+    fn scene_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(match_nodes!(input.into_children();
+            [area_light_source_stmt(stmt)] => stmt,
+            [light_source_stmt(stmt)] => stmt,
+            [make_named_material_stmt(stmt)] => stmt,
+            [material_stmt(stmt)] => stmt,
+            [shape_stmt(stmt)] => stmt,
+            [texture_stmt(stmt)] => stmt,
+            [named_material_stmt(stmt)] => stmt,
+            [object_instance_stmt(stmt)] => stmt,
+            [reverse_orientation_stmt(stmt)] => stmt,
+            [medium_interface_stmt(stmt)] => stmt,
+            [active_transform_stmt(stmt)] => stmt,
+        ))
+    }
+
+    /// Parse rule `area_light_source_stmt`.
+    fn area_light_source_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => SceneStmt::AreaLightSource(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => SceneStmt::AreaLightSource(name, params),
+        ))
+    }
+
+    /// Parse rule `light_source_stmt`.
+    fn light_source_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => SceneStmt::LightSource(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => SceneStmt::LightSource(name, params),
+        ))
+    }
+
+    /// Parse rule `make_named_material_stmt`.
+    fn make_named_material_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => SceneStmt::MakeNamedMaterial(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => SceneStmt::MakeNamedMaterial(name, params),
+        ))
+    }
+
+    /// Parse rule `material_stmt`.
+    fn material_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => SceneStmt::Material(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => SceneStmt::Material(name, params),
+        ))
+    }
+
+    /// Parse rule `shape_stmt`.
+    fn shape_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr_opt_end(name)] => SceneStmt::Shape(name, vec![]),
+            [quoted_str_expr_opt_end(name), param_list(params)] => SceneStmt::Shape(name, params),
+        ))
+    }
+
+    /// Parse rule `texture_stmt`.
+    fn texture_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(match_nodes!(input.into_children();
+            [
+                quoted_str_expr_opt_end(name),
+                quoted_str_expr_opt_end(tex_type),
+                quoted_str_expr_opt_end(tex_class)
+            ] => SceneStmt::Texture(name, tex_type, tex_class, vec![]),
+            [
+                quoted_str_expr_opt_end(name),
+                quoted_str_expr_opt_end(tex_type),
+                quoted_str_expr_opt_end(tex_class),
+                param_list(params)
+            ] => SceneStmt::Texture(name, tex_type, tex_class, params),
+        ))
+    }
+
+    /// Parse rule `named_material_stmt`.
+    fn named_material_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_ident_expr(name)] => SceneStmt::NamedMaterial(name),
+        ))
+    }
+
+    /// Parse rule `object_instance_stmt`.
+    fn object_instance_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_ident_expr(name)] => SceneStmt::ObjectInstance(name),
+        ))
+    }
+
+    /// Parse rule `reverse_orientation_stmt`.
+    fn reverse_orientation_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(SceneStmt::ReverseOrientation)
+    }
+
+    /// Parse rule `medium_interface_stmt`.
+    fn medium_interface_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str(inside)] => SceneStmt::MediumInterface(inside, "".to_owned()),
+            [quoted_str(inside), quoted_str(outside)] => SceneStmt::MediumInterface(inside, outside),
+        ))
+    }
+
+    /// Parse rule `active_transform_stmt`.
+    fn active_transform_stmt(input: Node) -> Result<SceneStmt> {
+        Ok(match_nodes!(input.into_children();
+            [active_transform_time(time)] => SceneStmt::ActiveTransform(time),
+        ))
+    }
+
+    /// Parse rule `active_transform_time`.
+    fn active_transform_time(input: Node) -> Result<ActiveTransformTime> {
+        match input.as_str() {
+            "StartTime" => Ok(ActiveTransformTime::Start),
+            "EndTime" => Ok(ActiveTransformTime::End),
+            "All" => Ok(ActiveTransformTime::All),
+            s => Err(input.error(ActiveTransformTypeError(s))),
+        }
+    }
+
+    /// Parse rule `ctm_stmt`.
+    fn ctm_stmt(input: Node) -> Result<CTMStmt> {
+        Ok(match_nodes!(input.into_children();
+            [identity_stmt(stmt)] => stmt,
+            [translate_stmt(stmt)] => stmt,
+            [scale_stmt(stmt)] => stmt,
+            [rotate_stmt(stmt)] => stmt,
+            [look_at_stmt(stmt)] => stmt,
+            [coordinate_system_stmt(stmt)] => stmt,
+            [coord_sys_transform_stmt(stmt)] => stmt,
+            [transform_stmt(stmt)] => stmt,
+            [concat_transform_stmt(stmt)] => stmt,
+            [transform_times_stmt(stmt)] => stmt,
+        ))
+    }
+
+    /// Parse rule `identity_stmt`.
+    fn identity_stmt(input: Node) -> Result<CTMStmt> {
+        Ok(CTMStmt::Identity)
+    }
+
+    /// Parse rule `translate_stmt`.
+    fn translate_stmt(input: Node) -> Result<CTMStmt> {
+        Ok(match_nodes!(input.into_children();
+            [float_expr(x), float_expr(y), float_expr(z)] =>
+                CTMStmt::Translate([x, y, z]),
+        ))
+    }
+
+    /// Parse rule `scale_stmt`.
+    fn scale_stmt(input: Node) -> Result<CTMStmt> {
+        Ok(match_nodes!(input.into_children();
+            [float_expr(x), float_expr(y), float_expr(z)] =>
+                CTMStmt::Scale([x, y, z]),
+        ))
+    }
+
+    /// Parse rule `rotate_stmt`.
+    fn rotate_stmt(input: Node) -> Result<CTMStmt> {
+        Ok(match_nodes!(input.into_children();
+            [float_expr(angle), float_expr(x), float_expr(y), float_expr(z)] =>
+                CTMStmt::Rotate([angle, x, y, z]),
+        ))
+    }
+
+    /// Parse rule `look_atstmt`.
+    fn look_at_stmt(input: Node) -> Result<CTMStmt> {
+        Ok(match_nodes!(input.into_children();
+            [
+                float_expr(v0), float_expr(v1), float_expr(v2), // Eye
+                float_expr(v3), float_expr(v4), float_expr(v5), // Look at point
+                float_expr(v6), float_expr(v7), float_expr(v8), // Up vector
+            ] => CTMStmt::LookAt([v0, v1, v2], [v3, v4, v5], [v6, v7, v8]),
+        ))
+    }
+
+    /// Parse rule `coordinate_system_stmt`.
+    fn coordinate_system_stmt(input: Node) -> Result<CTMStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_ident_expr(name)] => CTMStmt::CoordinateSystem(name),
+        ))
+    }
+
+    /// Parse rule `coord_sys_transform_stmt`.
+    fn coord_sys_transform_stmt(input: Node) -> Result<CTMStmt> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_ident_expr(name)] => CTMStmt::CoordinateSystemTransform(name),
+        ))
+    }
+
+    /// Parse rule `transform_stmt`.
+    fn transform_stmt(input: Node) -> Result<CTMStmt> {
+        let span = input.as_span();
+        match_nodes!(input.into_children();
+            [float_list_expr(v)] => {
+                if v.len() == 16 {
+                    let mut values = [0.0 as Float; 16];
+                    v.iter().enumerate().for_each(|(i, val)| {
+                        values[i] = *val;
+                    });
+                    Ok(CTMStmt::Transform(values))
+                } else {
+                    Err(Error::new_from_span(
+                        CustomError {
+                            message: "transform_stmt does not have neough values".to_owned()
+                        },
+                        span
+                    ))
                 }
             }
-            _ => unreachable!(),
-        }
+        )
     }
 
-    /// Parse a `named_material_stmt`/`object_instance_stmt` rule of the grammar and call the API.
-    ///
-    /// * `pairs`     - The inner token pairs for matched rule.
-    /// * `api`       - The PBRT API interface.
-    /// * `stmt_type` - 'NamedMaterial | ObjectInstance'
-    fn parse_named_stmt(&self, pairs: &mut Pairs<Rule>, api: &mut Api, stmt_type: &str) {
-        let next_pair = pairs.next().unwrap();
-        match next_pair.as_rule() {
-            Rule::quoted_ident_expr => {
-                let mut inner_rules = next_pair.into_inner();
-                let name = self.parse_quoted_ident(&mut inner_rules);
-                debug!("{}: '{}'", stmt_type, name);
-                match stmt_type {
-                    "NamedMaterial" => api.pbrt_named_material(name),
-                    "ObjectInstance" => api.pbrt_object_instance(name),
-                    "CoordinateSystem" => api.pbrt_coordinate_system(name),
-                    "CoordSysTransform" => api.pbrt_coord_sys_transform(name),
-                    _ => unreachable!(),
+    /// Parse rule `concat_transform_stmt`.
+    fn concat_transform_stmt(input: Node) -> Result<CTMStmt> {
+        let span = input.as_span();
+        match_nodes!(input.into_children();
+            [float_list_expr(v)] => {
+                if v.len() == 16 {
+                    let mut values = [0.0 as Float; 16];
+                    v.iter().enumerate().for_each(|(i, val)| {
+                        values[i] = *val;
+                    });
+                    Ok(CTMStmt::ConcatTransform(values))
+                } else {
+                    Err(Error::new_from_span(
+                        CustomError {
+                            message: "concat_transform_stmt does not have neough values".to_owned()
+                        },
+                        span
+                    ))
                 }
             }
-            _ => unreachable!(),
-        }
+        )
     }
 
-    /// Parse a `ctm_stmt` rule of the grammar and call the API.
-    ///
-    /// * `pairs` - The inner token pairs for matched `ctm_stmt` rule.
-    /// * `api`   - The PBRT API interface.
-    fn parse_ctm_stmt(&self, pairs: &mut Pairs<Rule>, api: &mut Api) {
-        let next_pair = pairs.next().unwrap();
-        match next_pair.as_rule() {
-            Rule::identity_stmt => {
-                debug!("Identity");
-                api.pbrt_identity();
-            }
-            Rule::translate_stmt => {
-                let mut inner_rules = next_pair.into_inner();
-                let x = self.parse_float(inner_rules.next().unwrap());
-                let y = self.parse_float(inner_rules.next().unwrap());
-                let z = self.parse_float(inner_rules.next().unwrap());
-                debug!("Translate: [{}, {}, {}]", x, y, z);
-                api.pbrt_translate(x, y, z);
-            }
-            Rule::scale_stmt => {
-                let mut inner_rules = next_pair.into_inner();
-                let x = self.parse_float(inner_rules.next().unwrap());
-                let y = self.parse_float(inner_rules.next().unwrap());
-                let z = self.parse_float(inner_rules.next().unwrap());
-                debug!("Scale: [{}, {}, {}]", x, y, z);
-                api.pbrt_scale(x, y, z);
-            }
-            Rule::rotate_stmt => {
-                let mut inner_rules = next_pair.into_inner();
-                let angle = self.parse_float(inner_rules.next().unwrap());
-                let x = self.parse_float(inner_rules.next().unwrap());
-                let y = self.parse_float(inner_rules.next().unwrap());
-                let z = self.parse_float(inner_rules.next().unwrap());
-                debug!("Rotate: {}, [{}, {}, {}]", angle, x, y, z);
-                api.pbrt_rotate(angle, x, y, z);
-            }
-            Rule::look_at_stmt => {
-                let mut inner_rules = next_pair.into_inner();
-                let ex = self.parse_float(inner_rules.next().unwrap());
-                let ey = self.parse_float(inner_rules.next().unwrap());
-                let ez = self.parse_float(inner_rules.next().unwrap());
-                let lx = self.parse_float(inner_rules.next().unwrap());
-                let ly = self.parse_float(inner_rules.next().unwrap());
-                let lz = self.parse_float(inner_rules.next().unwrap());
-                let ux = self.parse_float(inner_rules.next().unwrap());
-                let uy = self.parse_float(inner_rules.next().unwrap());
-                let uz = self.parse_float(inner_rules.next().unwrap());
-                debug!(
-                    "LookAt: [{}, {}, {}], [{}, {}, {}], [{}, {}, {}]",
-                    ex, ey, ez, lx, ly, lz, ux, uy, uz
-                );
-                api.pbrt_look_at(ex, ey, ez, lx, ly, lz, ux, uy, uz);
-            }
-            Rule::coordinate_system_stmt => {
-                let mut inner_rules = next_pair.into_inner();
-                self.parse_named_stmt(&mut inner_rules, api, "CoordinateSystem");
-            }
-            Rule::coord_sys_transform_stmt => {
-                let mut inner_rules = next_pair.into_inner();
-                self.parse_named_stmt(&mut inner_rules, api, "CoordSysTransform");
-            }
-            Rule::transform_stmt => {
-                let mut inner_rules = next_pair.into_inner();
-                self.parse_transform_stmt(&mut inner_rules, api, "Transform");
-            }
-            Rule::concat_transform_stmt => {
-                let mut inner_rules = next_pair.into_inner();
-                self.parse_transform_stmt(&mut inner_rules, api, "ConcatTransform");
-            }
-            Rule::transform_times_stmt => {
-                let mut inner_rules = next_pair.into_inner();
-                let start = self.parse_float(inner_rules.next().unwrap());
-                let end = self.parse_float(inner_rules.next().unwrap());
-                debug!("TransformTimes: {}, {}", start, end);
-                api.pbrt_transform_times(start, end);
-            }
-            _ => unreachable!(),
-        }
+    /// Parse rule `transform_times_stmt`.
+    fn transform_times_stmt(input: Node) -> Result<CTMStmt> {
+        Ok(match_nodes!(input.into_children();
+            [float(start), float_expr(end)] => CTMStmt::TransformTimes([start, end]),
+        ))
     }
 
-    /// Parse a transform statament.
-    ///
-    /// * `pairs`       - The inner token pairs for matched `param_list` rule.
-    /// * `option_name` - The name of the option.
-    /// * `api`         - The PBRT API interface.
-    /// * `stmt_type`   - Statement type.
-    fn parse_transform_stmt(&self, pairs: &mut Pairs<Rule>, api: &mut Api, stmt_type: &str) {
-        let next_pair = pairs.next().unwrap();
-        let tr = self.parse_float_list(next_pair.into_inner());
-        assert!(tr.len() == 16, "float_list in {} not of len 16.", stmt_type);
-        debug!("{}: {:?}", stmt_type, tr);
-        api.pbrt_concat_transform(&[
-            tr[0], tr[1], tr[2], tr[3], tr[4], tr[5], tr[6], tr[7], tr[8], tr[9], tr[10], tr[11],
-            tr[12], tr[13], tr[14], tr[15],
-        ]);
+    /// Parse rule `param_list`.
+    fn param_list(input: Node) -> Result<Vec<Param>> {
+        Ok(match_nodes!(input.into_children();
+            [param(params)..] => params.collect(),
+        ))
     }
 
-    /// Parse a named `param_list`.
-    ///
-    /// * `pairs`       - The inner token pairs for matched `param_list` rule.
-    /// * `option_name` - The name of the option.
-    /// * `api`         - The PBRT API interface.
-    fn parse_named_param_list(&self, pairs: &mut Pairs<Rule>, option_name: &str, api: &mut Api) {
-        let name = self.parse_quoted_str(pairs);
-        let params = pairs.next().map_or(ParamSet::new(), |param_list| {
-            self.parse_param_list(param_list.into_inner(), &api.cwd)
-        });
-
-        debug!("{} '{}' {:}", option_name, name, params);
-        match option_name {
-            "Accelerator" => api.pbrt_accelerator(name, &params),
-            "Camera" => api.pbrt_camera(name, &params),
-            "Film" => api.pbrt_film(name, &params),
-            "Filter" => api.pbrt_pixel_filter(name, &params),
-            "Integrator" => api.pbrt_integrator(name, &params),
-            "MakeNamedMedium" => api.pbrt_make_named_medium(name, &params),
-            "Sampler" => api.pbrt_sampler(name, &params),
-            "AreaLightSource" => api.pbrt_area_light_source(name, &params),
-            "LightSource" => api.pbrt_light_source(name, &params),
-            "MakeNamedMaterial" => api.pbrt_make_named_material(name, &params),
-            "Material" => api.pbrt_material(name, &params),
-            "Shape" => api.pbrt_shape(name, &params),
-            "PixelFilter" => api.pbrt_pixel_filter(name, &params),
-            _ => warn!("'{}' not supported", option_name),
-        }
+    /// Parse rule `param`.
+    fn param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [point3d_param(param)] => param,
+            [vector3d_param(param)] => param,
+            [normal3d_param(param)] => param,
+            [point2d_param(param)] => param,
+            [vector2d_param(param)] => param,
+            [string_param(param)] => param,
+            [bool_param(param)] => param,
+            [float_param(param)] => param,
+            [int_param(param)] => param,
+            [colour_param(param)] => param,
+            [blackbody_param(param)] => param,
+            [spectrum_param(param)] => param,
+            [texture_param(param)] => param,
+        ))
     }
 
-    /// Parse a `param_list` rule of the grammar and return a `ParamSet`.
-    ///
-    /// * `pairs` - The inner token pairs for matched `param_list` rule.
-    /// * `api`   - The PBRT API interface.
-    /// * `cwd`    - Current working directory for relative path handling.
-    fn parse_param_list(&self, pairs: Pairs<Rule>, cwd: &str) -> ParamSet {
-        let mut paramset = ParamSet::new();
-
-        for pair in pairs {
-            let rule = pair.as_rule();
-            let mut inner_rules = pair.into_inner();
-            match rule {
-                Rule::param => self.parse_param(&mut inner_rules, &mut paramset, cwd),
-                Rule::comment => (), // Ignore
-                _ => unreachable!(),
-            }
-        }
-
-        paramset
-    }
-
-    /// Parse a `param` rule of the grammar and add parameter to a `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `param_list` rule.
-    /// * `params` - The `ParamSet` to update.
-    /// * `cwd`    - Current working directory for relative path handling.
-    fn parse_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet, cwd: &str) {
-        let next_pair = pairs.next().unwrap();
-        let rule = next_pair.as_rule();
-        let mut inner_rules = next_pair.into_inner();
-        match rule {
-            Rule::point3d_param => self.parse_point3d_param(&mut inner_rules, params),
-            Rule::vector3d_param => self.parse_vector3d_param(&mut inner_rules, params),
-            Rule::normal3d_param => self.parse_normal3d_param(&mut inner_rules, params),
-            Rule::point2d_param => self.parse_point2d_param(&mut inner_rules, params),
-            Rule::vector2d_param => self.parse_vector2d_param(&mut inner_rules, params),
-            Rule::string_param => self.parse_string_param(&mut inner_rules, params),
-            Rule::bool_param => self.parse_bool_param(&mut inner_rules, params),
-            Rule::float_param => self.parse_float_param(&mut inner_rules, params),
-            Rule::int_param => self.parse_int_param(&mut inner_rules, params),
-            Rule::colour_param => self.parse_colour_param(&mut inner_rules, params),
-            Rule::spectrum_param => self.parse_spectrum_param(&mut inner_rules, params, cwd),
-            Rule::blackbody_param => self.parse_blackbody_param(&mut inner_rules, params),
-            Rule::texture_param => self.parse_texture_param(&mut inner_rules, params),
-            _ => unreachable!(),
-        }
-    }
-
-    /// Parse an `point3d_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `point3d_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_point3d_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "point3" || param_type == "point");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list = match value.as_rule() {
-            Rule::float_list_expr => self.parse_float_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-
-        let n = list.len();
-        if n % 3 != 0 {
-            warn!("point3d_param '{}' length is not divisible by 3", ident);
-        }
-
-        let values: Vec<Point3f> = (0..n)
-            .step_by(3)
-            .map(|i| Point3f::new(list[i], list[i + 1], list[i + 2]))
-            .collect();
-        params.add_point3f(ident, &values);
-    }
-
-    /// Parse an `vector3d_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `vector3d_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_vector3d_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "vector3" || param_type == "vector");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list = match value.as_rule() {
-            Rule::float_list_expr => self.parse_float_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-
-        let n = list.len();
-        if n % 3 != 0 {
-            warn!("vector3d_param '{}' length is not divisible by 3", ident);
-        }
-
-        let values: Vec<Vector3f> = (0..n)
-            .step_by(3)
-            .map(|i| Vector3f::new(list[i], list[i + 1], list[i + 2]))
-            .collect();
-        params.add_vector3f(ident, &values);
-    }
-
-    /// Parse an `normal3d_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `normal3d_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_normal3d_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "normal3" || param_type == "normal");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list = match value.as_rule() {
-            Rule::float_list_expr => self.parse_float_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-
-        let n = list.len();
-        if n % 3 != 0 {
-            warn!("normal3d_param '{}' length is not divisible by 3", ident);
-        }
-
-        let values: Vec<Normal3f> = (0..n)
-            .step_by(3)
-            .map(|i| Normal3f::new(list[i], list[i + 1], list[i + 2]))
-            .collect();
-        params.add_normal3f(ident, &values);
-    }
-
-    /// Parse an `point2d_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `point2d_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_point2d_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "point2");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list = match value.as_rule() {
-            Rule::float_list_expr => self.parse_float_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-
-        let n = list.len();
-        if n % 2 != 0 {
-            warn!("point2d_param '{}' length is not divisible by 3", ident);
-        }
-
-        let values: Vec<Point2f> = (0..n)
-            .step_by(2)
-            .map(|i| Point2f::new(list[i], list[i + 1]))
-            .collect();
-        params.add_point2f(ident, &values);
-    }
-
-    /// Parse an `vector2d_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `vector2d_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_vector2d_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "vector2");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list = match value.as_rule() {
-            Rule::float_list_expr => self.parse_float_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-
-        let n = list.len();
-        if n % 2 != 0 {
-            warn!("vector2d_param '{}' length is not divisible by 3", ident);
-        }
-
-        let values: Vec<Vector2f> = (0..n)
-            .step_by(2)
-            .map(|i| Vector2f::new(list[i], list[i + 1]))
-            .collect();
-        params.add_vector2f(ident, &values);
-    }
-
-    /// Parse an `string_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `string_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_string_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "string");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list: Vec<String> = match value.as_rule() {
-            Rule::quoted_str_expr => {
-                let mut inner_rules = value.into_inner();
-                vec![self.parse_quoted_str(&mut inner_rules)]
-            }
-            Rule::quoted_str_list_expr => self.parse_quoted_str_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-        params.add_string(ident, &list);
-    }
-
-    /// Parse an `bool_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `bool_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_bool_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "bool");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list: Vec<bool> = match value.as_rule() {
-            Rule::quoted_bool_expr => {
-                let mut inner_rules = value.into_inner();
-                vec![self.parse_quoted_bool(&mut inner_rules)]
-            }
-            Rule::quoted_bool_list_expr => self.parse_quoted_bool_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-        params.add_bool(ident, &list);
-    }
-
-    /// Parse an `float_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `float_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_float_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "float");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list = match value.as_rule() {
-            Rule::float_expr => vec![self.parse_float(value)],
-            Rule::float_list_expr => self.parse_float_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-        params.add_float(ident, &list);
-    }
-
-    /// Parse an `int_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `int_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_int_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "integer");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list = match value.as_rule() {
-            Rule::int_expr => vec![self.parse_int(value)],
-            Rule::int_list_expr => self.parse_int_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-        params.add_int(ident, &list);
-    }
-
-    /// Parse an `colour_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `colour_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_colour_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "color" || param_type == "rgb" || param_type == "xyz");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list = match value.as_rule() {
-            Rule::float_list_expr => self.parse_float_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-
-        // ParamSet does additional validation.
-        if param_type == "color" || param_type == "rgb" {
-            params.add_rgb_spectrum(ident, &list);
-        } else {
-            params.add_xyz_spectrum(ident, &list);
-        }
-    }
-
-    /// Parse an `spectrum_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `spectrum_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    /// * `cwd`    - Current working directory for relative path handling.
-    fn parse_spectrum_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet, cwd: &str) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "spectrum");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        match value.as_rule() {
-            Rule::float_list_expr => {
-                // ParamSet does additional validation.
-                let list = self.parse_float_list(value.into_inner());
-                params.add_sampled_spectrum(ident, &list);
-            }
-            Rule::quoted_str_expr => {
-                let mut inner_rules = value.into_inner();
-                let filename = self.parse_quoted_str(&mut inner_rules);
-                params.add_sampled_spectrum_files(ident, &[filename], cwd);
-            }
-            _ => unreachable!(),
-        };
-    }
-
-    /// Parse an `blackbody_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `blackbody_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_blackbody_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "blackbody");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list = match value.as_rule() {
-            Rule::float_list_expr => self.parse_float_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-
-        // ParamSet does additional validation.
-        params.add_blackbody_spectrum(ident, &list);
-    }
-
-    /// Parse an `texture_param` rule of the grammar and add parameter to a
-    /// `ParamSet`.
-    ///
-    /// * `pairs`  - The inner token pairs for matched `texture_param` rule.
-    /// * `params` - The `ParamSet` to update.
-    fn parse_texture_param(&self, pairs: &mut Pairs<Rule>, params: &mut ParamSet) {
-        let param_type = pairs.next().unwrap().as_str();
-        assert!(param_type == "texture");
-
-        let ident = pairs.next().unwrap().as_str();
-        let value = pairs.next().unwrap();
-        assert!(pairs.next().is_none());
-
-        let list: Vec<String> = match value.as_rule() {
-            Rule::quoted_str_expr => {
-                let mut inner_rules = value.into_inner();
-                vec![self.parse_quoted_str(&mut inner_rules)]
-            }
-            Rule::quoted_str_list_expr => self.parse_quoted_str_list(value.into_inner()),
-            _ => unreachable!(),
-        };
-        params.add_texture(ident, &list);
-    }
-
-    /// Parse an `float_list_expr` rule of the grammar and return a `Vec<Float>`.
-    ///
-    /// * `pairs` - The inner token pairs for matched `float_list_expr` rule.
-    fn parse_float_list(&self, pairs: Pairs<Rule>) -> Vec<Float> {
-        let mut v: Vec<Float> = vec![];
-        for pair in pairs {
-            match pair.as_rule() {
-                Rule::float => v.push(self.parse_float(pair)),
-                _ => unreachable!(),
-            }
-        }
-        v
-    }
-
-    /// Parse an `int_list_expr` rule of the grammar and return a `Vec<Int>`.
-    ///
-    /// * `pairs` - The inner token pairs for matched `int_list_expr` rule.
-    fn parse_int_list(&self, pairs: Pairs<Rule>) -> Vec<Int> {
-        let mut v: Vec<Int> = vec![];
-        for pair in pairs {
-            match pair.as_rule() {
-                Rule::int => v.push(self.parse_int(pair)),
-                _ => unreachable!(),
-            }
-        }
-        v
-    }
-
-    /// Parse an `quoted_str_list_expr` rule of the grammar and return a `Vec<String>`.
-    ///
-    /// * `pairs` - The inner token pairs for matched `quoted_str_list_expr` rule.
-    fn parse_quoted_str_list(&self, pairs: Pairs<Rule>) -> Vec<String> {
-        let mut v: Vec<String> = vec![];
-        for pair in pairs {
-            match pair.as_rule() {
-                Rule::quoted_str => {
-                    let mut inner_rules = pair.into_inner();
-                    v.push(self.parse_str(&mut inner_rules));
+    /// Parse rule `point3d_param`.
+    fn point3d_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), float_list_expr(v)] => {
+                let (values, msg) = float_list_to_vec3(&v, Point3f::new);
+                if let Some(msg) = msg {
+                    warn!("point3d_param {}", msg);
                 }
-                _ => unreachable!(),
-            }
-        }
-        v
+                Param::Point3d(name, values)
+            },
+        ))
     }
 
-    /// Parse an `quoted_bool_list_expr` rule of the grammar and return a `Vec<String>`.
-    ///
-    /// * `pairs` - The inner token pairs for matched `quoted_bool_list_expr` rule.
-    fn parse_quoted_bool_list(&self, pairs: Pairs<Rule>) -> Vec<bool> {
-        let mut v: Vec<bool> = vec![];
-        for pair in pairs {
-            match pair.as_rule() {
-                Rule::quoted_bool => {
-                    let mut inner_rules = pair.into_inner();
-                    v.push(self.parse_bool(&mut inner_rules));
+    /// Parse rule `vector3d_param`.
+    fn vector3d_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), float_list_expr(v)] => {
+                let (values, msg) = float_list_to_vec3(&v, Vector3f::new);
+                if let Some(msg) = msg {
+                    warn!("vector3d_param {}", msg);
                 }
-                _ => unreachable!(),
-            }
+                Param::Vector3d(name, values)
+            },
+        ))
+    }
+
+    /// Parse rule `normal3d_param`.
+    fn normal3d_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), float_list_expr(v)] => {
+                let (values, msg) = float_list_to_vec3(&v, Normal3f::new);
+                if let Some(msg) = msg {
+                    warn!("normal3d_param {}", msg);
+                }
+                Param::Normal3d(name, values)
+            },
+        ))
+    }
+
+    /// Parse rule `point2d_param`.
+    fn point2d_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), float_list_expr(v)] => {
+                let (values, msg) = float_list_to_vec2(&v, Point2f::new);
+                if let Some(msg) = msg {
+                    warn!("point2d_param {}", msg);
+                }
+                Param::Point2d(name, values)
+            },
+        ))
+    }
+
+    /// Parse rule `vector2d_param`.
+    fn vector2d_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), float_list_expr(v)] => {
+                let (values, msg) = float_list_to_vec2(&v, Vector2f::new);
+                if let Some(msg) = msg {
+                    warn!("vector2d_param {}", msg);
+                }
+                Param::Vector2d(name, values)
+            },
+        ))
+    }
+
+    /// Parse rule `string_param`.
+    fn string_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), quoted_str_expr(v)] => Param::String(name, vec![v]),
+            [ident(name), quoted_str_list_expr(v)] => Param::String(name, v),
+        ))
+    }
+
+    /// Parse rule `bool_param`.
+    fn bool_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), quoted_bool_expr(v)] => Param::Bool(name, vec![v]),
+            [ident(name), quoted_bool_list_expr(v)] => Param::Bool(name, v),
+        ))
+    }
+
+    /// Parse rule `float_param`.
+    fn float_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), float_expr(v)] => Param::Float(name, vec![v]),
+            [ident(name), float_list_expr(v)] => Param::Float(name, v),
+        ))
+    }
+
+    /// Parse rule `int_param`.
+    fn int_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), int_expr(v)] => Param::Int(name, vec![v]),
+            [ident(name), int_list_expr(v)] => Param::Int(name, v),
+        ))
+    }
+
+    /// Parse rule `spectrum_param`.
+    fn spectrum_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), float_list_expr(v)] => Param::SpectrumFloat(name, v),
+            [ident(name), quoted_str_expr(v)] => Param::SpectrumFile(name, v),
+        ))
+    }
+
+    /// Parse rule `blackbody_param`.
+    fn blackbody_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), float_list_expr(v)] => Param::Blackbody(name, v),
+        ))
+    }
+
+    /// Parse rule `texture_param`.
+    fn texture_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [ident(name), quoted_str_expr(v)] => Param::Texture(name, vec![v]),
+            [ident(name), quoted_str_list_expr(v)] => Param::Texture(name, v),
+        ))
+    }
+
+    /// Parse rule `colour_param`.
+    fn colour_param(input: Node) -> Result<Param> {
+        Ok(match_nodes!(input.into_children();
+            [colour_type(t), ident(name), float_list_expr(v)] =>
+                Param::Colour(name, t, v),
+        ))
+    }
+
+    /// Parse rule `colour_type`.
+    fn colour_type(input: Node) -> Result<ColourType> {
+        match input.as_str() {
+            "colour" | "color" | "rgb" => Ok(ColourType::RGB),
+            "xyz" => Ok(ColourType::XYZ),
+            s => Err(input.error(ColourTypeError(s))),
         }
-        v
     }
 
-    /// Parse a `quoted_str` rule of the grammar and return the unquoted
-    /// `String` value.
-    ///
-    /// * `pairs` - The inner token pairs for matched `quoted_str` rule.
-    fn parse_quoted_str(&self, pairs: &mut Pairs<Rule>) -> String {
-        let next_pair = pairs.next().unwrap();
-        match next_pair.as_rule() {
-            Rule::quoted_str => {
-                let mut inner_rules = next_pair.into_inner();
-                self.parse_str(&mut inner_rules)
-            }
-            _ => unreachable!(),
-        }
+    /// Parse rule `float_list_expr`.
+    fn float_list_expr(input: Node) -> Result<Vec<Float>> {
+        Ok(match_nodes!(input.into_children();
+            [float_expr(values)..] => values.collect(),
+        ))
     }
 
-    /// Parse a `quoted_ident` rule of the grammar and return the unquoted
-    /// `String` value.
-    ///
-    /// * `pairs` - The inner token pairs for matched `quoted_ident` rule.
-    fn parse_quoted_ident(&self, pairs: &mut Pairs<Rule>) -> String {
-        let next_pair = pairs.next().unwrap();
-        match next_pair.as_rule() {
-            Rule::quoted_ident => {
-                let mut inner_rules = next_pair.into_inner();
-                self.parse_ident(&mut inner_rules)
-            }
-            _ => unreachable!(),
-        }
+    /// Parse rule `float_expr`.
+    fn float_expr(input: Node) -> Result<Float> {
+        Ok(match_nodes!(input.into_children();
+            [float(v)] => v,
+        ))
     }
 
-    /// Parse a `quoted_bool` rule of the grammar and return the unquoted
-    /// `bool` value.
-    ///
-    /// * `pairs` - The inner token pairs for matched `quoted_bool` rule.
-    fn parse_quoted_bool(&self, pairs: &mut Pairs<Rule>) -> bool {
-        let next_pair = pairs.next().unwrap();
-        match next_pair.as_rule() {
-            Rule::quoted_bool => {
-                let mut inner_rules = next_pair.into_inner();
-                self.parse_bool(&mut inner_rules)
-            }
-            _ => unreachable!(),
-        }
+    /// Parse rule `float`.
+    fn float(input: Node) -> Result<Float> {
+        input.as_str().parse::<Float>().map_err(|e| input.error(e))
     }
 
-    /// Parse an `float_expr` or `float` rule of the grammar and return an `Float`.
-    ///
-    /// * `pairs` - The inner token pairs for matched `float_expr` or `float` rule.
-    fn parse_float(&self, pair: Pair<Rule>) -> Float {
-        // Parse string to float. The unwrap shouldn't fail if our pest
-        // grammar is correct.
-        let s = match pair.as_rule() {
-            Rule::float_expr => {
-                let mut inner_rules = pair.into_inner();
-                inner_rules.next().unwrap().as_str()
-            }
-            Rule::float => pair.as_str(),
-            _ => unreachable!(),
-        };
-        s.parse::<Float>().unwrap()
+    /// Parse rule `int_list_expr`.
+    fn int_list_expr(input: Node) -> Result<Vec<Int>> {
+        Ok(match_nodes!(input.into_children();
+            [int_expr(values)..] => values.collect(),
+        ))
     }
 
-    /// Parse an `int_expr` or `int` rule of the grammar and return an `Int`.
-    ///
-    /// * `pairs` - The inner token pairs for matched `int_expr` or `int` rule.
-    fn parse_int(&self, pair: Pair<Rule>) -> Int {
-        // Parse string to int. The unwrap shouldn't fail if our pest
-        // grammar is correct.
-        let s = match pair.as_rule() {
-            Rule::int_expr => {
-                let mut inner_rules = pair.into_inner();
-                inner_rules.next().unwrap().as_str()
-            }
-            Rule::int => pair.as_str(),
-            _ => unreachable!(),
-        };
-        s.parse::<Int>().unwrap()
+    /// Parse rule `int_expr`.
+    fn int_expr(input: Node) -> Result<Int> {
+        Ok(match_nodes!(input.into_children();
+            [int(v)] => v,
+        ))
     }
 
-    /// Parse a `str` rule of the grammar and return the `String` value.
-    ///
-    /// * `pairs` - The inner token pairs for matched `str` rule.
-    fn parse_str(&self, pairs: &mut Pairs<Rule>) -> String {
-        let next_pair = pairs.next().unwrap();
-        match next_pair.as_rule() {
-            Rule::str => String::from(next_pair.as_str()),
-            _ => unreachable!(),
-        }
+    /// Parse rule `int`.
+    fn int(input: Node) -> Result<Int> {
+        input.as_str().parse::<Int>().map_err(|e| input.error(e))
     }
 
-    /// Parse an `ident` rule of the grammar and return the `String` value.
-    ///
-    /// * `pairs` - The inner token pairs for matched `ident` rule.
-    fn parse_ident(&self, pairs: &mut Pairs<Rule>) -> String {
-        let next_pair = pairs.next().unwrap();
-        match next_pair.as_rule() {
-            Rule::ident => String::from(next_pair.as_str()),
-            _ => unreachable!(),
-        }
+    /// Parse rule `quoted_bool_list_expr`.
+    fn quoted_bool_list_expr(input: Node) -> Result<Vec<bool>> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_bool_expr(values)..] => values.collect(),
+        ))
     }
 
-    /// Parse a `bool` rule of the grammar and return a `bool`.
-    ///
-    /// * `pairs` - The inner token pairs for matched `bool` rule.
-    fn parse_bool(&self, pairs: &mut Pairs<Rule>) -> bool {
-        let next_pair = pairs.next().unwrap();
-        match next_pair.as_rule() {
-            Rule::bool => next_pair.as_str().parse::<bool>().unwrap(),
-            _ => unreachable!(),
-        }
+    /// Parse rule `quoted_bool_expr`.
+    fn quoted_bool_expr(input: Node) -> Result<bool> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_bool(v)] => v,
+        ))
+    }
+
+    /// Parse rule `quoted_bool`.
+    fn quoted_bool(input: Node) -> Result<bool> {
+        Ok(match_nodes!(input.into_children();
+            [bool(v)] => v,
+        ))
+    }
+
+    /// Parse rule `bool`.
+    fn bool(input: Node) -> Result<bool> {
+        input.as_str().parse::<bool>().map_err(|e| input.error(e))
+    }
+
+    /// Parse rule `quoted_str_list_expr`.
+    fn quoted_str_list_expr(input: Node) -> Result<Vec<String>> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str_expr(values)..] => values.collect(),
+        ))
+    }
+
+    /// Parse rule `quoted_str_expr_opt_end`.
+    fn quoted_str_expr_opt_end(input: Node) -> Result<String> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str(v)] => v,
+        ))
+    }
+
+    /// Parse rule `quoted_str_expr`.
+    fn quoted_str_expr(input: Node) -> Result<String> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_str(v)] => v,
+        ))
+    }
+
+    /// Parse rule `quoted_str`.
+    fn quoted_str(input: Node) -> Result<String> {
+        Ok(match_nodes!(input.into_children();
+            [str(v)] => v,
+        ))
+    }
+
+    /// Parse rule `str`.
+    fn str(input: Node) -> Result<String> {
+        Ok(input.as_str().to_owned())
+    }
+
+    /// Parse rule `quoted_ident_expr`.
+    fn quoted_ident_expr(input: Node) -> Result<String> {
+        Ok(match_nodes!(input.into_children();
+            [quoted_ident(v)] => v,
+        ))
+    }
+
+    /// Parse rule `quoted_ident`.
+    fn quoted_ident(input: Node) -> Result<String> {
+        Ok(match_nodes!(input.into_children();
+            [ident(v)] => v,
+        ))
+    }
+
+    /// Parse rule `ident_expr`.
+    fn ident_expr(input: Node) -> Result<String> {
+        Ok(match_nodes!(input.into_children();
+            [ident(v)] => v,
+        ))
+    }
+
+    /// Parse rule `ident`.
+    fn ident(input: Node) -> Result<String> {
+        Ok(input.as_str().to_owned())
     }
 }
 
-/// Read the entire file and return its contents as a String.
+/// Reads a PBRT file format and calls the API wrapper functions.
 ///
-/// * `path` - Path to file.
-fn file_to_string(path: &str) -> Result<String, String> {
-    match fs::read_to_string(path) {
-        Ok(s) => Ok(s),
-        Err(e) => Err(format!("Error reading file '{}': {}", path, e)),
+/// * `abs_path` - The absolute path to scene file.
+/// * `api`      - The PBRT API interface.
+pub fn parse(abs_path: &str, api: &mut Api) -> std::result::Result<(), String> {
+    // Get path to scene file's folder for resolving relative paths to includes,
+    // images, etc.
+    let scene_path = parent_path(abs_path).unwrap();
+
+    // Load input file.
+    let unparsed_file = file_to_string(&abs_path)?;
+
+    // Parse the input file into `Nodes`.
+    match PbrtParser::parse_with_userdata(Rule::pbrt, &unparsed_file, scene_path.to_owned())
+        // There should be a single root node in the parsed tree.
+        .and_then(|inputs| inputs.single())
+        // Consume the `Node` recursively into the final value.
+        .and_then(PbrtParser::pbrt)
+        // Process the and call API.
+        .and_then(|pbrt| {
+            pbrt.process(api);
+            Ok(())
+        }) {
+        Ok(()) => Ok(()),
+        Err(e) => Err(format!("{:}", e)),
     }
+}
+
+/// Converts a named parameter to a vector of some type that stores
+/// 3 values.
+///
+/// * `v`    - Slice containing floating point values.
+/// * `new`  - Function used to construct elements of resulting vector.
+fn float_list_to_vec3<T, F>(v: &[Float], new: F) -> (Vec<T>, Option<String>)
+where
+    F: Fn(Float, Float, Float) -> T,
+{
+    let mut msg: Option<String> = None;
+
+    let n = v.len();
+    if n % 3 != 0 {
+        msg = Some("length is not divisible by 3".to_owned());
+    }
+    let res = (0..n)
+        .step_by(3)
+        .map(|i| new(v[i], v[i + 1], v[i + 2]))
+        .collect();
+    (res, msg)
+}
+
+/// Converts a named parameter to a vector of some type that stores
+/// 2 values.
+///
+/// * `v`    - Slice containing floating point values.
+/// * `new`  - Function used to construct elements of resulting vector.
+fn float_list_to_vec2<T, F>(v: &[Float], new: F) -> (Vec<T>, Option<String>)
+where
+    F: Fn(Float, Float) -> T,
+{
+    let mut msg: Option<String> = None;
+
+    let n = v.len();
+    if n % 2 != 0 {
+        msg = Some("length is not divisible by 2".to_owned());
+    }
+    let res = (0..n).step_by(2).map(|i| new(v[i], v[i + 1])).collect();
+    (res, msg)
 }
