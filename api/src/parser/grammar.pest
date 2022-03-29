@@ -6,7 +6,7 @@ stmt = {
 }
 
 empty_stmt = _{ WHITESPACE_OR_NEWLINE+ }
-comment_stmt = _{ WHITESPACE* ~ COMMENT }
+comment_stmt = _{ WHITESPACE* ~ COMMENT ~ WHITESPACE_OR_NEWLINE+ }
 include_stmt = { "Include" ~ quoted_str_expr }
 
 
@@ -17,13 +17,10 @@ block_stmt = {
 
 world_begin_stmt = { "WorldBegin" ~ STMT_END? }
 world_end_stmt = { "WorldEnd" ~ STMT_END? }
-
 attribute_begin_stmt = { "AttributeBegin" ~ STMT_END? }
 attribute_end_stmt = { "AttributeEnd" ~ STMT_END? }
-
 transform_begin_stmt = { "TransformBegin" ~ STMT_END? }
 transform_end_stmt = { "TransformEnd" ~ STMT_END? }
-
 object_begin_stmt = { "ObjectBegin" ~ quoted_str_expr_opt_end }
 object_end_stmt = { "ObjectEnd" ~ STMT_END? }
 
@@ -54,15 +51,11 @@ light_source_stmt = { "LightSource" ~ quoted_str_expr_opt_end ~ param_list? }
 make_named_material_stmt = { "MakeNamedMaterial" ~ quoted_str_expr_opt_end ~ param_list? }
 material_stmt = { "Material" ~ quoted_str_expr_opt_end ~ param_list? }
 shape_stmt = { "Shape" ~ quoted_str_expr_opt_end ~ param_list? }
-
 texture_stmt = { "Texture" ~ quoted_str_expr_opt_end{3} ~ param_list? }
-
 named_material_stmt = { "NamedMaterial" ~ quoted_ident_expr }
 object_instance_stmt = { "ObjectInstance" ~ quoted_ident_expr }
 reverse_orientation_stmt = { "ReverseOrientation" ~ STMT_END? }
-
 medium_interface_stmt = { "MediumInterface" ~ quoted_str ~ (STMT_END? ~ quoted_str)? ~ STMT_END? }
-
 active_transform_stmt = { "ActiveTransform" ~ active_transform_time ~ STMT_END? }
 active_transform_time = { "StartTime" | "EndTime" | "All" }
 
