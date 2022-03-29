@@ -39,7 +39,6 @@ impl PbrtParser {
             [option_stmt(stmt)] => Stmt::Option(stmt),
             [scene_stmt(stmt)] => Stmt::Scene(stmt),
             [ctm_stmt(stmt)] => Stmt::CTM(stmt),
-            [] => Stmt::Skipped // empty_stmt & comment_stmt get skipped and result in []
         ))
     }
 

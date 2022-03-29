@@ -1,14 +1,8 @@
 pbrt = { SOI ~ stmt* ~ EOI }
 
-stmt = { 
-    empty_stmt | include_stmt | comment_stmt | option_stmt | scene_stmt
-    | block_stmt | ctm_stmt
-}
+stmt = { include_stmt | option_stmt | scene_stmt | block_stmt | ctm_stmt }
 
-empty_stmt = _{ WHITESPACE_OR_NEWLINE+ }
-comment_stmt = _{ WHITESPACE* ~ COMMENT ~ WHITESPACE_OR_NEWLINE+ }
 include_stmt = { "Include" ~ quoted_str_expr }
-
 
 block_stmt = {
     world_begin_stmt | world_end_stmt | attribute_begin_stmt | attribute_end_stmt
@@ -70,7 +64,7 @@ identity_stmt = { "Identity" ~ STMT_END? }
 translate_stmt = { "Translate" ~ float_expr{3} }
 scale_stmt = { "Scale" ~ float_expr{3} }
 rotate_stmt = { "Rotate" ~ float_expr{4} }
-look_at_stmt = { "LookAt" ~ COMMENT? ~ float_expr{9} }
+look_at_stmt = { "LookAt" ~ float_expr{9} }
 coordinate_system_stmt = { "CoordinateSystem" ~ quoted_ident_expr }
 coord_sys_transform_stmt = { "CoordSysTransform" ~ quoted_ident_expr }
 transform_stmt = { "Transform" ~ float_list_expr }
@@ -78,7 +72,7 @@ concat_transform_stmt = { "ConcatTransform" ~ float_list_expr }
 transform_times_stmt = { "TransformTimes" ~ float ~ float_expr }
 
 
-param_list = { (param | COMMENT)+ }
+param_list = { param+ }
 param = {
     point3d_param | vector3d_param | normal3d_param | point2d_param
     | vector2d_param | string_param | bool_param | float_param
@@ -174,5 +168,5 @@ ident = { LETTER ~ (ASCII_ALPHANUMERIC | "_" | "." | "-")* }
 
 WHITESPACE = _{ " " | "\t" }
 WHITESPACE_OR_NEWLINE = _{ WHITESPACE | NEWLINE }
-COMMENT = _{ "#" ~ (!NEWLINE ~ ANY)* }
-STMT_END = _{ WHITESPACE* ~ COMMENT? ~ WHITESPACE_OR_NEWLINE+ }
+COMMENT = _{ WHITESPACE_OR_NEWLINE* ~ "#" ~ (!NEWLINE ~ ANY)* ~ WHITESPACE_OR_NEWLINE+ }
+STMT_END = _{ WHITESPACE* ~ WHITESPACE_OR_NEWLINE+ }

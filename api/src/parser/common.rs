@@ -32,7 +32,6 @@ pub(crate) enum Stmt {
     Option(OptionStmt), // option_stmt
     Scene(SceneStmt),   // scene_stmt
     CTM(CTMStmt),       // ctm_stmt
-    Skipped,            // empty_stmt | comment_stmt
 }
 
 impl Stmt {
@@ -49,7 +48,6 @@ impl Stmt {
             Self::Option(stmt) => stmt.process(api),
             Self::Scene(stmt) => stmt.process(api),
             Self::CTM(stmt) => stmt.process(api),
-            Self::Skipped => (),
         }
     }
 }
