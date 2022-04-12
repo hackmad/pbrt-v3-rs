@@ -66,10 +66,7 @@ impl Primitive for GeometricPrimitive {
     /// * `r`                  - The ray.
     fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
         let shape = Arc::clone(&self.shape);
-        debug!(
-            "GeometricPrimitive::intersect(): Shape: {}",
-            shape.get_type()
-        );
+        //debug!("GeometricPrimitive::intersect(): Shape: {}", shape.get_type());
 
         if let Some(mut it) = shape.intersect(r, true) {
             r.t_max = it.t;

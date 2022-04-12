@@ -26,6 +26,7 @@ pub mod integrator;
 pub mod interaction;
 pub mod interpolation;
 pub mod light;
+pub mod light_distrib;
 pub mod low_discrepency;
 pub mod material;
 pub mod medium;

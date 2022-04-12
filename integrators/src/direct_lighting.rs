@@ -15,9 +15,9 @@ use core::scene::*;
 use core::spectrum::*;
 use std::sync::Arc;
 
-/// Light sampling strategy.
+/// Direct light sampling strategy.
 #[derive(Copy, Clone, Eq, PartialEq)]
-pub enum LightStrategy {
+pub enum DirectLightStrategy {
     /// Loops over all of the lights and takes a number of samples based on
     /// `n_samples` from each of them, summing the result.
     UniformSampleAll,
@@ -31,8 +31,8 @@ pub struct DirectLightingIntegrator {
     /// Common data for sampler integrators.
     pub data: SamplerIntegratorData,
 
-    /// Light sampling strategy.
-    strategy: LightStrategy,
+    /// Direct light sampling strategy.
+    strategy: DirectLightStrategy,
 
     /// Number of samples to use for each light source.
     n_light_samples: Vec<usize>,
@@ -47,7 +47,7 @@ impl DirectLightingIntegrator {
     /// * `sampler`      - The sampler.
     /// * `pixel_bounds` - Pixel bounds for the image.
     pub fn new(
-        strategy: LightStrategy,
+        strategy: DirectLightStrategy,
         max_depth: usize,
         camera: ArcCamera,
         sampler: ArcSampler,
@@ -71,7 +71,7 @@ impl SamplerIntegrator for DirectLightingIntegrator {
     ///
     /// * `scene` - The scene
     fn preprocess(&mut self, scene: &Scene) {
-        if self.strategy == LightStrategy::UniformSampleAll {
+        if self.strategy == DirectLightStrategy::UniformSampleAll {
             let sampler_mut = Arc::get_mut(&mut self.data.sampler).unwrap();
 
             // Compute number of samples to use for each light.
@@ -137,7 +137,7 @@ impl Integrator for DirectLightingIntegrator {
             // Initialize common variables for `DirectLightingIntegrator`.
             let wo = isect.hit.wo;
 
-            // Compute emitted light if ray hit an area light source
+            // Compute emitted light if ray hit an area light source.
             l += isect.le(&wo);
 
             // Create an `Interaction` for sampling lights.
@@ -146,7 +146,7 @@ impl Integrator for DirectLightingIntegrator {
             if !scene.lights.is_empty() {
                 // Compute direct lighting for `DirectLightingIntegrator`.
                 let light_sample = match self.strategy {
-                    LightStrategy::UniformSampleAll => uniform_sample_all_lights(
+                    DirectLightStrategy::UniformSampleAll => uniform_sample_all_lights(
                         &it,
                         &bsdf,
                         scene,
@@ -154,7 +154,7 @@ impl Integrator for DirectLightingIntegrator {
                         &self.n_light_samples,
                         false,
                     ),
-                    LightStrategy::UniformSampleOne => {
+                    DirectLightStrategy::UniformSampleOne => {
                         uniform_sample_one_light(&it, &bsdf, scene, sampler, false, None)
                     }
                 };
@@ -196,14 +196,14 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for DirectLightingIntegrator {
 
         let st = params.find_one_string("strategy", "all".to_string());
         let strategy = match st.as_ref() {
-            "one" => LightStrategy::UniformSampleOne,
-            "all" => LightStrategy::UniformSampleAll,
+            "one" => DirectLightStrategy::UniformSampleOne,
+            "all" => DirectLightStrategy::UniformSampleAll,
             _ => {
                 warn!(
                     "Strategy '{}' for direct lighting unknown. Using 'all'.",
                     st
                 );
-                LightStrategy::UniformSampleAll
+                DirectLightStrategy::UniformSampleAll
             }
         };
 
@@ -213,7 +213,7 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for DirectLightingIntegrator {
         let mut pixel_bounds = camera.get_data().film.get_sample_bounds();
         if np > 0 {
             if np != 4 {
-                error!("Expected 4 values for 'pixel_bounds' parameter. Got {}", np);
+                error!("Expected 4 values for 'pixel_bounds' parameter. Got {np}");
             } else {
                 pixel_bounds = pixel_bounds.intersect(&Bounds2i::new(
                     Point2i::new(pb[0], pb[1]),

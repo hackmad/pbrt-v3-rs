@@ -363,10 +363,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         let y1 = min(y0 + tile_size, sample_bounds.p_max.y);
         let tile_bounds = Bounds2i::new(Point2i::new(x0, y0), Point2i::new(x1, y1));
 
-        info!(
-            "Starting image tile ({}, {}) -> {:}",
-            tile_x, tile_y, tile_bounds
-        );
+        info!("Starting image tile ({tile_x}, {tile_y}) -> {tile_bounds}");
 
         /*
            We could use threadlocals here so the bump allocator is not created
@@ -449,10 +446,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     l = Spectrum::new(0.0);
                 }
 
-                debug!(
-                    "Pixel: {:}, Camera sample: {:} -> ray: {:}, ray weight {} -> L = {:}",
-                    pixel, camera_sample, ray, ray_weight, l
-                );
+                debug!("Pixel: {pixel}, Camera sample: {camera_sample} -> ray: {ray}, ray weight {ray_weight} -> L = {l}");
 
                 // Add camera ray's contribution to image.
                 film_tile.add_sample(camera_sample.p_film, l, ray_weight);
@@ -463,10 +457,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
             }
         }
 
-        info!(
-            "Finished image tile ({}, {}) -> {:}",
-            tile_x, tile_y, tile_bounds
-        );
+        info!("Finished image tile ({tile_x}, {tile_y}) -> {tile_bounds}");
 
         // Free memory arena.
         arena.reset();

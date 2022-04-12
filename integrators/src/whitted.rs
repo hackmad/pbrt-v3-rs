@@ -163,7 +163,7 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for WhittedIntegrator {
         let mut pixel_bounds = camera.get_data().film.get_sample_bounds();
         if np > 0 {
             if np != 4 {
-                error!("Expected 4 values for 'pixel_bounds' parameter. Got {}", np);
+                error!("Expected 4 values for 'pixel_bounds' parameter. Got {np}");
             } else {
                 pixel_bounds = pixel_bounds.intersect(&Bounds2i::new(
                     Point2i::new(pb[0], pb[1]),

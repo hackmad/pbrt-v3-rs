@@ -14,7 +14,7 @@ use std::sync::Arc;
 /// Uniformly sample all lights in the scene for direct lighting.
 ///
 /// * `it`              - The intersection information.
-/// * `bsdf`          - The BSDF at the intersection.
+/// * `bsdf`            - The BSDF at the intersection.
 /// * `scene`           - The scene.
 /// * `sampler`         - The sampler.
 /// * `n_light_samples` - The number of samples to take for each light.
@@ -96,7 +96,7 @@ pub fn uniform_sample_one_light(
     scene: &Scene,
     sampler: &mut ArcSampler,
     handle_media: bool,
-    light_distrib: Option<&Distribution1D>,
+    light_distrib: Option<Arc<Distribution1D>>,
 ) -> Spectrum {
     // Randomly choose a single light to sample, `light`.
     let n_lights = scene.lights.len();
@@ -179,10 +179,8 @@ pub fn estimate_direct(
         visibility,
         value: mut li,
     } = light.sample_li(hit, u_light);
-    debug!(
-        "EstimateDirect uLight: {} -> Li:  {}, wi: {}, pdf: {}",
-        u_light, li, wi, light_pdf
-    );
+    debug!("EstimateDirect uLight: {u_light} -> Li: {li}, wi: {wi}, pdf: {light_pdf}");
+
     if light_pdf > 0.0 && !li.is_black() {
         // Compute BSDF or phase function's value for light sample.
         let mut f = Spectrum::ZERO;
@@ -192,7 +190,7 @@ pub fn estimate_direct(
                 if let Some(bsdf) = bsdf.as_deref() {
                     f = bsdf.f(&hit.wo, &wi, bsdf_flags) * wi.abs_dot(&si.shading.n);
                     scattering_pdf = bsdf.pdf(&hit.wo, &wi, bsdf_flags);
-                    debug!("  surf f*dot : {:}, scatteringPdf: {}", f, scattering_pdf);
+                    debug!("  surf f*dot : {f}, scatteringPdf: {scattering_pdf}");
                 }
             }
             Interaction::Medium { mi } => {
@@ -200,7 +198,7 @@ pub fn estimate_direct(
                 let p = mi.phase.p(&mi.hit.wo, &wi);
                 f = Spectrum::new(p);
                 scattering_pdf = p;
-                debug!("  medium p: {}", p);
+                debug!("  medium p: {p}");
             }
         }
 
@@ -209,7 +207,7 @@ pub fn estimate_direct(
             if let Some(vis) = visibility {
                 if handle_media {
                     li *= vis.tr(scene, sampler);
-                    debug!("  after Tr, Li: {}", li);
+                    debug!("  after Tr, Li: {li}");
                 } else if !vis.unoccluded(scene) {
                     debug!("  shadow ray blocked");
                     li = Spectrum::ZERO;
@@ -261,10 +259,7 @@ pub fn estimate_direct(
                 wi = wi2;
             }
         }
-        debug!(
-            "  BSDF / phase sampling f: {:}, scattering_pdf: {}",
-            f, scattering_pdf
-        );
+        debug!("  BSDF / phase sampling f: {f}, scattering_pdf: {scattering_pdf}");
 
         if !f.is_black() && scattering_pdf > 0.0 {
             // Account for light contributions along sampled direction `wi`.

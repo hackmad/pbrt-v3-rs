@@ -126,6 +126,10 @@ impl RenderOptions {
                 let p = (&self.integrator_params, sampler, camera);
                 Ok(Box::new(DirectLightingIntegrator::from(p)))
             }
+            "path" => {
+                let p = (&self.integrator_params, sampler, camera);
+                Ok(Box::new(PathIntegrator::from(p)))
+            }
             "whitted" => {
                 let p = (&self.integrator_params, sampler, camera);
                 Ok(Box::new(WhittedIntegrator::from(p)))

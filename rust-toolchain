@@ -1,2 +1,2 @@
 [toolchain]
-components = ["cargo", "llvm-tools-preview", "rust-src", "rust-std", "rustc", "rustc-dev", "rustfmt"]
+components = ["cargo", "llvm-tools-preview", "rust-src", "rust-std", "rustc", "rustc-dev", "rustfmt", "clippy-preview"]

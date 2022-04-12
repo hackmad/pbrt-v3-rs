@@ -12,6 +12,69 @@ use crate::scene::*;
 use bumpalo::Bump;
 use std::sync::Arc;
 
+/// Result of importance sampling the BSSRDF in `TabulatedBSSRDF<'arena>::sample_s()`.
+#[derive(Default)]
+pub struct SampleS<'scene, 'arena> {
+    /// Surface interaction if any.
+    pub si: Option<SurfaceInteraction<'scene>>,
+
+    /// BSDF.
+    pub bsdf: Option<&'arena mut BSDF<'arena>>,
+
+    /// Sample value.
+    pub value: Spectrum,
+
+    /// PDF.
+    pub pdf: Float,
+}
+
+impl<'scene, 'arena> SampleS<'scene, 'arena> {
+    /// Create a new instance of `SampleS<'scene>`.
+    ///
+    /// * `si`    - Surface interaction if any.
+    /// * `bsdf`  - BSDF.
+    /// * `value` - Sample value.
+    /// * `pdf`   - PDF.
+    pub fn new(
+        si: Option<SurfaceInteraction<'scene>>,
+        bsdf: Option<&'arena mut BSDF<'arena>>,
+        value: Spectrum,
+        pdf: Float,
+    ) -> Self {
+        Self {
+            si,
+            bsdf,
+            value,
+            pdf,
+        }
+    }
+}
+
+/// Result of importance sampling technique per wavelength in
+/// `TabulatedBSSRDF<'arena>::sample_sp()`.
+#[derive(Default)]
+pub struct SampleSp<'scene> {
+    /// Surface interaction if any.
+    pub si: Option<SurfaceInteraction<'scene>>,
+
+    /// Sample value.
+    pub value: Spectrum,
+
+    /// PDF.
+    pub pdf: Float,
+}
+
+impl<'scene> SampleSp<'scene> {
+    /// Create a new instance of `SampleSp<'scene>`.
+    ///
+    /// * `si`    - Surface interaction if any.
+    /// * `value` - Sample value.
+    /// * `pdf`   - PDF.
+    pub fn new(si: Option<SurfaceInteraction<'scene>>, value: Spectrum, pdf: Float) -> Self {
+        Self { si, value, pdf }
+    }
+}
+
 /// A tabulated BSSRDF representation that can handle a wide range of scattering
 /// profiles including measured real-world BSSRDFs.
 pub struct TabulatedBSSRDF<'arena> {
@@ -200,16 +263,11 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         scene: &'scene Scene,
         u1: Float,
         u2: &Point2f,
-    ) -> (
-        Option<SurfaceInteraction<'scene>>,
-        Option<&'arena mut BSDF>,
-        Spectrum,
-        Float,
-    )
+    ) -> SampleS<'scene, 'arena>
     where
         'arena: 'scene,
     {
-        let (si, sp, pdf) = self.sample_sp(scene, u1, u2);
+        let SampleSp { si, value: sp, pdf } = self.sample_sp(scene, u1, u2);
         let mut si_result: Option<SurfaceInteraction<'scene>> = None;
         let mut bsdf_result: Option<&'arena mut BSDF> = None;
 
@@ -225,7 +283,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
             si_result = Some(si);
         }
 
-        (si_result, bsdf_result, sp, pdf)
+        SampleS::new(si_result, bsdf_result, sp, pdf)
     }
 
     /// Use a different sampling technique per wavelength to deal with spectral
@@ -243,7 +301,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         scene: &'scene Scene,
         u1: Float,
         u2: &Point2f,
-    ) -> (Option<SurfaceInteraction<'scene>>, Spectrum, Float) {
+    ) -> SampleSp<'scene> {
         // Choose projection axis for BSSRDF sampling.
         let (vx, vy, vz, mut u1) = if u1 < 0.5 {
             (
@@ -281,14 +339,14 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         // Sample BSSRDF profile in polar coordinates.
         let r = self.sample_sr(ch, u2[0]);
         if r < 0.0 {
-            return (None, Spectrum::ZERO, 0.0);
+            return SampleSp::default();
         }
         let phi = TWO_PI * u2[1];
 
         // Compute BSSRDF profile bounds and intersection height.
         let r_max = self.sample_sr(ch, 0.999);
         if r >= r_max {
-            return (None, Spectrum::ZERO, 0.0);
+            return SampleSp::default();
         }
         let l = 2.0 * (r_max * r_max - r * r).sqrt();
 
@@ -334,7 +392,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
 
         // Randomly choose one of several intersections during BSSRDF sampling.
         if n_found == 0 {
-            return (None, Spectrum::ZERO, 0.0);
+            return SampleSp::default();
         }
 
         let idx = clamp((u1 * n_found as Float) as Int, 0, n_found as Int - 1) as usize;
@@ -343,7 +401,8 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         let pdf = self.pdf_sp(&chain[idx].hit) / n_found as Float;
         let term = self.sp(chain[idx].hit.p);
 
-        (Some(chain[idx].clone()), term, pdf)
+        let pi = chain[idx].clone();
+        SampleSp::new(Some(pi), term, pdf)
     }
 
     /// Evaluate the combined PDF that takes all of the sampling strategies
@@ -501,7 +560,7 @@ impl BSSRDFTable {
     /// * `rho_index`    - Index into the albedo samples.
     /// * `radius_index` - Index into the radius samples.
     pub fn eval_profile(&self, rho_index: usize, radius_index: usize) -> Float {
-        self.profile[rho_index * self.radius_samples.len() + radius_index]
+        self.profile[rho_index * self.n_radius_samples + radius_index]
     }
 
     /// Returns a medium's scattering properties; absorption coefficient `σa` and

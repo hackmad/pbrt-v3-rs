@@ -43,6 +43,9 @@ pub fn catmull_rom(nodes: &[Float], values: &[Float], x: Float) -> Float {
 
 /// Returns the weights and the index offset for Catmull-Rom spline.
 ///
+/// NOTE: The offset can cause out-of-bounds access. It should be added only when
+/// weight != 0.0.
+///
 /// * `nodes` - Interpolations nodes.
 /// * `x`     - Variable to interpolate.
 pub fn catmull_rom_weights(nodes: &[Float], x: Float) -> Option<([Float; 4], usize)> {
@@ -54,7 +57,7 @@ pub fn catmull_rom_weights(nodes: &[Float], x: Float) -> Option<([Float; 4], usi
 
     // Search for the interval `idx` containing `x`.
     let idx = find_interval(size, |i| nodes[i] <= x);
-    let offset = idx - 1;
+    let offset = if idx == 0 { 0 } else { idx - 1 };
     let x0 = nodes[idx];
     let x1 = nodes[idx + 1];
 

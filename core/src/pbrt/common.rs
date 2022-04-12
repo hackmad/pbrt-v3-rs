@@ -241,14 +241,15 @@ pub fn find_interval<Predicate>(size: usize, pred: Predicate) -> usize
 where
     Predicate: Fn(usize) -> bool,
 {
-    let (mut first, mut len) = (0, size);
+    let mut first = 0_usize;
+    let mut len = size;
 
     while len > 0 {
         let half = len >> 1;
         let middle = first + half;
 
         // Bisect range based on value of `pred` at `middle`.
-        if pred(middle) {
+        if pred(middle as usize) {
             first = middle + 1;
             len -= half + 1;
         } else {
@@ -256,7 +257,11 @@ where
         }
     }
 
-    clamp(first - 1, 0, size - 2)
+    if first == 0 {
+        0 // avoid clamp by returning 0.
+    } else {
+        clamp(first - 1, 0, size - 2)
+    }
 }
 
 /// Return the cosine of an angle.
