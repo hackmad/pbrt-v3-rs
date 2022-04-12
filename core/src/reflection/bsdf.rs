@@ -114,8 +114,8 @@ impl<'arena> BSDF<'arena> {
         eta: Option<Float>,
     ) -> &'arena mut Self {
         let eta = eta.map_or_else(|| 1.0, |e| e);
-        let ns = shading.n.clone();
-        let ng = hit.n.clone();
+        let ns = shading.n;
+        let ng = hit.n;
         let ss = shading.dpdu.normalize();
         let ts = Vector3::from(ns).cross(&ss);
         let bxdfs = BumpVec::with_capacity_in(MAX_BXDFS, arena);

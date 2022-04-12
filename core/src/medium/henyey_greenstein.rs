@@ -17,6 +17,7 @@ impl HenyeyGreenstein {
     /// Returns a new `HenyeyGreenstein`.
     ///
     /// * `g` - The asymmetry parameter.
+    #[allow(clippy::mut_from_ref)]
     pub fn alloc<'arena>(arena: &'arena Bump, g: Float) -> &'arena mut PhaseFunction {
         let f = arena.alloc(Self { g });
         arena.alloc(PhaseFunction::HenyeyGreenstein(f))

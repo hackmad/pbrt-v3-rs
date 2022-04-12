@@ -176,10 +176,7 @@ pub trait Light {
 
     /// Returns true if light is an area light source.
     fn is_area_light(&self) -> bool {
-        match self.get_type() {
-            LightType::AREA_LIGHT => true,
-            _ => false,
-        }
+        matches!(self.get_type(), LightType::AREA_LIGHT)
     }
 
     /// Returns the area light's emitted radiance in a given outgoing direction.

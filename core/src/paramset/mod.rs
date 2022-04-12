@@ -284,7 +284,7 @@ impl ParamSet {
 
         for path in paths {
             let p = if is_relative_path(path) && !cwd.is_empty() {
-                cwd.to_string() + "/" + &path
+                cwd.to_string() + "/" + path
             } else {
                 path.to_string()
             };

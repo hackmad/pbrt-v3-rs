@@ -35,6 +35,7 @@ impl BSSRDF {
     /// * `si`       - The surface interaction.
     /// * `material` - The material.
     /// * `mode`     - Light transport mode.
+    #[allow(clippy::mut_from_ref)]
     pub fn alloc<'arena>(
         self,
         arena: &'arena Bump,
@@ -96,6 +97,7 @@ impl<'arena> SeparableBSSRDF<'arena> {
     /// * `eta`      - Index of refraction of the scattering medium.
     /// * `material` - The material.
     /// * `mode`     - Light transport mode.
+    #[allow(clippy::mut_from_ref)]
     pub fn alloc(
         arena: &'arena Bump,
         po: &SurfaceInteraction,
@@ -128,9 +130,9 @@ impl<'arena> SeparableBSSRDF<'arena> {
             po_hit: self.po_hit.clone(),
             po_shading: self.po_shading.clone(),
             eta: self.eta,
-            ns: self.ns.clone(),
-            ss: self.ss.clone(),
-            ts: self.ts.clone(),
+            ns: self.ns,
+            ss: self.ss,
+            ts: self.ts,
             material: BumpBox::new_in(Arc::clone(&self.material), arena),
             mode: self.mode,
         })

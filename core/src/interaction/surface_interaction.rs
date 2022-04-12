@@ -151,7 +151,7 @@ impl<'scene> SurfaceInteraction<'scene> {
         'arena: 'scene,
     {
         self.compute_differentials(ray);
-        self.primitive.map(|primitive| {
+        if let Some(primitive) = self.primitive {
             primitive.compute_scattering_functions(
                 arena,
                 self,
@@ -159,8 +159,8 @@ impl<'scene> SurfaceInteraction<'scene> {
                 allow_multiple_lobes,
                 bsdf,
                 bssrdf,
-            )
-        });
+            );
+        }
     }
 
     /// Use offset rays to estimate the partial derivatives mapping p(x, y) from

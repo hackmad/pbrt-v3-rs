@@ -229,9 +229,9 @@ impl<'arena> TabulatedBSSRDF<'arena> {
 
             // Set BSSRDF value `Sr[ch]` using tensor spline interpolation.
             let mut srv = 0.0;
-            for i in 0..4 {
-                for j in 0..4 {
-                    let weight = rho_weights[i] * radius_weights[j];
+            for (i, rho_weight) in rho_weights.iter().enumerate() {
+                for (j, radius_weight) in radius_weights.iter().enumerate() {
+                    let weight = rho_weight * radius_weight;
                     if weight != 0.0 {
                         srv += weight * self.table.eval_profile(rho_offset + i, radius_offset + j);
                     }
@@ -247,7 +247,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
 
         // Transform BSSRDF value into world space units.
         sr *= self.sigma_t * self.sigma_t;
-        return sr.clamp_default();
+        sr.clamp_default()
     }
 
     /// Returns the value of the BSSRDF, the surface position where a ray
@@ -334,7 +334,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
             0,
             SPECTRUM_SAMPLES - 1,
         );
-        u1 = u1 * (SPECTRUM_SAMPLES - ch) as Float;
+        u1 *= (SPECTRUM_SAMPLES - ch) as Float;
 
         // Sample BSSRDF profile in polar coordinates.
         let r = self.sample_sr(ch, u2[0]);
@@ -379,7 +379,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
             if let Some(it) = isect {
                 base = it.hit.clone();
                 // Append admissible intersection to `IntersectionChain`.
-                if let Some(material) = it.primitive.map(|p| p.get_material()).flatten() {
+                if let Some(material) = it.primitive.and_then(|p| p.get_material()) {
                     if Arc::ptr_eq(&material, &self.bssrdf.material) {
                         chain.push(it);
                         n_found += 1;
@@ -484,18 +484,18 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         // Return BSSRDF profile density for channel `ch`.
         let mut sr = 0.0;
         let mut rho_eff = 0.0;
-        for i in 0..4 {
-            if rho_weights[i] == 0.0 {
+        for (i, rho_weight) in rho_weights.iter().enumerate() {
+            if *rho_weight == 0.0 {
                 continue;
             }
             rho_eff += self.table.rho_eff[rho_offset + i] * rho_weights[i];
-            for j in 0..4 {
-                if radius_weights[j] == 0.0 {
+            for (j, radius_weight) in radius_weights.iter().enumerate() {
+                if *radius_weight == 0.0 {
                     continue;
                 }
                 sr += self.table.eval_profile(rho_offset + i, radius_offset + j)
-                    * rho_weights[i]
-                    * radius_weights[j];
+                    * rho_weight
+                    * radius_weight;
             }
         }
 

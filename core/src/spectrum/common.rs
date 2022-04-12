@@ -242,7 +242,7 @@ pub fn are_spectrum_samples_sorted(samples: &[Sample]) -> bool {
 ///
 /// * `lambda` - Vector containing wavelengths.
 /// * `vals`   - Vector containing sample values corresponding to `lambda`.
-pub fn sort_spectrum_samples(samples: &mut Vec<Sample>) {
+pub fn sort_spectrum_samples(samples: &mut [Sample]) {
     samples.sort_by(|s1, s2| s1.lambda.partial_cmp(&s2.lambda).unwrap());
 }
 

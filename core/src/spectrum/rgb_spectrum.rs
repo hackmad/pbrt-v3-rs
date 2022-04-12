@@ -186,7 +186,7 @@ impl CoefficientSpectrum for RGBSpectrum {
     ///
     /// * `other` - The other SPD.
     fn exp(&self) -> Self {
-        let mut ret = self.clone();
+        let mut ret = *self;
         for s in ret.samples_mut().iter_mut() {
             *s = s.exp();
         }

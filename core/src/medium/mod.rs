@@ -91,7 +91,7 @@ impl MediumInterface {
     /// two distinct media.
     pub fn is_medium_transition(&self) -> bool {
         match (self.inside.clone(), self.outside.clone()) {
-            (Some(inside), Some(outside)) => Arc::ptr_eq(&inside, &outside), // TODO https://rust-lang.github.io/rust-clippy/master/index.html#vtable_address_comparisons
+            (Some(inside), Some(outside)) => Arc::ptr_eq(&inside, &outside),
             (Some(_), None) => true,
             (None, Some(_)) => true,
             (None, None) => false,

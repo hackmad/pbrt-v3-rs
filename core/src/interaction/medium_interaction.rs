@@ -38,7 +38,7 @@ impl<'arena> MediumInteraction<'arena> {
                 Vector3f::ZERO,
                 wo,
                 Normal3f::ZERO,
-                medium.map(|m| MediumInterface::from(m)),
+                medium.map(MediumInterface::from),
             ),
             phase,
         }

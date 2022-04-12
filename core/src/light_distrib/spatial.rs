@@ -131,15 +131,15 @@ impl SpatialLightDistribution {
                 radical_inverse(3_u16, i as u64),
                 radical_inverse(4_u16, i as u64),
             );
-            for j in 0..n_lights {
+            for (j, light) in self.lights.iter().enumerate() {
                 let Li {
                     wi: _,
                     pdf,
                     visibility: _,
                     value: li,
-                } = self.lights[j].sample_li(&intr, &u);
+                } = light.sample_li(&intr, &u);
                 if pdf > 0.0 {
-                    // TODO: look at tracing shadow rays / computing beam
+                    // TODO: Look at tracing shadow rays / computing beam
                     // transmittance.  Probably shouldn't give those full weight
                     // but instead e.g. have an occluded shadow ray scale down
                     // the contribution by 10 or something.
@@ -160,9 +160,9 @@ impl SpatialLightDistribution {
         } else {
             1.0
         };
-        for i in 0..light_contrib.len() {
-            debug!("Voxel pi = {pi}, light {i} contrib = {}", light_contrib[i]);
-            light_contrib[i] = max(light_contrib[i], min_contrib);
+        for (i, contrib) in light_contrib.iter_mut().enumerate() {
+            debug!("Voxel pi = {pi}, light {i} contrib = {contrib}");
+            *contrib = max(*contrib, min_contrib);
         }
         info!("Initialized light distribution in voxel pi = {pi}, avgContrib = {avg_contrib}",);
 
@@ -177,7 +177,7 @@ impl LightDistribution for SpatialLightDistribution {
     fn lookup(&self, p: &Point3f) -> Option<Arc<Distribution1D>> {
         // First, compute integer voxel coordinates for the given point |p|
         // with respect to the overall voxel grid.
-        let offset = self.world_bound.offset(&p); // offset in [0,1].
+        let offset = self.world_bound.offset(p); // offset in [0,1].
         let mut pi = Point3i::ZERO;
         for i in 0..3 {
             // The clamp should almost never be necessary, but is there to be
