@@ -95,7 +95,10 @@ impl FourierBSDF {
                 // Add contribution of `(a, b)` to `ak` values.
                 let weight = wtia * wtob;
                 if weight != 0.0 {
-                    let (m, ap) = self.bsdf_table.get_ak(offset_i + a, offset_o + b);
+                    let (m, ap) = self.bsdf_table.get_ak(
+                        (offset_i + a as isize) as usize,
+                        (offset_o + b as isize) as usize,
+                    );
                     m_max = max(m_max, m);
                     for c in 0..self.bsdf_table.n_channels {
                         for k in 0..m {
@@ -178,7 +181,10 @@ impl FourierBSDF {
                 // Add contribution of `(a, b)` to `ak` values.
                 let weight = wtia * wtob;
                 if weight != 0.0 {
-                    let (m, ap) = self.bsdf_table.get_ak(offset_i + a, offset_o + b);
+                    let (m, ap) = self.bsdf_table.get_ak(
+                        (offset_i + a as isize) as usize,
+                        (offset_o + b as isize) as usize,
+                    );
                     m_max = max(m_max, m);
                     for c in 0..self.bsdf_table.n_channels {
                         for k in 0..m {
@@ -278,7 +284,10 @@ impl FourierBSDF {
                     continue;
                 }
 
-                let (order, coeffs) = self.bsdf_table.get_ak(offset_i + i, offset_o + o);
+                let (order, coeffs) = self.bsdf_table.get_ak(
+                    (offset_i + i as isize) as usize,
+                    (offset_o + o as isize) as usize,
+                );
                 m_max = max(m_max, order);
 
                 for k in 0..order {
@@ -293,7 +302,8 @@ impl FourierBSDF {
             if weights_o[o] == 0.0 {
                 a
             } else {
-                a + weights_o[o] * self.bsdf_table.cdf[(offset_o + o) * n_mu + n_mu - 1] * TWO_PI
+                let table_idx = (offset_o + o as isize) as usize * n_mu + n_mu - 1;
+                a + weights_o[o] * self.bsdf_table.cdf[table_idx] * TWO_PI
             }
         });
 

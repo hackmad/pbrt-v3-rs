@@ -233,7 +233,11 @@ impl<'arena> TabulatedBSSRDF<'arena> {
                 for (j, radius_weight) in radius_weights.iter().enumerate() {
                     let weight = rho_weight * radius_weight;
                     if weight != 0.0 {
-                        srv += weight * self.table.eval_profile(rho_offset + i, radius_offset + j);
+                        srv += weight
+                            * self.table.eval_profile(
+                                (rho_offset + i as isize) as usize,
+                                (radius_offset + j as isize) as usize,
+                            );
                     }
                 }
             }
@@ -440,6 +444,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
                     self.pdf_sr(ch, r_proj[axis]) * abs(n_local[axis]) * ch_prob * axis_prob[axis];
             }
         }
+
         pdf
     }
 
@@ -474,27 +479,33 @@ impl<'arena> TabulatedBSSRDF<'arena> {
 
         // Compute spline weights to interpolate BSSRDF density on channel `ch`.
         let rho = catmull_rom_weights(&self.table.rho_samples, self.rho[ch]);
-        let radius = catmull_rom_weights(&self.table.radius_samples, r_optical);
-        if rho.is_none() || radius.is_none() {
+        if rho.is_none() {
             return 0.0;
         }
         let (rho_weights, rho_offset) = rho.unwrap();
+
+        let radius = catmull_rom_weights(&self.table.radius_samples, r_optical);
+        if radius.is_none() {
+            return 0.0;
+        }
         let (radius_weights, radius_offset) = radius.unwrap();
 
         // Return BSSRDF profile density for channel `ch`.
         let mut sr = 0.0;
         let mut rho_eff = 0.0;
-        for (i, rho_weight) in rho_weights.iter().enumerate() {
-            if *rho_weight == 0.0 {
+        for (i, rho_weight) in rho_weights.into_iter().enumerate() {
+            if rho_weight == 0.0 {
                 continue;
             }
-            rho_eff += self.table.rho_eff[rho_offset + i] * rho_weights[i];
-            for (j, radius_weight) in radius_weights.iter().enumerate() {
-                if *radius_weight == 0.0 {
+            rho_eff += self.table.rho_eff[(rho_offset + i as isize) as usize] * rho_weight;
+            for (j, radius_weight) in radius_weights.into_iter().enumerate() {
+                if radius_weight == 0.0 {
                     continue;
                 }
-                sr += self.table.eval_profile(rho_offset + i, radius_offset + j)
-                    * rho_weight
+                sr += self.table.eval_profile(
+                    (rho_offset + i as isize) as usize,
+                    (radius_offset + j as isize) as usize,
+                ) * rho_weight
                     * radius_weight;
             }
         }
@@ -503,7 +514,10 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         if r_optical != 0.0 {
             sr /= TWO_PI * r_optical;
         }
-        max(0.0, sr * self.sigma_t[ch] * self.sigma_t[ch] / rho_eff)
+
+        // NOTE: We want the IEEE-754 behaviour for handling NaN which happens when
+        // rho_eff == 0.0. So we use Float::max() rather than our generic pbrt::max().
+        (0.0 as Float).max(sr * self.sigma_t[ch] * self.sigma_t[ch] / rho_eff)
     }
 }
 

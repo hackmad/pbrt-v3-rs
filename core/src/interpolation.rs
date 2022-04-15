@@ -48,7 +48,7 @@ pub fn catmull_rom(nodes: &[Float], values: &[Float], x: Float) -> Float {
 ///
 /// * `nodes` - Interpolations nodes.
 /// * `x`     - Variable to interpolate.
-pub fn catmull_rom_weights(nodes: &[Float], x: Float) -> Option<([Float; 4], usize)> {
+pub fn catmull_rom_weights(nodes: &[Float], x: Float) -> Option<([Float; 4], isize)> {
     // Return None if `x` is out of bounds.
     let size = nodes.len();
     if !(x >= nodes[0] && x <= nodes[size - 1]) {
@@ -57,7 +57,7 @@ pub fn catmull_rom_weights(nodes: &[Float], x: Float) -> Option<([Float; 4], usi
 
     // Search for the interval `idx` containing `x`.
     let idx = find_interval(size, |i| nodes[i] <= x);
-    let offset = if idx == 0 { 0 } else { idx - 1 };
+    let offset = idx as isize - 1;
     let x0 = nodes[idx];
     let x1 = nodes[idx + 1];
 
@@ -223,7 +223,8 @@ pub fn sample_catmull_rom_2d(
     let interpolate = |array: &[Float], idx: usize| -> Float {
         (0..4).fold(0.0, |a, i| {
             if weights[i] != 0.0 {
-                a + array[(offset + i) * size2 + idx] * weights[i]
+                let array_idx = (offset + i as isize) as usize * size2 + idx;
+                a + array[array_idx] * weights[i]
             } else {
                 a
             }
@@ -345,19 +346,19 @@ pub fn integrate_catmull_rom(x: &[Float], values: &[Float]) -> (Vec<Float>, Floa
 }
 
 /// Inverts the Catmull-Rom spline function (as opposed to the definite
-/// integral.
+/// integral).
 ///
 /// * `x`      - Samples values.
 /// * `values` - Value of the function.
 /// * `u`      - Uniform random variate ξ.
 #[allow(non_snake_case)]
 pub fn invert_catmull_rom(x: &[Float], values: &[Float], u: Float) -> Float {
-    let n = x.len();
+    let n = values.len();
 
     // Stop when `u` is out of bounds.
-    if u <= values[0] {
+    if !(u > values[0]) {
         return x[0];
-    } else if u >= values[n - 1] {
+    } else if !(u < values[n - 1]) {
         return x[n - 1];
     }
 

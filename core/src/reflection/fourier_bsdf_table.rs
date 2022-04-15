@@ -130,7 +130,7 @@ impl FourierBSDFTable {
     /// when weight != 0.0.
     ///
     /// * `cos_theta` - The zenith angle to interpolate from `mu`.
-    pub fn get_weights_and_offset(&self, cos_theta: Float) -> Option<([Float; 4], usize)> {
+    pub fn get_weights_and_offset(&self, cos_theta: Float) -> Option<([Float; 4], isize)> {
         catmull_rom_weights(&self.mu, cos_theta)
     }
 }
