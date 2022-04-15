@@ -1,8 +1,7 @@
 # Based on f9-5.pbrt/f11-15.pbrt scene from https://www.pbrt.org/scenes-v3
 
 Film "image" "string filename" "renders/materials/subsurface.png"
-     "integer xresolution" [300] "integer yresolution" [150]
-     #"float cropwindow" [0.4 0.5 0.37 0.65]
+     "integer xresolution" [800] "integer yresolution" [400]
 
 Sampler "sobol" "integer pixelsamples" [256]
 
