@@ -8,6 +8,7 @@ use crate::reflection::*;
 use crate::spectrum::RGBSpectrum;
 use bumpalo::boxed::Box as BumpBox;
 use bumpalo::Bump;
+use std::fmt;
 use std::sync::Arc;
 
 /// Used to encapsulate BSSRDF parameters.
@@ -56,6 +57,24 @@ impl BSSRDF {
                 ));
                 bsdf
             }
+        }
+    }
+}
+
+impl fmt::Display for BSSRDF {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BSSRDF::Tabulated {
+                eta,
+                sigma_a,
+                sigma_s,
+                table: _,
+            } => write!(
+                f,
+                "BSSRDF::Tabulated {{ eta: {}, sigma_a: {}, sigma_s: {}, table: ... }}",
+                eta, sigma_a, sigma_s,
+            ),
         }
     }
 }
@@ -136,6 +155,23 @@ impl<'arena> SeparableBSSRDF<'arena> {
             material: BumpBox::new_in(Arc::clone(&self.material), arena),
             mode: self.mode,
         })
+    }
+}
+
+impl<'arena> fmt::Display for SeparableBSSRDF<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "SeparableBSSRDF {{ po_hit: {}, po_shading: {}, eta: {}, ns: {}, ss: {}, ts: {}, mode: {}, material: ... }}",
+            self.po_hit,
+            self.po_shading,
+            self.eta,
+            self.ns,
+            self.ss,
+            self.ts,
+            self.mode,
+        )
     }
 }
 

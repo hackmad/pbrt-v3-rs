@@ -5,6 +5,7 @@
 use super::*;
 use crate::material::*;
 use bumpalo::Bump;
+use std::fmt;
 
 /// BRDF for physically plausible specular reflection and transmission.
 pub struct FresnelSpecular {
@@ -144,5 +145,16 @@ impl FresnelSpecular {
     /// * `wi` - Incident direction.
     pub fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0
+    }
+}
+
+impl fmt::Display for FresnelSpecular {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "FresnelSpecular {{ bxdf_type: {}, r: {}, t: {}, eta_a: {}, eta_b: {}, mode: {} }}",
+            self.bxdf_type, self.r, self.t, self.eta_a, self.eta_b, self.mode,
+        )
     }
 }

@@ -1,11 +1,13 @@
 //! Beckmann–Spizzichino Distribution
 
 #![allow(dead_code)]
+
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::reflection::*;
 use bumpalo::Bump;
 use super::MicrofacetDistribution;
+use std::fmt;
 
 /// Implements the Beckmann–Spizzichino distribution which based on Gaussian 
 /// distribution of microfacet slopes.
@@ -165,6 +167,14 @@ impl BeckmannDistribution {
              let wh = beckmann_sample(&wo_copy, self.alpha_x, self.alpha_y, u[0], u[1]);
              if flip { -wh } else { wh }
          }
+    }
+}
+
+impl fmt::Display for BeckmannDistribution {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "BeckmannDistribution {{ sample_visible_area: {}, alpha_x: {}, alpha_y: {} }}",
+            self.sample_visible_area, self.alpha_x, self.alpha_y)
     }
 }
 

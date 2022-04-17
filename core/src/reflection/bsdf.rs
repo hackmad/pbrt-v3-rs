@@ -187,6 +187,7 @@ impl<'arena> BSDF<'arena> {
         }
 
         let reflect = wi_w.dot(&self.ng) * wo_w.dot(&self.ng) > 0.0;
+
         let mut f = Spectrum::ZERO;
         for bxdf in self.bxdfs.iter() {
             let curr_type = bxdf.get_type();
@@ -231,12 +232,7 @@ impl<'arena> BSDF<'arena> {
         }
         let bxdf_idx = bxdf_idx.expect("bsdf::sample_f() did not find matching bxdf");
         let matched_bxdf = &self.bxdfs[bxdf_idx];
-        debug!(
-            "BSDF::Sample_f chose comp = {} / matching = {}, bxdf: {}",
-            comp,
-            matching_comps,
-            matched_bxdf.get_type()
-        );
+        debug!("BSDF::Sample_f chose comp = {comp} / matching = {matching_comps}, bxdf: {matched_bxdf}");
 
         // Remap BxDF sample `u` to `[0,1)^2`.
         let u_remapped = Point2f::new(
@@ -383,5 +379,20 @@ impl<'arena> BSDF<'arena> {
         } else {
             0.0
         }
+    }
+}
+
+impl<'arena> fmt::Display for BSDF<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "BSDF {{ ns: {}, ng: {}, ss: {}, ts: {}, eta: {}, bxdfs: ",
+            self.ns, self.ng, self.ss, self.ts, self.eta
+        )?;
+        for bxdf in self.bxdfs.iter() {
+            write!(f, "{}", bxdf)?;
+        }
+        write!(f, "  }}")
     }
 }

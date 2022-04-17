@@ -2,6 +2,7 @@
 
 use super::*;
 use bumpalo::Bump;
+use std::fmt;
 
 /// BxDF scaling adapter scales a BxDF's contribution with a `Spectrum`.
 pub struct ScaledBxDF<'arena> {
@@ -96,5 +97,16 @@ impl<'arena> ScaledBxDF<'arena> {
     /// * `samples2` - Samples used b Monte Carlo algorithm.
     pub fn rho_hh(&self, samples1: &[Point2f], samples2: &[Point2f]) -> Spectrum {
         self.scale * self.bxdf.rho_hh(samples1, samples2)
+    }
+}
+
+impl<'arena> fmt::Display for ScaledBxDF<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "ScaledBxDF {{ bxdf_type: {}, scale: {}, bxdf: {} }}",
+            self.bxdf_type, self.scale, self.bxdf
+        )
     }
 }

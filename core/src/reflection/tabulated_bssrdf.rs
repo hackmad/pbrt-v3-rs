@@ -10,6 +10,7 @@ use crate::material::*;
 use crate::medium::phase_hg;
 use crate::scene::*;
 use bumpalo::Bump;
+use std::fmt;
 use std::sync::Arc;
 
 /// Result of importance sampling the BSSRDF in `TabulatedBSSRDF<'arena>::sample_s()`.
@@ -72,6 +73,26 @@ impl<'scene> SampleSp<'scene> {
     /// * `pdf`   - PDF.
     pub fn new(si: Option<SurfaceInteraction<'scene>>, value: Spectrum, pdf: Float) -> Self {
         Self { si, value, pdf }
+    }
+}
+
+/// Stores subsurface scattering properties.
+#[derive(Default, Copy, Clone)]
+pub struct SubsurfaceScatteringProps {
+    /// Absorption coefficient `σa`.
+    pub sigma_a: Spectrum,
+
+    /// Scattering coefficient `σs`.
+    pub sigma_s: Spectrum,
+}
+
+impl SubsurfaceScatteringProps {
+    /// Create a new instance of `SubsurfaceScatteringProps`.
+    ///
+    /// * `sigma_a`  - Absorption coefficient `σa`.
+    /// * `sigma_s`  - Scattering coefficient `σs`.
+    pub fn new(sigma_a: Spectrum, sigma_s: Spectrum) -> Self {
+        Self { sigma_a, sigma_s }
     }
 }
 
@@ -278,7 +299,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         if let Some(mut si) = si {
             if !sp.is_black() {
                 // Initialize material model at sampled surface interaction.
-                let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, None);
+                let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, Some(self.bssrdf.eta));
                 bsdf.add(self.clone_alloc(arena));
                 bsdf_result = Some(bsdf);
 
@@ -338,7 +359,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
             0,
             SPECTRUM_SAMPLES - 1,
         );
-        u1 *= (SPECTRUM_SAMPLES - ch) as Float;
+        u1 = u1 * SPECTRUM_SAMPLES as Float - ch as Float;
 
         // Sample BSSRDF profile in polar coordinates.
         let r = self.sample_sr(ch, u2[0]);
@@ -354,7 +375,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         }
         let l = 2.0 * (r_max * r_max - r * r).sqrt();
 
-        // Compute BSSRDF sampling ray segment
+        // Compute BSSRDF sampling ray segment.
         let base_p = self.bssrdf.po_hit.p + r * (vx * cos(phi) + vy * sin(phi)) - l * vz * 0.5;
         let base_time = self.bssrdf.po_hit.time;
         let mut base = Hit::new(
@@ -373,7 +394,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         let mut chain = Vec::new(); // TODO: use BumpVec.
 
         // Accumulate chain of intersections along ray.
-        let mut n_found = 0;
+        let mut n_found: Int = 0;
         loop {
             let mut r = base.spawn_ray_to_point(&p_target);
             if r.d == Vector3f::ZERO {
@@ -399,13 +420,13 @@ impl<'arena> TabulatedBSSRDF<'arena> {
             return SampleSp::default();
         }
 
-        let idx = clamp((u1 * n_found as Float) as Int, 0, n_found as Int - 1) as usize;
+        let selected = clamp((u1 * n_found as Float) as Int, 0, n_found - 1) as usize;
 
         // Compute sample PDF and return the spatial BSSRDF term `Sp`.
-        let pdf = self.pdf_sp(&chain[idx].hit) / n_found as Float;
-        let term = self.sp(chain[idx].hit.p);
+        let pdf = self.pdf_sp(&chain[selected].hit) / n_found as Float;
+        let term = self.sp(chain[selected].hit.p);
 
-        let pi = chain[idx].clone();
+        let pi = chain[selected].clone();
         SampleSp::new(Some(pi), term, pdf)
     }
 
@@ -521,6 +542,17 @@ impl<'arena> TabulatedBSSRDF<'arena> {
     }
 }
 
+impl<'arena> fmt::Display for TabulatedBSSRDF<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "TabulatedBSSRDF {{ bxdf_type: {}, sigma_t: {}, rho: {}, bssrdf: {}, table: ... }}",
+            self.bxdf_type, self.sigma_t, self.rho, self.bssrdf,
+        )
+    }
+}
+
 /// Stores detailed information about the scattering profile `Sr`.
 #[derive(Clone)]
 pub struct BSSRDFTable {
@@ -586,17 +618,16 @@ impl BSSRDFTable {
         &self,
         rho_eff: &Spectrum,
         mfp: &Spectrum,
-    ) -> (Spectrum, Spectrum) {
-        let mut sigma_a = Spectrum::ZERO;
-        let mut sigma_s = Spectrum::ZERO;
+    ) -> SubsurfaceScatteringProps {
+        let mut ss = SubsurfaceScatteringProps::default();
 
         for c in 0..SPECTRUM_SAMPLES {
             let rho = invert_catmull_rom(&self.rho_samples, &self.rho_eff, rho_eff[c]);
-            sigma_s[c] = rho / mfp[c];
-            sigma_a[c] = (1.0 - rho) / mfp[c];
+            ss.sigma_s[c] = rho / mfp[c];
+            ss.sigma_a[c] = (1.0 - rho) / mfp[c];
         }
 
-        (sigma_a, sigma_s)
+        ss
     }
 
     /// Fill the profile data using the photon beam diffusion functions.
@@ -617,6 +648,7 @@ impl BSSRDFTable {
                 / (1.0 - (-8.0 as Float).exp());
         }
 
+        // TODO: Parallelize
         self.rho_samples.iter().enumerate().for_each(|(i, &rho)| {
             // Compute the diffusion profile for the i^th albedo sample.
             //

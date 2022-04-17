@@ -186,13 +186,13 @@ impl Material for KdSubsurfaceMaterial {
 
         let mfree = self.scale * self.mfp.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         let kd = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
-        let (sig_a, sig_s) = self.table.subsurface_from_diffuse(&kd, &mfree);
+        let ss = self.table.subsurface_from_diffuse(&kd, &mfree);
 
         *bsdf = Some(result);
         *bssrdf = Some(BSSRDF::Tabulated {
             eta: self.eta,
-            sigma_a: sig_a,
-            sigma_s: sig_s,
+            sigma_a: ss.sigma_a,
+            sigma_s: ss.sigma_s,
             table: Arc::clone(&self.table),
         });
     }

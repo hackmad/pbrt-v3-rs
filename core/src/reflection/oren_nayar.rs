@@ -2,6 +2,7 @@
 
 use super::*;
 use bumpalo::Bump;
+use std::fmt;
 
 /// BRDF for the Oren-Nayar model for modeling rough surfaces using a microfacet
 /// model.
@@ -100,5 +101,16 @@ impl OrenNayar {
         };
 
         self.r * INV_PI * (self.a + self.b * max_cos * sin_alpha * tan_beta)
+    }
+}
+
+impl fmt::Display for OrenNayar {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "OrenNayar {{ bxdf_type: {}, r: {}, a: {}, b: {} }}",
+            self.bxdf_type, self.r, self.a, self.b,
+        )
     }
 }

@@ -4,6 +4,7 @@
 use super::*;
 use crate::microfacet::*;
 use bumpalo::Bump;
+use std::fmt;
 
 /// BRDF for modeling metallic surfaces using a microfacet distribution.
 pub struct MicrofacetReflection<'arena> {
@@ -130,5 +131,16 @@ impl<'arena> MicrofacetReflection<'arena> {
         } else {
             0.0
         }
+    }
+}
+
+impl<'arena> fmt::Display for MicrofacetReflection<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "MicrofacetReflection {{ bxdf_type: {}, fresnel: {}, r: {}, distribution: {} }}",
+            self.bxdf_type, self.fresnel, self.r, self.distribution
+        )
     }
 }

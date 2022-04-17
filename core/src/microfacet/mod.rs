@@ -5,6 +5,7 @@ use crate::geometry::*;
 use crate::pbrt::*;
 use crate::reflection::*;
 use bumpalo::Bump;
+use std::fmt;
 
 mod beckmann;
 mod trowbridge_reitz;
@@ -98,6 +99,16 @@ impl<'arena> MicrofacetDistribution<'arena> {
             self.d(wh) * self.g1(wo) * wo.abs_dot(wh) / abs_cos_theta(wo)
         } else {
             self.d(wh) * abs_cos_theta(wh)
+        }
+    }
+}
+
+impl<'arena> fmt::Display for MicrofacetDistribution<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Beckmann(dist) => write!(f, "MicrofacetDistribution {{ {} }}", dist),
+            Self::TrowBridgeReitz(dist) => write!(f, "MicrofacetDistribution {{ {} }}", dist),
         }
     }
 }

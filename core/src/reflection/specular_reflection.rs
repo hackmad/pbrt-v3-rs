@@ -2,6 +2,7 @@
 
 use super::*;
 use bumpalo::Bump;
+use std::fmt;
 
 /// BRDF for physically plausible specular reflection using Fresnel interface.
 pub struct SpecularReflection<'arena> {
@@ -84,5 +85,16 @@ impl<'arena> SpecularReflection<'arena> {
     /// * `wi` - Incident direction.
     pub fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0
+    }
+}
+
+impl<'arena> fmt::Display for SpecularReflection<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "SpecularReflection {{ bxdf_type: {}, fresnel: {}, r: {} }}",
+            self.bxdf_type, self.fresnel, self.r,
+        )
     }
 }

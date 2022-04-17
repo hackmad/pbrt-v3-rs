@@ -6,6 +6,7 @@ use super::*;
 use crate::material::*;
 use crate::microfacet::*;
 use bumpalo::Bump;
+use std::fmt;
 
 /// BTDF for modeling glossy transmissive surfaces using a microfacet distribution.
 pub struct MicrofacetTransmission<'arena> {
@@ -195,5 +196,16 @@ impl<'arena> MicrofacetTransmission<'arena> {
                 self.distribution.pdf(wo, &wh) * dwh_dwi
             }
         }
+    }
+}
+
+impl<'arena> fmt::Display for MicrofacetTransmission<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "MicrofacetTransmission {{ bxdf_type: {}, fresnel: {}, t: {}, eta_a: {}, eta_b: {}, mode: {}, distribution: {} }}",
+            self.bxdf_type, self.fresnel, self.t, self.eta_a, self.eta_b, self.mode, self.distribution
+        )
     }
 }

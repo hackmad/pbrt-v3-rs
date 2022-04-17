@@ -4,6 +4,7 @@
 
 use super::*;
 use bumpalo::Bump;
+use std::fmt;
 
 /// BRDF for the Lambertian model for perfect transmissive surfaces that scatters
 /// incident illumination equally through a surface in all directions.
@@ -97,5 +98,16 @@ impl LambertianTransmission {
     pub fn rho_hh(&self, u1: &[Point2f], u2: &[Point2f]) -> Spectrum {
         assert!(u1.len() == u2.len());
         self.t
+    }
+}
+
+impl fmt::Display for LambertianTransmission {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "LambertianTransmission {{ bxdf_type: {}, t: {} }}",
+            self.bxdf_type, self.t
+        )
     }
 }

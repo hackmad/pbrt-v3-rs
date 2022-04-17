@@ -22,6 +22,6 @@ debug = true
 [profile.release]
 opt-level = 3
 debug = false
-lto = true
+#lto = true
 #codegen-units = 1
 #panic = "abort"

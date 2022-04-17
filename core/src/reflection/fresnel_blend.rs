@@ -4,6 +4,7 @@ use super::*;
 use crate::microfacet::*;
 use crate::rng::*;
 use bumpalo::Bump;
+use std::fmt;
 
 /// BRDF for modeling layered surfaces such as wood using Ashikhmin-Shirley model.
 pub struct FresnelBlend<'arena> {
@@ -138,5 +139,16 @@ impl<'arena> FresnelBlend<'arena> {
             let pdf_wh = self.distribution.pdf(wo, &wh);
             0.5 * (abs_cos_theta(wi) * INV_PI + pdf_wh / (4.0 * wo.dot(&wh)))
         }
+    }
+}
+
+impl<'arena> fmt::Display for FresnelBlend<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "FresnelBlend {{ bxdf_type: {}, rd: {}, rs: {}, distribution: {} }}",
+            self.bxdf_type, self.rd, self.rs, self.distribution,
+        )
     }
 }

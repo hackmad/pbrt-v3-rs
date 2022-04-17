@@ -6,6 +6,7 @@ use crate::pbrt::*;
 use crate::sampling::*;
 use crate::spectrum::*;
 use bumpalo::Bump;
+use std::fmt;
 
 mod bsdf;
 mod bsdf_reader;
@@ -240,6 +241,26 @@ impl<'arena> BxDF<'arena> {
                 }
                 r / (PI * u1.len() as Float)
             }
+        }
+    }
+}
+
+impl<'arena> fmt::Display for BxDF<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BxDF::FourierBSDF(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
+            BxDF::FresnelBlend(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
+            BxDF::FresnelSpecular(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
+            BxDF::LambertianReflection(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
+            BxDF::LambertianTransmission(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
+            BxDF::MicrofacetReflection(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
+            BxDF::MicrofacetTransmission(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
+            BxDF::OrenNayar(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
+            BxDF::ScaledBxDF(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
+            BxDF::SpecularReflection(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
+            BxDF::SpecularTransmission(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
+            BxDF::TabulatedBSSRDF(bxdf) => write!(f, "BxDF {{ {} }}", bxdf),
         }
     }
 }

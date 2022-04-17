@@ -4,6 +4,7 @@
 use crate::geometry::*;
 use crate::medium::*;
 use crate::pbrt::*;
+use std::fmt;
 use std::sync::Arc;
 
 mod medium_interaction;
@@ -34,6 +35,36 @@ impl<'scene, 'arena> Interaction<'scene, 'arena> {
         match self {
             Self::Surface { si } => &si.hit,
             Self::Medium { mi } => &mi.hit,
+        }
+    }
+
+    /// Spawn's a new ray in the given direction.
+    ///
+    /// * `d` - The new direction.
+    pub fn spawn_ray(&self, d: &Vector3f) -> Ray {
+        match self {
+            Self::Surface { si } => si.spawn_ray(d),
+            Self::Medium { mi } => mi.spawn_ray(d),
+        }
+    }
+
+    /// Spawn's a new ray towards another point.
+    ///
+    /// * `p` - The target point.
+    pub fn spawn_ray_to_point(&self, p: &Point3f) -> Ray {
+        match self {
+            Self::Surface { si } => si.spawn_ray_to_point(p),
+            Self::Medium { mi } => mi.spawn_ray_to_point(p),
+        }
+    }
+
+    /// Spawn's a new ray towards another interaction.
+    ///
+    /// * `hit` - The interaction.
+    pub fn spawn_ray_to_hit(&self, hit: &Hit) -> Ray {
+        match self {
+            Self::Surface { si } => si.spawn_ray_to_hit(hit),
+            Self::Medium { mi } => mi.spawn_ray_to_hit(hit),
         }
     }
 }
@@ -193,5 +224,16 @@ impl Hit {
         } else {
             None
         }
+    }
+}
+
+impl fmt::Display for Hit {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Hit {{ p: {}, time: {}, p_error: {}, wo: {}, n: {}, medium_interface: ... }}",
+            self.p, self.time, self.p_error, self.wo, self.n,
+        )
     }
 }

@@ -4,6 +4,7 @@ use super::*;
 use crate::interpolation::*;
 use crate::material::*;
 use bumpalo::Bump;
+use std::fmt;
 use std::sync::Arc;
 
 /// BSDF for modeling materials like metals with smooth or rough coatings and
@@ -313,5 +314,16 @@ impl FourierBSDF {
         } else {
             0.0
         }
+    }
+}
+
+impl fmt::Display for FourierBSDF {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "FourierBSDF {{ bxdf_type: {}, mode: {}, bsdf_table: ... }}",
+            self.bxdf_type, self.mode
+        )
     }
 }

@@ -3,6 +3,7 @@
 use super::*;
 use crate::material::*;
 use bumpalo::Bump;
+use std::fmt;
 
 /// BTDF for physically plausible specular transmission using Fresnel interface.
 pub struct SpecularTransmission<'arena> {
@@ -126,5 +127,16 @@ impl<'arena> SpecularTransmission<'arena> {
     /// * `wi` - Incident direction.
     pub fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0
+    }
+}
+
+impl<'arena> fmt::Display for SpecularTransmission<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "SpecularTransmission {{ bxdf_type: {}, fresnel: {}, t: {}, eta_a: {}, eta_b: {}, mode: {} }}",
+            self.bxdf_type, self.fresnel, self.t, self.eta_a, self.eta_b, self.mode
+        )
     }
 }

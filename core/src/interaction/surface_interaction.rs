@@ -9,6 +9,7 @@ use crate::primitive::*;
 use crate::reflection::*;
 use crate::spectrum::*;
 use bumpalo::Bump;
+use std::fmt;
 use std::sync::Arc;
 
 /// SurfaceInteraction represents geometry of a particular point on a surface.
@@ -257,6 +258,27 @@ impl<'scene> SurfaceInteraction<'scene> {
             Spectrum::ZERO
         }
     }
+
+    /// Spawn's a new ray in the given direction.
+    ///
+    /// * `d` - The new direction.
+    pub fn spawn_ray(&self, d: &Vector3f) -> Ray {
+        self.hit.spawn_ray(d)
+    }
+
+    /// Spawn's a new ray towards another point.
+    ///
+    /// * `p` - The target point.
+    pub fn spawn_ray_to_point(&self, p: &Point3f) -> Ray {
+        self.hit.spawn_ray_to_point(p)
+    }
+
+    /// Spawn's a new ray towards another interaction.
+    ///
+    /// * `hit` - The interaction.
+    pub fn spawn_ray_to_hit(&self, hit: &Hit) -> Ray {
+        self.hit.spawn_ray_to_hit(hit)
+    }
 }
 
 /// Shading geometry used for perturbed values for bump mapping.
@@ -300,6 +322,17 @@ impl Shading {
             dndu,
             dndv,
         }
+    }
+}
+
+impl fmt::Display for Shading {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Shading {{ n: {}, dpdu: {}, dpdv: {}, dndu: {}, dndv: {} }}",
+            self.n, self.dpdu, self.dpdv, self.dndu, self.dndv,
+        )
     }
 }
 

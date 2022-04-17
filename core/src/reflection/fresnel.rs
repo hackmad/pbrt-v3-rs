@@ -4,6 +4,7 @@
 
 use super::*;
 use bumpalo::Bump;
+use std::fmt;
 use std::mem::swap;
 
 /// Interface for computing Fresnel reflection coefficients.
@@ -35,6 +36,17 @@ impl<'arena> Fresnel<'arena> {
             Self::NoOp(f) => f.evaluate(cos_theta_i),
             Self::Dielectric(f) => f.evaluate(cos_theta_i),
             Self::Conductor(f) => f.evaluate(cos_theta_i),
+        }
+    }
+}
+
+impl<'arena> fmt::Display for Fresnel<'arena> {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NoOp(fr) => write!(f, "Fresnel {{ {} }}", fr),
+            Self::Dielectric(fr) => write!(f, "Fresnel {{ {} }}", fr),
+            Self::Conductor(fr) => write!(f, "Fresnel {{ {} }}", fr),
         }
     }
 }
@@ -79,6 +91,17 @@ impl FresnelDielectric {
     ///                   surface normal.
     pub fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         Spectrum::new(fr_dielectric(cos_theta_i, self.eta_i, self.eta_t))
+    }
+}
+
+impl fmt::Display for FresnelDielectric {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "FresnelDielectric {{ eta_i: {}, eta_t: {} }}",
+            self.eta_i, self.eta_t
+        )
     }
 }
 
@@ -137,6 +160,17 @@ impl FresnelConductor {
     }
 }
 
+impl fmt::Display for FresnelConductor {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "FresnelConductor {{ eta_i: {}, eta_t: {}, k: {} }}",
+            self.eta_i, self.eta_t, self.k
+        )
+    }
+}
+
 /// Implements `Fresnel` for materials that reflect 100% of all incoming light.
 #[derive(Default)]
 pub struct FresnelNoOp {}
@@ -168,6 +202,13 @@ impl FresnelNoOp {
     }
 }
 
+impl fmt::Display for FresnelNoOp {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "FourierNoOp {{}}")
+    }
+}
+
 /// Returns the fresnel reflection for dielectric materials and unpolarized light.
 ///
 /// * `cos_theta_i` - cos(θi) for angle between incident direction and geometric
@@ -187,14 +228,14 @@ pub fn fr_dielectric(cos_theta_i: Float, eta_i: Float, eta_t: Float) -> Float {
     }
 
     // Compute _cosThetaT_ using Snell's law.
-    let sin_theta_i = max(0.0, 1.0 - cos_theta_i * cos_theta_i).sqrt();
+    let sin_theta_i = (0.0 as Float).max(1.0 - cos_theta_i * cos_theta_i).sqrt();
     let sin_theta_t = eta_i / eta_t * sin_theta_i;
 
     // Handle total internal reflection.
     if sin_theta_t >= 1.0 {
         1.0
     } else {
-        let cos_theta_t = max(0.0, 1.0 - sin_theta_t * sin_theta_t).sqrt();
+        let cos_theta_t = (0.0 as Float).max(1.0 - sin_theta_t * sin_theta_t).sqrt();
         let r_parl = ((eta_t * cos_theta_i) - (eta_i * cos_theta_t))
             / ((eta_t * cos_theta_i) + (eta_i * cos_theta_t));
         let r_perp = ((eta_i * cos_theta_i) - (eta_t * cos_theta_t))

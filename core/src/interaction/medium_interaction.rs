@@ -43,4 +43,25 @@ impl<'arena> MediumInteraction<'arena> {
             phase,
         }
     }
+
+    /// Spawn's a new ray in the given direction.
+    ///
+    /// * `d` - The new direction.
+    pub fn spawn_ray(&self, d: &Vector3f) -> Ray {
+        self.hit.spawn_ray(d)
+    }
+
+    /// Spawn's a new ray towards another point.
+    ///
+    /// * `p` - The target point.
+    pub fn spawn_ray_to_point(&self, p: &Point3f) -> Ray {
+        self.hit.spawn_ray_to_point(p)
+    }
+
+    /// Spawn's a new ray towards another interaction.
+    ///
+    /// * `hit` - The interaction.
+    pub fn spawn_ray_to_hit(&self, hit: &Hit) -> Ray {
+        self.hit.spawn_ray_to_hit(hit)
+    }
 }

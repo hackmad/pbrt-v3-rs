@@ -157,11 +157,11 @@ impl fmt::Display for Ray {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let rds = match self.differentials {
             Some(rd) => format!("{}", rd),
-            None => String::from("no differentials"),
+            None => String::from("None"),
         };
         write!(
             f,
-            "{{{}, {}, {}, {}, {}}}",
+            "Ray {{ o = {}, d = {}, t_max = {}, time = {}, differentials = {}}}",
             self.o, self.d, self.t_max, self.time, rds
         )
     }
@@ -221,8 +221,8 @@ impl fmt::Display for RayDifferential {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{{{}, {}, {}, {}}}",
-            self.rx_origin, self.ry_origin, self.rx_direction, self.ry_direction
+            "RayDifferential {{ xo = {}, xd = {}, yo = {}, yd = {}}}",
+            self.rx_origin, self.rx_direction, self.ry_origin, self.ry_direction
         )
     }
 }

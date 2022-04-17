@@ -101,7 +101,6 @@ impl Integrator for PathIntegrator {
     ) -> Spectrum {
         let mut l = Spectrum::ZERO;
         let mut beta = Spectrum::ONE;
-        let mut ray = ray.clone();
         let mut specular_bounce = false;
 
         // Added after book publication: etaScale tracks the accumulated effect
@@ -118,7 +117,7 @@ impl Integrator for PathIntegrator {
             debug!("Path tracer bounce {bounces}, current L = {l}, beta = {beta}");
 
             // Find closest ray intersection or return background radiance.
-            let isect = scene.intersect(&mut ray);
+            let isect = scene.intersect(ray);
 
             // Possibly add emitted light at intersection.
             if bounces == 0 || specular_bounce {
@@ -145,7 +144,7 @@ impl Integrator for PathIntegrator {
             let mut bssrdf: Option<&mut BSDF> = None;
             isect.compute_scattering_functions(
                 arena,
-                &mut ray,
+                ray,
                 true,
                 TransportMode::Radiance,
                 &mut bsdf,
@@ -153,14 +152,13 @@ impl Integrator for PathIntegrator {
             );
             if bsdf.is_none() {
                 debug!("Skipping intersection due to null bsdf");
-                ray = isect.hit.spawn_ray(&ray.d);
+                *ray = isect.spawn_ray(&ray.d);
                 continue; // No need to update bounces for skips.
             }
             let bsdf = bsdf.unwrap();
 
             // Initialize common variables for `PathIntegrator`.
-            let hit = isect.hit.clone();
-            let shading_n = isect.shading.n;
+            let shading_n = isect.shading.n.clone();
 
             let light_distribution = self.light_distribution.as_ref().unwrap();
             let distrib = light_distribution.lookup(&isect.hit.p);
@@ -207,13 +205,13 @@ impl Integrator for PathIntegrator {
                 let eta = bsdf.eta;
                 // Update the term that tracks radiance scaling for refraction
                 // depending on whether the ray is entering or leaving the medium.
-                eta_scale *= if wo.dot(&hit.n) > 0.0 {
+                eta_scale *= if wo.dot(&it.get_hit().n) > 0.0 {
                     eta * eta
                 } else {
                     1.0 / (eta * eta)
                 };
             }
-            ray = hit.spawn_ray(&wi);
+            *ray = it.spawn_ray(&wi);
 
             // Account for subsurface scattering, if applicable.
             let bssrdf_bxdf = bssrdf.map(|b| b.bxdfs.get(0)).flatten();
@@ -242,14 +240,18 @@ impl Integrator for PathIntegrator {
 
                         // Account for the direct subsurface scattering component.
                         let pi = pi.unwrap();
+                        let pi_hit_wo = pi.hit.wo.clone();
+                        let pi_shading_n = pi.shading.n.clone();
+                        let pi_light_pdf = light_distribution.lookup(&pi.hit.p);
+                        let pi = Interaction::Surface { si: pi };
                         l += beta
                             * uniform_sample_one_light(
-                                &it,
+                                &pi,
                                 &bsdf,
                                 scene,
                                 sampler,
                                 false,
-                                light_distribution.lookup(&pi.hit.p),
+                                pi_light_pdf,
                             );
 
                         // Account for the indirect subsurface scattering component.
@@ -263,15 +265,15 @@ impl Integrator for PathIntegrator {
                             wi,
                             bxdf_type: flags,
                         } = bsdf.map_or(BxDFSample::default(), |b| {
-                            b.sample_f(&pi.hit.wo, &sample_2d, BxDFType::all())
+                            b.sample_f(&pi_hit_wo, &sample_2d, BxDFType::all())
                         });
                         if f.is_black() || pdf == 0.0 {
                             break;
                         }
-                        beta *= f * wi.abs_dot(&pi.shading.n) / pdf;
+                        beta *= f * wi.abs_dot(&pi_shading_n) / pdf;
                         debug_assert!(!beta.y().is_infinite());
                         specular_bounce = (flags & BxDFType::BSDF_SPECULAR) > BxDFType::BSDF_NONE;
-                        ray = pi.hit.spawn_ray(&wi);
+                        *ray = pi.spawn_ray(&wi);
                     }
                     _ => warn!("bssrdf reflection model should be BxDF::*BSSRDF."),
                 }

@@ -7,6 +7,7 @@ use crate::pbrt::*;
 use crate::reflection::*;
 use crate::texture::*;
 use bumpalo::Bump;
+use std::fmt;
 use std::sync::Arc;
 
 // Light transport mode enumeration.
@@ -18,6 +19,16 @@ pub enum TransportMode {
     /// Indicates incident ray that intersected a point started at the light
     /// source.
     Importance,
+}
+
+impl fmt::Display for TransportMode {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Radiance => write!(f, "Radiance"),
+            Self::Importance => write!(f, "Importance"),
+        }
+    }
 }
 
 /// Material trait provides common behavior.

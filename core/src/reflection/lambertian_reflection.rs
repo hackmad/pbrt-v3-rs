@@ -4,6 +4,7 @@
 
 use super::*;
 use bumpalo::Bump;
+use std::fmt;
 
 /// BRDF for the Lambertian model for perfect diffuse surfaces that scatters
 /// incident illumination equally in all directions.
@@ -72,5 +73,16 @@ impl LambertianReflection {
     pub fn rho_hh(&self, u1: &[Point2f], u2: &[Point2f]) -> Spectrum {
         assert!(u1.len() == u2.len());
         self.r
+    }
+}
+
+impl fmt::Display for LambertianReflection {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "LambertianReflection {{ bxdf_type: {}, r: {} }}",
+            self.bxdf_type, self.r
+        )
     }
 }
