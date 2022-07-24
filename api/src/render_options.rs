@@ -130,6 +130,10 @@ impl RenderOptions {
                 let p = (&self.integrator_params, sampler, camera);
                 Ok(Box::new(PathIntegrator::from(p)))
             }
+            "volpath" => {
+                let p = (&self.integrator_params, sampler, camera);
+                Ok(Box::new(VolPathIntegrator::from(p)))
+            }
             "whitted" => {
                 let p = (&self.integrator_params, sampler, camera);
                 Ok(Box::new(WhittedIntegrator::from(p)))

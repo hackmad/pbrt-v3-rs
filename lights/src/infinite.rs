@@ -52,7 +52,6 @@ impl InfiniteAreaLight {
     ///
     /// * `light_to_world`   - Transformation from light coordinate system to
     ///                        world coordinate system.
-    /// * `medium_interface` - Participating medium.
     /// * `l`                - Power `L`.
     /// * `n_samples`        - Used to trace multiple shadow rays to the light
     ///                        to compute soft shadows. Default to 1.
@@ -180,7 +179,7 @@ impl Light for InfiniteAreaLight {
             let p1 = Hit::new_minimal(
                 hit.p + wi * (2.0 * world_radius),
                 hit.time,
-                hit.medium_interface.clone(),
+                Some(self.medium_interface.clone()),
             );
             let vis = VisibilityTester::new(p0, p1);
 

@@ -90,8 +90,8 @@ impl MediumInterface {
     /// Returns `true` if the medium interface marks a transition between
     /// two distinct media.
     pub fn is_medium_transition(&self) -> bool {
-        match (self.inside.clone(), self.outside.clone()) {
-            (Some(inside), Some(outside)) => Arc::ptr_eq(&inside, &outside),
+        match (self.inside.as_ref(), self.outside.as_ref()) {
+            (Some(inside), Some(outside)) => Arc::ptr_eq(inside, outside),
             (Some(_), None) => true,
             (None, Some(_)) => true,
             (None, None) => false,

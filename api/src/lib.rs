@@ -643,7 +643,7 @@ impl Api {
                 self.graphics_state.float_textures.clone(),
                 self.graphics_state.spectrum_textures.clone(),
             );
-            if let Ok(mtl) = self.graphics_state.make_material(&name, &mp) {
+            if let Some(mtl) = self.graphics_state.make_material(&name, &mp) {
                 if (name == "subsurface" || name == "kdsubsurface")
                     && (self.render_options.integrator_name != "path"
                         && self.render_options.integrator_name != "volpath")
@@ -686,7 +686,7 @@ impl Api {
             let mat_name = mp.find_string("type", String::new());
             if mat_name.is_empty() {
                 error!("No parameter string 'type' found in MakeNamedMaterial.");
-            } else if let Ok(mtl) = self.graphics_state.make_material(&mat_name, &mp) {
+            } else if let Some(mtl) = self.graphics_state.make_material(&mat_name, &mp) {
                 if self.graphics_state.named_materials.contains_key(&name) {
                     warn!("Named material '{}' redefined.", name);
                 }

@@ -110,7 +110,7 @@ impl Light for SpotLight {
         let pdf = 1.0;
 
         let p0 = hit.clone();
-        let p1 = Hit::new_minimal(self.p_light, hit.time, hit.medium_interface.clone());
+        let p1 = Hit::new_minimal(self.p_light, hit.time, Some(self.medium_interface.clone()));
         let vis = VisibilityTester::new(p0, p1);
 
         let value = self.intensity * self.falloff(&-wi) / self.p_light.distance_squared(hit.p);

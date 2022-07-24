@@ -73,7 +73,7 @@ impl Scene {
         &self,
         ray: &mut Ray,
         sampler: &mut ArcSampler,
-    ) -> Option<(SurfaceInteraction, Spectrum)> {
+    ) -> (Option<SurfaceInteraction>, Spectrum) {
         let mut tr = Spectrum::ONE;
 
         loop {
@@ -87,12 +87,12 @@ impl Scene {
             // Initialize next ray segment or terminate transmittance computation.
             if let Some(isect) = hit_surface {
                 if isect.primitive.unwrap().get_material().is_some() {
-                    return Some((isect, tr));
+                    return (Some(isect), tr);
                 }
 
                 *ray = isect.hit.spawn_ray(&ray.d);
             } else {
-                return None;
+                return (None, tr);
             }
         }
     }

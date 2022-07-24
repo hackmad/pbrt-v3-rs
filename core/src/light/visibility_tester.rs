@@ -42,33 +42,32 @@ impl VisibilityTester {
     /// * `sampler` - The sampler.
     pub fn tr(&self, scene: &Scene, sampler: &mut ArcSampler) -> Spectrum {
         let mut ray = self.p0.spawn_ray_to_hit(&self.p1);
-        let mut tr = Spectrum::ONE;
+        let mut tr_val = Spectrum::ONE;
 
         loop {
-            if let Some(isect) = scene.intersect(&mut ray) {
-                // Handle opaque surface along ray's path.
-                if let Some(_material) = isect.primitive.map(|p| p.get_material()) {
-                    return Spectrum::ZERO;
-                }
+            let isect = scene.intersect(&mut ray);
 
-                // Update transmittance for current ray segment.
-                let medium = ray.medium.clone();
-                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, sampler)) {
-                    tr *= tr2;
+            // Handle opaque surface along ray's path.
+            if let Some(isect) = isect.as_ref() {
+                if let Some(primitive) = isect.primitive {
+                    if primitive.get_material().is_some() {
+                        return Spectrum::ZERO;
+                    }
                 }
+            }
 
-                // Generate next ray segment or return final transmittance.
+            // Update transmittance for current ray segment.
+            if let Some(medium) = ray.medium.as_ref() {
+                tr_val *= medium.tr(&ray, sampler);
+            }
+            // Generate next ray segment or return final transmittance.
+            if let Some(isect) = isect {
                 ray = isect.hit.spawn_ray_to_hit(&self.p1);
             } else {
-                // Update transmittance for current ray segment.
-                let medium = ray.medium.clone();
-                if let Some(tr2) = medium.map(|medium| medium.tr(&ray, sampler)) {
-                    tr *= tr2;
-                }
                 break;
             }
         }
 
-        tr
+        tr_val
     }
 }

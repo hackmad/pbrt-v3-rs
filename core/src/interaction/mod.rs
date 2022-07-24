@@ -205,19 +205,22 @@ impl Hit {
     ///
     /// * `w` - The direction.
     pub fn get_medium_in_direction(&self, w: &Vector3f) -> Option<ArcMedium> {
-        let mi = self.medium_interface.clone();
-        if w.dot(&self.n) > 0.0 {
-            mi.and_then(|mi| mi.outside)
+        if let Some(mi) = self.medium_interface.as_ref() {
+            if w.dot(&self.n) > 0.0 {
+                mi.outside.as_ref().map(Arc::clone)
+            } else {
+                mi.inside.as_ref().map(Arc::clone)
+            }
         } else {
-            mi.and_then(|mi| mi.inside)
+            None
         }
     }
 
     /// Returns the medium when interior and exterior are the same.
     pub fn get_medium(&self) -> Option<ArcMedium> {
-        if let Some(mi) = self.medium_interface.clone() {
+        if let Some(mi) = self.medium_interface.as_ref() {
             if mi.is_medium_transition() {
-                mi.inside
+                mi.inside.as_ref().map(Arc::clone)
             } else {
                 None
             }
