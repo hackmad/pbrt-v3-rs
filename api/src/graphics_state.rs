@@ -125,16 +125,7 @@ impl GraphicsState {
                     self.float_textures.clone(),
                     self.spectrum_textures.clone(),
                 );
-                match self.make_material(&current_material.name, &mp) {
-                    Ok(mat) => Some(mat),
-                    Err(err) => {
-                        error!(
-                            "Unable to create material '{}'. {}",
-                            current_material.name, err
-                        );
-                        None
-                    }
-                }
+                self.make_material(&current_material.name, &mp)
             } else {
                 Some(Arc::clone(&current_material.material))
             }
@@ -277,14 +268,14 @@ impl GraphicsState {
     ///
     /// * `name` - Name.
     /// * `mp`   - Parameter set.
-    pub fn make_material(&self, name: &str, mp: &TextureParams) -> Result<ArcMaterial, String> {
+    pub fn make_material(&self, name: &str, mp: &TextureParams) -> Option<ArcMaterial> {
         match name {
-            "fourier" => Ok(Arc::new(FourierMaterial::from((mp, self.cwd.as_ref())))),
-            "glass" => Ok(Arc::new(GlassMaterial::from(mp))),
-            "kdsubsurface" => Ok(Arc::new(KdSubsurfaceMaterial::from(mp))),
-            "matte" => Ok(Arc::new(MatteMaterial::from(mp))),
-            "metal" => Ok(Arc::new(MetalMaterial::from(mp))),
-            "mirror" => Ok(Arc::new(MirrorMaterial::from(mp))),
+            "fourier" => Some(Arc::new(FourierMaterial::from((mp, self.cwd.as_ref())))),
+            "glass" => Some(Arc::new(GlassMaterial::from(mp))),
+            "kdsubsurface" => Some(Arc::new(KdSubsurfaceMaterial::from(mp))),
+            "matte" => Some(Arc::new(MatteMaterial::from(mp))),
+            "metal" => Some(Arc::new(MetalMaterial::from(mp))),
+            "mirror" => Some(Arc::new(MirrorMaterial::from(mp))),
             "mix" => {
                 let m1 = mp.find_string("namedmaterial1", String::from(""));
                 let mat1 = match self.named_materials.get(&m1) {
@@ -304,18 +295,17 @@ impl GraphicsState {
                     }
                 };
 
-                Ok(Arc::new(MixMaterial::from((mp, mat1, mat2))))
+                Some(Arc::new(MixMaterial::from((mp, mat1, mat2))))
             }
-            "plastic" => Ok(Arc::new(PlasticMaterial::from(mp))),
-            "substrate" => Ok(Arc::new(SubstrateMaterial::from(mp))),
-            "subsurface" => Ok(Arc::new(SubsurfaceMaterial::from(mp))),
-            "translucent" => Ok(Arc::new(TranslucentMaterial::from(mp))),
-            "uber" => Ok(Arc::new(UberMaterial::from(mp))),
-            "none" => Err(String::from("Unable to create material 'none'.")),
-            "" => Err(String::from("Unable to create material with no name")),
+            "plastic" => Some(Arc::new(PlasticMaterial::from(mp))),
+            "substrate" => Some(Arc::new(SubstrateMaterial::from(mp))),
+            "subsurface" => Some(Arc::new(SubsurfaceMaterial::from(mp))),
+            "translucent" => Some(Arc::new(TranslucentMaterial::from(mp))),
+            "uber" => Some(Arc::new(UberMaterial::from(mp))),
+            "none" | "" => None,
             _ => {
                 warn!("Material '{}' unknown. Using 'matte'.", name);
-                Ok(Arc::new(MatteMaterial::from(mp)))
+                Some(Arc::new(MatteMaterial::from(mp)))
             }
         }
     }

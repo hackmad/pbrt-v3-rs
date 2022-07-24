@@ -1,8 +1,7 @@
 # Based on smoke scene from https://www.pbrt.org/scenes-v3
-MakeNamedMedium "smoke" "string type" "heterogeneous" 
-    "color sigma_a" [90 90 90] "color sigma_s" [10 10 10]
-    "integer nx" 100 "integer ny" 100 "integer nz" 40
+MakeNamedMedium "smoke" "string type" "heterogeneous" "integer nx" 100 "integer ny" 100 "integer nz" 40
 	"point p0" [ 0.010000 0.010000 0.010000 ] "point p1" [ 1.990000 1.990000 0.790000 ]
+	"color sigma_a" [90 90 90] "color sigma_s" [10 10 10]
 	"float density" [
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 

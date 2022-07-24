@@ -1,28 +1,29 @@
 # Based on smoke scene from https://www.pbrt.org/scenes-v3
 
-Integrator "whitted"
-#Integrator "volpath" "integer maxdepth" 10
+Integrator "volpath" "integer maxdepth" [10]
 
-Sampler "02sequence" "integer pixelsamples" 256
+Sampler "02sequence" "integer pixelsamples" [256]
+#Sampler "02sequence" "integer pixelsamples" [1]
 
 PixelFilter "gaussian"
 
 Film "image" 
-     "integer yresolution" 100 "integer xresolution" 100
+     "integer yresolution" [100] "integer xresolution" [100]
      "float cropwindow" [0 .9 0 .8]
+     #"float cropwindow" [0.43 .46 0.38 .41]
      "string filename" "renders/media/smoke.png"
      "float scale" 7
 
 Scale -1 1 1
 LookAt 0.0715308 -4.17677 5.33558 0.0720194 -3.62456 4.50187 -0.000323605 0.833706 0.552208
-Camera "perspective" "float fov" 15
+Camera "perspective" "float fov" [15]
 
 WorldBegin
 
   AttributeBegin
-    LightSource "infinite"
-                "string mapname" "/Users/ahmad/Documents/Projects/Dev/rust/pbrt-v3-scenes/cloud/textures/skylight-morn.exr"
-                "color scale" [3 3 3]
+      LightSource "infinite" 
+                  "string mapname" ["/Users/ahmad/Documents/Projects/Dev/rust/pbrt-v3-scenes/cloud/textures/skylight-morn.exr"]
+                  "color scale" [3 3 3]
   AttributeEnd
   
   AttributeBegin
@@ -33,17 +34,24 @@ WorldBegin
   AttributeEnd
   
   TransformBegin
-    Translate -1 0 -1.2
-    Rotate 90 1 0 0
-    Include "/Users/ahmad/Documents/Projects/Dev/rust/pbr_rust/scenes/geometry/density_render.70.pbrt" 
+  	Translate -1 0 -1.2
+  	Rotate 90 1 0 0
+  	Include "/Users/ahmad/Documents/Projects/Dev/rust/pbr_rust/scenes/media/geometry/density_render.70.smoke.pbrt"
   TransformEnd
   
   AttributeBegin
-    Translate -1 0 -1.2
-    Rotate 90 1 0 0
+  	Translate -1 0 -1.2
+  	Rotate 90 1 0 0
     Material ""
     MediumInterface "smoke" ""
-    Shape "plymesh" "string filename" "/Users/ahmad/Documents/Projects/Dev/rust/pbrt-v3-scenes/cloud/geometry/density_render.ply"
+  	Shape "plymesh" "string filename" "/Users/ahmad/Documents/Projects/Dev/rust/pbr_rust/scenes/media/geometry/density_render.ply"
+  AttributeEnd
+  
+  AttributeBegin
+      Material "matte" "color Kd" [0.5 0.5 0.5]
+      Translate 0.0 0.0 -1.0
+      Scale 100.0 100.0 100.0
+  #    Shape "trianglemesh" "point P" [-10 -10 0 10 -10 0 10 10 0 -10 10 0] "integer indices" [0 2 1 0 3 2]
   AttributeEnd
 
 WorldEnd

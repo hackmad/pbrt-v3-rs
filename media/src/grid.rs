@@ -167,7 +167,7 @@ impl Medium for GridDensityMedium {
             let sampler = Arc::get_mut(sampler).unwrap();
 
             // Perform ratio tracking to estimate the transmittance value.
-            let mut tr = 1.0;
+            let mut tr_val = 1.0;
             let mut t = t_min;
             loop {
                 t -= (1.0 - sampler.get_1d()).ln() * self.inv_max_density / self.sigma_t;
@@ -176,21 +176,24 @@ impl Medium for GridDensityMedium {
                 }
 
                 let density = self.density(&ray_medium.at(t));
-                tr *= 1.0 - max(0.0, density * self.inv_max_density);
+                tr_val *= 1.0 - max(0.0, density * self.inv_max_density);
 
                 // Added after book publication: when transmittance gets low,
                 // start applying Russian roulette to terminate sampling.
                 const RR_THRESHOLD: Float = 0.1;
-                if tr < RR_THRESHOLD {
-                    let q = max(0.05, 1.0 - tr);
+                if tr_val < RR_THRESHOLD {
+                    let q = max(0.05, 1.0 - tr_val);
                     if sampler.get_1d() < q {
+                        debug!("grid density = 0 (russian roulette)");
                         return Spectrum::ZERO;
                     }
-                    tr /= 1.0 - q;
+                    tr_val /= 1.0 - q;
                 }
             }
-            Spectrum::new(tr)
+            debug!("grid density = {tr_val}");
+            Spectrum::new(tr_val)
         } else {
+            debug!("grid density = 1 (no intersection)");
             Spectrum::ONE
         }
     }
