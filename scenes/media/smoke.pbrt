@@ -3,14 +3,12 @@
 Integrator "volpath" "integer maxdepth" [10]
 
 Sampler "02sequence" "integer pixelsamples" [256]
-#Sampler "02sequence" "integer pixelsamples" [1]
 
 PixelFilter "gaussian"
 
 Film "image" 
-     "integer yresolution" [100] "integer xresolution" [100]
+     "integer yresolution" [400] "integer xresolution" [400]
      "float cropwindow" [0 .9 0 .8]
-     #"float cropwindow" [0.43 .46 0.38 .41]
      "string filename" "renders/media/smoke.png"
      "float scale" 7
 

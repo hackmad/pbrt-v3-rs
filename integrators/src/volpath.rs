@@ -149,7 +149,8 @@ impl Integrator for VolPathIntegrator {
                 let distrib = light_distribution.lookup(&mi.hit.p);
 
                 let it = Interaction::Medium { mi };
-                l += beta * uniform_sample_one_light(&it, &None, scene, sampler, true, distrib);
+                let l_sample = uniform_sample_one_light(&it, &None, scene, sampler, true, distrib);
+                l += beta * l_sample;
 
                 let sample_2d = {
                     let sampler = Arc::get_mut(sampler).unwrap();
@@ -166,7 +167,6 @@ impl Integrator for VolPathIntegrator {
                 }
 
                 specular_bounce = false;
-                debug!("Handled medium L = {l}");
             } else {
                 // Handle scattering at point on surface for volumetric path tracer.
 

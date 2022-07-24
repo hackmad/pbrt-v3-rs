@@ -74,6 +74,10 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Bump Map" href="renders/materials/bump.png"><img src="renders/materials/bump.png" style="height: 100px"/></a>
 <a title="Subsurface" href="renders/materials/subsurface.png"><img src="renders/materials/subsurface.png" style="height: 100px"/></a>
 
+### Media
+
+<a title="Grid Density" href="renders/media/smoke.png"><img src="renders/media/smoke.png" style="height: 100px"/></a>
+
 ### Cameras
 
 <a title="Perspective" href="renders/cameras/perspective.png"><img src="renders/cameras/perspective.png" style="height: 100px"/></a>

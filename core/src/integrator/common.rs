@@ -274,19 +274,15 @@ pub fn estimate_direct(
 
             // Find intersection and compute transmittance.
             let mut ray = hit.spawn_ray(&wi);
-            let light_isect_and_tr = if handle_media {
+            let (light_isect, tr) = if handle_media {
                 scene.intersect_tr(&mut ray, sampler)
             } else {
-                scene
-                    .intersect(&mut ray)
-                    .map(|light_isect| (light_isect, Spectrum::ONE))
+                (scene.intersect(&mut ray), Spectrum::ONE)
             };
 
             // Add light contribution from material sampling.
             let mut li = Spectrum::ZERO;
-            let mut tr = Spectrum::ONE;
-            if let Some((light_isect, tr1)) = light_isect_and_tr {
-                tr = tr1;
+            if let Some(light_isect) = light_isect {
                 if let Some(primitive) = light_isect.primitive {
                     if let Some(area_light) = primitive.get_area_light() {
                         let alt = Arc::as_ptr(&area_light) as *const usize;
