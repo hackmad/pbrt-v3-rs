@@ -524,7 +524,7 @@ impl Curve {
                 Normal3f::ZERO,
                 Normal3f::ZERO,
                 ray.time,
-                Arc::clone(&self.data),
+                Some(Arc::clone(&self.data)),
                 0,
             );
             self.data

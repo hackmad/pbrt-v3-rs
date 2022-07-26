@@ -31,7 +31,7 @@ pub struct SurfaceInteraction<'scene> {
     pub shading: Shading,
 
     /// The shape data.
-    pub shape_data: Arc<ShapeData>,
+    pub shape_data: Option<Arc<ShapeData>>,
 
     /// The primitive.
     pub primitive: Option<&'scene dyn Primitive>,
@@ -66,15 +66,17 @@ impl<'scene> SurfaceInteraction<'scene> {
         dndu: Normal3f,
         dndv: Normal3f,
         time: Float,
-        shape_data: Arc<ShapeData>,
+        shape_data: Option<Arc<ShapeData>>,
         face_index: usize,
     ) -> Self {
         // Calculate normal n from the partial derivatives.
         let mut n = Normal3f::from(dpdu.cross(&dpdv).normalize());
 
         // Adjust normal based on orientation and handedness.
-        if shape_data.reverse_orientation ^ shape_data.transform_swaps_handedness {
-            n *= -1.0;
+        if let Some(sd) = shape_data.as_ref() {
+            if sd.reverse_orientation ^ sd.transform_swaps_handedness {
+                n *= -1.0;
+            }
         }
 
         Self {

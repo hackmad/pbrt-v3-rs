@@ -3,10 +3,14 @@
 use core::camera::*;
 use core::film::*;
 use core::geometry::*;
+use core::interaction::Interaction;
+use core::interaction::SurfaceInteraction;
+use core::light::VisibilityTester;
 use core::medium::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::sampling::*;
+use core::spectrum::*;
 use std::mem::swap;
 use std::sync::Arc;
 
@@ -220,12 +224,172 @@ impl Camera for PerspectiveCamera {
         (self.data.camera_to_world.transform_ray(&ray), 1.0)
     }
 
+    /// Evaluate the importance emitted from the point on the camera in a
+    /// direction. The `include_raster_point` is true, then a raster position
+    /// associated with the ray on the film is returned as well.
+    ///
+    /// * `ray`                  - The ray.
+    /// * `include_raster_point` - Indicates whether or not to return the raster
+    ///                            position.
+    fn we(&self, ray: &Ray, include_raster: bool) -> (Spectrum, Option<Point2f>) {
+        let mut p_raster2: Option<Point2f> = None;
+
+        // Interpolate camera matrix and check if `ω` is forward-facing.
+        let c2w = self.data.camera_to_world.interpolate(ray.time);
+        let cos_theta = ray
+            .d
+            .dot(&c2w.transform_vector(&Vector3f::new(0.0, 0.0, 1.0)));
+        if cos_theta <= 0.0 {
+            return (Spectrum::ZERO, p_raster2);
+        }
+
+        // Map ray (p, ω) onto the raster grid.
+        let p_focus = ray.at(if self.proj_data.lens_radius > 0.0 {
+            self.proj_data.focal_distance
+        } else {
+            1.0
+        } / cos_theta);
+
+        let inv_raster_to_cam = self.proj_data.raster_to_camera.inverse();
+        let inv_c2w = c2w.inverse();
+        let p_raster = inv_raster_to_cam.transform_point(&inv_c2w.transform_point(&p_focus));
+
+        // Return raster position if requested.
+        if include_raster {
+            p_raster2 = Some(Point2f::new(p_raster.x, p_raster.y));
+        }
+
+        // Return zero importance for out of bounds points.
+        let sample_bounds = self.data.film.get_sample_bounds();
+        if p_raster.x < sample_bounds.p_min.x as Float
+            || p_raster.x >= sample_bounds.p_max.x as Float
+            || p_raster.y < sample_bounds.p_min.y as Float
+            || p_raster.y >= sample_bounds.p_max.y as Float
+        {
+            return (Spectrum::ZERO, p_raster2);
+        }
+
+        // Compute lens area of perspective camera.
+        let lens_area = if self.proj_data.lens_radius != 0.0 {
+            PI * self.proj_data.lens_radius * self.proj_data.lens_radius
+        } else {
+            1.0
+        };
+
+        // Return importance for point on image plane.
+        let cos_2_theta = cos_theta * cos_theta;
+        let importance = Spectrum::new(1.0 / (self.a * lens_area * cos_2_theta * cos_2_theta));
+        (importance, p_raster2)
+    }
+
     /// Return the spatial and directional PDFs, as a tuple, for sampling a
     /// particular ray leaving the camera.
     ///
     /// * `ray` - The ray.
-    fn pdf_we(&self, _ray: &Ray) -> PDFResult {
-        panic!("NOT IMPLEMENTED");
+    fn pdf_we(&self, ray: &Ray) -> PDFResult {
+        // Interpolate camera matrix and check if `ω` is forward-facing.
+        let c2w = self.data.camera_to_world.interpolate(ray.time);
+        let cos_theta = ray
+            .d
+            .dot(&c2w.transform_vector(&Vector3f::new(0.0, 0.0, 1.0)));
+        if cos_theta <= 0.0 {
+            return PDFResult::default();
+        }
+
+        // Map ray (p, ω) onto the raster grid.
+        let p_focus = ray.at(if self.proj_data.lens_radius > 0.0 {
+            self.proj_data.focal_distance
+        } else {
+            1.0
+        } / cos_theta);
+
+        let inv_raster_to_cam = self.proj_data.raster_to_camera.inverse();
+        let inv_c2w = c2w.inverse();
+        let p_raster = inv_raster_to_cam.transform_point(&inv_c2w.transform_point(&p_focus));
+
+        // Return zero probability for out of bounds points.
+        let sample_bounds = self.data.film.get_sample_bounds();
+        if p_raster.x < sample_bounds.p_min.x as Float
+            || p_raster.x >= sample_bounds.p_max.x as Float
+            || p_raster.y < sample_bounds.p_min.y as Float
+            || p_raster.y >= sample_bounds.p_max.y as Float
+        {
+            return PDFResult::default();
+        }
+
+        // Compute lens area of perspective camera.
+        let lens_area = if self.proj_data.lens_radius != 0.0 {
+            PI * self.proj_data.lens_radius * self.proj_data.lens_radius
+        } else {
+            1.0
+        };
+        PDFResult::new(
+            1.0 / lens_area,
+            1.0 / (self.a * cos_theta * cos_theta * cos_theta),
+        )
+    }
+
+    /// Returns a PDF value with respect to the solid angle at a reference point.
+    ///
+    /// * `interaction`          - The interaction point.
+    /// * `u`                    - Used to sample point on the lens.
+    /// * `include_raster_point` - Indicates whether or not to return the raster
+    ///                            position.
+    fn sample_wi(&self, interaction: &Interaction, u: &Point2f) -> SampleResult {
+        // Uniformly sample a lens interaction `lensIntr`.
+        let interaction_hit = interaction.get_hit().to_owned();
+        let time = interaction_hit.time;
+
+        let p_lens = self.proj_data.lens_radius * concentric_sample_disk(u);
+        let p_lens_world = self
+            .data
+            .camera_to_world
+            .transform_point(time, &Point3f::new(p_lens.x, p_lens.y, 0.0));
+
+        let mut si = SurfaceInteraction::new(
+            p_lens_world,
+            Vector3f::default(),
+            Point2f::default(),
+            Vector3f::default(),
+            Vector3f::default(),
+            Vector3f::default(),
+            Normal3f::default(),
+            Normal3f::default(),
+            time,
+            None,
+            0,
+        );
+        si.hit.n = Normal3f::from(
+            &self
+                .data
+                .camera_to_world
+                .transform_vector(time, &Vector3f::new(0.0, 0.0, 1.0)),
+        );
+        let lens_intr = Interaction::Surface { si };
+        let lens_intr_hit = lens_intr.get_hit().to_owned();
+
+        let lens_intr_hit_p = lens_intr_hit.p;
+        let lens_intr_hit_n = lens_intr_hit.n;
+        let interaction_hit_p = interaction_hit.p;
+
+        // Populate arguments and compute the importance value.
+        let vis = VisibilityTester::new(interaction_hit, lens_intr_hit);
+        let mut wi = lens_intr_hit_p - interaction_hit_p;
+        let dist = wi.length();
+        wi /= dist;
+
+        // Compute PDF for importance arriving at `interaction`.
+
+        // Compute lens area of perspective camera.
+        let lens_area = if self.proj_data.lens_radius != 0.0 {
+            PI * self.proj_data.lens_radius * self.proj_data.lens_radius
+        } else {
+            1.0
+        };
+        let pdf = (dist * dist) / (lens_intr_hit_n.abs_dot(&wi) * lens_area);
+        let (spectrum, p_raster) = self.we(&lens_intr.spawn_ray(&(-wi)), true);
+
+        SampleResult::new(spectrum, wi, pdf, p_raster, vis)
     }
 }
 
