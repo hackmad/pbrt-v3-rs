@@ -192,7 +192,7 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for DirectLightingIntegrator {
     fn from(p: (&ParamSet, ArcSampler, ArcCamera)) -> Self {
         let (params, sampler, camera) = p;
 
-        let max_depth = params.find_one_int("max_depth", 5) as usize;
+        let max_depth = params.find_one_int("maxdepth", 5) as usize;
 
         let st = params.find_one_string("strategy", "all".to_string());
         let strategy = match st.as_ref() {
