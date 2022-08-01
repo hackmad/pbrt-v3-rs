@@ -33,6 +33,7 @@ pub mod medium;
 pub mod memory;
 pub mod microfacet;
 pub mod mipmap;
+pub mod parallel;
 pub mod paramset;
 pub mod pbrt;
 pub mod primitive;
