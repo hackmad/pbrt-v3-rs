@@ -325,7 +325,7 @@ impl Curve {
     /// * `u1`            - The ending u-parameter.
     /// * `depth`         - The recursion depth.
     /// * `is_shadow_ray` - Used to terminate recursion on first hit for shadow rays.
-    fn recursive_intersect<'scene, 'arena>(
+    fn recursive_intersect<'scene>(
         &self,
         ray: &Ray,
         cp: &[Point3f; 4],
@@ -540,11 +540,7 @@ impl Curve {
     ///
     /// * `r`             - The ray.
     /// * `is_shadow_ray` - Used to terminate recursion on first hit for shadow rays.
-    fn intersect<'scene, 'arena>(
-        &self,
-        r: &Ray,
-        is_shadow_ray: bool,
-    ) -> Option<Intersection<'scene>> {
+    fn intersect<'scene>(&self, r: &Ray, is_shadow_ray: bool) -> Option<Intersection<'scene>> {
         // Transform ray to object space.
         //
         // We could just use transform_ray() but there is minor adjustment in
@@ -684,7 +680,7 @@ impl Shape for Curve {
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect<'scene, 'arena>(
+    fn intersect<'scene>(
         &self,
         r: &Ray,
         _test_alpha_texture: bool,

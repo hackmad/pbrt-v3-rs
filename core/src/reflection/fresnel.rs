@@ -3,30 +3,18 @@
 #![allow(dead_code)]
 
 use super::*;
-use bumpalo::Bump;
 use std::fmt;
 use std::mem::swap;
 
 /// Interface for computing Fresnel reflection coefficients.
-pub enum Fresnel<'arena> {
-    NoOp(&'arena mut FresnelNoOp),
-    Dielectric(&'arena mut FresnelDielectric),
-    Conductor(&'arena mut FresnelConductor),
+#[derive(Clone)]
+pub enum Fresnel {
+    NoOp(FresnelNoOp),
+    Dielectric(FresnelDielectric),
+    Conductor(FresnelConductor),
 }
 
-impl<'arena> Fresnel<'arena> {
-    /// Clone into a newly allocated instance.
-    ///
-    /// * `arena` - The memory arena used for allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
-        match self {
-            Self::NoOp(f) => f.clone_alloc(arena),
-            Self::Dielectric(f) => f.clone_alloc(arena),
-            Self::Conductor(f) => f.clone_alloc(arena),
-        }
-    }
-
+impl Fresnel {
     /// Returns the amount of light reflected by the surface.
     ///
     /// * `cos_thata_i` - Cosine of the angle made by incident direction and
@@ -40,7 +28,7 @@ impl<'arena> Fresnel<'arena> {
     }
 }
 
-impl<'arena> fmt::Display for Fresnel<'arena> {
+impl fmt::Display for Fresnel {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -52,7 +40,7 @@ impl<'arena> fmt::Display for Fresnel<'arena> {
 }
 
 /// Implements `Fresnel` for dielectric materials.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct FresnelDielectric {
     /// Index of refraction for exterior side of the surface.
     eta_i: Float,
@@ -62,27 +50,13 @@ pub struct FresnelDielectric {
 }
 
 impl FresnelDielectric {
-    /// Allocate a new `FresnelDielectric`.
+    /// Creates a new `FresnelDielectric`.
     ///
-    /// * `arena` - The arena for memory allocations.
     /// * `eta_i` - Index of refraction for exterior side of the surface.
     /// * `eta_t` - Index of refraction for interior side of the surface.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc<'arena>(arena: &'arena Bump, eta_i: Float, eta_t: Float) -> &'arena mut Fresnel {
-        let f = arena.alloc(Self { eta_i, eta_t });
-        arena.alloc(Fresnel::Dielectric(f))
-    }
-
-    /// Clone into a newly allocated a new instance of `FresnelDielectric`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
-        let f = arena.alloc(Self {
-            eta_i: self.eta_i,
-            eta_t: self.eta_t,
-        });
-        arena.alloc(Fresnel::Dielectric(f))
+    pub fn new(eta_i: Float, eta_t: Float) -> Fresnel {
+        let f = Self { eta_i, eta_t };
+        Fresnel::Dielectric(f)
     }
 
     /// Returns the amount of light reflected by the surface.
@@ -106,7 +80,7 @@ impl fmt::Display for FresnelDielectric {
 }
 
 /// Implements `Fresnel` for conductors materials.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct FresnelConductor {
     /// Index of refraction for exterior side of the surface.
     eta_i: Spectrum,
@@ -119,34 +93,14 @@ pub struct FresnelConductor {
 }
 
 impl FresnelConductor {
-    /// Allocate a new `FresnelConductor`.
+    /// Creates a new `FresnelConductor`.
     ///
-    /// * `arena` - The arena for memory allocations.
     /// * `eta_i` - Index of refraction for exterior side of the surface.
     /// * `eta_t` - Index of refraction for interior side of the surface.
     /// * `k`     - Absorption coefficient.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc<'arena>(
-        arena: &'arena Bump,
-        eta_i: Spectrum,
-        eta_t: Spectrum,
-        k: Spectrum,
-    ) -> &'arena mut Fresnel {
-        let f = arena.alloc(Self { eta_i, eta_t, k });
-        arena.alloc(Fresnel::Conductor(f))
-    }
-
-    /// Clone into a newly allocated a new instance of `FresnelConductor`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
-        let f = arena.alloc(Self {
-            eta_i: self.eta_i,
-            eta_t: self.eta_t,
-            k: self.k,
-        });
-        arena.alloc(Fresnel::Conductor(f))
+    pub fn new(eta_i: Spectrum, eta_t: Spectrum, k: Spectrum) -> Fresnel {
+        let f = Self { eta_i, eta_t, k };
+        Fresnel::Conductor(f)
     }
 
     /// Returns the amount of light reflected by the surface.
@@ -172,25 +126,13 @@ impl fmt::Display for FresnelConductor {
 }
 
 /// Implements `Fresnel` for materials that reflect 100% of all incoming light.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct FresnelNoOp {}
 impl FresnelNoOp {
     /// Allocator a new `FresnelNoOp`.
-    ///
-    /// * `allocator` - The allocator.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc<'arena>(arena: &'arena Bump) -> &'arena mut Fresnel {
-        let f = arena.alloc(Self {});
-        arena.alloc(Fresnel::NoOp(f))
-    }
-
-    /// Clone into a newly allocated a new instance of `FresnelNoOp`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut Fresnel<'arena> {
-        let f = arena.alloc(Self {});
-        arena.alloc(Fresnel::NoOp(f))
+    pub fn new() -> Fresnel {
+        let f = Self {};
+        Fresnel::NoOp(f)
     }
 
     /// Returns the amount of light reflected by the surface.

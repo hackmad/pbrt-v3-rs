@@ -5,8 +5,6 @@ use super::*;
 use crate::interaction::*;
 use crate::rng::*;
 use bitflags::bitflags;
-use bumpalo::collections::vec::Vec as BumpVec;
-use bumpalo::Bump;
 use std::fmt;
 
 bitflags! {
@@ -69,7 +67,8 @@ impl fmt::Display for BxDFType {
 pub const MAX_BXDFS: usize = 8;
 
 /// BSDF interface represents a collection of BRDFs and BTDFs.
-pub struct BSDF<'arena> {
+#[derive(Clone)]
+pub struct BSDF {
     /// The shading normal given by per-vertex normals and/or bump mapping.
     /// It is the first axis in the orthonormal coordinate system and also
     /// used to define hemispheres for integrating incident illumincation for
@@ -86,73 +85,42 @@ pub struct BSDF<'arena> {
     pub ts: Vector3f,
 
     /// The `BxDFs`.
-    ///
-    /// NOTE: This is `&'arena mut BxDF` because it is allocated from a memory
-    /// arena (bumpalo::Bump). Using bumpalo's collection vector for efficient
-    /// allocations from the memory arena instead of standard library Vec
-    /// allocating from heap.
-    pub bxdfs: BumpVec<'arena, &'arena mut BxDF<'arena>>,
+    pub bxdfs: Vec<BxDF>,
 
     /// Relative index of refraction over the surfaceboundary.
     pub eta: Float,
 }
 
-impl<'arena> BSDF<'arena> {
-    /// Allocates a new `BSDF`.
+impl BSDF {
+    /// Creates a new `BSDF`.
     ///
-    /// * `arena`   - The arena for memory allocations.
     /// * `hit`     - The surface interaction hit.
     /// * `shading` - The surface interacton shading.
     /// * `eta`     - Optional relative index of refraction over the surface
     ///               boundary. If not provided, defaults to 1.0; used for
     ///               opaque surfaces.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc(
-        arena: &'arena Bump,
-        hit: &Hit,
-        shading: &Shading,
-        eta: Option<Float>,
-    ) -> &'arena mut Self {
+    pub fn new(hit: &Hit, shading: &Shading, eta: Option<Float>) -> Self {
         let eta = eta.map_or_else(|| 1.0, |e| e);
         let ns = shading.n;
         let ng = hit.n;
         let ss = shading.dpdu.normalize();
         let ts = Vector3::from(ns).cross(&ss);
-        let bxdfs = BumpVec::with_capacity_in(MAX_BXDFS, arena);
+        let bxdfs = Vec::with_capacity(MAX_BXDFS);
 
-        arena.alloc(Self {
+        Self {
             eta,
             ns,
             ng,
             ss,
             ts,
             bxdfs,
-        })
-    }
-
-    /// Clone into a newly allocated instance.
-    ///
-    /// * `arena` - The memory arena used for allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut Self {
-        let mut bxdfs = BumpVec::with_capacity_in(self.bxdfs.len(), arena);
-        for bxdf in self.bxdfs.iter() {
-            bxdfs.push(bxdf.clone_alloc(arena));
         }
-        arena.alloc(Self {
-            eta: self.eta,
-            ns: self.ns,
-            ng: self.ng,
-            ss: self.ss,
-            ts: self.ts,
-            bxdfs,
-        })
     }
 
     /// Add a `BxDF`.
     ///
     /// * `bxdf` - The `BxDF`.
-    pub fn add(&mut self, bxdf: &'arena mut BxDF<'arena>) {
+    pub fn add(&mut self, bxdf: BxDF) {
         assert!(
             self.bxdfs.len() < MAX_BXDFS,
             "Cannot add BxDFs. BSDF maximum limit {} reached.",
@@ -401,7 +369,7 @@ impl<'arena> BSDF<'arena> {
     }
 }
 
-impl<'arena> fmt::Display for BSDF<'arena> {
+impl fmt::Display for BSDF {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

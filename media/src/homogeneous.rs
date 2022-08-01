@@ -1,6 +1,5 @@
 //! Homogeneous Medium
 
-use bumpalo::Bump;
 use core::geometry::*;
 use core::interaction::MediumInteraction;
 use core::medium::HenyeyGreenstein;
@@ -65,15 +64,9 @@ impl Medium for HomogeneousMedium {
     /// NOTE: Calling code will need to assign this medium as we cannot pass
     /// back and `ArcMedium` out of here for `Self`.
     ///
-    /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
-    fn sample<'arena>(
-        &self,
-        arena: &'arena Bump,
-        ray: &Ray,
-        sampler: &mut ArcSampler,
-    ) -> (Spectrum, Option<MediumInteraction<'arena>>) {
+    fn sample(&self, ray: &Ray, sampler: &mut ArcSampler) -> (Spectrum, Option<MediumInteraction>) {
         // Sample a channel and distance along the ray.
         let sampler = Arc::get_mut(sampler).unwrap();
         let channel = min(
@@ -85,7 +78,7 @@ impl Medium for HomogeneousMedium {
         let sampled_medium = t < ray.t_max;
 
         let mi = if sampled_medium {
-            let phase_function = HenyeyGreenstein::alloc(arena, self.g);
+            let phase_function = HenyeyGreenstein::new(self.g);
             Some(MediumInteraction::new(
                 ray.at(t),
                 -ray.d,

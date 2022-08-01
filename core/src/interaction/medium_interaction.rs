@@ -7,15 +7,15 @@ use crate::medium::*;
 use crate::pbrt::*;
 
 /// MediumInteraction represents an interaction point in a scattering medium.
-pub struct MediumInteraction<'arena> {
+pub struct MediumInteraction {
     /// The common interaction data.
     pub hit: Hit,
 
     /// The phase function.
-    pub phase: &'arena mut PhaseFunction<'arena>,
+    pub phase: PhaseFunction,
 }
 
-impl<'arena> MediumInteraction<'arena> {
+impl MediumInteraction {
     /// Create a new medium interaction.
     ///
     /// * `p`      - The point of interaction.
@@ -29,7 +29,7 @@ impl<'arena> MediumInteraction<'arena> {
         wo: Vector3f,
         time: Float,
         medium: Option<ArcMedium>,
-        phase: &'arena mut PhaseFunction<'arena>,
+        phase: PhaseFunction,
     ) -> Self {
         Self {
             hit: Hit::new(

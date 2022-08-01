@@ -1,6 +1,5 @@
 //! KdSubsurface Material
 
-use bumpalo::Bump;
 use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
@@ -114,7 +113,6 @@ impl Material for KdSubsurfaceMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -123,17 +121,14 @@ impl Material for KdSubsurfaceMaterial {
     ///                            are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
-    fn compute_scattering_functions<'scene, 'arena>(
+    fn compute_scattering_functions<'scene>(
         &self,
-        arena: &'arena Bump,
         si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bsdf: &mut Option<BSDF>,
         bssrdf: &mut Option<BSSRDF>,
-    ) where
-        'arena: 'scene,
-    {
+    ) {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
@@ -145,7 +140,7 @@ impl Material for KdSubsurfaceMaterial {
         let mut urough = self.u_roughness.evaluate(&si.hit, &si.uv, &si.der);
         let mut vrough = self.v_roughness.evaluate(&si.hit, &si.uv, &si.der);
 
-        let result = BSDF::alloc(arena, &si.hit, &si.shading, Some(self.eta));
+        let mut result = BSDF::new(&si.hit, &si.shading, Some(self.eta));
 
         // Evaluate textures for `SubsurfaceMaterial` material and allocate BRDF.
         if r.is_black() && t.is_black() {
@@ -154,7 +149,7 @@ impl Material for KdSubsurfaceMaterial {
 
         let is_specular = urough == 0.0 && vrough == 0.0;
         if is_specular && allow_multiple_lobes {
-            result.add(FresnelSpecular::alloc(arena, r, t, 1.0, self.eta, mode));
+            result.add(FresnelSpecular::new(r, t, 1.0, self.eta, mode));
         } else {
             if self.remap_roughness {
                 urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
@@ -163,23 +158,21 @@ impl Material for KdSubsurfaceMaterial {
 
             if is_specular {
                 if !r.is_black() {
-                    let fresnel = FresnelDielectric::alloc(arena, 1.0, self.eta);
-                    result.add(SpecularReflection::alloc(arena, r, fresnel));
+                    let fresnel = FresnelDielectric::new(1.0, self.eta);
+                    result.add(SpecularReflection::new(r, fresnel));
                 }
                 if !t.is_black() {
-                    result.add(SpecularTransmission::alloc(arena, t, 1.0, self.eta, mode));
+                    result.add(SpecularTransmission::new(t, 1.0, self.eta, mode));
                 }
             } else {
                 if !r.is_black() {
-                    let fresnel = FresnelDielectric::alloc(arena, 1.0, self.eta);
-                    let distrib = TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
-                    result.add(MicrofacetReflection::alloc(arena, r, distrib, fresnel));
+                    let fresnel = FresnelDielectric::new(1.0, self.eta);
+                    let distrib = TrowbridgeReitzDistribution::new(urough, vrough, true);
+                    result.add(MicrofacetReflection::new(r, distrib, fresnel));
                 }
                 if !t.is_black() {
-                    let distrib = TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
-                    result.add(MicrofacetTransmission::alloc(
-                        arena, t, distrib, 1.0, self.eta, mode,
-                    ));
+                    let distrib = TrowbridgeReitzDistribution::new(urough, vrough, true);
+                    result.add(MicrofacetTransmission::new(t, distrib, 1.0, self.eta, mode));
                 }
             }
         }

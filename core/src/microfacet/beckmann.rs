@@ -5,7 +5,6 @@
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::reflection::*;
-use bumpalo::Bump;
 use super::MicrofacetDistribution;
 use std::fmt;
 
@@ -26,9 +25,8 @@ pub struct BeckmannDistribution {
 }
 
 impl BeckmannDistribution {
-    /// Allocate a new `BeckmannDistribution`.
+    /// Creates a new `BeckmannDistribution`.
     ///
-    /// * `arena`               - The arena for memory allocations.
     /// * `alpha_x`             - For microfacets oriented perpendicular to the
     ///                           x-axis and where α = sqrt(2) * σ and σ is the
     ///                           RMS slope of microfacets.
@@ -37,27 +35,13 @@ impl BeckmannDistribution {
     ///                           RMS slope of microfacets.
     /// * `sample_visible_area` - Indicates whether or not the visible area is
     ///                           sampled or not (default to `true`).
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc<'arena>(arena: &'arena Bump, alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> &'arena mut MicrofacetDistribution {
-        let dist = arena.alloc(Self {
+    pub fn new(alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> MicrofacetDistribution {
+        let dist = Self {
             sample_visible_area,
             alpha_x: max(0.001, alpha_x),
             alpha_y: max(0.001, alpha_y),
-        });
-        arena.alloc(MicrofacetDistribution::Beckmann(dist))
-    }
-
-    /// Clone into a newly allocated a new instance of `BeckmannDistribution`.
-    ///
-    /// * `arena` - The memory arena.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut MicrofacetDistribution<'arena> {
-        let dist = arena.alloc(Self {
-            sample_visible_area: self.sample_visible_area,
-            alpha_x: self.alpha_x,
-            alpha_y: self.alpha_y,
-        });
-        arena.alloc(MicrofacetDistribution::Beckmann(dist))
+        };
+        MicrofacetDistribution::Beckmann(dist)
     }
 
     /// Maps scalar roughness parameter in [0, 1] to alpha values where

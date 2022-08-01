@@ -1,6 +1,5 @@
 //! Translucent Material
 
-use bumpalo::Bump;
 use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
@@ -77,7 +76,6 @@ impl Material for TranslucentMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -86,24 +84,21 @@ impl Material for TranslucentMaterial {
     ///                            are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
-    fn compute_scattering_functions<'scene, 'arena>(
+    fn compute_scattering_functions<'scene>(
         &self,
-        arena: &'arena Bump,
         si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bsdf: &mut Option<BSDF>,
         bssrdf: &mut Option<BSSRDF>,
-    ) where
-        'arena: 'scene,
-    {
+    ) {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
         }
 
         const ETA: Float = 1.5;
-        let result = BSDF::alloc(arena, &si.hit, &si.shading, Some(ETA));
+        let mut result = BSDF::new(&si.hit, &si.shading, Some(ETA));
 
         // Evaluate textures for `TranslucentMaterial` material and allocate BRDF.
         let r = self
@@ -121,10 +116,10 @@ impl Material for TranslucentMaterial {
         let kd = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kd.is_black() {
             if !r.is_black() {
-                result.add(LambertianReflection::alloc(arena, r * kd));
+                result.add(LambertianReflection::new(r * kd));
             }
             if !t.is_black() {
-                result.add(LambertianTransmission::alloc(arena, t * kd));
+                result.add(LambertianTransmission::new(t * kd));
             }
         }
 
@@ -136,21 +131,14 @@ impl Material for TranslucentMaterial {
             }
 
             if !r.is_black() {
-                let distrib = TrowbridgeReitzDistribution::alloc(arena, rough, rough, true);
-                let fresnel = FresnelDielectric::alloc(arena, 1.0, ETA);
-                result.add(MicrofacetReflection::alloc(arena, r * ks, distrib, fresnel));
+                let distrib = TrowbridgeReitzDistribution::new(rough, rough, true);
+                let fresnel = FresnelDielectric::new(1.0, ETA);
+                result.add(MicrofacetReflection::new(r * ks, distrib, fresnel));
             }
 
             if !t.is_black() {
-                let distrib = TrowbridgeReitzDistribution::alloc(arena, rough, rough, true);
-                result.add(MicrofacetTransmission::alloc(
-                    arena,
-                    t * ks,
-                    distrib,
-                    1.0,
-                    ETA,
-                    mode,
-                ));
+                let distrib = TrowbridgeReitzDistribution::new(rough, rough, true);
+                result.add(MicrofacetTransmission::new(t * ks, distrib, 1.0, ETA, mode));
             }
         }
 

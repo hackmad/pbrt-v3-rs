@@ -1,6 +1,3 @@
-//! Mirror Material
-
-use bumpalo::Bump;
 use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
@@ -35,7 +32,6 @@ impl Material for MirrorMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -44,29 +40,26 @@ impl Material for MirrorMaterial {
     ///                            are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
-    fn compute_scattering_functions<'scene, 'arena>(
+    fn compute_scattering_functions<'scene>(
         &self,
-        arena: &'arena Bump,
         si: &mut SurfaceInteraction<'scene>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bsdf: &mut Option<BSDF>,
         bssrdf: &mut Option<BSSRDF>,
-    ) where
-        'arena: 'scene,
-    {
+    ) {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
         }
 
-        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
+        let mut result = BSDF::new(&si.hit, &si.shading, None);
 
         // Evaluate textures for `MirrorMaterial` material and allocate BRDF.
         let r = self.kr.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !r.is_black() {
-            let fresnel = FresnelNoOp::alloc(arena);
-            let bxdf = SpecularReflection::alloc(arena, r, fresnel);
+            let fresnel = FresnelNoOp::new();
+            let bxdf = SpecularReflection::new(r, fresnel);
             result.add(bxdf);
         }
 

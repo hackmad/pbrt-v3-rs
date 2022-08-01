@@ -2,7 +2,6 @@
 
 #![allow(dead_code)]
 
-use bumpalo::Bump;
 use core::camera::*;
 use core::geometry::*;
 use core::integrator::*;
@@ -86,14 +85,12 @@ impl Integrator for PathIntegrator {
 
     /// Returns the incident radiance at the origin of a given ray.
     ///
-    /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
     fn li(
         &self,
-        arena: &Bump,
         ray: &mut Ray,
         scene: &Scene,
         sampler: &mut ArcSampler,
@@ -140,10 +137,9 @@ impl Integrator for PathIntegrator {
             let mut isect = isect.unwrap();
 
             // Compute scattering functions and skip over medium boundaries.
-            let mut bsdf: Option<&mut BSDF> = None;
-            let mut bssrdf: Option<&mut BSDF> = None;
+            let mut bsdf: Option<BSDF> = None;
+            let mut bssrdf: Option<BSDF> = None;
             isect.compute_scattering_functions(
-                arena,
                 ray,
                 true,
                 TransportMode::Radiance,
@@ -170,7 +166,7 @@ impl Integrator for PathIntegrator {
             let num_components = bsdf.num_components(BxDFType::all() & !BxDFType::BSDF_SPECULAR);
             if num_components > 0 {
                 let ld = beta
-                    * uniform_sample_one_light(&it, &Some(bsdf), scene, sampler, false, distrib);
+                    * uniform_sample_one_light(&it, Some(&bsdf), scene, sampler, false, distrib);
                 debug!("Sampled direct lighting Ld = {ld}");
                 assert!(ld.y() >= 0.0);
                 l += ld;
@@ -214,7 +210,16 @@ impl Integrator for PathIntegrator {
             *ray = it.spawn_ray(&wi);
 
             // Account for subsurface scattering, if applicable.
-            let bssrdf_bxdf = bssrdf.map(|b| b.bxdfs.get(0)).flatten();
+            let bssrdf_bxdf = bssrdf
+                .map(|b| b.bxdfs)
+                .map(|b| {
+                    if b.is_empty() {
+                        None
+                    } else {
+                        Some(b[0].clone())
+                    }
+                })
+                .flatten();
             if bssrdf_bxdf.is_some() && (flags & BxDFType::BSDF_TRANSMISSION) > BxDFType::BSDF_NONE
             {
                 match bssrdf_bxdf.unwrap() {
@@ -231,7 +236,7 @@ impl Integrator for PathIntegrator {
                             bsdf,
                             value: s,
                             pdf,
-                        } = bxdf.sample_s(arena, scene, sample_1d, &sample_2d);
+                        } = bxdf.sample_s(scene, sample_1d, &sample_2d);
                         debug_assert!(!beta.y().is_infinite());
                         if s.is_black() || pdf == 0.0 {
                             break;
@@ -247,7 +252,7 @@ impl Integrator for PathIntegrator {
                         l += beta
                             * uniform_sample_one_light(
                                 &pi,
-                                &bsdf,
+                                bsdf.as_ref(),
                                 scene,
                                 sampler,
                                 false,

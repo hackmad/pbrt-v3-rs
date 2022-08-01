@@ -5,11 +5,11 @@ use crate::geometry::*;
 use crate::pbrt::*;
 
 /// Models scattering properties in volumetric media.
-pub enum PhaseFunction<'arena> {
-    HenyeyGreenstein(&'arena mut HenyeyGreenstein),
+pub enum PhaseFunction {
+    HenyeyGreenstein(HenyeyGreenstein),
 }
 
-impl<'arena> PhaseFunction<'arena> {
+impl PhaseFunction {
     /// Returns the value of the phase function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.

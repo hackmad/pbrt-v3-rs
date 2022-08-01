@@ -5,16 +5,16 @@
 use super::*;
 use crate::material::*;
 use crate::microfacet::*;
-use bumpalo::Bump;
 use std::fmt;
 
 /// BTDF for modeling glossy transmissive surfaces using a microfacet distribution.
-pub struct MicrofacetTransmission<'arena> {
+#[derive(Clone)]
+pub struct MicrofacetTransmission {
     /// BxDF type.
     bxdf_type: BxDFType,
 
     /// Fresnel interface for dielectrics.
-    fresnel: &'arena mut Fresnel<'arena>,
+    fresnel: Fresnel,
 
     /// Spectrum used to scale the transmitted colour.
     t: Spectrum,
@@ -29,13 +29,12 @@ pub struct MicrofacetTransmission<'arena> {
     mode: TransportMode,
 
     /// The microfacet distribution model.
-    distribution: &'arena mut MicrofacetDistribution<'arena>,
+    distribution: MicrofacetDistribution,
 }
 
-impl<'arena> MicrofacetTransmission<'arena> {
-    /// Allocate a new instance of `MicrofacetTransmission`.
+impl MicrofacetTransmission {
+    /// Creates a new instance of `MicrofacetTransmission`.
     ///
-    /// * `arena`        - The arena for memory allocations.
     /// * `t`            - Spectrum used to scale the transmitted colour.
     /// * `distribution` - Microfacet distribution.
     /// * `eta_a`        - Index of refraction above the surface (same side as
@@ -44,17 +43,15 @@ impl<'arena> MicrofacetTransmission<'arena> {
     ///                    as surface normal).
     /// * `mode`         - Indicates whether incident ray started from a light
     ///                    source or from camera.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc(
-        arena: &'arena Bump,
+    pub fn new(
         t: Spectrum,
-        distribution: &'arena mut MicrofacetDistribution<'arena>,
+        distribution: MicrofacetDistribution,
         eta_a: Float,
         eta_b: Float,
         mode: TransportMode,
-    ) -> &'arena mut BxDF<'arena> {
-        let fresnel = FresnelDielectric::alloc(arena, eta_a, eta_b);
-        let model = arena.alloc(Self {
+    ) -> BxDF {
+        let fresnel = FresnelDielectric::new(eta_a, eta_b);
+        let model = Self {
             bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_GLOSSY,
             distribution,
             fresnel,
@@ -62,27 +59,8 @@ impl<'arena> MicrofacetTransmission<'arena> {
             eta_a,
             eta_b,
             mode,
-        });
-        arena.alloc(BxDF::MicrofacetTransmission(model))
-    }
-
-    /// Clone into a newly allocated a new instance of `MicrofacetTransmission`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let distribution = self.distribution.clone_alloc(arena);
-        let fresnel = self.fresnel.clone_alloc(arena);
-        let model = arena.alloc(Self {
-            bxdf_type: self.bxdf_type,
-            distribution,
-            fresnel,
-            t: self.t,
-            eta_a: self.eta_a,
-            eta_b: self.eta_b,
-            mode: self.mode,
-        });
-        arena.alloc(BxDF::MicrofacetTransmission(model))
+        };
+        BxDF::MicrofacetTransmission(model)
     }
 
     /// Returns the BxDF type.
@@ -199,7 +177,7 @@ impl<'arena> MicrofacetTransmission<'arena> {
     }
 }
 
-impl<'arena> fmt::Display for MicrofacetTransmission<'arena> {
+impl fmt::Display for MicrofacetTransmission {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

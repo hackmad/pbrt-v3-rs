@@ -5,7 +5,6 @@ use crate::geometry::*;
 use crate::pbrt::*;
 use crate::sampling::*;
 use crate::spectrum::*;
-use bumpalo::Bump;
 use std::fmt;
 
 mod bsdf;
@@ -53,43 +52,23 @@ pub use tabulated_bssrdf::*;
 /// The PBRT source code uses a `SeparableBSDFAdapter`. We bypass that by
 /// enumerating the BSSRDFs directly to avoid dealing with trait objects or
 /// nesting enumerations which will add more boiler plate code.
-pub enum BxDF<'arena> {
-    FourierBSDF(&'arena mut FourierBSDF),
-    FresnelBlend(&'arena mut FresnelBlend<'arena>),
-    FresnelSpecular(&'arena mut FresnelSpecular),
-    LambertianReflection(&'arena mut LambertianReflection),
-    LambertianTransmission(&'arena mut LambertianTransmission),
-    MicrofacetReflection(&'arena mut MicrofacetReflection<'arena>),
-    MicrofacetTransmission(&'arena mut MicrofacetTransmission<'arena>),
-    OrenNayar(&'arena mut OrenNayar),
-    ScaledBxDF(&'arena mut ScaledBxDF<'arena>),
-    SpecularReflection(&'arena mut SpecularReflection<'arena>),
-    SpecularTransmission(&'arena mut SpecularTransmission<'arena>),
-    TabulatedBSSRDF(&'arena mut TabulatedBSSRDF<'arena>),
+#[derive(Clone)]
+pub enum BxDF {
+    FourierBSDF(FourierBSDF),
+    FresnelBlend(FresnelBlend),
+    FresnelSpecular(FresnelSpecular),
+    LambertianReflection(LambertianReflection),
+    LambertianTransmission(LambertianTransmission),
+    MicrofacetReflection(MicrofacetReflection),
+    MicrofacetTransmission(MicrofacetTransmission),
+    OrenNayar(OrenNayar),
+    ScaledBxDF(ScaledBxDF),
+    SpecularReflection(SpecularReflection),
+    SpecularTransmission(SpecularTransmission),
+    TabulatedBSSRDF(TabulatedBSSRDF),
 }
 
-impl<'arena> BxDF<'arena> {
-    /// Clone into a newly allocated instance.
-    ///
-    /// * `arena` - The memory arena used for allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        match self {
-            BxDF::FourierBSDF(bxdf) => bxdf.clone_alloc(arena),
-            BxDF::FresnelBlend(bxdf) => bxdf.clone_alloc(arena),
-            BxDF::FresnelSpecular(bxdf) => bxdf.clone_alloc(arena),
-            BxDF::LambertianReflection(bxdf) => bxdf.clone_alloc(arena),
-            BxDF::LambertianTransmission(bxdf) => bxdf.clone_alloc(arena),
-            BxDF::MicrofacetReflection(bxdf) => bxdf.clone_alloc(arena),
-            BxDF::MicrofacetTransmission(bxdf) => bxdf.clone_alloc(arena),
-            BxDF::OrenNayar(bxdf) => bxdf.clone_alloc(arena),
-            BxDF::ScaledBxDF(bxdf) => bxdf.clone_alloc(arena),
-            BxDF::SpecularReflection(bxdf) => bxdf.clone_alloc(arena),
-            BxDF::SpecularTransmission(bxdf) => bxdf.clone_alloc(arena),
-            BxDF::TabulatedBSSRDF(bxdf) => bxdf.clone_alloc(arena),
-        }
-    }
-
+impl BxDF {
     /// Returns the BxDF type.
     pub fn get_type(&self) -> BxDFType {
         match self {
@@ -245,7 +224,7 @@ impl<'arena> BxDF<'arena> {
     }
 }
 
-impl<'arena> fmt::Display for BxDF<'arena> {
+impl fmt::Display for BxDF {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

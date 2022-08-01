@@ -8,6 +8,5 @@ edition = "2021"
 core = { path = "../core" }
 textures = { path = "../textures" }
 
-bumpalo = "3.9.1"
 lazy_static = "1.4.0"
 log = "0.4.14"

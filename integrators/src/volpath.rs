@@ -2,7 +2,6 @@
 
 #![allow(dead_code)]
 
-use bumpalo::Bump;
 use core::camera::*;
 use core::geometry::*;
 use core::integrator::*;
@@ -87,14 +86,12 @@ impl Integrator for VolPathIntegrator {
 
     /// Returns the incident radiance at the origin of a given ray.
     ///
-    /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
     fn li(
         &self,
-        arena: &Bump,
         ray: &mut Ray,
         scene: &Scene,
         sampler: &mut ArcSampler,
@@ -122,7 +119,7 @@ impl Integrator for VolPathIntegrator {
 
             // Sample the participating medium, if present.
             let mi = if let Some(medium) = ray.medium.as_ref() {
-                let (s, mut mi) = medium.sample(arena, &ray, sampler);
+                let (s, mut mi) = medium.sample(&ray, sampler);
                 if let Some(m) = mi.as_mut() {
                     let inside = Some(Arc::clone(medium));
                     let outside = Some(Arc::clone(medium));
@@ -149,7 +146,7 @@ impl Integrator for VolPathIntegrator {
                 let distrib = light_distribution.lookup(&mi.hit.p);
 
                 let it = Interaction::Medium { mi };
-                let l_sample = uniform_sample_one_light(&it, &None, scene, sampler, true, distrib);
+                let l_sample = uniform_sample_one_light(&it, None, scene, sampler, true, distrib);
                 l += beta * l_sample;
 
                 let sample_2d = {
@@ -191,10 +188,9 @@ impl Integrator for VolPathIntegrator {
                 let mut isect = isect.unwrap();
 
                 // Compute scattering functions and skip over medium boundaries.
-                let mut bsdf: Option<&mut BSDF> = None;
-                let mut bssrdf: Option<&mut BSDF> = None;
+                let mut bsdf: Option<BSDF> = None;
+                let mut bssrdf: Option<BSDF> = None;
                 isect.compute_scattering_functions(
-                    arena,
                     ray,
                     true,
                     TransportMode::Radiance,
@@ -219,7 +215,7 @@ impl Integrator for VolPathIntegrator {
                 // Sample illumination from lights to find path contribution. (But
                 // skip this for perfectly specular BSDFs).
                 let ld = beta
-                    * uniform_sample_one_light(&it, &Some(bsdf), scene, sampler, true, distrib);
+                    * uniform_sample_one_light(&it, Some(&bsdf), scene, sampler, true, distrib);
                 debug!("Sampled direct lighting Ld = {ld}");
                 assert!(ld.y() >= 0.0);
                 l += ld;
@@ -262,7 +258,16 @@ impl Integrator for VolPathIntegrator {
                 *ray = it.spawn_ray(&wi);
 
                 // Account for subsurface scattering, if applicable.
-                let bssrdf_bxdf = bssrdf.map(|b| b.bxdfs.get(0)).flatten();
+                let bssrdf_bxdf = bssrdf
+                    .map(|b| b.bxdfs)
+                    .map(|b| {
+                        if b.is_empty() {
+                            None
+                        } else {
+                            Some(b[0].clone())
+                        }
+                    })
+                    .flatten();
                 if bssrdf_bxdf.is_some()
                     && (flags & BxDFType::BSDF_TRANSMISSION) > BxDFType::BSDF_NONE
                 {
@@ -280,7 +285,7 @@ impl Integrator for VolPathIntegrator {
                                 bsdf,
                                 value: s,
                                 pdf,
-                            } = bxdf.sample_s(arena, scene, sample_1d, &sample_2d);
+                            } = bxdf.sample_s(scene, sample_1d, &sample_2d);
                             debug_assert!(!beta.y().is_infinite());
                             if s.is_black() || pdf == 0.0 {
                                 break;
@@ -296,7 +301,7 @@ impl Integrator for VolPathIntegrator {
                             l += beta
                                 * uniform_sample_one_light(
                                     &pi,
-                                    &bsdf,
+                                    bsdf.as_ref(),
                                     scene,
                                     sampler,
                                     true,

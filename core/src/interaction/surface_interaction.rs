@@ -8,7 +8,6 @@ use crate::pbrt::*;
 use crate::primitive::*;
 use crate::reflection::*;
 use crate::spectrum::*;
-use bumpalo::Bump;
 use std::fmt;
 use std::sync::Arc;
 
@@ -133,7 +132,6 @@ impl<'scene> SurfaceInteraction<'scene> {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the primtive's surface.
     ///
-    /// * `arena`                - The arena for memory allocations.
     /// * `ray`                  - The ray.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -142,27 +140,17 @@ impl<'scene> SurfaceInteraction<'scene> {
     ///                            are available.
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
-    pub fn compute_scattering_functions<'arena>(
+    pub fn compute_scattering_functions(
         &mut self,
-        arena: &'arena Bump,
         ray: &Ray,
         allow_multiple_lobes: bool,
         mode: TransportMode,
-        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
-        bssrdf: &mut Option<&'arena mut BSDF<'scene>>,
-    ) where
-        'arena: 'scene,
-    {
+        bsdf: &mut Option<BSDF>,
+        bssrdf: &mut Option<BSDF>,
+    ) {
         self.compute_differentials(ray);
         if let Some(primitive) = self.primitive {
-            primitive.compute_scattering_functions(
-                arena,
-                self,
-                mode,
-                allow_multiple_lobes,
-                bsdf,
-                bssrdf,
-            );
+            primitive.compute_scattering_functions(self, mode, allow_multiple_lobes, bsdf, bssrdf);
         }
     }
 

@@ -3,7 +3,6 @@
 use super::PhaseFunction;
 use crate::geometry::*;
 use crate::pbrt::*;
-use bumpalo::Bump;
 
 /// Henyey-Greenstein phase function.
 pub struct HenyeyGreenstein {
@@ -17,10 +16,9 @@ impl HenyeyGreenstein {
     /// Returns a new `HenyeyGreenstein`.
     ///
     /// * `g` - The asymmetry parameter.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc<'arena>(arena: &'arena Bump, g: Float) -> &'arena mut PhaseFunction {
-        let f = arena.alloc(Self { g });
-        arena.alloc(PhaseFunction::HenyeyGreenstein(f))
+    pub fn new(g: Float) -> PhaseFunction {
+        let f = Self { g };
+        PhaseFunction::HenyeyGreenstein(f)
     }
 
     /// Returns the value of the phase function for the given pair of directions.

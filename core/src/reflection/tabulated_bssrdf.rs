@@ -9,18 +9,17 @@ use crate::interpolation::*;
 use crate::material::*;
 use crate::medium::phase_hg;
 use crate::scene::*;
-use bumpalo::Bump;
 use std::fmt;
 use std::sync::Arc;
 
-/// Result of importance sampling the BSSRDF in `TabulatedBSSRDF<'arena>::sample_s()`.
+/// Result of importance sampling the BSSRDF in `TabulatedBSSRDF::sample_s()`.
 #[derive(Default)]
-pub struct SampleS<'scene, 'arena> {
+pub struct SampleS<'scene> {
     /// Surface interaction if any.
     pub si: Option<SurfaceInteraction<'scene>>,
 
     /// BSDF.
-    pub bsdf: Option<&'arena mut BSDF<'arena>>,
+    pub bsdf: Option<BSDF>,
 
     /// Sample value.
     pub value: Spectrum,
@@ -29,7 +28,7 @@ pub struct SampleS<'scene, 'arena> {
     pub pdf: Float,
 }
 
-impl<'scene, 'arena> SampleS<'scene, 'arena> {
+impl<'scene> SampleS<'scene> {
     /// Create a new instance of `SampleS<'scene>`.
     ///
     /// * `si`    - Surface interaction if any.
@@ -38,7 +37,7 @@ impl<'scene, 'arena> SampleS<'scene, 'arena> {
     /// * `pdf`   - PDF.
     pub fn new(
         si: Option<SurfaceInteraction<'scene>>,
-        bsdf: Option<&'arena mut BSDF<'arena>>,
+        bsdf: Option<BSDF>,
         value: Spectrum,
         pdf: Float,
     ) -> Self {
@@ -51,8 +50,7 @@ impl<'scene, 'arena> SampleS<'scene, 'arena> {
     }
 }
 
-/// Result of importance sampling technique per wavelength in
-/// `TabulatedBSSRDF<'arena>::sample_sp()`.
+/// Result of importance sampling technique per wavelength in `TabulatedBSSRDF::sample_sp()`.
 #[derive(Default)]
 pub struct SampleSp<'scene> {
     /// Surface interaction if any.
@@ -98,7 +96,8 @@ impl SubsurfaceScatteringProps {
 
 /// A tabulated BSSRDF representation that can handle a wide range of scattering
 /// profiles including measured real-world BSSRDFs.
-pub struct TabulatedBSSRDF<'arena> {
+#[derive(Clone)]
+pub struct TabulatedBSSRDF {
     /// BxDF type.
     bxdf_type: BxDFType,
 
@@ -114,13 +113,12 @@ pub struct TabulatedBSSRDF<'arena> {
     rho: Spectrum,
 
     /// Separable BSSRDF.
-    bssrdf: &'arena mut SeparableBSSRDF<'arena>,
+    bssrdf: SeparableBSSRDF,
 }
 
-impl<'arena> TabulatedBSSRDF<'arena> {
-    /// Allocate a new instance of `TabulatedBSSRDF`.
+impl TabulatedBSSRDF {
+    /// Creates a new instance of `TabulatedBSSRDF`.
     ///
-    /// * `arena`    - The arena for memory allocations.
     /// * `po`       - Current outgoing surface interaction.
     /// * `eta`      - Index of refraction of the scattering medium.
     /// * `material` - The material.
@@ -128,9 +126,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
     /// * `sigma_a`  - Absorption coefficient `σa`.
     /// * `sigma_s`  - Scattering coefficient `σs`.
     /// * `table`    - Detailed BSSRDF information.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc(
-        arena: &'arena Bump,
+    pub fn new(
         po: &SurfaceInteraction,
         eta: Float,
         material: ArcMaterial,
@@ -138,7 +134,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
         sigma_a: Spectrum,
         sigma_s: Spectrum,
         table: Arc<BSSRDFTable>,
-    ) -> &'arena mut BxDF<'arena> {
+    ) -> BxDF {
         let sigma_t = sigma_a + sigma_s;
 
         let mut rho = Spectrum::ZERO;
@@ -150,33 +146,16 @@ impl<'arena> TabulatedBSSRDF<'arena> {
             };
         }
 
-        let bssrdf = SeparableBSSRDF::alloc(arena, po, eta, material, mode);
+        let bssrdf = SeparableBSSRDF::new(po, eta, material, mode);
 
-        let model = arena.alloc(Self {
+        let model = Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_DIFFUSE,
             table,
             sigma_t,
             rho,
             bssrdf,
-        });
-        arena.alloc(BxDF::TabulatedBSSRDF(model))
-    }
-
-    /// Clone into a newly allocated a new instance of `TabulatedBSSRDF`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let table = self.table.clone();
-        let bssrdf = self.bssrdf.clone_alloc(arena);
-        let model = arena.alloc(Self {
-            bxdf_type: self.bxdf_type,
-            table,
-            sigma_t: self.sigma_t,
-            rho: self.rho,
-            bssrdf,
-        });
-        arena.alloc(BxDF::TabulatedBSSRDF(model))
+        };
+        BxDF::TabulatedBSSRDF(model)
     }
 
     /// Returns the BxDF type.
@@ -278,29 +257,25 @@ impl<'arena> TabulatedBSSRDF<'arena> {
     /// Returns the value of the BSSRDF, the surface position where a ray
     /// re-emerges following internal scattering and probability density function.
     ///
-    /// * `arena` - The arena for memory allocations.
     /// * `scene` - The scene.
     /// * `u1`    - Sample values for Monte Carlo.
     /// * `u2`    - Sample values for Monte Carlo.
     pub fn sample_s<'scene>(
         &self,
-        arena: &'arena Bump,
         scene: &'scene Scene,
         u1: Float,
         u2: &Point2f,
-    ) -> SampleS<'scene, 'arena>
-    where
-        'arena: 'scene,
-    {
+    ) -> SampleS<'scene> {
         let SampleSp { si, value: sp, pdf } = self.sample_sp(scene, u1, u2);
         let mut si_result: Option<SurfaceInteraction<'scene>> = None;
-        let mut bsdf_result: Option<&'arena mut BSDF> = None;
+        let mut bsdf_result: Option<BSDF> = None;
 
         if let Some(mut si) = si {
             if !sp.is_black() {
                 // Initialize material model at sampled surface interaction.
-                let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, Some(self.bssrdf.eta));
-                bsdf.add(self.clone_alloc(arena));
+                let mut bsdf = BSDF::new(&si.hit, &si.shading, Some(self.bssrdf.eta));
+                let bxdf = BxDF::TabulatedBSSRDF(self.clone());
+                bsdf.add(bxdf);
                 bsdf_result = Some(bsdf);
 
                 si.hit.wo = Vector3f::from(si.shading.n);
@@ -542,7 +517,7 @@ impl<'arena> TabulatedBSSRDF<'arena> {
     }
 }
 
-impl<'arena> fmt::Display for TabulatedBSSRDF<'arena> {
+impl fmt::Display for TabulatedBSSRDF {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

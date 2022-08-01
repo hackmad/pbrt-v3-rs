@@ -1,6 +1,5 @@
 //! Metal Material
 
-use bumpalo::Bump;
 use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
@@ -88,7 +87,6 @@ impl Material for MetalMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -97,23 +95,20 @@ impl Material for MetalMaterial {
     ///                            are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
-    fn compute_scattering_functions<'scene, 'arena>(
+    fn compute_scattering_functions<'scene>(
         &self,
-        arena: &'arena Bump,
         si: &mut SurfaceInteraction<'scene>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bsdf: &mut Option<BSDF>,
         bssrdf: &mut Option<BSSRDF>,
-    ) where
-        'arena: 'scene,
-    {
+    ) {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
         }
 
-        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
+        let mut result = BSDF::new(&si.hit, &si.shading, None);
 
         // Evaluate textures for `MetalMaterial` material and allocate BRDF.
         let mut urough = self.u_roughness.as_ref().map_or_else(
@@ -131,19 +126,13 @@ impl Material for MetalMaterial {
             vrough = TrowbridgeReitzDistribution::roughness_to_alpha(vrough);
         }
 
-        let frmf = FresnelConductor::alloc(
-            arena,
+        let frmf = FresnelConductor::new(
             Spectrum::ONE,
             self.index.evaluate(&si.hit, &si.uv, &si.der),
             self.k.evaluate(&si.hit, &si.uv, &si.der),
         );
-        let distrib = TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
-        result.add(MicrofacetReflection::alloc(
-            arena,
-            Spectrum::ONE,
-            distrib,
-            frmf,
-        ));
+        let distrib = TrowbridgeReitzDistribution::new(urough, vrough, true);
+        result.add(MicrofacetReflection::new(Spectrum::ONE, distrib, frmf));
 
         *bsdf = Some(result);
         *bssrdf = None;

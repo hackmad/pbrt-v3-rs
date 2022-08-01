@@ -1,6 +1,5 @@
 //! Substrate Material
 
-use bumpalo::Bump;
 use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
@@ -81,7 +80,6 @@ impl Material for SubstrateMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -90,23 +88,20 @@ impl Material for SubstrateMaterial {
     ///                            are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
-    fn compute_scattering_functions<'scene, 'arena>(
+    fn compute_scattering_functions<'scene>(
         &self,
-        arena: &'arena Bump,
         si: &mut SurfaceInteraction<'scene>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bsdf: &mut Option<BSDF>,
         bssrdf: &mut Option<BSSRDF>,
-    ) where
-        'arena: 'scene,
-    {
+    ) {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
         }
 
-        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
+        let mut result = BSDF::new(&si.hit, &si.shading, None);
 
         // Evaluate textures for `SubstrateMaterial` material and allocate BRDF.
         let d = self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
@@ -120,8 +115,8 @@ impl Material for SubstrateMaterial {
                 urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
                 vrough = TrowbridgeReitzDistribution::roughness_to_alpha(vrough);
             }
-            let distrib = TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
-            result.add(FresnelBlend::alloc(arena, d, s, distrib));
+            let distrib = TrowbridgeReitzDistribution::new(urough, vrough, true);
+            result.add(FresnelBlend::new(d, s, distrib));
         }
 
         *bsdf = Some(result);

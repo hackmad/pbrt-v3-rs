@@ -11,7 +11,6 @@ use crate::reflection::*;
 use crate::sampler::*;
 use crate::scene::*;
 use crate::spectrum::*;
-use bumpalo::Bump;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::sync::Arc;
@@ -69,7 +68,6 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
     /// Trace rays for specular reflection.
     ///
-    /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `isect`   - The surface interaction.
     /// * `bsdf`    - The BSDF at the surface interaction.
@@ -78,15 +76,14 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// * `depth`   - The recursive depth.
     fn specular_reflect(
         &self,
-        arena: &Bump,
         ray: &mut Ray,
         isect: &SurfaceInteraction,
-        bsdf: &Option<&mut BSDF>,
+        bsdf: &Option<BSDF>,
         scene: &Scene,
         sampler: &mut ArcSampler,
         depth: usize,
     ) -> Spectrum {
-        if let Some(bsdf) = bsdf.as_deref() {
+        if let Some(bsdf) = bsdf.as_ref() {
             // Compute specular reflection direction `wi` and BSDF value.
             let wo = isect.hit.wo;
 
@@ -129,8 +126,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     ));
                 }
 
-                return f * self.li(arena, &mut rd, scene, sampler, depth + 1) * wi.abs_dot(&ns)
-                    / pdf;
+                return f * self.li(&mut rd, scene, sampler, depth + 1) * wi.abs_dot(&ns) / pdf;
             }
         }
 
@@ -139,7 +135,6 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
     /// Trace rays for specular refraction.
     ///
-    /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `isect`   - The surface interaction.
     /// * `bsdf`    - The BSDF at the surface interaction.
@@ -148,15 +143,14 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// * `depth`   - The recursive depth.
     fn specular_transmit(
         &self,
-        arena: &Bump,
         ray: &mut Ray,
         isect: &SurfaceInteraction,
-        bsdf: &Option<&mut BSDF>,
+        bsdf: &Option<BSDF>,
         scene: &Scene,
         sampler: &mut ArcSampler,
         depth: usize,
     ) -> Spectrum {
-        if let Some(bsdf) = bsdf.as_deref() {
+        if let Some(bsdf) = bsdf.as_ref() {
             let wo = isect.hit.wo;
             let p = isect.hit.p;
 
@@ -255,8 +249,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     ));
                 }
 
-                return f * self.li(arena, &mut rd, scene, sampler, depth + 1) * wi.abs_dot(&ns)
-                    / pdf;
+                return f * self.li(&mut rd, scene, sampler, depth + 1) * wi.abs_dot(&ns) / pdf;
             }
         }
 
@@ -365,29 +358,6 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
         info!("Starting image tile ({tile_x}, {tile_y}) -> {tile_bounds}");
 
-        /*
-           We could use threadlocals here so the bump allocator is not created
-           and dropped every time for each tile. This way it will maintain one
-           per thread in the threadpool:
-
-           thread_local! {
-               static ARENA: RefCell<Bump> = RefCell::new(Bump::with_capacity(262144));
-           }
-           ARENA.with(|arena| {
-               let mut arena = arena.borrow_mut();
-               ...
-               ...
-               arena.reset()
-               film_tile
-           })
-
-           However, it keeps allocated chunks around for re-use so over time the
-           process will show memory increasing and doesn't actually have any
-           performance benefits for render times. Stack allocating the arena shows
-           the process uses lower memory over time as the drop frees up memory.
-        */
-        let mut arena = Bump::with_capacity(262144); // 256 KiB
-
         let mut film_tile = camera_data.film.get_film_tile(tile_bounds);
 
         // Loop over pixels in tile to render them.
@@ -414,7 +384,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                 // Evaluate radiance along camera ray.
                 let mut l = Spectrum::new(0.0);
                 if ray_weight > 0.0 {
-                    l = self.li(&arena, &mut ray, scene, &mut tile_sampler, 0);
+                    l = self.li(&mut ray, scene, &mut tile_sampler, 0);
                 }
 
                 // Issue warning if unexpected radiance value returned.
@@ -458,9 +428,6 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         }
 
         info!("Finished image tile ({tile_x}, {tile_y}) -> {tile_bounds}");
-
-        // Free memory arena.
-        arena.reset();
 
         film_tile
     }

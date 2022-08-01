@@ -1,56 +1,33 @@
 //! Scaled BxDF
 
 use super::*;
-use bumpalo::Bump;
 use std::fmt;
 
 /// BxDF scaling adapter scales a BxDF's contribution with a `Spectrum`.
-pub struct ScaledBxDF<'arena> {
+#[derive(Clone)]
+pub struct ScaledBxDF {
     /// BxDF type.
     bxdf_type: BxDFType,
 
     /// The BxDF to scale.
-    ///
-    /// NOTE: This is `&'arena mut BxDF` because it is allocated from a memory
-    /// arena (bumpalo::Bump).
-    bxdf: &'arena mut BxDF<'arena>,
+    bxdf: Box<BxDF>,
 
     /// Scaling value.
     scale: Spectrum,
 }
 
-impl<'arena> ScaledBxDF<'arena> {
-    /// Allocate a new instance of `ScaledBxDF`.
+impl ScaledBxDF {
+    /// Creaates a new instance of `ScaledBxDF`.
     ///
-    /// * `arena` - The arena for memory allocations.
     /// * `bxdf`  - The BxDF to scale.
     /// * `scale` - Scaling value.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc(
-        arena: &'arena Bump,
-        bxdf: &'arena mut BxDF<'arena>,
-        scale: Spectrum,
-    ) -> &'arena mut BxDF<'arena> {
-        let model = arena.alloc(Self {
+    pub fn new(bxdf: BxDF, scale: Spectrum) -> BxDF {
+        let model = Self {
             bxdf_type: bxdf.get_type(),
-            bxdf,
+            bxdf: Box::new(bxdf),
             scale,
-        });
-        arena.alloc(BxDF::ScaledBxDF(model))
-    }
-
-    /// Clone into a newly allocated a new instance of `ScaledBxDF`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let bxdf = self.bxdf.clone_alloc(arena);
-        let model = arena.alloc(Self {
-            bxdf_type: self.bxdf_type,
-            bxdf,
-            scale: self.scale,
-        });
-        arena.alloc(BxDF::ScaledBxDF(model))
+        };
+        BxDF::ScaledBxDF(model)
     }
 
     /// Returns the BxDF type.
@@ -100,7 +77,7 @@ impl<'arena> ScaledBxDF<'arena> {
     }
 }
 
-impl<'arena> fmt::Display for ScaledBxDF<'arena> {
+impl fmt::Display for ScaledBxDF {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

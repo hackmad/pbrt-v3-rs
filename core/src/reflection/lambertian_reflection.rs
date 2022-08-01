@@ -3,11 +3,11 @@
 #![allow(dead_code)]
 
 use super::*;
-use bumpalo::Bump;
 use std::fmt;
 
 /// BRDF for the Lambertian model for perfect diffuse surfaces that scatters
 /// incident illumination equally in all directions.
+#[derive(Clone)]
 pub struct LambertianReflection {
     /// BxDF type.
     bxdf_type: BxDFType,
@@ -18,30 +18,16 @@ pub struct LambertianReflection {
 }
 
 impl LambertianReflection {
-    /// Allocate a new instance of `LambertianReflection`.
+    /// Creates a new instance of `LambertianReflection`.
     ///
-    /// * `arena` - The arena for memory allocations.
     /// * `r`     - Reflectance spectrum which gives the fraction of incident
     ///             light that is scattered.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc<'arena>(arena: &'arena Bump, r: Spectrum) -> &'arena mut BxDF {
-        let model = arena.alloc(Self {
+    pub fn new(r: Spectrum) -> BxDF {
+        let model = Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_DIFFUSE,
             r,
-        });
-        arena.alloc(BxDF::LambertianReflection(model))
-    }
-
-    /// Clone into a newly allocated a new instance of `LambertianReflection`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let model = arena.alloc(Self {
-            bxdf_type: self.bxdf_type,
-            r: self.r,
-        });
-        arena.alloc(BxDF::LambertianReflection(model))
+        };
+        BxDF::LambertianReflection(model)
     }
 
     /// Returns the BxDF type.

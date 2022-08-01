@@ -2,16 +2,16 @@
 
 use super::*;
 use crate::material::*;
-use bumpalo::Bump;
 use std::fmt;
 
 /// BTDF for physically plausible specular transmission using Fresnel interface.
-pub struct SpecularTransmission<'arena> {
+#[derive(Clone)]
+pub struct SpecularTransmission {
     /// BxDF type.
     bxdf_type: BxDFType,
 
     /// Fresnel interface for dielectrics and conductors.
-    fresnel: &'arena mut Fresnel<'arena>,
+    fresnel: Fresnel,
 
     /// Spectrum used to scale the transmitted colour.
     t: Spectrum,
@@ -26,10 +26,9 @@ pub struct SpecularTransmission<'arena> {
     mode: TransportMode,
 }
 
-impl<'arena> SpecularTransmission<'arena> {
-    /// Allocate a new instance of `SpecularTransmission`.
+impl SpecularTransmission {
+    /// Creates a new instance of `SpecularTransmission`.
     ///
-    /// * `arena`  - The arena for memory allocations.
     /// * `t`      - Spectrum used to scale the transmitted colour.
     /// * `eta_a`  - Index of refraction above the surface (same side as
     ///              surface normal).
@@ -37,41 +36,17 @@ impl<'arena> SpecularTransmission<'arena> {
     ///              surface normal).
     /// * `mode`   - Indicates whether incident ray started from a light
     ///              source or from camera.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc(
-        arena: &'arena Bump,
-        t: Spectrum,
-        eta_a: Float,
-        eta_b: Float,
-        mode: TransportMode,
-    ) -> &'arena mut BxDF<'arena> {
-        let fresnel = FresnelDielectric::alloc(arena, eta_a, eta_b);
-        let model = arena.alloc(Self {
+    pub fn new(t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> BxDF {
+        let fresnel = FresnelDielectric::new(eta_a, eta_b);
+        let model = Self {
             bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_SPECULAR,
             fresnel,
             t,
             eta_a,
             eta_b,
             mode,
-        });
-        arena.alloc(BxDF::SpecularTransmission(model))
-    }
-
-    /// Clone into a newly allocated a new instance of `SpecularTransmission`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let fresnel = self.fresnel.clone_alloc(arena);
-        let model = arena.alloc(Self {
-            bxdf_type: self.bxdf_type,
-            fresnel,
-            t: self.t,
-            eta_a: self.eta_a,
-            eta_b: self.eta_b,
-            mode: self.mode,
-        });
-        arena.alloc(BxDF::SpecularTransmission(model))
+        };
+        BxDF::SpecularTransmission(model)
     }
 
     /// Returns the BxDF type.
@@ -130,7 +105,7 @@ impl<'arena> SpecularTransmission<'arena> {
     }
 }
 
-impl<'arena> fmt::Display for SpecularTransmission<'arena> {
+impl fmt::Display for SpecularTransmission {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

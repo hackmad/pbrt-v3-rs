@@ -5,7 +5,6 @@ use crate::geometry::*;
 use crate::interaction::MediumInteraction;
 use crate::sampler::*;
 use crate::spectrum::*;
-use bumpalo::Bump;
 use std::sync::Arc;
 
 mod henyey_greenstein;
@@ -34,15 +33,9 @@ pub trait Medium {
     /// NOTE: Calling code will need to assign this medium as we cannot pass
     /// back and `ArcMedium` out of here for `Self`.
     ///
-    /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
-    fn sample<'arena>(
-        &self,
-        arena: &'arena Bump,
-        ray: &Ray,
-        sampler: &mut ArcSampler,
-    ) -> (Spectrum, Option<MediumInteraction<'arena>>);
+    fn sample(&self, ray: &Ray, sampler: &mut ArcSampler) -> (Spectrum, Option<MediumInteraction>);
 }
 
 /// Atomic reference counted `Medium`.

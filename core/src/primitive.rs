@@ -5,7 +5,6 @@ use crate::interaction::*;
 use crate::light::*;
 use crate::material::*;
 use crate::reflection::*;
-use bumpalo::Bump;
 use std::sync::Arc;
 
 /// Primitive trait provide common behavior.
@@ -42,11 +41,6 @@ pub trait Primitive {
     ///
     /// NOTES:
     ///
-    /// The `'arena: 'scene` bound doesn't make sense. The `Bump` allocator lives
-    /// in the rendering loop for each tile, `SamplerIntegrator::render_tile()`.
-    /// So it will not outlive the `Scene`. But somehow it satisfies Rust compiler.
-    /// Need to understand this better.
-    ///
     /// `Material::compute_scattering_functions()` mutates `SurfaceInteraction`
     /// properties during bump mapping and also returns BSDF and BSSRDF with
     /// different lifetimes. Easier to use shared mutable refereces than return
@@ -56,7 +50,6 @@ pub trait Primitive {
     /// enumerating the BSSRDFs in `BxDF` to avoid dealing with trait objects or
     /// nesting / enumerations which will add more boiler plate code.
     ///
-    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -65,16 +58,14 @@ pub trait Primitive {
     ///                            are available.
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
-    fn compute_scattering_functions<'scene, 'arena>(
+    fn compute_scattering_functions<'scene>(
         &self,
-        arena: &'arena Bump,
         si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
-        bssrdf: &mut Option<&'arena mut BSDF<'scene>>,
-    ) where
-        'arena: 'scene;
+        bsdf: &mut Option<BSDF>,
+        bssrdf: &mut Option<BSDF>,
+    );
 }
 
 /// Atomic referenced counted `Primitive`.
