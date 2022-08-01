@@ -10,7 +10,9 @@ use bumpalo::Bump;
 use std::fmt;
 use std::sync::Arc;
 
-// Light transport mode enumeration.
+// Light transport mode enumeration used to inform such non-symmetric BSDFs about
+// the transported quantity so that they can correctly switch between the adjoint
+// and non-adjoint forms.
 #[derive(Copy, Clone, PartialEq)]
 pub enum TransportMode {
     /// Indicates incident ray that intersected a point started at the camera.
