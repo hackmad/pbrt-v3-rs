@@ -154,7 +154,7 @@ impl Shape for Disk {
             dndu,
             dndv,
             ray.time,
-            Arc::clone(&self.data),
+            Some(Arc::clone(&self.data)),
             0,
         );
         self.data

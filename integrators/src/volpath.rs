@@ -358,7 +358,7 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for VolPathIntegrator {
     fn from(p: (&ParamSet, ArcSampler, ArcCamera)) -> Self {
         let (params, sampler, camera) = p;
 
-        let max_depth = params.find_one_int("max_depth", 5) as usize;
+        let max_depth = params.find_one_int("maxdepth", 5) as usize;
 
         let pb = params.find_int("pixelbounds");
         let np = pb.len();

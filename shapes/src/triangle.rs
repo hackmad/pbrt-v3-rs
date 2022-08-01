@@ -619,7 +619,7 @@ impl Shape for Triangle {
                     Normal3f::ZERO,
                     Normal3f::ZERO,
                     r.time,
-                    Arc::clone(&self.data),
+                    Some(Arc::clone(&self.data)),
                     0,
                 );
 
@@ -640,7 +640,7 @@ impl Shape for Triangle {
             Normal3f::ZERO,
             Normal3f::ZERO,
             r.time,
-            Arc::clone(&self.data),
+            Some(Arc::clone(&self.data)),
             self.face_index,
         );
 
@@ -908,7 +908,7 @@ impl Shape for Triangle {
                 Normal3f::ZERO,
                 Normal3f::ZERO,
                 r.time,
-                Arc::clone(&self.data),
+                Some(Arc::clone(&self.data)),
                 0,
             );
 

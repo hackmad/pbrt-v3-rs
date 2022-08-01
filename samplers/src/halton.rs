@@ -61,8 +61,8 @@ impl HaltonSampler {
     /// * `samples_per_pixel` - Number of samples per pixel.
     /// * `sample_bounds`     - Sample bounds.
     /// * `sample_at_center`  - Indicates whether or not to jitter each sample's
-    ///                         center point.
-    fn new(samples_per_pixel: usize, sample_bounds: Bounds2i, sample_at_center: bool) -> Self {
+    ///                         center point (default to false).
+    pub fn new(samples_per_pixel: usize, sample_bounds: Bounds2i, sample_at_center: bool) -> Self {
         // Find radical inverse, base scales and exponents that cover sampling area.
         let res = sample_bounds.p_max - sample_bounds.p_min;
         let mut base_scales = Point2::<u64>::default();

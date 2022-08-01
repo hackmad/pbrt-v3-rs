@@ -254,7 +254,7 @@ impl Shape for Sphere {
             dndu,
             dndv,
             ray.time,
-            Arc::clone(&self.data),
+            Some(Arc::clone(&self.data)),
             0,
         );
 
