@@ -130,6 +130,25 @@ impl<'arena> BSDF<'arena> {
         })
     }
 
+    /// Clone into a newly allocated instance.
+    ///
+    /// * `arena` - The memory arena used for allocations.
+    #[allow(clippy::mut_from_ref)]
+    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut Self {
+        let mut bxdfs = BumpVec::with_capacity_in(self.bxdfs.len(), arena);
+        for bxdf in self.bxdfs.iter() {
+            bxdfs.push(bxdf.clone_alloc(arena));
+        }
+        arena.alloc(Self {
+            eta: self.eta,
+            ns: self.ns,
+            ng: self.ng,
+            ss: self.ss,
+            ts: self.ts,
+            bxdfs,
+        })
+    }
+
     /// Add a `BxDF`.
     ///
     /// * `bxdf` - The `BxDF`.
