@@ -1,6 +1,5 @@
 //! Grid Density Media
 
-use bumpalo::Bump;
 use core::geometry::*;
 use core::interaction::MediumInteraction;
 use core::medium::HenyeyGreenstein;
@@ -207,15 +206,9 @@ impl Medium for GridDensityMedium {
     /// NOTE: Calling code will need to assign this medium as we cannot pass
     /// back and `ArcMedium` out of here for `Self`.
     ///
-    /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
-    fn sample<'arena>(
-        &self,
-        arena: &'arena Bump,
-        ray: &Ray,
-        sampler: &mut ArcSampler,
-    ) -> (Spectrum, Option<MediumInteraction<'arena>>) {
+    fn sample(&self, ray: &Ray, sampler: &mut ArcSampler) -> (Spectrum, Option<MediumInteraction>) {
         let r = Ray::new(
             ray.o,
             ray.d.normalize(),
@@ -239,7 +232,7 @@ impl Medium for GridDensityMedium {
 
                 if self.density(&ray_medium.at(t)) * self.inv_max_density > sampler.get_1d() {
                     // Populate `mi` with medium interaction information and return.
-                    let phase = HenyeyGreenstein::alloc(arena, self.g);
+                    let phase = HenyeyGreenstein::new(self.g);
                     let mi = MediumInteraction::new(ray.at(t), -ray.d, ray.time, None, phase);
                     return (self.sigma_s / self.sigma_t, Some(mi));
                 }

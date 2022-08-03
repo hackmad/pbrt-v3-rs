@@ -153,7 +153,7 @@ impl Shape for Hyperboloid {
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect<'scene, 'arena>(
+    fn intersect<'scene>(
         &self,
         r: &Ray,
         _test_alpha_texture: bool,

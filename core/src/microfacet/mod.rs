@@ -4,7 +4,6 @@
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::reflection::*;
-use bumpalo::Bump;
 use std::fmt;
 
 mod beckmann;
@@ -15,23 +14,13 @@ pub use beckmann::*;
 pub use trowbridge_reitz::*;
 
 /// Interface for microfacet distribution models.
-pub enum MicrofacetDistribution<'arena> {
-    Beckmann(&'arena mut BeckmannDistribution),
-    TrowBridgeReitz(&'arena mut TrowbridgeReitzDistribution),
+#[derive(Clone)]
+pub enum MicrofacetDistribution {
+    Beckmann(BeckmannDistribution),
+    TrowBridgeReitz(TrowbridgeReitzDistribution),
 }
 
-impl<'arena> MicrofacetDistribution<'arena> {
-    /// Clone into a newly allocated instance.
-    ///
-    /// * `arena` - The memory arena used for allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut MicrofacetDistribution<'arena> {
-        match self {
-            Self::Beckmann(dist) => dist.clone_alloc(arena),
-            Self::TrowBridgeReitz(dist) => dist.clone_alloc(arena),
-        }
-    }
-
+impl MicrofacetDistribution {
     /// Returns whether or not the visible area is sampled or not.
     pub fn get_sample_visible_area(&self) -> bool {
         match self {
@@ -103,7 +92,7 @@ impl<'arena> MicrofacetDistribution<'arena> {
     }
 }
 
-impl<'arena> fmt::Display for MicrofacetDistribution<'arena> {
+impl fmt::Display for MicrofacetDistribution {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

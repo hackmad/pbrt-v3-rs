@@ -1,6 +1,5 @@
 //! Bounding Volume Hierarchy.
 
-use bumpalo::Bump;
 use core::geometry::*;
 use core::interaction::*;
 use core::light::*;
@@ -323,23 +322,19 @@ impl Primitive for BVHAccel {
     /// compute_scattering_functions() on the primitive from the ray-primitive
     /// intersection.
     ///
-    /// * `_arena`                - The arena for memory allocations.
     /// * `_si`                   - The surface interaction at the intersection.
     /// * `_mode`                 - Transport mode.
     /// * `_allow_multiple_lobes` - Allow multiple lobes.
     /// * `_bsdf`                 - The computed BSDF.
     /// * `_bssrdf`               - The computed BSSSRDF.
-    fn compute_scattering_functions<'scene, 'arena>(
+    fn compute_scattering_functions<'scene>(
         &self,
-        _arena: &'arena Bump,
         _si: &mut SurfaceInteraction<'scene>,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _bsdf: &mut Option<&'arena mut BSDF<'scene>>,
-        _bssrdf: &mut Option<&'arena mut BSDF<'scene>>,
-    ) where
-        'arena: 'scene,
-    {
+        _bsdf: &mut Option<BSDF>,
+        _bssrdf: &mut Option<BSDF>,
+    ) {
         error!(
             "TransformedPrimitive::compute_scattering_functions() shouldn't be \
             called; should've gone to GeometricPrimitive."

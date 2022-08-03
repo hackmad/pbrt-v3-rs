@@ -1,6 +1,5 @@
 //! Mix Material
 
-use bumpalo::Bump;
 use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
@@ -43,7 +42,6 @@ impl Material for MixMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -52,17 +50,14 @@ impl Material for MixMaterial {
     ///                            are available.
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
-    fn compute_scattering_functions<'scene, 'arena>(
+    fn compute_scattering_functions<'scene>(
         &self,
-        arena: &'arena Bump,
         si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bsdf: &mut Option<BSDF>,
         bssrdf: &mut Option<BSSRDF>,
-    ) where
-        'arena: 'scene,
-    {
+    ) {
         // Compute weights and original BxDFs for mix material.
         let s1 = self
             .scale
@@ -72,10 +67,9 @@ impl Material for MixMaterial {
 
         let mut si2 = si.clone();
 
-        let mut si_bsdf: Option<&mut BSDF> = None;
+        let mut si_bsdf: Option<BSDF> = None;
         let mut si_bssrdf: Option<BSSRDF> = None;
         self.m1.compute_scattering_functions(
-            arena,
             si,
             mode,
             allow_multiple_lobes,
@@ -83,10 +77,9 @@ impl Material for MixMaterial {
             &mut si_bssrdf,
         );
 
-        let mut si2_bsdf: Option<&mut BSDF> = None;
+        let mut si2_bsdf: Option<BSDF> = None;
         let mut si2_bssrdf: Option<BSSRDF> = None;
         self.m2.compute_scattering_functions(
-            arena,
             &mut si2,
             mode,
             allow_multiple_lobes,
@@ -95,27 +88,19 @@ impl Material for MixMaterial {
         );
 
         // Initialize `si.bsdf` with weighted mixture of BxDFs.
-        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
+        let mut result = BSDF::new(&si.hit, &si.shading, None);
 
         if let Some(si_bsdf) = si_bsdf {
             let n1 = si_bsdf.num_components(BxDFType::all());
             for i in 0..n1 {
-                result.add(ScaledBxDF::alloc(
-                    arena,
-                    si_bsdf.bxdfs[i].clone_alloc(arena),
-                    s1,
-                ));
+                result.add(ScaledBxDF::new(si_bsdf.bxdfs[i].clone(), s1));
             }
         }
 
         if let Some(si2_bsdf) = si2_bsdf {
             let n2 = si2_bsdf.num_components(BxDFType::all());
             for i in 0..n2 {
-                result.add(ScaledBxDF::alloc(
-                    arena,
-                    si2_bsdf.bxdfs[i].clone_alloc(arena),
-                    s2,
-                ));
+                result.add(ScaledBxDF::new(si2_bsdf.bxdfs[i].clone(), s2));
             }
         }
 

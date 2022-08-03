@@ -1,6 +1,3 @@
-//! Uber Material
-
-use bumpalo::Bump;
 use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
@@ -118,7 +115,6 @@ impl Material for UberMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -127,17 +123,14 @@ impl Material for UberMaterial {
     ///                            are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
-    fn compute_scattering_functions<'scene, 'arena>(
+    fn compute_scattering_functions<'scene>(
         &self,
-        arena: &'arena Bump,
         si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bsdf: &mut Option<BSDF>,
         bssrdf: &mut Option<BSSRDF>,
-    ) where
-        'arena: 'scene,
-    {
+    ) {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
@@ -151,24 +144,24 @@ impl Material for UberMaterial {
             .evaluate(&si.hit, &si.uv, &si.der)
             .clamp_default();
         let t = (-op + Spectrum::ONE).clamp_default();
-        let result = if !t.is_black() {
-            let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, Some(1.0));
-            let tr = SpecularTransmission::alloc(arena, t, 1.0, 1.0, mode);
+        let mut result = if !t.is_black() {
+            let mut bsdf = BSDF::new(&si.hit, &si.shading, Some(1.0));
+            let tr = SpecularTransmission::new(t, 1.0, 1.0, mode);
             bsdf.add(tr);
             bsdf
         } else {
-            BSDF::alloc(arena, &si.hit, &si.shading, Some(e))
+            BSDF::new(&si.hit, &si.shading, Some(e))
         };
 
         let kd = op * self.kd.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kd.is_black() {
-            let diff = LambertianReflection::alloc(arena, kd);
+            let diff = LambertianReflection::new(kd);
             result.add(diff);
         }
 
         let ks = op * self.ks.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !ks.is_black() {
-            let fresnel = FresnelDielectric::alloc(arena, 1.0, e);
+            let fresnel = FresnelDielectric::new(1.0, e);
 
             let mut urough = self.u_roughness.as_ref().map_or_else(
                 || self.roughness.evaluate(&si.hit, &si.uv, &si.der),
@@ -185,20 +178,20 @@ impl Material for UberMaterial {
                 vrough = TrowbridgeReitzDistribution::roughness_to_alpha(vrough);
             }
 
-            let distrib = TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
-            let spec = MicrofacetReflection::alloc(arena, ks, distrib, fresnel);
+            let distrib = TrowbridgeReitzDistribution::new(urough, vrough, true);
+            let spec = MicrofacetReflection::new(ks, distrib, fresnel);
             result.add(spec);
         }
 
         let kr = op * self.kr.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kr.is_black() {
-            let fresnel = FresnelDielectric::alloc(arena, 1.0, e);
-            result.add(SpecularReflection::alloc(arena, kr, fresnel));
+            let fresnel = FresnelDielectric::new(1.0, e);
+            result.add(SpecularReflection::new(kr, fresnel));
         }
 
         let kt = op * self.kt.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if !kt.is_black() {
-            result.add(SpecularTransmission::alloc(arena, kt, 1.0, e, mode));
+            result.add(SpecularTransmission::new(kt, 1.0, e, mode));
         }
 
         *bsdf = Some(result);

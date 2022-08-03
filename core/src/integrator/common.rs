@@ -22,7 +22,7 @@ use std::sync::Arc;
 ///                       should be considered (default to false).
 pub fn uniform_sample_all_lights(
     it: &Interaction,
-    bsdf: &Option<&mut BSDF>,
+    bsdf: Option<&BSDF>,
     scene: &Scene,
     sampler: &mut ArcSampler,
     n_light_samples: &[usize],
@@ -92,7 +92,7 @@ pub fn uniform_sample_all_lights(
 /// * `light_distrib` - PDF for the light's distribution. (default to None).
 pub fn uniform_sample_one_light(
     it: &Interaction,
-    bsdf: &Option<&mut BSDF>,
+    bsdf: Option<&BSDF>,
     scene: &Scene,
     sampler: &mut ArcSampler,
     handle_media: bool,
@@ -154,7 +154,7 @@ pub fn uniform_sample_one_light(
 ///                    considered (default to false).
 pub fn estimate_direct(
     it: &Interaction,
-    bsdf: &Option<&mut BSDF>,
+    bsdf: Option<&BSDF>,
     u_scattering: &Point2f,
     light: ArcLight,
     u_light: &Point2f,
@@ -187,7 +187,7 @@ pub fn estimate_direct(
         match it {
             Interaction::Surface { si } => {
                 // Evaluate BSDF for light sampling strategy.
-                if let Some(bsdf) = bsdf.as_deref() {
+                if let Some(bsdf) = bsdf.as_ref() {
                     f = bsdf.f(&hit.wo, &wi, bsdf_flags) * wi.abs_dot(&si.shading.n);
                     scattering_pdf = bsdf.pdf(&hit.wo, &wi, bsdf_flags);
                     debug!("  surf f*dot : {f}, scatteringPdf: {scattering_pdf}");
@@ -237,7 +237,7 @@ pub fn estimate_direct(
         match it {
             Interaction::Surface { si } => {
                 // Sample scattered direction for surface interactions.
-                if let Some(bsdf) = bsdf.as_deref() {
+                if let Some(bsdf) = bsdf.as_ref() {
                     let BxDFSample {
                         f: f1,
                         pdf: scatter_pdf,

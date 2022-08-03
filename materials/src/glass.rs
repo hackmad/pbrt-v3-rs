@@ -1,6 +1,5 @@
 //! Glass Material
 
-use bumpalo::Bump;
 use core::bssrdf::*;
 use core::interaction::*;
 use core::material::*;
@@ -88,7 +87,6 @@ impl Material for GlassMaterial {
     /// Initializes representations of the light-scattering properties of the
     /// material at the intersection point on the surface.
     ///
-    /// * `arena`                - The arena for memory allocations.
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
     /// * `allow_multiple_lobes` - Indicates whether the material should use
@@ -97,17 +95,14 @@ impl Material for GlassMaterial {
     ///                            are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
-    fn compute_scattering_functions<'scene, 'arena>(
+    fn compute_scattering_functions<'scene>(
         &self,
-        arena: &'arena Bump,
         si: &mut SurfaceInteraction<'scene>,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        bsdf: &mut Option<&'arena mut BSDF<'scene>>,
+        bsdf: &mut Option<BSDF>,
         bssrdf: &mut Option<BSSRDF>,
-    ) where
-        'arena: 'scene,
-    {
+    ) {
         // Perform bump mapping with `bump_map`, if present.
         if let Some(bump_map) = &self.bump_map {
             Material::bump(self, bump_map, si);
@@ -120,13 +115,13 @@ impl Material for GlassMaterial {
         let t = self.kt.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
 
         // Initialize bsdf for smooth or rough dielectric.
-        let result = BSDF::alloc(arena, &si.hit, &si.shading, None);
+        let mut result = BSDF::new(&si.hit, &si.shading, None);
 
-        // Evaluate textures for `GlassMaterial` material and allocate BRDF
+        // Evaluate textures for `GlassMaterial` material and allocate BRDF.
         if !(r.is_black() && t.is_black()) {
             let is_specular = urough == 0.0 && vrough == 0.0;
             if is_specular && allow_multiple_lobes {
-                result.add(FresnelSpecular::alloc(arena, r, t, 1.0, eta, mode));
+                result.add(FresnelSpecular::new(r, t, 1.0, eta, mode));
             } else {
                 if self.remap_roughness {
                     urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
@@ -135,25 +130,21 @@ impl Material for GlassMaterial {
 
                 if is_specular {
                     if !r.is_black() {
-                        let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
-                        result.add(SpecularReflection::alloc(arena, r, fresnel));
+                        let fresnel = FresnelDielectric::new(1.0, eta);
+                        result.add(SpecularReflection::new(r, fresnel));
                     }
                     if !t.is_black() {
-                        result.add(SpecularTransmission::alloc(arena, t, 1.0, eta, mode));
+                        result.add(SpecularTransmission::new(t, 1.0, eta, mode));
                     }
                 } else {
                     if !r.is_black() {
-                        let distrib =
-                            TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
-                        let fresnel = FresnelDielectric::alloc(arena, 1.0, eta);
-                        result.add(MicrofacetReflection::alloc(arena, r, distrib, fresnel));
+                        let distrib = TrowbridgeReitzDistribution::new(urough, vrough, true);
+                        let fresnel = FresnelDielectric::new(1.0, eta);
+                        result.add(MicrofacetReflection::new(r, distrib, fresnel));
                     }
                     if !t.is_black() {
-                        let distrib =
-                            TrowbridgeReitzDistribution::alloc(arena, urough, vrough, true);
-                        result.add(MicrofacetTransmission::alloc(
-                            arena, t, distrib, 1.0, eta, mode,
-                        ));
+                        let distrib = TrowbridgeReitzDistribution::new(urough, vrough, true);
+                        result.add(MicrofacetTransmission::new(t, distrib, 1.0, eta, mode));
                     }
                 };
             }

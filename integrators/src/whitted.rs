@@ -2,7 +2,6 @@
 
 #![allow(dead_code)]
 
-use bumpalo::Bump;
 use core::camera::*;
 use core::geometry::*;
 use core::integrator::*;
@@ -62,19 +61,11 @@ impl Integrator for WhittedIntegrator {
 
     /// Returns the incident radiance at the origin of a given ray.
     ///
-    /// * `arena`   - The arena for memory allocations.
     /// * `ray`     - The ray.
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
-    fn li(
-        &self,
-        arena: &Bump,
-        ray: &mut Ray,
-        scene: &Scene,
-        sampler: &mut ArcSampler,
-        depth: usize,
-    ) -> Spectrum {
+    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ArcSampler, depth: usize) -> Spectrum {
         let mut l = Spectrum::ZERO;
 
         // Find closest ray intersection or return background radiance.
@@ -82,10 +73,9 @@ impl Integrator for WhittedIntegrator {
             // Compute emitted and reflected light at ray intersection point.
 
             // Compute scattering functions for surface interaction.
-            let mut bsdf: Option<&mut BSDF> = None;
-            let mut bssrdf: Option<&mut BSDF> = None;
+            let mut bsdf: Option<BSDF> = None;
+            let mut bssrdf: Option<BSDF> = None;
             isect.compute_scattering_functions(
-                arena,
                 ray,
                 false,
                 TransportMode::Radiance,
@@ -94,7 +84,7 @@ impl Integrator for WhittedIntegrator {
             );
             if bsdf.is_none() {
                 let mut new_ray = isect.hit.spawn_ray(&ray.d);
-                return self.li(arena, &mut new_ray, scene, sampler, depth);
+                return self.li(&mut new_ray, scene, sampler, depth);
             }
 
             // Initialize common variables for `WhittedIntegrator`.
@@ -132,9 +122,8 @@ impl Integrator for WhittedIntegrator {
             }
             if depth + 1 < self.data.max_depth {
                 // Trace rays for specular reflection and refraction.
-                let refl = self.specular_reflect(arena, ray, &isect, &bsdf, scene, sampler, depth);
-                let trans =
-                    self.specular_transmit(arena, ray, &isect, &bsdf, scene, sampler, depth);
+                let refl = self.specular_reflect(ray, &isect, &bsdf, scene, sampler, depth);
+                let trans = self.specular_transmit(ray, &isect, &bsdf, scene, sampler, depth);
                 l += refl + trans;
             }
         } else {

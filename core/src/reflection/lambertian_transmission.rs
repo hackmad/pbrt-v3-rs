@@ -3,11 +3,11 @@
 #![allow(dead_code)]
 
 use super::*;
-use bumpalo::Bump;
 use std::fmt;
 
 /// BRDF for the Lambertian model for perfect transmissive surfaces that scatters
 /// incident illumination equally through a surface in all directions.
+#[derive(Clone)]
 pub struct LambertianTransmission {
     /// BxDF type.
     bxdf_type: BxDFType,
@@ -18,30 +18,16 @@ pub struct LambertianTransmission {
 }
 
 impl LambertianTransmission {
-    /// Allocate a new instance of `LambertianTransmission`.
+    /// Creates a new instance of `LambertianTransmission`.
     ///
-    /// * `arena` - The arena for memory allocations.
     /// * `t`     - Transmission spectrum which gives the fraction of incident
     ///             light that is scattered through the surface.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc<'arena>(arena: &'arena Bump, t: Spectrum) -> &'arena mut BxDF {
-        let model = arena.alloc(Self {
+    pub fn new(t: Spectrum) -> BxDF {
+        let model = Self {
             bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_DIFFUSE,
             t,
-        });
-        arena.alloc(BxDF::LambertianTransmission(model))
-    }
-
-    /// Clone into a newly allocated a new instance of `LambertianTransmission`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let model = arena.alloc(Self {
-            bxdf_type: self.bxdf_type,
-            t: self.t,
-        });
-        arena.alloc(BxDF::LambertianTransmission(model))
+        };
+        BxDF::LambertianTransmission(model)
     }
 
     /// Returns the BxDF type.

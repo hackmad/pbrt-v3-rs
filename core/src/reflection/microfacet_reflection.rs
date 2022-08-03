@@ -3,63 +3,40 @@
 #![allow(dead_code)]
 use super::*;
 use crate::microfacet::*;
-use bumpalo::Bump;
 use std::fmt;
 
 /// BRDF for modeling metallic surfaces using a microfacet distribution.
-pub struct MicrofacetReflection<'arena> {
+#[derive(Clone)]
+pub struct MicrofacetReflection {
     /// BxDF type.
     bxdf_type: BxDFType,
 
     /// Fresnel interface for dielectrics and conductors.
-    fresnel: &'arena mut Fresnel<'arena>,
+    fresnel: Fresnel,
 
     /// Reflectance spectrum which gives the fraction of incident light that
     /// is scattered.
     r: Spectrum,
 
     /// The microfacet distribution model.
-    distribution: &'arena mut MicrofacetDistribution<'arena>,
+    distribution: MicrofacetDistribution,
 }
 
-impl<'arena> MicrofacetReflection<'arena> {
-    /// Allocate a new instance of `MicrofacetReflection`.
+impl MicrofacetReflection {
+    /// Creates a new instance of `MicrofacetReflection`.
     ///
-    /// * `arena`        - The arena for memory allocations.
     /// * `r`            - Reflectance spectrum which gives the fraction of incident
     ///                    light that is scattered.
     /// * `distribution` - Microfacet distribution.
     /// * `fresnel`      - Fresnel interface for dielectrics and conductors.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc(
-        arena: &'arena Bump,
-        r: Spectrum,
-        distribution: &'arena mut MicrofacetDistribution<'arena>,
-        fresnel: &'arena mut Fresnel<'arena>,
-    ) -> &'arena mut BxDF<'arena> {
-        let model = arena.alloc(Self {
+    pub fn new(r: Spectrum, distribution: MicrofacetDistribution, fresnel: Fresnel) -> BxDF {
+        let model = Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_GLOSSY,
             r,
             distribution,
             fresnel,
-        });
-        arena.alloc(BxDF::MicrofacetReflection(model))
-    }
-
-    /// Clone into a newly allocated a new instance of `MicrofacetReflection`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let distribution = self.distribution.clone_alloc(arena);
-        let fresnel = self.fresnel.clone_alloc(arena);
-        let model = arena.alloc(Self {
-            bxdf_type: self.bxdf_type,
-            r: self.r,
-            distribution,
-            fresnel,
-        });
-        arena.alloc(BxDF::MicrofacetReflection(model))
+        };
+        BxDF::MicrofacetReflection(model)
     }
 
     /// Returns the BxDF type.
@@ -134,7 +111,7 @@ impl<'arena> MicrofacetReflection<'arena> {
     }
 }
 
-impl<'arena> fmt::Display for MicrofacetReflection<'arena> {
+impl fmt::Display for MicrofacetReflection {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

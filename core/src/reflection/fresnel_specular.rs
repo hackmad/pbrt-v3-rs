@@ -4,10 +4,10 @@
 
 use super::*;
 use crate::material::*;
-use bumpalo::Bump;
 use std::fmt;
 
 /// BRDF for physically plausible specular reflection and transmission.
+#[derive(Clone)]
 pub struct FresnelSpecular {
     /// BxDF type.
     bxdf_type: BxDFType,
@@ -29,9 +29,8 @@ pub struct FresnelSpecular {
 }
 
 impl FresnelSpecular {
-    /// Allocate a new instance of `FresnelSpecular`.
+    /// Creates a new instance of `FresnelSpecular`.
     ///
-    /// * `arena`   - The arena for memory allocations.
     /// * `fresnel` - Fresnel interface for dielectrics and conductors.
     /// * `r`       - Spectrum used to scale the reflected colour.
     /// * `t`       - Spectrum used to scale the transmitted colour.
@@ -41,16 +40,8 @@ impl FresnelSpecular {
     ///               normal).
     /// * `mode`    - Indicates whether incident ray started from a light source
     ///               or from camera.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc<'arena>(
-        arena: &'arena Bump,
-        r: Spectrum,
-        t: Spectrum,
-        eta_a: Float,
-        eta_b: Float,
-        mode: TransportMode,
-    ) -> &'arena mut BxDF {
-        let model = arena.alloc(Self {
+    pub fn new(r: Spectrum, t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> BxDF {
+        let model = Self {
             bxdf_type: BxDFType::BSDF_REFLECTION
                 | BxDFType::BSDF_TRANSMISSION
                 | BxDFType::BSDF_SPECULAR,
@@ -59,24 +50,8 @@ impl FresnelSpecular {
             eta_a,
             eta_b,
             mode,
-        });
-        arena.alloc(BxDF::FresnelSpecular(model))
-    }
-
-    /// Clone into a newly allocated a new instance of `FresnelSpecular`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let model = arena.alloc(Self {
-            bxdf_type: self.bxdf_type,
-            r: self.r,
-            t: self.t,
-            eta_a: self.eta_a,
-            eta_b: self.eta_b,
-            mode: self.mode,
-        });
-        arena.alloc(BxDF::FresnelSpecular(model))
+        };
+        BxDF::FresnelSpecular(model)
     }
 
     /// Returns the BxDF type.

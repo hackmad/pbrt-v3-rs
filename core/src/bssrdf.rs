@@ -6,8 +6,6 @@ use crate::material::*;
 use crate::pbrt::*;
 use crate::reflection::*;
 use crate::spectrum::RGBSpectrum;
-use bumpalo::boxed::Box as BumpBox;
-use bumpalo::Bump;
 use std::fmt;
 use std::sync::Arc;
 
@@ -30,20 +28,12 @@ pub enum BSSRDF {
 }
 
 impl BSSRDF {
-    /// Allocates a `BxDF` corresponding to the `BSSRDF`.
+    /// Creates a new `BxDF` corresponding to the `BSSRDF`.
     ///
-    /// * `arena`    - The arena for memory allocations.
     /// * `si`       - The surface interaction.
     /// * `material` - The material.
     /// * `mode`     - Light transport mode.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc<'arena>(
-        self,
-        arena: &'arena Bump,
-        si: &SurfaceInteraction,
-        material: ArcMaterial,
-        mode: TransportMode,
-    ) -> &'arena mut BSDF<'arena> {
+    pub fn new(self, si: &SurfaceInteraction, material: ArcMaterial, mode: TransportMode) -> BSDF {
         match self {
             BSSRDF::Tabulated {
                 eta,
@@ -51,9 +41,9 @@ impl BSSRDF {
                 sigma_s,
                 table,
             } => {
-                let bsdf = BSDF::alloc(arena, &si.hit, &si.shading, Some(eta));
-                bsdf.add(TabulatedBSSRDF::alloc(
-                    arena, si, eta, material, mode, sigma_a, sigma_s, table,
+                let mut bsdf = BSDF::new(&si.hit, &si.shading, Some(eta));
+                bsdf.add(TabulatedBSSRDF::new(
+                    si, eta, material, mode, sigma_a, sigma_s, table,
                 ));
                 bsdf
             }
@@ -80,7 +70,8 @@ impl fmt::Display for BSSRDF {
 }
 
 /// Implements a simple BSSRDF implementation that can support general `Shapes`.
-pub struct SeparableBSSRDF<'arena> {
+#[derive(Clone)]
+pub struct SeparableBSSRDF {
     /// Current outgoing surface interaction hit point.
     pub po_hit: Hit,
 
@@ -101,64 +92,43 @@ pub struct SeparableBSSRDF<'arena> {
     pub ts: Vector3f,
 
     /// The underlying material.
-    ///
-    /// NOTE: Wrapped in `bumpalo::boxed::Box` so it can be dropped.
-    pub material: BumpBox<'arena, ArcMaterial>,
+    pub material: Box<ArcMaterial>,
 
     /// Light transport mode.
     pub mode: TransportMode,
 }
 
-impl<'arena> SeparableBSSRDF<'arena> {
-    /// Allocate a new instance of `SeparableBSSRDF`.
+impl SeparableBSSRDF {
+    /// Creates a new instance of `SeparableBSSRDF`.
     ///
     /// * `po`       - Current outgoing surface interaction.
     /// * `eta`      - Index of refraction of the scattering medium.
     /// * `material` - The material.
     /// * `mode`     - Light transport mode.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc(
-        arena: &'arena Bump,
+    pub fn new(
         po: &SurfaceInteraction,
         eta: Float,
         material: ArcMaterial,
         mode: TransportMode,
-    ) -> &'arena mut Self {
+    ) -> Self {
         let ns = po.shading.n;
         let ss = po.shading.dpdu.normalize();
         let ts = Vector3f::from(&ns.cross(&ss));
 
-        arena.alloc(Self {
+        Self {
             po_hit: po.hit.clone(),
             po_shading: po.shading.clone(),
             eta,
             ns,
             ss,
             ts,
-            material: BumpBox::new_in(material, arena),
+            material: Box::new(material),
             mode,
-        })
-    }
-
-    /// Clone into a newly allocated a new instance of `TabulatedBSSRDF`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut Self {
-        arena.alloc(Self {
-            po_hit: self.po_hit.clone(),
-            po_shading: self.po_shading.clone(),
-            eta: self.eta,
-            ns: self.ns,
-            ss: self.ss,
-            ts: self.ts,
-            material: BumpBox::new_in(Arc::clone(&self.material), arena),
-            mode: self.mode,
-        })
+        }
     }
 }
 
-impl<'arena> fmt::Display for SeparableBSSRDF<'arena> {
+impl fmt::Display for SeparableBSSRDF {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

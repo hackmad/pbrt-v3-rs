@@ -1,11 +1,11 @@
 //! Oren-Nayar Microfacet Model
 
 use super::*;
-use bumpalo::Bump;
 use std::fmt;
 
 /// BRDF for the Oren-Nayar model for modeling rough surfaces using a microfacet
 /// model.
+#[derive(Clone)]
 pub struct OrenNayar {
     /// BxDF type.
     bxdf_type: BxDFType,
@@ -31,38 +31,22 @@ pub struct OrenNayar {
 }
 
 impl OrenNayar {
-    /// Allocator a new instance of `OrenNayar`.
+    /// Creates a new instance of `OrenNayar`.
     ///
-    /// * `arena` - The arena for memory allocations.
     /// * `r`     - Reflectance spectrum which gives the fraction of incident
     ///             light that is scattered.
     /// * `sigma` - The Gaussian distribution parameter, the standard deviation
     ///             of the microfacet orientation angle (in degrees).
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc<'arena>(arena: &'arena Bump, r: Spectrum, sigma: Float) -> &'arena mut BxDF {
+    pub fn new(r: Spectrum, sigma: Float) -> BxDF {
         let sigma = sigma.to_radians();
         let sigma2 = sigma * sigma;
-        let model = arena.alloc(Self {
+        let model = Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_DIFFUSE,
             r,
             a: 1.0 - (sigma2 / (2.0 * (sigma2 + 0.33))),
             b: 0.45 * sigma2 / (sigma2 + 0.09),
-        });
-        arena.alloc(BxDF::OrenNayar(model))
-    }
-
-    /// Clone into a newly allocated a new instance of `OrenNayar`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let model = arena.alloc(Self {
-            bxdf_type: self.bxdf_type,
-            r: self.r,
-            a: self.a,
-            b: self.b,
-        });
-        arena.alloc(BxDF::OrenNayar(model))
+        };
+        BxDF::OrenNayar(model)
     }
 
     /// Returns the BxDF type.

@@ -1,53 +1,33 @@
 //! Specular Reflection
 
 use super::*;
-use bumpalo::Bump;
 use std::fmt;
 
 /// BRDF for physically plausible specular reflection using Fresnel interface.
-pub struct SpecularReflection<'arena> {
+#[derive(Clone)]
+pub struct SpecularReflection {
     /// BxDF type.
     bxdf_type: BxDFType,
 
     /// Fresnel interface for dielectrics and conductors.
-    fresnel: &'arena mut Fresnel<'arena>,
+    fresnel: Fresnel,
 
     /// Spectrum used to scale the reflected colour.
     r: Spectrum,
 }
 
-impl<'arena> SpecularReflection<'arena> {
-    /// Allocate a new instance of `SpecularReflection`.
+impl SpecularReflection {
+    /// Creates a new instance of `SpecularReflection`.
     ///
-    /// * `arena`   - The arena for memory allocations.
     /// * `fresnel` - Fresnel interface for dielectrics and conductors.
     /// * `r`       - Spectrum used to scale the reflected colour.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc(
-        arena: &'arena Bump,
-        r: Spectrum,
-        fresnel: &'arena mut Fresnel<'arena>,
-    ) -> &'arena mut BxDF<'arena> {
-        let model = arena.alloc(Self {
+    pub fn new(r: Spectrum, fresnel: Fresnel) -> BxDF {
+        let model = Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_SPECULAR,
             fresnel,
             r,
-        });
-        arena.alloc(BxDF::SpecularReflection(model))
-    }
-
-    /// Clone into a newly allocated a new instance of `SpecularReflection`.
-    ///
-    /// * `arena` - The arena for memory allocations.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let fresnel = self.fresnel.clone_alloc(arena);
-        let model = arena.alloc(Self {
-            bxdf_type: self.bxdf_type,
-            fresnel,
-            r: self.r,
-        });
-        arena.alloc(BxDF::SpecularReflection(model))
+        };
+        BxDF::SpecularReflection(model)
     }
 
     /// Returns the BxDF type.
@@ -88,7 +68,7 @@ impl<'arena> SpecularReflection<'arena> {
     }
 }
 
-impl<'arena> fmt::Display for SpecularReflection<'arena> {
+impl fmt::Display for SpecularReflection {
     /// Formats the value using the given formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

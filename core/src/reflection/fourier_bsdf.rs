@@ -3,7 +3,6 @@
 use super::*;
 use crate::interpolation::*;
 use crate::material::*;
-use bumpalo::Bump;
 use std::fmt;
 use std::sync::Arc;
 
@@ -22,39 +21,20 @@ pub struct FourierBSDF {
 }
 
 impl FourierBSDF {
-    /// Allocate a new instance of `FourierBSDF`.
+    /// Creates a new instance of `FourierBSDF`.
     ///
-    /// * `arena`      - The arena for memory allocations.
     /// * `bsdf_table` - The BSDF data.
     /// * `mode`       - Indicates whether incident ray started from a light source
     ///                  or from camera.
-    #[allow(clippy::mut_from_ref)]
-    pub fn alloc<'arena>(
-        arena: &'arena Bump,
-        bsdf_table: Arc<FourierBSDFTable>,
-        mode: TransportMode,
-    ) -> &'arena mut BxDF {
-        let model = arena.alloc(Self {
+    pub fn new(bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> BxDF {
+        let model = Self {
             bxdf_type: BxDFType::BSDF_REFLECTION
                 | BxDFType::BSDF_TRANSMISSION
                 | BxDFType::BSDF_GLOSSY,
             bsdf_table: Arc::clone(&bsdf_table),
             mode,
-        });
-        arena.alloc(BxDF::FourierBSDF(model))
-    }
-
-    /// Clone into a newly allocated a new instance of `FourierBSDF`.
-    ///
-    /// * `arena` - The memory arena.
-    #[allow(clippy::mut_from_ref)]
-    pub fn clone_alloc<'arena>(&self, arena: &'arena Bump) -> &'arena mut BxDF<'arena> {
-        let model = arena.alloc(Self {
-            bxdf_type: self.bxdf_type,
-            bsdf_table: Arc::clone(&self.bsdf_table),
-            mode: self.mode,
-        });
-        arena.alloc(BxDF::FourierBSDF(model))
+        };
+        BxDF::FourierBSDF(model)
     }
 
     /// Returns the BxDF type.
