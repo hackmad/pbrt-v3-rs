@@ -463,7 +463,7 @@ mod tests {
     }
 
     #[test]
-    fn union_of_two_empty_bounds2f_retrns_empty() {
+    fn union_of_two_empty_bounds2f_returns_empty() {
         let empty = Bounds2::<f32>::empty();
         assert!(empty.union(&empty).is_empty());
     }

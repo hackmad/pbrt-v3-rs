@@ -40,6 +40,22 @@ impl AtomicFloat {
             }
         }
     }
+
+    /// Loads the floating point value.
+    ///
+    /// * `order` - Memory ordering of this operation
+    pub fn load(&self, order: Ordering) -> Float {
+        let bits: u32 = self.bits.load(order);
+        bits_to_float(bits)
+    }
+
+    /// Stores the floating point value.
+    ///
+    /// * `v`     - The value.
+    /// * `order` - Memory ordering of this operation
+    pub fn store(&self, v: Float, order: Ordering) {
+        self.bits.store(float_to_bits(v), order);
+    }
 }
 
 impl Default for AtomicFloat {
@@ -47,6 +63,15 @@ impl Default for AtomicFloat {
     fn default() -> Self {
         Self {
             bits: AtomicU32::new(0),
+        }
+    }
+}
+
+impl Clone for AtomicFloat {
+    fn clone(&self) -> Self {
+        let bits: u32 = self.bits.load(Ordering::SeqCst);
+        AtomicFloat {
+            bits: AtomicU32::new(bits),
         }
     }
 }

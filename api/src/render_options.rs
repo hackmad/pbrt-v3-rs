@@ -130,6 +130,10 @@ impl RenderOptions {
                 let p = (&self.integrator_params, sampler, camera);
                 Ok(Box::new(PathIntegrator::from(p)))
             }
+            "sppm" => {
+                let p = (&self.integrator_params, camera);
+                Ok(Box::new(SPPMIntegrator::from(p)))
+            }
             "volpath" => {
                 let p = (&self.integrator_params, sampler, camera);
                 Ok(Box::new(VolPathIntegrator::from(p)))

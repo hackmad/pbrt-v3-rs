@@ -65,6 +65,10 @@ pub struct Options {
         help = "Size in pixels of square tiles rendered per thread."
     )]
     pub tile_size: usize,
+
+    /// Write SPPM radius image
+    #[clap(long = "sppm_radius", help = "Write SPPM radius image")]
+    pub sppm_radius: bool,
 }
 
 impl Options {
