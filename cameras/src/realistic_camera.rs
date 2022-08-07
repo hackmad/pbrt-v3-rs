@@ -1,5 +1,6 @@
 //! Realistic Camera
 
+use core::app::OPTIONS;
 use core::camera::*;
 use core::efloat::*;
 use core::film::*;
@@ -10,9 +11,8 @@ use core::medium::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::reflection::*;
-use rayon::prelude::*;
 use std::mem::swap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// Number of samples for exit pupil bounds.
 const N_SAMPLES: usize = 64_usize;
@@ -134,14 +134,35 @@ impl RealisticCamera {
 
         // Compute exit pupil bounds at sampled points on the film.
         let fac = 1.0 / N_SAMPLES as Float * film_diagonal / 2.0;
-        camera.exit_pupil_bounds = (0..N_SAMPLES)
-            .into_par_iter()
-            .map(|i| {
-                let r0 = i as Float * fac;
-                let r1 = (i + 1) as Float * fac;
-                camera.bound_exit_pupil(r0, r1)
-            })
-            .collect();
+
+        let exit_pupil_bounds = Arc::new(Mutex::new(vec![Bounds2f::default(); N_SAMPLES]));
+        crossbeam::scope(|scope| {
+            let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+
+            for _ in 0..OPTIONS.threads() {
+                let rxc = rx.clone();
+                let camera = &camera;
+                let exit_pupil_bounds = Arc::clone(&exit_pupil_bounds);
+                scope.spawn(move |_| {
+                    for i in rxc.iter() {
+                        let r0 = i as Float * fac;
+                        let r1 = (i + 1) as Float * fac;
+                        let mut ep = exit_pupil_bounds.lock().unwrap();
+                        (*ep)[i] = camera.bound_exit_pupil(r0, r1);
+                    }
+                });
+            }
+            drop(rx); // Drop extra rx since we've cloned one for each worker.
+
+            // Send work.
+            for i in 0..N_SAMPLES {
+                tx.send(i).unwrap();
+            }
+        })
+        .unwrap();
+
+        let ep = exit_pupil_bounds.lock().unwrap();
+        camera.exit_pupil_bounds = ep.clone();
 
         if simple_weighting {
             error!(
