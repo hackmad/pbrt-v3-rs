@@ -9,6 +9,7 @@ core = { path = "../core" }
 samplers = { path = "../samplers" }
 
 atom = "0.4.0"
-indicatif = { version = "0.16.2", features = ["rayon"] }
+crossbeam = "0.8.2"
+crossbeam-channel = "0.5.6"
+itertools = "0.10.3"
 log = "0.4.14"
-rayon = "1.5.1"
