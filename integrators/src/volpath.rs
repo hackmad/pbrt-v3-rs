@@ -64,7 +64,9 @@ impl SamplerIntegrator for VolPathIntegrator {
     fn get_data(&self) -> &SamplerIntegratorData {
         &self.data
     }
+}
 
+impl Integrator for VolPathIntegrator {
     /// Preprocess the scene.
     ///
     /// * `scene` - The scene
@@ -74,13 +76,11 @@ impl SamplerIntegrator for VolPathIntegrator {
             scene,
         ));
     }
-}
 
-impl Integrator for VolPathIntegrator {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&mut self, scene: &Scene) {
+    fn render(&self, scene: &Scene) {
         SamplerIntegrator::render(self, scene);
     }
 

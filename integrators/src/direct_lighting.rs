@@ -65,7 +65,9 @@ impl SamplerIntegrator for DirectLightingIntegrator {
     fn get_data(&self) -> &SamplerIntegratorData {
         &self.data
     }
+}
 
+impl Integrator for DirectLightingIntegrator {
     /// Preprocess the scene.
     ///
     /// * `scene` - The scene
@@ -88,13 +90,11 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             }
         }
     }
-}
 
-impl Integrator for DirectLightingIntegrator {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&mut self, scene: &Scene) {
+    fn render(&self, scene: &Scene) {
         SamplerIntegrator::render(self, scene);
     }
 

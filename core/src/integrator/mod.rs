@@ -17,7 +17,12 @@ pub trait Integrator {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&mut self, scene: &Scene);
+    fn render(&self, scene: &Scene);
+
+    /// Preprocess the scene.
+    ///
+    /// * `scene` - The scene
+    fn preprocess(&mut self, scene: &Scene);
 
     /// Returns the incident radiance at the origin of a given ray.
     ///

@@ -475,6 +475,7 @@ impl Api {
             };
 
             let scene = self.render_options.make_scene();
+            integrator.preprocess(&scene);
             integrator.render(&scene);
 
             // Clean up after rendering.

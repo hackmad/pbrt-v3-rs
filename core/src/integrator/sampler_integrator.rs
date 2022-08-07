@@ -12,7 +12,6 @@ use crate::sampler::*;
 use crate::scene::*;
 use crate::spectrum::*;
 use indicatif::{ProgressBar, ProgressStyle};
-use rayon::prelude::*;
 use std::sync::Arc;
 
 /// Common data for sampler integrators.
@@ -60,11 +59,6 @@ impl SamplerIntegratorData {
 pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// Returns the common data.
     fn get_data(&self) -> &SamplerIntegratorData;
-
-    /// Preprocess the scene.
-    ///
-    /// * `scene` - The scene
-    fn preprocess(&mut self, scene: &Scene);
 
     /// Trace rays for specular reflection.
     ///
@@ -259,12 +253,11 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&mut self, scene: &Scene) {
+    fn render(&self, scene: &Scene) {
+        // Get sampler and camera data.
         let data = self.get_data();
         let camera = Arc::clone(&data.camera);
         let camera_data = camera.get_data();
-
-        self.preprocess(scene);
 
         // Compute number of tiles, `n_tiles`, to use for parallel rendering.
         let sample_bounds = camera_data.film.get_sample_bounds();
@@ -284,7 +277,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         } else {
             let progress_style = ProgressStyle::default_bar()
                 .template(
-                    "{msg:25.cyan.bold} [{bar:40.green/white}] {pos:>5}/{len:5} ({elapsed}|{eta})",
+                    "{msg:10.cyan.bold} [{bar:40.green/white}] {pos:>5}/{len:5} ({elapsed}|{eta})",
                 )
                 .progress_chars("█▓▒░  ");
             let pb = ProgressBar::new(tile_count as u64 + 1_u64); // Render + image write
@@ -293,22 +286,32 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
             pb
         };
 
-        (0..tile_count)
-            .into_par_iter()
-            .map(|tile_idx| {
-                // Render section of image corresponding to `tile`.
-                let tile_x = tile_idx % n_tiles.x as usize;
-                let tile_y = tile_idx / n_tiles.x as usize;
-                progress.set_message(format!("Rendering tile ({},{})", tile_x, tile_y));
-                let film_tile = self.render_tile(tile_idx, n_tiles, scene, sample_bounds);
-                (tile_x, tile_y, film_tile)
-            })
-            .for_each(|(_tile_x, _tile_y, film_tile)| {
-                // Merge image tile into `Film`.
-                //progress.set_message(format!("Merging tile   ({},{})", tile_x, tile_y));
-                progress.inc(1);
-                camera_data.film.merge_film_tile(&film_tile);
-            });
+        crossbeam::scope(|scope| {
+            let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+
+            // Spawn worker threads.
+            for _ in 0..OPTIONS.threads() {
+                let rxc = rx.clone();
+                let progress = &progress;
+                scope.spawn(move |_| {
+                    for tile_idx in rxc.iter() {
+                        // Render section of image corresponding to `tile`.
+                        let film_tile = self.render_tile(tile_idx, n_tiles, scene, sample_bounds);
+
+                        // Merge image tile into `Film`.
+                        camera_data.film.merge_film_tile(&film_tile);
+                        progress.inc(1);
+                    }
+                });
+            }
+            drop(rx); // Drop extra rx since we've cloned one for each woker.
+
+            // Send work.
+            for tile_idx in 0..tile_count {
+                tx.send(tile_idx).unwrap();
+            }
+        })
+        .unwrap();
 
         // Save final image after rendering.
         progress.set_message("Writing image");
