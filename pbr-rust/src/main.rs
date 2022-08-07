@@ -31,12 +31,6 @@ fn main() {
     // Initialize `env_logger`.
     env_logger::init();
 
-    // Configure number of threads.
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(OPTIONS.threads())
-        .build_global()
-        .unwrap();
-
     // Initialize PBRT API.
     let mut api = Api::new();
     api.pbrt_init();
