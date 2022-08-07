@@ -114,12 +114,11 @@ where
         wrap_mode: ImageWrap,
         max_anisotropy: Float,
     ) -> Self {
-        let (resampled_image, resolution) =
-            if !resolution[0].is_power_of_two() || !resolution[1].is_power_of_two() {
-                resample_image(resolution, img, wrap_mode)
-            } else {
-                (vec![], *resolution)
-            };
+        let (resampled_image, resolution) = if !resolution[0].is_power_of_two() || !resolution[1].is_power_of_two() {
+            resample_image(resolution, img, wrap_mode)
+        } else {
+            (vec![], *resolution)
+        };
 
         // Initialize levels of MIPMap from image.
         let n_levels = 1 + max(resolution[0], resolution[1]).log2int() as usize;
@@ -196,10 +195,7 @@ where
     pub fn lookup(&self, st: &Point2f, dst0: &Vector2f, dst1: &Vector2f) -> T {
         match self.filtering_method {
             FilteringMethod::Trilinear => {
-                let width = max(
-                    max(abs(dst0[0]), abs(dst0[1])),
-                    max(abs(dst1[0]), abs(dst1[1])),
-                );
+                let width = max(max(abs(dst0[0]), abs(dst0[1])), max(abs(dst1[0]), abs(dst1[1])));
                 self.lookup_triangle(st, width)
             }
             FilteringMethod::Ewa => self.lookup_ewa(st, dst0, dst1),
@@ -293,10 +289,7 @@ where
         let tx2 = texel(&self.pyramid, self.wrap_mode, level, s0 + 1, t0);
         let tx3 = texel(&self.pyramid, self.wrap_mode, level, s0 + 1, t0 + 1);
 
-        tx0 * (1.0 - ds) * (1.0 - dt)
-            + tx1 * (1.0 - ds) * dt
-            + tx2 * ds * (1.0 - dt)
-            + tx3 * ds * dt
+        tx0 * (1.0 - ds) * (1.0 - dt) + tx1 * (1.0 - ds) * dt + tx2 * ds * (1.0 - dt) + tx3 * ds * dt
     }
 
     /// Interpolates using EWA filter between 4 texels that surround a given
@@ -350,18 +343,9 @@ where
                 // Compute squared radius and filter texel if inside ellipse.
                 let r2 = a * ss * ss + b * ss * tt + c * tt * tt;
                 if r2 < 1.0 {
-                    let index = min(
-                        (r2 * WEIGHT_LUT_SIZE as Float) as usize,
-                        WEIGHT_LUT_SIZE - 1,
-                    );
+                    let index = min((r2 * WEIGHT_LUT_SIZE as Float) as usize, WEIGHT_LUT_SIZE - 1);
                     let weight = self.weight_lut[index];
-                    sum += texel(
-                        &self.pyramid,
-                        self.wrap_mode,
-                        level,
-                        is as usize,
-                        it as usize,
-                    ) * weight;
+                    sum += texel(&self.pyramid, self.wrap_mode, level, is as usize, it as usize) * weight;
                     sum_wts += weight;
                 }
             }
@@ -378,11 +362,7 @@ where
 /// * `resolution`       - Image resolution.
 /// * `img`              - Image data.
 /// * `wrap_mode`        - Determines how to handle out-of-bounds texels.
-fn resample_image<T>(
-    resolution: &Point2<usize>,
-    img: &[T],
-    wrap_mode: ImageWrap,
-) -> (Vec<T>, Point2<usize>)
+fn resample_image<T>(resolution: &Point2<usize>, img: &[T], wrap_mode: ImageWrap) -> (Vec<T>, Point2<usize>)
 where
     T: Copy
         + Clone
@@ -398,10 +378,7 @@ where
         + Sync,
 {
     // Resample image to power-of-two resolution.
-    let res_pow2 = Point2::new(
-        resolution[0].next_power_of_two(),
-        resolution[1].next_power_of_two(),
-    );
+    let res_pow2 = Point2::new(resolution[0].next_power_of_two(), resolution[1].next_power_of_two());
     let res = res_pow2[0] * res_pow2[1];
 
     // Use a mutex to modify resampled image data in parallel.
@@ -510,8 +487,7 @@ where
                                     };
 
                                     if offset < resolution[1] {
-                                        work_data[t] += (*pixels)[offset * res_pow2[0] + s]
-                                            * t_weights[t].weight[j];
+                                        work_data[t] += (*pixels)[offset * res_pow2[0] + s] * t_weights[t].weight[j];
                                     }
                                 }
                             }
@@ -529,12 +505,7 @@ where
         drop(rx); // Drop extra rx since we've cloned one for each woker.
 
         // Send work.
-        for work in (0..res_pow2[0])
-            .into_iter()
-            .chunks(32)
-            .into_iter()
-            .enumerate()
-        {
+        for work in (0..res_pow2[0]).into_iter().chunks(32).into_iter().enumerate() {
             let (vi, chunk) = work;
             let vs: Vec<usize> = chunk.collect();
             tx.send((vi, vs)).unwrap();
@@ -553,7 +524,7 @@ where
 /// * `old_res` - The old resolution.
 /// * `new_res` - The new resolution.
 fn resample_weights(old_res: usize, new_res: usize) -> Vec<ResampleWeight> {
-    assert!(new_res > old_res);
+    assert!(new_res >= old_res);
 
     let mut wt: Vec<ResampleWeight> = vec![ResampleWeight::default(); new_res];
 
@@ -584,13 +555,7 @@ fn resample_weights(old_res: usize, new_res: usize) -> Vec<ResampleWeight> {
 /// * `level`     - MIPMap Level.
 /// * `s`         - s-index.
 /// * `t`         - t-index.
-fn texel<T>(
-    pyramid: &[BlockedArray<T, 2>],
-    wrap_mode: ImageWrap,
-    level: usize,
-    s: usize,
-    t: usize,
-) -> T
+fn texel<T>(pyramid: &[BlockedArray<T, 2>], wrap_mode: ImageWrap, level: usize, s: usize, t: usize) -> T
 where
     T: Copy + Default,
 {
