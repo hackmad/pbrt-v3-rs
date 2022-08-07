@@ -114,10 +114,12 @@ fn compute_morton_primitives(
     let n = primitive_info.len();
     let morton_prims = Arc::new(Mutex::new(vec![MortonPrimitive::default(); n]));
 
-    crossbeam::scope(|scope| {
-        let (tx, rx) = crossbeam_channel::bounded::<(usize, &BVHPrimitiveInfo)>(OPTIONS.threads());
+    let n_threads = OPTIONS.threads();
 
-        for _ in 0..OPTIONS.threads() {
+    crossbeam::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded::<(usize, &BVHPrimitiveInfo)>(n_threads);
+
+        for _ in 0..n_threads {
             let rxc = rx.clone();
             let morton_prims = Arc::clone(&morton_prims);
             scope.spawn(move |_| {
@@ -172,10 +174,12 @@ fn build_treelets(
     let treelets: Arc<Mutex<BTreeMap<usize, ArenaArc<BVHBuildNode>>>> =
         Arc::new(Mutex::new(BTreeMap::new()));
 
-    crossbeam::scope(|scope| {
-        let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+    let n_threads = OPTIONS.threads();
 
-        for _ in 0..OPTIONS.threads() {
+    crossbeam::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded(n_threads);
+
+        for _ in 0..n_threads {
             let rxc = rx.clone();
             let treelets = Arc::clone(&treelets);
             let ordered_prims = &ordered_prims;

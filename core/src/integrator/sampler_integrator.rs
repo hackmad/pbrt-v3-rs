@@ -274,11 +274,13 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         let progress = create_progress_reporter(tile_count as u64 + 1_u64); // Render + image write
         progress.set_message("Rendering scene");
 
+        let n_threads = OPTIONS.threads();
+
         crossbeam::scope(|scope| {
-            let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+            let (tx, rx) = crossbeam_channel::bounded(n_threads);
 
             // Spawn worker threads.
-            for _ in 0..OPTIONS.threads() {
+            for _ in 0..n_threads {
                 let rxc = rx.clone();
                 let progress = &progress;
                 scope.spawn(move |_| {

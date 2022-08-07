@@ -416,12 +416,14 @@ where
     let s_weights = resample_weights(resolution[0], res_pow2[0]);
     let s_weights = s_weights.iter().enumerate().take(res_pow2[0]);
 
+    let n_threads = OPTIONS.threads();
+
     // Apply `s_weights` in the `s` direction.
     crossbeam::scope(|scope| {
-        let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+        let (tx, rx) = crossbeam_channel::bounded(n_threads);
 
         // Spawn worker threads.
-        for _ in 0..OPTIONS.threads() {
+        for _ in 0..n_threads {
             let rxc = rx.clone();
             let r_img = Arc::clone(&resampled_image);
             scope.spawn(move |_| {
@@ -465,15 +467,15 @@ where
     let t_weights = resample_weights(resolution[1], res_pow2[1]);
 
     // Setup some mutexes for temporarily holding working data; one per thread.
-    let work_data: Vec<Arc<RwLock<Vec<T>>>> =
-        vec![Arc::new(RwLock::new(vec![])); OPTIONS.threads()];
+    let n_threads = OPTIONS.threads();
+    let work_data: Vec<Arc<RwLock<Vec<T>>>> = vec![Arc::new(RwLock::new(vec![])); n_threads];
 
     // Apply `t_weights` in the `t` direction.
     crossbeam::scope(|scope| {
-        let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+        let (tx, rx) = crossbeam_channel::bounded(n_threads);
 
         // Spawn worker threads.
-        for thread in 0..OPTIONS.threads() {
+        for thread in 0..n_threads {
             let rxc = rx.clone();
             let work_data = Arc::clone(&work_data[thread]);
             let r_img = Arc::clone(&resampled_image);

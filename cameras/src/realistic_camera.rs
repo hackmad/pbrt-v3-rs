@@ -846,10 +846,12 @@ fn compute_exit_pupil_bounds(camera: &RealisticCamera, film_diagonal: Float) -> 
 
     let fac = 1.0 / N_SAMPLES as Float * film_diagonal / 2.0;
 
-    crossbeam::scope(|scope| {
-        let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+    let n_threads = OPTIONS.threads();
 
-        for _ in 0..OPTIONS.threads() {
+    crossbeam::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded(n_threads);
+
+        for _ in 0..n_threads {
             let rxc = rx.clone();
             let exit_pupil_bounds = Arc::clone(&exit_pupil_bounds);
             let progress = &progress;
