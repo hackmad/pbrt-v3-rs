@@ -11,7 +11,6 @@ use crate::reflection::*;
 use crate::sampler::*;
 use crate::scene::*;
 use crate::spectrum::*;
-use indicatif::{ProgressBar, ProgressStyle};
 use std::sync::Arc;
 
 /// Common data for sampler integrators.
@@ -272,19 +271,8 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         // Parallelize.
         info!("Rendering {}x{} tiles", n_tiles.x, n_tiles.y);
 
-        let progress = if OPTIONS.quiet {
-            ProgressBar::hidden()
-        } else {
-            let progress_style = ProgressStyle::default_bar()
-                .template(
-                    "{msg:10.cyan.bold} [{bar:40.green/white}] {pos:>5}/{len:5} ({elapsed}|{eta})",
-                )
-                .progress_chars("█▓▒░  ");
-            let pb = ProgressBar::new(tile_count as u64 + 1_u64); // Render + image write
-            pb.set_message("Rendering");
-            pb.set_style(progress_style);
-            pb
-        };
+        let progress = create_progress_reporter(tile_count as u64 + 1_u64); // Render + image write
+        progress.set_message("Rendering scene");
 
         crossbeam::scope(|scope| {
             let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());

@@ -841,6 +841,9 @@ fn compute_cardinal_points(r_in: &Ray, r_out: &Ray) -> (Float, Float) {
 fn compute_exit_pupil_bounds(camera: &RealisticCamera, film_diagonal: Float) -> Vec<Bounds2f> {
     let exit_pupil_bounds = Arc::new(Mutex::new(vec![Bounds2f::default(); N_SAMPLES]));
 
+    let progress = create_progress_reporter(N_SAMPLES as u64);
+    progress.set_message("Calculate exit pupil");
+
     let fac = 1.0 / N_SAMPLES as Float * film_diagonal / 2.0;
 
     crossbeam::scope(|scope| {
@@ -849,12 +852,14 @@ fn compute_exit_pupil_bounds(camera: &RealisticCamera, film_diagonal: Float) -> 
         for _ in 0..OPTIONS.threads() {
             let rxc = rx.clone();
             let exit_pupil_bounds = Arc::clone(&exit_pupil_bounds);
+            let progress = &progress;
             scope.spawn(move |_| {
                 for i in rxc.iter() {
                     let r0 = i as Float * fac;
                     let r1 = (i + 1) as Float * fac;
                     let mut ep = exit_pupil_bounds.lock().unwrap();
                     (*ep)[i] = camera.bound_exit_pupil(r0, r1);
+                    progress.inc(1);
                 }
             });
         }
@@ -866,6 +871,8 @@ fn compute_exit_pupil_bounds(camera: &RealisticCamera, film_diagonal: Float) -> 
         }
     })
     .unwrap();
+
+    progress.finish_with_message("Exit pupil calculated");
 
     let mut ep = exit_pupil_bounds.lock().unwrap();
     std::mem::replace(&mut ep, vec![])
