@@ -44,18 +44,18 @@ impl SamplerIntegrator for WhittedIntegrator {
     fn get_data(&self) -> &SamplerIntegratorData {
         &self.data
     }
+}
 
+impl Integrator for WhittedIntegrator {
     /// Preprocess the scene.
     ///
     /// * `scene` - The scene
     fn preprocess(&mut self, _scene: &Scene) {}
-}
 
-impl Integrator for WhittedIntegrator {
     /// Render the scene.
     ///
     /// * `scene` - The scene.
-    fn render(&mut self, scene: &Scene) {
+    fn render(&self, scene: &Scene) {
         SamplerIntegrator::render(self, scene);
     }
 

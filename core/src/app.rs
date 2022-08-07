@@ -69,6 +69,15 @@ pub struct Options {
     /// Write SPPM radius image
     #[clap(long = "sppm_radius", help = "Write SPPM radius image")]
     pub sppm_radius: bool,
+
+    /// Path prefix to the mipmap file for debugging purposses.
+    #[clap(
+        long = "mipmap",
+        short = 'm',
+        value_name = "FILE",
+        help = "Write the mipmap images to the given file path prefix."
+    )]
+    pub mipmap_file_prefix: Option<String>,
 }
 
 impl Options {

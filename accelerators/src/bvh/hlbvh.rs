@@ -2,12 +2,14 @@
 
 use super::common::*;
 use super::morton::*;
+use core::app::OPTIONS;
 use core::geometry::*;
 use core::pbrt::*;
 use core::primitive::*;
-use rayon::prelude::*;
+use itertools::Itertools;
 use shared_arena::{ArenaArc, SharedArena};
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -40,14 +42,7 @@ pub fn build(
         .fold(Bounds3f::EMPTY, |b, pi| b.union(&pi.bounds));
 
     // Compute Morton indices of primitives.
-    let morton_prims: Vec<MortonPrimitive> = primitive_info
-        .par_iter()
-        .map(|&pi| {
-            let centroid_offset = bounds.offset(&pi.centroid);
-            let v = centroid_offset * MORTON_SCALE;
-            MortonPrimitive::new(pi.primitive_number, encode_morton_3(&v))
-        })
-        .collect();
+    let morton_prims = compute_morton_primitives(primitive_info, &bounds);
 
     // Radix sort primitive Morton indices.
     let mut morton_prims_cell = RefCell::new(morton_prims);
@@ -84,28 +79,17 @@ pub fn build(
         prims.resize_with(primitives.len(), || Arc::clone(&primitives[0]));
     }
 
-    let mut treelets: Vec<ArenaArc<BVHBuildNode>> = treelets_to_build
-        .par_iter()
-        .map(|tr| {
-            // Generate i^th LBVH treelet.
-            let mut nodes_created = 0_usize;
-            let end_index = tr.start_index + tr.n_primitives;
-            let build_node = emit_lbvh(
-                arena,
-                primitives,
-                max_prims_in_node as usize,
-                primitive_info,
-                &morton_prims[tr.start_index..end_index],
-                tr.n_primitives,
-                &mut nodes_created,
-                Arc::clone(&ordered_prims),
-                &ordered_prims_offset,
-                FIRST_BIT_INDEX as isize,
-            );
-            atomic_total.fetch_add(nodes_created, Ordering::SeqCst);
-            build_node
-        })
-        .collect();
+    let mut treelets = build_treelets(
+        arena,
+        &treelets_to_build,
+        primitives,
+        max_prims_in_node,
+        primitive_info,
+        &morton_prims,
+        ordered_prims,
+        &ordered_prims_offset,
+        &atomic_total,
+    );
 
     *total_nodes = atomic_total.into_inner();
 
@@ -117,6 +101,121 @@ pub fn build(
         treelets_to_build.len(),
         total_nodes,
     )
+}
+
+/// Compute Morton indices of primitives.
+///
+/// * `primitive_info` - Primitive information.
+/// * `bounds`         - Bounds of all primitives in BVH node.
+fn compute_morton_primitives(
+    primitive_info: &Vec<BVHPrimitiveInfo>,
+    bounds: &Bounds3f,
+) -> Vec<MortonPrimitive> {
+    let n = primitive_info.len();
+    let morton_prims = Arc::new(Mutex::new(vec![MortonPrimitive::default(); n]));
+
+    crossbeam::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded::<(usize, &BVHPrimitiveInfo)>(OPTIONS.threads());
+
+        for _ in 0..OPTIONS.threads() {
+            let rxc = rx.clone();
+            let morton_prims = Arc::clone(&morton_prims);
+            scope.spawn(move |_| {
+                for (i, pi) in rxc.iter() {
+                    let centroid_offset = bounds.offset(&pi.centroid);
+                    let v = centroid_offset * MORTON_SCALE;
+
+                    let mut mp = morton_prims.lock().unwrap();
+                    (*mp)[i].primitive_index = pi.primitive_number;
+                    (*mp)[i].morton_code = encode_morton_3(&v);
+                }
+            });
+        }
+        drop(rx); // Drop extra rx since we've cloned one for each worker.
+
+        // Send work.
+        for (i, pi) in primitive_info.iter().enumerate() {
+            tx.send((i, pi)).unwrap();
+        }
+    })
+    .unwrap();
+
+    let mut mp = morton_prims.lock().unwrap();
+    std::mem::replace(&mut mp, vec![])
+}
+
+/// Create LBVHs for treelets in parallel.
+///
+/// * `arena`                - Shared arena for memory allocations.
+/// * `treelets_to_build`    - Treelets to build.
+/// * `primitives`           - The primitives in the node.
+/// * `max_prims_in_node`    - Maximum number of primitives in the node.
+/// * `primitive_info`       - Primitive information.
+/// * `morton_prims`         - Morton primitives.
+/// * `ordered_prims`        - Used to return a list of primitives ordered such that
+///                            primitives in leaf nodes occupy contiguous ranges in
+///                            the vector.
+/// * `ordered_prims_offset  - Index in `ordered_prims` for start of this node.
+/// * `atomic_total`         - Used to return total of nodes created.
+fn build_treelets(
+    arena: &SharedArena<BVHBuildNode>,
+    treelets_to_build: &[LBVHTreelet],
+    primitives: &[ArcPrimitive],
+    max_prims_in_node: u8,
+    primitive_info: &[BVHPrimitiveInfo],
+    morton_prims: &[MortonPrimitive],
+    ordered_prims: Arc<Mutex<Vec<ArcPrimitive>>>,
+    ordered_prims_offset: &AtomicUsize,
+    atomic_total: &AtomicUsize,
+) -> Vec<ArenaArc<BVHBuildNode>> {
+    let n = treelets_to_build.len();
+    let treelets: Arc<Mutex<BTreeMap<usize, ArenaArc<BVHBuildNode>>>> =
+        Arc::new(Mutex::new(BTreeMap::new()));
+
+    crossbeam::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+
+        for _ in 0..OPTIONS.threads() {
+            let rxc = rx.clone();
+            let treelets = Arc::clone(&treelets);
+            let ordered_prims = &ordered_prims;
+            scope.spawn(move |_| {
+                for i in rxc.iter() {
+                    let tr: &LBVHTreelet = &treelets_to_build[i];
+
+                    // Generate i^th LBVH treelet.
+                    let mut nodes_created = 0_usize;
+                    let end_index = tr.start_index + tr.n_primitives;
+                    let build_node = emit_lbvh(
+                        arena,
+                        primitives,
+                        max_prims_in_node as usize,
+                        primitive_info,
+                        &morton_prims[tr.start_index..end_index],
+                        tr.n_primitives,
+                        &mut nodes_created,
+                        Arc::clone(ordered_prims),
+                        &ordered_prims_offset,
+                        FIRST_BIT_INDEX as isize,
+                    );
+                    atomic_total.fetch_add(nodes_created, Ordering::SeqCst);
+
+                    let mut tl = treelets.lock().unwrap();
+                    (*tl).insert(i, build_node);
+                }
+            });
+        }
+        drop(rx); // Drop extra rx since we've cloned one for each worker.
+
+        // Send work.
+        for i in 0..n {
+            tx.send(i).unwrap();
+        }
+    })
+    .unwrap();
+
+    let tl = treelets.lock().unwrap();
+    tl.values().map(ArenaArc::clone).collect_vec()
 }
 
 /// Builds a treelet by taking primitives with centroids in some region of space

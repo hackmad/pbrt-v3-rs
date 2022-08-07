@@ -12,8 +12,7 @@ use core::pbrt::*;
 use core::sampling::*;
 use core::scene::*;
 use core::spectrum::*;
-use rayon::prelude::*;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
 /// Implements an infinite area light source using a latitude-longitude radiance
 /// map.
@@ -93,26 +92,10 @@ impl InfiniteAreaLight {
         // Initialize sampling PDFs for infinite area light.
 
         // Compute scalar-valued image `img` from environment map.
-        let width = 2 * l_map.width();
-        let height = 2 * l_map.height();
-        let fwidth = 0.5 / min(width, height) as Float;
-
-        let img: Vec<Vec<Float>> = (0..height)
-            .into_par_iter()
-            .map(|v| {
-                let vp = (v as Float + 0.5) / height as Float;
-                let sin_theta = sin(PI * (v as Float + 0.5) / height as Float);
-                (0..width)
-                    .map(|u| {
-                        let up = (u as Float + 0.5) / width as Float;
-                        l_map.lookup_triangle(&Point2f::new(up, vp), fwidth).y() * sin_theta
-                    })
-                    .collect()
-            })
-            .collect();
+        let img = compute_scalar_image(&l_map);
 
         // Compute sampling distributions for rows and columns of image
-        let distribution = Distribution2D::new(img);
+        let distribution = Distribution2D::new(img.clone());
 
         Self {
             light_type: LightType::INFINITE_LIGHT,
@@ -339,4 +322,48 @@ impl From<(&ParamSet, ArcTransform, &str)> for InfiniteAreaLight {
             texmap.as_ref().map(|t| t.as_ref()),
         )
     }
+}
+
+/// Compute scalar-valued image `img` from environment map.
+///
+/// * `l_map`  - The environment map's mipmap.
+fn compute_scalar_image(l_map: &MIPMap<Spectrum>) -> Vec<Vec<Float>> {
+    let width = 2 * l_map.width();
+    let height = 2 * l_map.height();
+    let fwidth = 0.5 / min(width, height) as Float;
+
+    let img: Arc<Mutex<Vec<Vec<Float>>>> = Arc::new(Mutex::new(vec![vec![]; height]));
+
+    crossbeam::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+
+        for _ in 0..OPTIONS.threads() {
+            let rxc = rx.clone();
+            let img = Arc::clone(&img);
+            scope.spawn(move |_| {
+                for v in rxc.iter() {
+                    let vp = (v as Float + 0.5) / height as Float;
+                    let sin_theta = sin(PI * (v as Float + 0.5) / height as Float);
+
+                    let mut img = img.lock().unwrap();
+                    (*img)[v] = (0..width)
+                        .map(|u| {
+                            let up = (u as Float + 0.5) / width as Float;
+                            l_map.lookup_triangle(&Point2f::new(up, vp), fwidth).y() * sin_theta
+                        })
+                        .collect();
+                }
+            });
+        }
+        drop(rx); // Drop extra rx since we've cloned one for each worker.
+
+        // Send work.
+        for v in 0..height {
+            tx.send(v).unwrap();
+        }
+    })
+    .unwrap();
+
+    let mut v = img.lock().unwrap();
+    std::mem::replace(&mut v, vec![])
 }

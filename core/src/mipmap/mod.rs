@@ -5,11 +5,11 @@ use crate::geometry::*;
 use crate::memory::*;
 use crate::pbrt::*;
 use crate::texture::*;
-use rayon::prelude::*;
+use itertools::{iproduct, Itertools};
 use std::hash::Hash;
 use std::marker::{Send, Sync};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 mod cache;
 mod convert_in;
@@ -405,7 +405,7 @@ where
     let res = res_pow2[0] * res_pow2[1];
 
     // Use a mutex to modify resampled image data in parallel.
-    let resampled_image: Arc<Mutex<Vec<T>>> = Arc::new(Mutex::new(vec![T::default(); res]));
+    let resampled_image: Arc<RwLock<Vec<T>>> = Arc::new(RwLock::new(vec![T::default(); res]));
 
     info!(
         "Resampling MIPMap from {}x{} to {}x{}",
@@ -414,90 +414,134 @@ where
 
     // Resample image in `s` direction.
     let s_weights = resample_weights(resolution[0], res_pow2[0]);
+    let s_weights = s_weights.iter().enumerate().take(res_pow2[0]);
 
     // Apply `s_weights` in the `s` direction.
-    (0..resolution[1])
-        .into_par_iter()
-        .chunks(16)
-        .for_each(|vt| {
-            for t in vt {
-                for (s, swt) in s_weights.iter().enumerate().take(res_pow2[0]) {
-                    // Compute texel `(s, t)` in `s`-zoomed image.
-                    {
-                        let mut pixels = resampled_image.lock().unwrap();
-                        (*pixels)[t * res_pow2[0] + s] = T::default(); // Initialize to zero.
-                    }
+    crossbeam::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
 
-                    for j in 0..4 {
-                        let orig_s = s_weights[s].first_texel + j;
-                        let orig_s = match wrap_mode {
-                            ImageWrap::Repeat => rem(orig_s, resolution[0]),
-                            ImageWrap::Clamp => clamp(orig_s, 0, resolution[0] - 1),
-                            _ => orig_s,
-                        };
+        // Spawn worker threads.
+        for _ in 0..OPTIONS.threads() {
+            let rxc = rx.clone();
+            let r_img = Arc::clone(&resampled_image);
+            scope.spawn(move |_| {
+                for work in rxc.iter() {
+                    let mut r_img = r_img.write().unwrap();
+                    for w in work {
+                        let (t, (s, s_weight)): (usize, (usize, &ResampleWeight)) = w;
 
-                        if orig_s < resolution[0] {
-                            let mut pixels = resampled_image.lock().unwrap();
-                            (*pixels)[t * res_pow2[0] + s] +=
-                                img[t * resolution[0] + orig_s] * swt.weight[j];
+                        // Compute texel `(s, t)` in `s`-zoomed image.
+                        let pixel_index = t * res_pow2[0] + s;
+                        let mut pixel = T::default(); // Initialize to zero.
+
+                        for j in 0..4 {
+                            let orig_s = s_weight.first_texel + j;
+                            let orig_s = match wrap_mode {
+                                ImageWrap::Repeat => rem(orig_s, resolution[0]),
+                                ImageWrap::Clamp => clamp(orig_s, 0, resolution[0] - 1),
+                                _ => orig_s,
+                            };
+
+                            if orig_s < resolution[0] {
+                                pixel += img[t * resolution[0] + orig_s] * s_weight.weight[j];
+                            }
                         }
+                        (*r_img)[pixel_index] += pixel;
                     }
                 }
-            }
-        });
+            });
+        }
+        drop(rx); // Drop extra rx since we've cloned one for each woker.
+
+        // Send work.
+        for work in &iproduct!(0..resolution[1], s_weights).chunks(16) {
+            let w: Vec<(usize, (usize, &ResampleWeight))> = work.collect();
+            tx.send(w).unwrap();
+        }
+    })
+    .unwrap();
 
     // Resample image in `t` direction.
     let t_weights = resample_weights(resolution[1], res_pow2[1]);
 
     // Setup some mutexes for temporarily holding working data; one per thread.
-    let work_data: Vec<Arc<Mutex<Vec<T>>>> = vec![Arc::new(Mutex::new(vec![])); OPTIONS.threads()];
+    let work_data: Vec<Arc<RwLock<Vec<T>>>> =
+        vec![Arc::new(RwLock::new(vec![])); OPTIONS.threads()];
 
     // Apply `t_weights` in the `t` direction.
-    (0..res_pow2[0])
-        .into_par_iter()
-        .chunks(32)
-        .enumerate()
-        .for_each(|(vi, vs)| {
-            // Lock for duration of thread run. Otherwise work_data will
-            // get muddled up between threads.
-            let mut work_data = work_data[vi % OPTIONS.threads()].lock().unwrap();
+    crossbeam::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
 
-            // Allocate with default T values (zeroes) if it isn't already.
-            if work_data.len() == 0 {
-                *work_data = vec![T::default(); res_pow2[1]];
-            }
+        // Spawn worker threads.
+        for thread in 0..OPTIONS.threads() {
+            let rxc = rx.clone();
+            let work_data = Arc::clone(&work_data[thread]);
+            let r_img = Arc::clone(&resampled_image);
+            let t_weights = &t_weights;
+            scope.spawn(move |_| {
+                for work in rxc.iter() {
+                    // Lock for duration of work. Otherwise work_data will
+                    // get muddled up between threads.
+                    let mut work_data = work_data.write().unwrap();
 
-            for s in vs {
-                for t in 0..res_pow2[1] {
-                    // Initialize to zero since work_data is shared and we
-                    // don't want old values from previous iteration or thread.
-                    (*work_data)[t] = T::default();
-                    for j in 0..4 {
-                        let offset = t_weights[t].first_texel + j;
-                        let offset = match wrap_mode {
-                            ImageWrap::Repeat => rem(offset, resolution[1]),
-                            ImageWrap::Clamp => clamp(offset, 0, resolution[1] - 1),
-                            _ => offset,
-                        };
+                    let (_vi, vs): (usize, Vec<usize>) = work;
 
-                        if offset < resolution[1] {
-                            let pixels = resampled_image.lock().unwrap();
-                            work_data[t] +=
-                                (*pixels)[offset * res_pow2[0] + s] * t_weights[t].weight[j];
+                    // Allocate withd efault T values (zeroes) if it isn't already.
+                    if (*work_data).len() == 0 {
+                        *work_data = vec![T::default(); res_pow2[1]];
+                    }
+
+                    for s in vs {
+                        {
+                            let pixels = r_img.read().unwrap();
+                            for t in 0..res_pow2[1] {
+                                // Initialize to zero since work_data is shared and we
+                                // don't want old values from previous iteration or thread.
+                                (*work_data)[t] = T::default();
+
+                                for j in 0..4 {
+                                    let offset = t_weights[t].first_texel + j;
+                                    let offset = match wrap_mode {
+                                        ImageWrap::Repeat => rem(offset, resolution[1]),
+                                        ImageWrap::Clamp => clamp(offset, 0, resolution[1] - 1),
+                                        _ => offset,
+                                    };
+
+                                    if offset < resolution[1] {
+                                        work_data[t] += (*pixels)[offset * res_pow2[0] + s]
+                                            * t_weights[t].weight[j];
+                                    }
+                                }
+                            }
+                        }
+                        {
+                            let mut pixels = r_img.write().unwrap();
+                            for t in 0..res_pow2[1] {
+                                (*pixels)[t * res_pow2[0] + s] = work_data[t].clamp_default();
+                            }
                         }
                     }
                 }
-                for t in 0..res_pow2[1] {
-                    {
-                        let mut pixels = resampled_image.lock().unwrap();
-                        (*pixels)[t * res_pow2[0] + s] = work_data[t].clamp_default();
-                    }
-                }
-            }
-        });
+            });
+        }
+        drop(rx); // Drop extra rx since we've cloned one for each woker.
 
-    let resampled_pixels = resampled_image.lock().unwrap();
-    let mut result: Vec<T> = Vec::with_capacity(resampled_pixels.len());
+        // Send work.
+        for work in (0..res_pow2[0])
+            .into_iter()
+            .chunks(32)
+            .into_iter()
+            .enumerate()
+        {
+            let (vi, chunk) = work;
+            let vs: Vec<usize> = chunk.collect();
+            tx.send((vi, vs)).unwrap();
+        }
+    })
+    .unwrap();
+
+    let resampled_pixels = resampled_image.read().unwrap();
+    let mut result: Vec<T> = Vec::with_capacity((*resampled_pixels).len());
     result.clone_from(&*resampled_pixels);
     (result, res_pow2)
 }

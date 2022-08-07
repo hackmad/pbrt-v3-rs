@@ -2,7 +2,10 @@
 
 #![allow(dead_code)]
 
+use crate::app::OPTIONS;
+
 use super::clamp::*;
+use indicatif::{ProgressBar, ProgressStyle};
 use num_traits::{Num, Zero};
 use std::ops::{Add, Mul, Neg};
 
@@ -407,5 +410,23 @@ impl HashableFloat {
     pub fn new(val: Float) -> Self {
         let (mantissa, exponent, sign) = num_traits::Float::integer_decode(val);
         Self(mantissa, exponent, sign)
+    }
+}
+
+/// Creates a new progress bar of given length.
+///
+/// * `len` - The length.
+pub fn create_progress_reporter(len: u64) -> ProgressBar {
+    if OPTIONS.quiet {
+        ProgressBar::hidden()
+    } else {
+        let progress_style = ProgressStyle::with_template(
+            "{msg:22.cyan.bold} [{bar:40.green/white}] {pos:>5}/{len:5} ({elapsed}|{eta})",
+        )
+        .unwrap()
+        .progress_chars("█▓▒░  ");
+        let pb = ProgressBar::new(len);
+        pb.set_style(progress_style);
+        pb
     }
 }

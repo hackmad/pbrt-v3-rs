@@ -19,6 +19,7 @@ impl MortonPrimitive {
     ///
     /// * `primitive_index` - The index of the primitive in a `primitive_info` vector.
     /// * `morton_code`     - The Morton code.
+    #[allow(unused)]
     pub fn new(primitive_index: usize, morton_code: u32) -> Self {
         Self {
             primitive_index,

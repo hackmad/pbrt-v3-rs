@@ -1,6 +1,7 @@
 //! Image Texture
 
 use super::*;
+use core::app::OPTIONS;
 use core::geometry::*;
 use core::interaction::*;
 use core::mipmap::*;
@@ -69,7 +70,9 @@ macro_rules! new_image_texture {
                 // NOTE: MIPMap images will be flipped upside down; texture
                 // coordinate space has (0,0) at the lower left corner.
                 // See crate::core::mipmap::cache:generate_mipmap().
-                //mipmap.write_images("mipmap");
+                if let Some(file_prefix) = &OPTIONS.mipmap_file_prefix {
+                    mipmap.write_images(file_prefix);
+                }
 
                 Self { mapping, mipmap }
             }
