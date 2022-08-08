@@ -20,7 +20,7 @@ use core::sampler::*;
 use core::sampling::Distribution1D;
 use core::scene::*;
 use core::spectrum::*;
-use itertools::Itertools;
+use indicatif::MultiProgress;
 use samplers::HaltonSampler;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
@@ -65,12 +65,17 @@ impl SPPMIntegrator {
         photons_per_iteration: usize,
         write_frequency: usize,
     ) -> Self {
+        let photons_per_iter = if photons_per_iteration > 0 {
+            photons_per_iteration
+        } else {
+            camera.get_data().film.cropped_pixel_bounds.area() as usize
+        };
         Self {
             camera,
             initial_search_radius,
             n_iterations,
             max_depth,
-            photons_per_iteration,
+            photons_per_iteration: photons_per_iter,
             write_frequency,
         }
     }
@@ -111,7 +116,9 @@ impl Integrator for SPPMIntegrator {
         );
         let tile_count = n_tiles.x * n_tiles.y;
 
-        let progress = create_progress_reporter(tile_count as u64 + 1_u64); // Render + image write
+        let multi_progress = create_multi_progress();
+
+        let progress = multi_progress.add(create_progress_bar(tile_count as u64 + 1_u64)); // Render + image write
         progress.set_message("Rendering scene");
 
         for iter in 0..self.n_iterations {
@@ -129,6 +136,7 @@ impl Integrator for SPPMIntegrator {
                 self.initial_search_radius,
                 self.max_depth,
                 Arc::clone(&self.camera),
+                &multi_progress,
             );
             progress.inc(1);
 
@@ -143,7 +151,7 @@ impl Integrator for SPPMIntegrator {
             let grid_res = compute_grid_resolution(&grid_bounds, max_radius);
 
             // Add visible points to SPPM grid.
-            add_visible_points_to_grid(&pixels, &grid_bounds, &grid_res, hash_size, &grid);
+            add_visible_points_to_grid(&pixels, &grid_bounds, &grid_res, hash_size, &grid, &multi_progress);
 
             // Trace photons and accumulate contributions.
             trace_photons(
@@ -158,11 +166,12 @@ impl Integrator for SPPMIntegrator {
                 &grid_res,
                 hash_size,
                 &grid,
+                &multi_progress,
             );
             progress.inc(1);
 
             // Update pixel values from this pass' photons.
-            update_pixels(&mut pixels);
+            update_pixels(&mut pixels, &multi_progress);
 
             // Periodically store SPPM image in film and write image.
             if iter + 1 == self.n_iterations || (iter + 1) % self.write_frequency == 0 {
@@ -199,7 +208,7 @@ impl From<(&ParamSet, ArcCamera)> for SPPMIntegrator {
         }
 
         let max_depth = params.find_one_int("maxdepth", 5) as usize;
-        let photons_per_iteration = params.find_one_int("photonsperiteration", -1) as usize;
+        let photons_per_iteration = params.find_one_int("photonsperiteration", 0) as usize;
         let write_frequency = params.find_one_int("imagewritefrequency", 1 << 31) as usize;
         let initial_search_radius = params.find_one_float("radius", 1.0);
 
@@ -281,14 +290,14 @@ impl VisiblePoint {
 
 struct SPPMPixelListNode {
     pixel_index: usize,
-    next: Option<Arc<SPPMPixelListNode>>,
+    next: Atom<Arc<SPPMPixelListNode>>,
 }
 
 impl SPPMPixelListNode {
     fn new(pixel_index: usize) -> Self {
         Self {
             pixel_index,
-            next: None,
+            next: Atom::empty(),
         }
     }
 }
@@ -318,7 +327,11 @@ fn to_grid(p: &Point3f, bounds: &Bounds3f, grid_res: &[Int; 3]) -> (bool, Point3
 /// * `hash_size` - Hash size (the total number of pixels).
 #[inline(always)]
 fn hash(p: &Point3i, hash_size: usize) -> usize {
-    ((p.x * 73856093) ^ (p.y * 19349663) ^ (p.z * 83492791)) as usize % hash_size
+    let (x, _) = p.x.overflowing_mul(73856093);
+    let (y, _) = p.y.overflowing_mul(19349663);
+    let (z, _) = p.z.overflowing_mul(83492791);
+
+    (x ^ y ^ z) as usize % hash_size
 }
 
 /// Compute tile bounds for SPPM tile.
@@ -344,18 +357,23 @@ fn generate_visible_points(
     initial_search_radius: Float,
     max_depth: usize,
     camera: ArcCamera,
+    multi_progress: &MultiProgress,
 ) {
+    let progress = multi_progress.add(create_progress_bar(pixels.len() as u64));
+    progress.set_message("Generate visible points");
+
     let n_threads = OPTIONS.threads();
     let camera = &camera;
 
     crossbeam::scope(|scope| {
         let (tx_worker, rx_worker) = crossbeam_channel::bounded::<usize>(n_threads);
-        let (tx_collector, rx_collector) = crossbeam_channel::bounded::<(usize, SPPMPixel)>(1);
+        let (tx_collector, rx_collector) = crossbeam_channel::bounded::<(usize, SPPMPixel)>(n_threads);
 
         // Spawn collector thread.
         scope.spawn(move |_| {
             for (pixel_offset, pixel) in rx_collector.iter() {
                 pixels[pixel_offset] = pixel;
+                progress.inc(1);
             }
         });
 
@@ -528,50 +546,53 @@ fn add_visible_points_to_grid(
     grid_res: &[Int; 3],
     hash_size: usize,
     grid: &[Atom<Arc<SPPMPixelListNode>>],
+    multi_progress: &MultiProgress,
 ) {
+    let progress = multi_progress.add(create_progress_bar(pixels.len() as u64));
+    progress.set_message("Add visible  points to grid");
+
     let n_threads = OPTIONS.threads();
 
     crossbeam::scope(|scope| {
-        let (tx_worker, rx_worker) = crossbeam_channel::bounded::<Vec<(usize, &SPPMPixel)>>(n_threads);
+        let (tx_worker, rx_worker) = crossbeam_channel::bounded::<(usize, &SPPMPixel)>(4096);
 
         // Spawn worker threads.
         for _ in 0..n_threads {
             let rx_worker = rx_worker.clone();
+            let progress = &progress;
             scope.spawn(move |_| {
-                for pixels in rx_worker.iter() {
-                    for (index, pixel) in pixels {
-                        if !pixel.vp.beta.is_black() {
-                            // Add pixel's visible point to applicable grid cells.
-                            let radius = Vector3f::new(pixel.radius, pixel.radius, pixel.radius);
+                for (index, pixel) in rx_worker.iter() {
+                    if !pixel.vp.beta.is_black() {
+                        // Add pixel's visible point to applicable grid cells.
+                        let radius = Vector3f::new(pixel.radius, pixel.radius, pixel.radius);
 
-                            let (_, p_min) = to_grid(&(pixel.vp.p - radius), &grid_bounds, &grid_res);
-                            let (_, p_max) = to_grid(&(pixel.vp.p + radius), &grid_bounds, &grid_res);
+                        let (_, p_min) = to_grid(&(pixel.vp.p - radius), &grid_bounds, &grid_res);
+                        let (_, p_max) = to_grid(&(pixel.vp.p + radius), &grid_bounds, &grid_res);
 
-                            for z in p_min.z..=p_max.z {
-                                for y in p_min.y..=p_max.y {
-                                    for x in p_min.x..=p_max.x {
-                                        // Add visible point to grid cell `(x, y, z)`.
-                                        let h = hash(&Point3i::new(x, y, z), hash_size);
-                                        let mut node = Arc::new(SPPMPixelListNode::new(index));
+                        for z in p_min.z..=p_max.z {
+                            for y in p_min.y..=p_max.y {
+                                for x in p_min.x..=p_max.x {
+                                    // Add visible point to grid cell `(x, y, z)`.
+                                    let h = hash(&Point3i::new(x, y, z), hash_size);
+                                    let node = Arc::new(SPPMPixelListNode::new(index));
 
-                                        // Atomically add `node` to the start of `grid[h]`'s linked list.
-                                        let list = grid[h].swap(Arc::clone(&node), Ordering::AcqRel);
-                                        if list.is_some() {
-                                            Arc::get_mut(&mut node).unwrap().next = list;
-                                        }
+                                    // Atomically add `node` to the start of `grid[h]`'s linked list.
+                                    if let Some(list) = grid[h].swap(Arc::clone(&node), Ordering::AcqRel) {
+                                        node.next.set_if_none(list, Ordering::Release);
                                     }
                                 }
                             }
                         }
                     }
+                    progress.inc(1);
                 }
             });
         }
         drop(rx_worker); // Drop extra since we've cloned one for each woker.
 
         // Send work.
-        for chunk in &pixels.iter().enumerate().chunks(4096) {
-            tx_worker.send(chunk.collect()).unwrap();
+        for (index, pixel) in pixels.iter().enumerate() {
+            tx_worker.send((index, pixel)).unwrap();
         }
     })
     .unwrap();
@@ -619,41 +640,46 @@ fn trace_photons(
     grid_res: &[Int; 3],
     hash_size: usize,
     grid: &[Atom<Arc<SPPMPixelListNode>>],
+    multi_progress: &MultiProgress,
 ) {
+    // Really large numbers causes progress bar to panic when calculated durations.
+    let progress = multi_progress.add(create_progress_bar(photons_per_iteration as u64));
+    progress.set_message("Tracing photons");
+
     let n_threads = OPTIONS.threads();
 
     crossbeam::scope(|scope| {
-        let (tx_worker, rx_worker) = crossbeam_channel::bounded::<Vec<usize>>(n_threads);
+        let (tx_worker, rx_worker) = crossbeam_channel::bounded::<usize>(8192);
 
         // Spawn worker threads.
         for _ in 0..n_threads {
             let rx_worker = rx_worker.clone();
+            let progress = &progress;
             scope.spawn(move |_| {
-                for photon_indices in rx_worker.iter() {
-                    for photon_index in photon_indices {
-                        trace_photon(
-                            pixels,
-                            iter,
-                            photon_index,
-                            photons_per_iteration,
-                            scene,
-                            camera_data,
-                            &light_distr,
-                            max_depth,
-                            &grid_bounds,
-                            &grid_res,
-                            hash_size,
-                            grid,
-                        );
-                    }
+                for photon_index in rx_worker.iter() {
+                    trace_photon(
+                        pixels,
+                        iter,
+                        photon_index,
+                        photons_per_iteration,
+                        scene,
+                        camera_data,
+                        &light_distr,
+                        max_depth,
+                        &grid_bounds,
+                        &grid_res,
+                        hash_size,
+                        grid,
+                    );
+                    progress.inc(1);
                 }
             });
         }
         drop(rx_worker); // Drop extra since we've cloned one for each woker.
 
         // Send work.
-        for chunk in &(0..photons_per_iteration).into_iter().chunks(8192) {
-            tx_worker.send(chunk.collect()).unwrap();
+        for photon_index in 0..photons_per_iteration {
+            tx_worker.send(photon_index).unwrap();
         }
     })
     .unwrap();
@@ -744,8 +770,10 @@ fn trace_photon(
                     let pixel = &pixels[node.pixel_index];
                     let radius = pixel.radius;
                     if pixel.vp.p.distance_squared(isect.hit.p) > radius * radius {
+                        current_node = node.next.take(Ordering::Relaxed);
                         continue;
                     }
+
                     // Update `pixel` `Phi` and `M` for nearby photon.
                     let wi = -photon_ray.d;
                     let phi = beta
@@ -758,8 +786,7 @@ fn trace_photon(
                         pixel.phi[i].add(phi[i]);
                     }
                     pixel.m.fetch_add(1, Ordering::Relaxed);
-
-                    current_node = node.next.as_ref().map(Arc::clone);
+                    current_node = node.next.take(Ordering::Relaxed);
                 }
             }
         }
@@ -811,51 +838,54 @@ fn trace_photon(
 }
 
 /// Update pixel values from this pass' photons.
-fn update_pixels(pixels: &mut Vec<SPPMPixel>) {
+fn update_pixels(pixels: &mut Vec<SPPMPixel>, multi_progress: &MultiProgress) {
+    let progress = multi_progress.add(create_progress_bar(pixels.len() as u64));
+    progress.set_message("Update pixel values");
+
     let n_threads = OPTIONS.threads();
 
     crossbeam::scope(|scope| {
-        let (tx_worker, rx_worker) = crossbeam_channel::bounded::<Vec<&mut SPPMPixel>>(n_threads);
+        let (tx_worker, rx_worker) = crossbeam_channel::bounded::<&mut SPPMPixel>(4096);
 
         // Spawn worker threads.
         for _ in 0..n_threads {
             let rx_worker = rx_worker.clone();
+            let progress = &progress;
             scope.spawn(move |_| {
-                for pixels in rx_worker.iter() {
-                    for p in pixels {
-                        let m = p.m.load(Ordering::Relaxed);
-                        if m > 0 {
-                            // Update pixel photon count, search radius, and `tau` from photons.
-                            const GAMMA: Float = 2.0 / 3.0;
-                            let n_new = p.n + GAMMA * m as Float;
-                            let r_new = p.radius * (n_new / (p.n + m as Float)).sqrt();
+                for p in rx_worker.iter() {
+                    let m = p.m.load(Ordering::Relaxed);
+                    if m > 0 {
+                        // Update pixel photon count, search radius, and `tau` from photons.
+                        const GAMMA: Float = 2.0 / 3.0;
+                        let n_new = p.n + GAMMA * m as Float;
+                        let r_new = p.radius * (n_new / (p.n + m as Float)).sqrt();
 
-                            let mut phi = Spectrum::ZERO;
-                            for j in 0..SPECTRUM_SAMPLES {
-                                phi[j] = p.phi[j].load(Ordering::Relaxed);
-                            }
-
-                            p.tau = (p.tau + p.vp.beta * phi) * (r_new * r_new) / (p.radius * p.radius);
-                            p.n = n_new;
-                            p.radius = r_new;
-                            p.m.store(0, Ordering::Relaxed);
-
-                            for j in 0..SPECTRUM_SAMPLES {
-                                p.phi[j].store(0.0, Ordering::Relaxed);
-                            }
+                        let mut phi = Spectrum::ZERO;
+                        for j in 0..SPECTRUM_SAMPLES {
+                            phi[j] = p.phi[j].load(Ordering::Relaxed);
                         }
-                        // Reset `VisiblePoint` in pixel.
-                        p.vp.beta = Spectrum::ZERO;
-                        p.vp.bsdf = None;
+
+                        p.tau = (p.tau + p.vp.beta * phi) * (r_new * r_new) / (p.radius * p.radius);
+                        p.n = n_new;
+                        p.radius = r_new;
+                        p.m.store(0, Ordering::Relaxed);
+
+                        for j in 0..SPECTRUM_SAMPLES {
+                            p.phi[j].store(0.0, Ordering::Relaxed);
+                        }
                     }
+                    // Reset `VisiblePoint` in pixel.
+                    p.vp.beta = Spectrum::ZERO;
+                    p.vp.bsdf = None;
+                    progress.inc(1);
                 }
             });
         }
         drop(rx_worker); // Drop extra since we've cloned one for each woker.
 
         // Send work.
-        for chunk in &pixels.iter_mut().chunks(4096) {
-            tx_worker.send(chunk.collect()).unwrap();
+        for pixel in pixels.iter_mut() {
+            tx_worker.send(pixel).unwrap();
         }
     })
     .unwrap();

@@ -72,13 +72,7 @@ impl RealisticCamera {
         let film_clone = film;
         let film_diagonal = film_clone.diagonal;
 
-        let data = CameraData::new(
-            camera_to_world,
-            shutter_open,
-            shutter_close,
-            film_clone,
-            medium,
-        );
+        let data = CameraData::new(camera_to_world, shutter_open, shutter_close, film_clone, medium);
 
         let n = lens_data.len();
         let mut element_interfaces = Vec::<LensElementInterface>::with_capacity(n);
@@ -117,11 +111,7 @@ impl RealisticCamera {
 
         // Compute lens-film distance for given focus distance
         let fb = camera.focus_binary_search(focus_distance);
-        info!(
-            "Binary search focus: {} -> {}",
-            fb,
-            camera.focus_distance(fb)
-        );
+        info!("Binary search focus: {} -> {}", fb, camera.focus_distance(fb));
 
         let thickness = camera.focus_thick_lens(focus_distance);
         camera.element_interfaces.last_mut().unwrap().thickness = thickness;
@@ -158,10 +148,7 @@ impl RealisticCamera {
 
     /// Returns the z-depth value of the front element.
     fn lens_front_z(&self) -> Float {
-        self.element_interfaces
-            .iter()
-            .map(|element| element.thickness)
-            .sum()
+        self.element_interfaces.iter().map(|element| element.thickness).sum()
     }
 
     /// Returns the aperture radius of the rear element in meters.
@@ -208,9 +195,7 @@ impl RealisticCamera {
                 }
             } else {
                 let z_center = element_z + element.curvature_radius;
-                if let Some((t_hit, n_hit)) =
-                    intersect_spherical_element(element.curvature_radius, z_center, &r_lens)
-                {
+                if let Some((t_hit, n_hit)) = intersect_spherical_element(element.curvature_radius, z_center, &r_lens) {
                     t = t_hit;
                     n = n_hit;
                 } else {
@@ -274,9 +259,7 @@ impl RealisticCamera {
                 t = (element_z - r_lens.o.z) / r_lens.d.z;
             } else {
                 let z_center = element_z + element.curvature_radius;
-                if let Some((t_hit, n_hit)) =
-                    intersect_spherical_element(element.curvature_radius, z_center, &r_lens)
-                {
+                if let Some((t_hit, n_hit)) = intersect_spherical_element(element.curvature_radius, z_center, &r_lens) {
                     t = t_hit;
                     n = n_hit;
                 } else {
@@ -496,11 +479,7 @@ impl RealisticCamera {
         for i in 0..N_SAMPLES {
             // Find location of sample points on `x` segment and rear lens element.
             let p_film = Point3f::new(
-                lerp(
-                    (i as Float + 0.5) / N_SAMPLES as Float,
-                    p_film_x0,
-                    p_film_x1,
-                ),
+                lerp((i as Float + 0.5) / N_SAMPLES as Float, p_film_x0, p_film_x1),
                 0.0,
                 0.0,
             );
@@ -535,8 +514,7 @@ impl RealisticCamera {
             );
             proj_rear_bounds
         } else {
-            pupil_bounds
-                .expand(2.0 * proj_rear_bounds.diagonal().length() / N_SAMPLES_SQRT as Float)
+            pupil_bounds.expand(2.0 * proj_rear_bounds.diagonal().length() / N_SAMPLES_SQRT as Float)
         }
     }
 
@@ -548,8 +526,7 @@ impl RealisticCamera {
     fn sample_exit_pupil(&self, p_film: &Point2f, lens_sample: &Point2f) -> (Point3f, Float) {
         // Find exit pupil bound for sample distance from film center.
         let r_film = (p_film.x * p_film.x + p_film.y * p_film.y).sqrt();
-        let mut r_index = (r_film / (self.data.film.diagonal / 2.0)
-            * self.exit_pupil_bounds.len() as Float) as usize;
+        let mut r_index = (r_film / (self.data.film.diagonal / 2.0) * self.exit_pupil_bounds.len() as Float) as usize;
         r_index = min(self.exit_pupil_bounds.len() - 1, r_index);
         let pupil_bounds = self.exit_pupil_bounds[r_index];
         let sample_bounds_area = pupil_bounds.area();
@@ -558,17 +535,9 @@ impl RealisticCamera {
         let p_lens = pupil_bounds.lerp(lens_sample);
 
         // Return sample point rotated by angle of `p_film` with `+x` axis.
-        let sin_theta = if r_film != 0.0 {
-            p_film.y / r_film
-        } else {
-            0.0
-        };
+        let sin_theta = if r_film != 0.0 { p_film.y / r_film } else { 0.0 };
 
-        let cos_theta = if r_film != 0.0 {
-            p_film.x / r_film
-        } else {
-            1.0
-        };
+        let cos_theta = if r_film != 0.0 { p_film.x / r_film } else { 1.0 };
 
         let p = Point3f::new(
             cos_theta * p_lens.x - sin_theta * p_lens.y,
@@ -611,10 +580,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>, &str)> for Re
         // Load element data from lens description file
         let lens_data = match parse_float_file(&lens_file) {
             Ok(data) => data,
-            Err(err) => panic!(
-                "Error reading lens specification file '{}'. {}.",
-                lens_file, err
-            ),
+            Err(err) => panic!("Error reading lens specification file '{}'. {}.", lens_file, err),
         };
 
         if lens_data.len() % 4 != 0 {
@@ -683,8 +649,7 @@ impl Camera for RealisticCamera {
             let weight = if self.simple_weighting {
                 cos_4_theta * exit_pupil_bounds_area / self.exit_pupil_bounds[0].area()
             } else {
-                (self.data.shutter_close - self.data.shutter_open)
-                    * (cos_4_theta * exit_pupil_bounds_area)
+                (self.data.shutter_close - self.data.shutter_open) * (cos_4_theta * exit_pupil_bounds_area)
                     / (self.lens_rear_z() * self.lens_rear_z())
             };
             (ray, weight)
@@ -785,11 +750,7 @@ impl LensElementInterface {
 /// * `radius`   - Radius of curvature.
 /// * `z_center` - Z-axis intercept.
 /// * `ray`      - Camera ray.
-fn intersect_spherical_element(
-    radius: Float,
-    z_center: Float,
-    ray: &Ray,
-) -> Option<(Float, Normal3f)> {
+fn intersect_spherical_element(radius: Float, z_center: Float, ray: &Ray) -> Option<(Float, Normal3f)> {
     // Compute `t0` and `t1` for ray-element intersection.
     let o = ray.o - Vector3f::new(0.0, 0.0, z_center);
     let a = ray.d.x * ray.d.x + ray.d.y * ray.d.y + ray.d.z * ray.d.z;
@@ -799,11 +760,7 @@ fn intersect_spherical_element(
     if let Some((t0, t1)) = Quadratic::solve_float(a, b, c) {
         // Select intersection `t` based on ray direction and element curvature.
         let use_closer_t = (ray.d.z > 0.0) ^ (radius < 0.0);
-        let t = if use_closer_t {
-            min(t0, t1)
-        } else {
-            max(t0, t1)
-        };
+        let t = if use_closer_t { min(t0, t1) } else { max(t0, t1) };
 
         if t < 0.0 {
             None
@@ -841,7 +798,7 @@ fn compute_cardinal_points(r_in: &Ray, r_out: &Ray) -> (Float, Float) {
 fn compute_exit_pupil_bounds(camera: &RealisticCamera, film_diagonal: Float) -> Vec<Bounds2f> {
     let exit_pupil_bounds = Arc::new(Mutex::new(vec![Bounds2f::default(); N_SAMPLES]));
 
-    let progress = create_progress_reporter(N_SAMPLES as u64);
+    let progress = create_progress_bar(N_SAMPLES as u64);
     progress.set_message("Calculate exit pupil");
 
     let fac = 1.0 / N_SAMPLES as Float * film_diagonal / 2.0;

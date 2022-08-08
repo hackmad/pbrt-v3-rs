@@ -37,12 +37,7 @@ impl SamplerIntegratorData {
     /// * `sampler`      - Sampler responsible for choosing point on image plane
     ///                    from which to trace rays.
     /// * `pixel_bounds` - Pixel bounds for the image.
-    pub fn new(
-        max_depth: usize,
-        camera: ArcCamera,
-        sampler: ArcSampler,
-        pixel_bounds: Bounds2i,
-    ) -> Self {
+    pub fn new(max_depth: usize, camera: ArcCamera, sampler: ArcSampler, pixel_bounds: Bounds2i) -> Self {
         Self {
             camera: Arc::clone(&camera),
             max_depth,
@@ -99,24 +94,15 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     let ry_origin = isect.hit.p + isect.der.dpdy;
 
                     // Compute differential reflected directions.
-                    let dndx =
-                        isect.shading.dndu * isect.der.dudx + isect.shading.dndv * isect.der.dvdx;
-                    let dndy =
-                        isect.shading.dndu * isect.der.dudy + isect.shading.dndv * isect.der.dvdy;
+                    let dndx = isect.shading.dndu * isect.der.dudx + isect.shading.dndv * isect.der.dvdx;
+                    let dndy = isect.shading.dndu * isect.der.dudy + isect.shading.dndv * isect.der.dvdy;
                     let dwodx = -differentials.rx_direction - wo;
                     let dwody = -differentials.ry_direction - wo;
                     let ddndx = dwodx.dot(&ns) + wo.dot(&dndx);
                     let ddndy = dwody.dot(&ns) + wo.dot(&dndy);
-                    let rx_direction =
-                        wi - dwodx + 2.0 * Vector3f::from(wo.dot(&ns) * dndx + ddndx * ns);
-                    let ry_direction =
-                        wi - dwody + 2.0 * Vector3f::from(wo.dot(&ns) * dndy + ddndy * ns);
-                    rd.differentials = Some(RayDifferential::new(
-                        rx_origin,
-                        ry_origin,
-                        rx_direction,
-                        ry_direction,
-                    ));
+                    let rx_direction = wi - dwodx + 2.0 * Vector3f::from(wo.dot(&ns) * dndx + ddndx * ns);
+                    let ry_direction = wi - dwody + 2.0 * Vector3f::from(wo.dot(&ns) * dndy + ddndy * ns);
+                    rd.differentials = Some(RayDifferential::new(rx_origin, ry_origin, rx_direction, ry_direction));
                 }
 
                 return f * self.li(&mut rd, scene, sampler, depth + 1) * wi.abs_dot(&ns) / pdf;
@@ -164,10 +150,8 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     let rx_origin = p + isect.der.dpdx;
                     let ry_origin = p + isect.der.dpdy;
 
-                    let mut dndx =
-                        isect.shading.dndu * isect.der.dudx + isect.shading.dndv * isect.der.dvdx;
-                    let mut dndy =
-                        isect.shading.dndu * isect.der.dudy + isect.shading.dndv * isect.der.dvdy;
+                    let mut dndx = isect.shading.dndu * isect.der.dudx + isect.shading.dndv * isect.der.dvdx;
+                    let mut dndy = isect.shading.dndu * isect.der.dudy + isect.shading.dndv * isect.der.dvdy;
 
                     // The BSDF stores the IOR of the interior of the object being
                     // intersected. Compute the relative IOR by first out by assuming
@@ -234,12 +218,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     let rx_direction = wi - eta * dwodx + Vector3f::from(mu * dndx + dmudx * ns);
                     let ry_direction = wi - eta * dwody + Vector3f::from(mu * dndy + dmudy * ns);
 
-                    rd.differentials = Some(RayDifferential::new(
-                        rx_origin,
-                        ry_origin,
-                        rx_direction,
-                        ry_direction,
-                    ));
+                    rd.differentials = Some(RayDifferential::new(rx_origin, ry_origin, rx_direction, ry_direction));
                 }
 
                 return f * self.li(&mut rd, scene, sampler, depth + 1) * wi.abs_dot(&ns) / pdf;
@@ -271,7 +250,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         // Parallelize.
         info!("Rendering {}x{} tiles", n_tiles.x, n_tiles.y);
 
-        let progress = create_progress_reporter(tile_count as u64 + 1_u64); // Render + image write
+        let progress = create_progress_bar(tile_count as u64 + 1_u64); // Render + image write
         progress.set_message("Rendering scene");
 
         let n_threads = OPTIONS.threads();
@@ -317,13 +296,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// * `n_tiles`       - Number of tiles in (x, y) direction.
     /// * `scene`         - Scene.
     /// * `sample_bounds` - Sample bounds.
-    fn render_tile(
-        &self,
-        tile_idx: usize,
-        n_tiles: Point2<usize>,
-        scene: &Scene,
-        sample_bounds: Bounds2i,
-    ) -> FilmTile {
+    fn render_tile(&self, tile_idx: usize, n_tiles: Point2<usize>, scene: &Scene, sample_bounds: Bounds2i) -> FilmTile {
         // Get the x and y tile indices.
         let tile_x = tile_idx % n_tiles.x;
         let tile_y = tile_idx / n_tiles.x;
@@ -366,9 +339,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
             loop {
                 // Initialize `CameraSample` for current sample.
-                let camera_sample = Arc::get_mut(&mut tile_sampler)
-                    .unwrap()
-                    .get_camera_sample(&pixel);
+                let camera_sample = Arc::get_mut(&mut tile_sampler).unwrap().get_camera_sample(&pixel);
 
                 // Generate camera ray for current sample.
                 let (mut ray, ray_weight) = { camera.generate_ray_differential(&camera_sample) };
@@ -409,7 +380,9 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     l = Spectrum::new(0.0);
                 }
 
-                debug!("Pixel: {pixel}, Camera sample: {camera_sample} -> ray: {ray}, ray weight {ray_weight} -> L = {l}");
+                debug!(
+                    "Pixel: {pixel}, Camera sample: {camera_sample} -> ray: {ray}, ray weight {ray_weight} -> L = {l}"
+                );
 
                 // Add camera ray's contribution to image.
                 film_tile.add_sample(camera_sample.p_film, l, ray_weight);

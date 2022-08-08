@@ -5,7 +5,7 @@
 use crate::app::OPTIONS;
 
 use super::clamp::*;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use num_traits::{Num, Zero};
 use std::ops::{Add, Mul, Neg};
 
@@ -416,12 +416,12 @@ impl HashableFloat {
 /// Creates a new progress bar of given length.
 ///
 /// * `len` - The length.
-pub fn create_progress_reporter(len: u64) -> ProgressBar {
+pub fn create_progress_bar(len: u64) -> ProgressBar {
     if OPTIONS.quiet {
         ProgressBar::hidden()
     } else {
         let progress_style = ProgressStyle::with_template(
-            "{msg:22.cyan.bold} [{bar:40.green/white}] {pos:>5}/{len:5} ({elapsed}|{eta})",
+            "{msg:25!.cyan.bold} [{bar:30.green/white}] {pos:>5}/{len:5} ({elapsed}|{eta})",
         )
         .unwrap()
         .progress_chars("█▓▒░  ");
@@ -429,4 +429,8 @@ pub fn create_progress_reporter(len: u64) -> ProgressBar {
         pb.set_style(progress_style);
         pb
     }
+}
+/// Creates a new multi progress.
+pub fn create_multi_progress() -> MultiProgress {
+    MultiProgress::new()
 }
