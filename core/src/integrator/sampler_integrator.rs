@@ -15,8 +15,8 @@ use std::sync::Arc;
 
 /// Common data for sampler integrators.
 pub struct SamplerIntegratorData {
-    /// Sampler responsible for choosing points on the image plane from which
-    /// to trace rays and for supplying sample positions used by integrators.
+    /// Sampler responsible for choosing points on the image plane from which  to trace rays and for
+    /// supplying sample positions used by integrators.
     pub sampler: ArcSampler,
 
     /// The camera.
@@ -34,8 +34,7 @@ impl SamplerIntegratorData {
     ///
     /// * `max_depth`    - Maximum recursion depth.
     /// * `camera`       - The camera.
-    /// * `sampler`      - Sampler responsible for choosing point on image plane
-    ///                    from which to trace rays.
+    /// * `sampler`      - Sampler responsible for choosing point on image plane from which to trace rays.
     /// * `pixel_bounds` - Pixel bounds for the image.
     pub fn new(max_depth: usize, camera: ArcCamera, sampler: ArcSampler, pixel_bounds: Bounds2i) -> Self {
         Self {
@@ -47,9 +46,8 @@ impl SamplerIntegratorData {
     }
 }
 
-/// Implements the basis of a rendering process driven by a stream of samples
-/// from a `Sampler`. Each sample identifies a point on the image plane at
-/// which we compute the light arriving from the scene.
+/// Implements the basis of a rendering process driven by a stream of samples / from a `Sampler`. Each sample identifies
+/// a point on the image plane at which we compute the light arriving from the scene.
 pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// Returns the common data.
     fn get_data(&self) -> &SamplerIntegratorData;
@@ -153,13 +151,12 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     let mut dndx = isect.shading.dndu * isect.der.dudx + isect.shading.dndv * isect.der.dvdx;
                     let mut dndy = isect.shading.dndu * isect.der.dudy + isect.shading.dndv * isect.der.dvdy;
 
-                    // The BSDF stores the IOR of the interior of the object being
-                    // intersected. Compute the relative IOR by first out by assuming
-                    // that the ray is entering the object.
+                    // The BSDF stores the IOR of the interior of the object being intersected. Compute the relative IOR
+                    // by first out by assuming that the ray is entering the object.
                     let mut eta = 1.0 / bsdf.eta;
                     if wo.dot(&ns) < 0.0 {
-                        // If the ray isn't entering, then we need to invert the
-                        // relative IOR and negate the normal and its derivatives.
+                        // If the ray isn't entering, then we need to invert the relative IOR and negate the normal and
+                        // its derivatives.
                         eta = 1.0 / eta;
                         ns = -ns;
                         dndx = -dndx;
@@ -169,42 +166,38 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                     /*
                       Notes on the derivation:
                       - pbrt computes the refracted ray as:
-                        wi = -eta * omega_o + [ eta * (wo dot N) - cos(theta_t) ] * N
-                        It flips the normal to lie in the same hemisphere as wo,
-                        and then eta is the relative IOR from wo's medium to wi's
-                        medium.
+                            wi = -eta * omega_o + [ eta * (wo dot N) - cos(theta_t) ] * N
+                        It flips the normal to lie in the same hemisphere as wo, and then eta is the relative IOR from
+                        wo's medium to wi's medium.
 
                       - If we denote the term in brackets by mu, then we have:
-                        wi = -eta * omega_o + mu * N
+                            wi = -eta * omega_o + mu * N
 
-                      - Now let's take the partial derivative.
-                        We get: -eta * d/dx(omega_o) + mu * d/dx(N) + d/dx(mu) * N.
+                      - Now let's take the partial derivative. We get:
+                            -eta * d/dx(omega_o) + mu * d/dx(N) + d/dx(mu) * N.
 
-                      - We have the values of all of these except for d/dx(mu)
-                        (using bits from the derivation of specularly reflected
-                        ray deifferentials).
+                      - We have the values of all of these except for d/dx(mu) (using bits from the derivation of specularly
+                        reflected ray deifferentials).
 
-                      - The first term of d/dx(mu) is easy: eta d/dx(wo dot N).
-                        We already have d/dx(wo dot N).
+                      - The first term of d/dx(mu) is easy: eta d/dx(wo dot N). We already have d/dx(wo dot N).
 
                       - The second term takes a little more work. We have:
-                        cos(theta_i) = sqrt[1 - eta^2 * (1 - (wo dot N)^2)].
+                            cos(theta_i) = sqrt[1 - eta^2 * (1 - (wo dot N)^2)].
 
                         Starting from (wo dot N)^2 and reading outward,
-                        we have cos^2(theta_o),
-                        then sin^2(theta_o),
-                        then sin^2(theta_i) (via Snell's law),
-                        then cos^2(theta_i) and then cos(theta_i).
+                            we have cos^2(theta_o),
+                            then sin^2(theta_o),
+                            then sin^2(theta_i) (via Snell's law),
+                            then cos^2(theta_i) and then cos(theta_i).
 
-                      - Let's take the partial derivative of the sqrt expression.
-                        We get:
-                        (1 / 2) * (1 / cos(theta_i) * d/dx(1 - eta^2 * (1 - (wo dot N)^2)))
+                      - Let's take the partial derivative of the sqrt expression. We get:
+                            (1 / 2) * (1 / cos(theta_i) * d/dx(1 - eta^2 * (1 - (wo dot N)^2)))
 
                       - That partial derivatve is equal to:
-                        d/dx(eta^2 * (wo dot N)^2) = 2 * eta^2 * (wo dot N) * d/dx(wo dot N)
+                            d/dx(eta^2 * (wo dot N)^2) = 2 * eta^2 * (wo dot N) * d/dx(wo dot N)
 
                       - Plugging it in, we have d/dx(mu) =
-                        eta * d/dx(wo dot N) - (eta^2 * (wo dot N) * d/dx(wo dot N))/(-wi dot N)
+                            eta * d/dx(wo dot N) - (eta^2 * (wo dot N) * d/dx(wo dot N))/(-wi dot N)
                     */
                     let dwodx = -differentials.rx_direction - wo;
                     let dwody = -differentials.ry_direction - wo;
@@ -330,9 +323,8 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         for pixel in tile_bounds {
             Arc::get_mut(&mut tile_sampler).unwrap().start_pixel(&pixel);
 
-            // Do this check after the StartPixel() call; this keeps the
-            // usage of RNG values from (most) Samplers that use RNGs
-            // consistent, which improves reproducability / debugging.
+            // Do this check after the StartPixel() call; this keeps the usage of RNG values from (most) Samplers that use
+            // RNGs consistent, which improves reproducability / debugging.
             if !data.pixel_bounds.contains_exclusive(&pixel) {
                 continue;
             }
