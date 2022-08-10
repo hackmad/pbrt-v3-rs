@@ -284,8 +284,8 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
         // Save final image after rendering.
         progress.set_message("Writing image");
-        progress.inc(1);
         camera_data.film.write_image(1.0);
+        progress.inc(1);
 
         progress.finish_with_message("Render complete");
     }
