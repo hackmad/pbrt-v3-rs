@@ -67,8 +67,8 @@ pub struct Options {
     pub tile_size: usize,
 
     /// Write SPPM radius image
-    #[clap(long = "sppm_radius", help = "Write SPPM radius image")]
-    pub sppm_radius: bool,
+    #[clap(long = "sppm-radius", help = "SPPM radius image file path")]
+    pub sppm_radius: Option<String>,
 
     /// Path prefix to the mipmap file for debugging purposses.
     #[clap(

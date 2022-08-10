@@ -101,7 +101,7 @@ impl Integrator for SPPMIntegrator {
             .collect();
         let inv_sqrt_spp = 1.0 / (self.n_iterations as Float).sqrt();
 
-        // Compute _lightDistr_ for sampling lights proportional to power.
+        // Compute `light_distr` for sampling lights proportional to power.
         let light_distr = compute_light_power_distribution(scene);
 
         // Perform _nIterations_ of SPPM integration
@@ -118,7 +118,7 @@ impl Integrator for SPPMIntegrator {
 
         let multi_progress = create_multi_progress();
 
-        let progress = multi_progress.add(create_progress_bar(tile_count as u64 + 1_u64)); // Render + image write
+        let progress = multi_progress.add(create_progress_bar(2 * self.n_iterations as u64));
         progress.set_message("Rendering scene");
 
         for iter in 0..self.n_iterations {
@@ -133,7 +133,6 @@ impl Integrator for SPPMIntegrator {
                 &sampler,
                 &pixel_bounds,
                 inv_sqrt_spp,
-                self.initial_search_radius,
                 self.max_depth,
                 Arc::clone(&self.camera),
                 &multi_progress,
@@ -354,7 +353,6 @@ fn generate_visible_points(
     sampler: &HaltonSampler,
     pixel_bounds: &Bounds2i,
     inv_sqrt_spp: Float,
-    initial_search_radius: Float,
     max_depth: usize,
     camera: ArcCamera,
     multi_progress: &MultiProgress,
@@ -366,13 +364,14 @@ fn generate_visible_points(
     let camera = &camera;
 
     crossbeam::scope(|scope| {
+        let (tx_collector, rx_collector) = crossbeam_channel::bounded::<(usize, Spectrum, VisiblePoint)>(n_threads);
         let (tx_worker, rx_worker) = crossbeam_channel::bounded::<usize>(n_threads);
-        let (tx_collector, rx_collector) = crossbeam_channel::bounded::<(usize, SPPMPixel)>(n_threads);
 
         // Spawn collector thread.
         scope.spawn(move |_| {
-            for (pixel_offset, pixel) in rx_collector.iter() {
-                pixels[pixel_offset] = pixel;
+            for (pixel_offset, ld, vp) in rx_collector.iter() {
+                pixels[pixel_offset].ld += ld;
+                pixels[pixel_offset].vp = vp;
                 progress.inc(1);
             }
         });
@@ -394,18 +393,21 @@ fn generate_visible_points(
                     let tile_bounds = get_tile_bounds(tile_x, tile_y, tile_size, &pixel_bounds);
 
                     for p_pixel in tile_bounds {
-                        let (pixel_offset, pixel) = generate_visible_point(
+                        let p_pixel_o = Point2i::from(p_pixel - pixel_bounds.p_min);
+                        let pixel_offset =
+                            (p_pixel_o.x + p_pixel_o.y * (pixel_bounds.p_max.x - pixel_bounds.p_min.x)) as usize;
+
+                        if let Some((ld, vp)) = generate_visible_point(
                             iter,
                             &p_pixel,
                             scene,
                             &mut tile_sampler,
-                            &pixel_bounds,
                             inv_sqrt_spp,
-                            initial_search_radius,
                             max_depth,
                             Arc::clone(camera),
-                        );
-                        tx_collector.send((pixel_offset, pixel)).unwrap();
+                        ) {
+                            tx_collector.send((pixel_offset, ld, vp)).unwrap();
+                        }
                     }
                 }
             });
@@ -427,37 +429,33 @@ fn generate_visible_point(
     p_pixel: &Point2i,
     scene: &Scene,
     tile_sampler: &mut ArcSampler,
-    pixel_bounds: &Bounds2i,
     inv_sqrt_spp: Float,
-    initial_search_radius: Float,
     max_depth: usize,
     camera: ArcCamera,
-) -> (usize, SPPMPixel) {
-    let mut pixel = SPPMPixel::new(initial_search_radius);
-
+) -> Option<(Spectrum, VisiblePoint)> {
     let camera_sample = {
         // Prepare `tile_sampler` for `p_pixel`.
         let tile_sampler = Arc::get_mut(tile_sampler).unwrap();
         tile_sampler.start_pixel(&p_pixel);
         tile_sampler.set_sample_number(iter);
 
-        // Generate camera ray for pixel for SPPM.
+        // Generate camera sample for `p_pixel`.
         tile_sampler.get_camera_sample(&p_pixel)
     };
 
-    // Get `SPPMPixel` for `p_pixel`.
-    let p_pixel_o = Point2i::from(p_pixel - pixel_bounds.p_min);
-    let pixel_offset = (p_pixel_o.x + p_pixel_o.y * (pixel_bounds.p_max.x - pixel_bounds.p_min.x)) as usize;
-
+    // Generate camera ray for pixel for SPPM.
     let (mut ray, beta) = camera.generate_ray_differential(&camera_sample);
-    let mut beta = Spectrum::new(beta);
-    if beta.is_black() {
-        return (pixel_offset, pixel);
+    if beta == 0.0 {
+        return None;
     }
+    let mut beta = Spectrum::new(beta);
     ray.scale_differentials(inv_sqrt_spp);
 
     // Follow camera ray path until a visible point is created.
+    let mut pixel_ld = Spectrum::ZERO;
+    let mut pixel_vp = VisiblePoint::default();
 
+    // Get `SPPMPixel` for `p_pixel`.
     let mut specular_bounce = false;
     let mut depth = 0;
     while depth < max_depth {
@@ -466,7 +464,7 @@ fn generate_visible_point(
             // Accumulate light contributions for ray with no
             // intersection.
             for light in scene.lights.iter() {
-                pixel.ld += beta * light.le(&ray);
+                pixel_ld += beta * light.le(&ray);
             }
             break;
         }
@@ -489,12 +487,12 @@ fn generate_visible_point(
         // intersection.
         let wo = -ray.d;
         if depth == 0 || specular_bounce {
-            pixel.ld += beta * isect.le(&wo);
+            pixel_ld += beta * isect.le(&wo);
         }
 
         let it = Interaction::Surface { si: isect };
 
-        pixel.ld += beta * uniform_sample_one_light(&it, Some(&bsdf), scene, tile_sampler, false, None);
+        pixel_ld += beta * uniform_sample_one_light(&it, Some(&bsdf), scene, tile_sampler, false, None);
 
         // Need to move the `isect` back out of `it`.
         let isect = match it {
@@ -508,7 +506,7 @@ fn generate_visible_point(
         let is_glossy =
             bsdf.num_components(BxDFType::BSDF_GLOSSY | BxDFType::BSDF_REFLECTION | BxDFType::BSDF_TRANSMISSION) > 0;
         if is_diffuse || (is_glossy && depth == max_depth - 1) {
-            pixel.vp = VisiblePoint::new(isect.hit.p, wo, Some(bsdf), beta);
+            pixel_vp = VisiblePoint::new(isect.hit.p, wo, Some(bsdf), beta);
             break;
         }
 
@@ -536,7 +534,7 @@ fn generate_visible_point(
         depth += 1;
     }
 
-    (pixel_offset, pixel)
+    Some((pixel_ld, pixel_vp))
 }
 
 /// Add visible points to SPPM grid.
@@ -577,8 +575,8 @@ fn add_visible_points_to_grid(
                                     let node = Arc::new(SPPMPixelListNode::new(index));
 
                                     // Atomically add `node` to the start of `grid[h]`'s linked list.
-                                    if let Some(list) = grid[h].swap(Arc::clone(&node), Ordering::AcqRel) {
-                                        node.next.set_if_none(list, Ordering::Release);
+                                    if let Some(prev_grid) = grid[h].swap(Arc::clone(&node), Ordering::AcqRel) {
+                                        node.next.swap(prev_grid, Ordering::Relaxed);
                                     }
                                 }
                             }
@@ -921,9 +919,9 @@ fn write_sppm_image(
     }
     camera_data.film.set_image(&image);
     camera_data.film.write_image(1.0);
-    // Write SPPM radius image, if requested.
 
-    if OPTIONS.sppm_radius {
+    // Write SPPM radius image, if requested.
+    if let Some(sppm_radius) = OPTIONS.sppm_radius.as_ref() {
         let mut rimg = vec![0.0; 3 * n_pixels];
         let mut minrad = 1e30;
         let mut maxrad = 0.0;
@@ -954,7 +952,7 @@ fn write_sppm_image(
                 offset += 3;
             }
         }
-        if let Err(err) = write_image("sppm_radius.png", &rimg, &pixel_bounds) {
+        if let Err(err) = write_image(sppm_radius, &rimg, &pixel_bounds) {
             error!("Error writing output image sppm_radius.png. {:}.", err);
         }
     }
