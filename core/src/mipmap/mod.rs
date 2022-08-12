@@ -10,6 +10,7 @@ use std::hash::Hash;
 use std::marker::{Send, Sync};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
 use std::sync::{Arc, RwLock};
+use std::thread;
 
 mod cache;
 mod convert_in;
@@ -396,14 +397,14 @@ where
     let n_threads = OPTIONS.threads();
 
     // Apply `s_weights` in the `s` direction.
-    crossbeam::scope(|scope| {
+    thread::scope(|scope| {
         let (tx, rx) = crossbeam_channel::bounded(n_threads);
 
         // Spawn worker threads.
         for _ in 0..n_threads {
             let rxc = rx.clone();
             let r_img = Arc::clone(&resampled_image);
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for work in rxc.iter() {
                     let mut r_img = r_img.write().unwrap();
                     for w in work {
@@ -437,8 +438,7 @@ where
             let w: Vec<(usize, (usize, &ResampleWeight))> = work.collect();
             tx.send(w).unwrap();
         }
-    })
-    .unwrap();
+    });
 
     // Resample image in `t` direction.
     let t_weights = resample_weights(resolution[1], res_pow2[1]);
@@ -448,7 +448,7 @@ where
     let work_data: Vec<Arc<RwLock<Vec<T>>>> = vec![Arc::new(RwLock::new(vec![])); n_threads];
 
     // Apply `t_weights` in the `t` direction.
-    crossbeam::scope(|scope| {
+    thread::scope(|scope| {
         let (tx, rx) = crossbeam_channel::bounded(n_threads);
 
         // Spawn worker threads.
@@ -457,7 +457,7 @@ where
             let work_data = Arc::clone(&work_data[thread]);
             let r_img = Arc::clone(&resampled_image);
             let t_weights = &t_weights;
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for work in rxc.iter() {
                     // Lock for duration of work. Otherwise work_data will
                     // get muddled up between threads.
@@ -510,8 +510,7 @@ where
             let vs: Vec<usize> = chunk.collect();
             tx.send((vi, vs)).unwrap();
         }
-    })
-    .unwrap();
+    });
 
     let resampled_pixels = resampled_image.read().unwrap();
     let mut result: Vec<T> = Vec::with_capacity((*resampled_pixels).len());

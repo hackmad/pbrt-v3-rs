@@ -13,6 +13,7 @@ use core::pbrt::*;
 use core::reflection::*;
 use std::mem::swap;
 use std::sync::{Arc, Mutex};
+use std::thread;
 
 /// Number of samples for exit pupil bounds.
 const N_SAMPLES: usize = 64_usize;
@@ -805,14 +806,14 @@ fn compute_exit_pupil_bounds(camera: &RealisticCamera, film_diagonal: Float) -> 
 
     let n_threads = OPTIONS.threads();
 
-    crossbeam::scope(|scope| {
+    thread::scope(|scope| {
         let (tx, rx) = crossbeam_channel::bounded(n_threads);
 
         for _ in 0..n_threads {
             let rxc = rx.clone();
             let exit_pupil_bounds = Arc::clone(&exit_pupil_bounds);
             let progress = &progress;
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for i in rxc.iter() {
                     let r0 = i as Float * fac;
                     let r1 = (i + 1) as Float * fac;
@@ -828,8 +829,7 @@ fn compute_exit_pupil_bounds(camera: &RealisticCamera, film_diagonal: Float) -> 
         for i in 0..N_SAMPLES {
             tx.send(i).unwrap();
         }
-    })
-    .unwrap();
+    });
 
     progress.finish_with_message("Exit pupil calculated");
 

@@ -12,6 +12,7 @@ use crate::sampler::*;
 use crate::scene::*;
 use crate::spectrum::*;
 use std::sync::Arc;
+use std::thread;
 
 /// Common data for sampler integrators.
 pub struct SamplerIntegratorData {
@@ -248,14 +249,14 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
         let n_threads = OPTIONS.threads();
 
-        crossbeam::scope(|scope| {
+        thread::scope(|scope| {
             let (tx, rx) = crossbeam_channel::bounded(n_threads);
 
             // Spawn worker threads.
             for _ in 0..n_threads {
                 let rxc = rx.clone();
                 let progress = &progress;
-                scope.spawn(move |_| {
+                scope.spawn(move || {
                     for tile_idx in rxc.iter() {
                         // Render section of image corresponding to `tile`.
                         let film_tile = self.render_tile(tile_idx, n_tiles, scene, sample_bounds);
@@ -272,8 +273,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
             for tile_idx in 0..tile_count {
                 tx.send(tile_idx).unwrap();
             }
-        })
-        .unwrap();
+        });
 
         // Save final image after rendering.
         progress.set_message("Writing image");

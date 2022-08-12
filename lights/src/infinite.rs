@@ -13,6 +13,7 @@ use core::sampling::*;
 use core::scene::*;
 use core::spectrum::*;
 use std::sync::{Arc, Mutex, RwLock};
+use std::thread;
 
 /// Implements an infinite area light source using a latitude-longitude radiance
 /// map.
@@ -55,12 +56,7 @@ impl InfiniteAreaLight {
     /// * `n_samples`        - Used to trace multiple shadow rays to the light
     ///                        to compute soft shadows. Default to 1.
     /// * `texmap`           - Path to the image to use for the radiance map.
-    pub fn new(
-        light_to_world: ArcTransform,
-        l: Spectrum,
-        n_samples: usize,
-        texmap: Option<&str>,
-    ) -> Self {
+    pub fn new(light_to_world: ArcTransform, l: Spectrum, n_samples: usize, texmap: Option<&str>) -> Self {
         let light_to_world = Arc::clone(&light_to_world);
         let world_to_light = Arc::new(light_to_world.inverse());
 
@@ -81,13 +77,7 @@ impl InfiniteAreaLight {
             },
         };
 
-        let l_map = MIPMap::new(
-            &resolution,
-            &texels,
-            FilteringMethod::Trilinear,
-            ImageWrap::Repeat,
-            0.0,
-        );
+        let l_map = MIPMap::new(&resolution, &texels, FilteringMethod::Trilinear, ImageWrap::Repeat, 0.0);
 
         // Initialize sampling PDFs for infinite area light.
 
@@ -176,10 +166,7 @@ impl Light for InfiniteAreaLight {
     fn power(&self) -> Spectrum {
         let world_radius = *self.world_radius.read().unwrap();
         let spectrum = Spectrum::from_rgb(
-            &self
-                .l_map
-                .lookup_triangle(&Point2f::new(0.5, 0.5), 0.5)
-                .to_rgb(),
+            &self.l_map.lookup_triangle(&Point2f::new(0.5, 0.5), 0.5).to_rgb(),
             Some(SpectrumType::Illuminant),
         );
         PI * world_radius * world_radius * spectrum
@@ -211,9 +198,7 @@ impl Light for InfiniteAreaLight {
         if sin_theta == 0.0 {
             0.0
         } else {
-            self.distribution
-                .pdf(&Point2f::new(phi * INV_TWO_PI, theta * INV_PI))
-                / (TWO_PI * PI * sin_theta)
+            self.distribution.pdf(&Point2f::new(phi * INV_TWO_PI, theta * INV_PI)) / (TWO_PI * PI * sin_theta)
         }
     }
 
@@ -336,13 +321,13 @@ fn compute_scalar_image(l_map: &MIPMap<Spectrum>) -> Vec<Vec<Float>> {
 
     let n_threads = OPTIONS.threads();
 
-    crossbeam::scope(|scope| {
+    thread::scope(|scope| {
         let (tx, rx) = crossbeam_channel::bounded(n_threads);
 
         for _ in 0..n_threads {
             let rxc = rx.clone();
             let img = Arc::clone(&img);
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for v in rxc.iter() {
                     let vp = (v as Float + 0.5) / height as Float;
                     let sin_theta = sin(PI * (v as Float + 0.5) / height as Float);
@@ -363,8 +348,7 @@ fn compute_scalar_image(l_map: &MIPMap<Spectrum>) -> Vec<Vec<Float>> {
         for v in 0..height {
             tx.send(v).unwrap();
         }
-    })
-    .unwrap();
+    });
 
     let mut v = img.lock().unwrap();
     std::mem::replace(&mut v, vec![])
