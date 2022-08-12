@@ -24,6 +24,7 @@ use indicatif::MultiProgress;
 use samplers::HaltonSampler;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
+use std::thread;
 use std::time::Duration;
 
 /// Implements the stochastic progressive photon mapping integrator.
@@ -263,8 +264,7 @@ struct SPPMPixel {
 }
 
 impl SPPMPixel {
-    /// Create a new `SPPMPixel` with initial search radius and default field
-    /// values.
+    /// Create a new `SPPMPixel` with initial search radius and default field values.
     fn new(radius: Float) -> Self {
         Self {
             radius,
@@ -363,15 +363,18 @@ fn generate_visible_points(
     let n_threads = OPTIONS.threads();
     let camera = &camera;
 
-    crossbeam::scope(|scope| {
-        let (tx_collector, rx_collector) = crossbeam_channel::bounded::<(usize, Spectrum, VisiblePoint)>(n_threads);
+    thread::scope(|scope| {
+        let (tx_collector, rx_collector) =
+            crossbeam_channel::bounded::<(usize, Spectrum, Option<VisiblePoint>)>(n_threads);
         let (tx_worker, rx_worker) = crossbeam_channel::bounded::<usize>(n_threads);
 
         // Spawn collector thread.
-        scope.spawn(move |_| {
+        scope.spawn(move || {
             for (pixel_offset, ld, vp) in rx_collector.iter() {
                 pixels[pixel_offset].ld += ld;
-                pixels[pixel_offset].vp = vp;
+                if let Some(vp) = vp {
+                    pixels[pixel_offset].vp = vp;
+                }
                 progress.inc(1);
             }
         });
@@ -380,7 +383,7 @@ fn generate_visible_points(
         for _ in 0..n_threads {
             let rx_worker = rx_worker.clone();
             let tx_collector = tx_collector.clone();
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for tile_idx in rx_worker.iter() {
                     // Follow camera paths for `tile_`in image for SPPM.
                     let tile_x = tile_idx % n_tiles.x;
@@ -419,8 +422,7 @@ fn generate_visible_points(
         for tile_idx in 0..tile_count {
             tx_worker.send(tile_idx).unwrap();
         }
-    })
-    .unwrap();
+    });
 }
 
 /// Generate single SPPM visible point.
@@ -432,7 +434,7 @@ fn generate_visible_point(
     inv_sqrt_spp: Float,
     max_depth: usize,
     camera: ArcCamera,
-) -> Option<(Spectrum, VisiblePoint)> {
+) -> Option<(Spectrum, Option<VisiblePoint>)> {
     let camera_sample = {
         // Prepare `tile_sampler` for `p_pixel`.
         let tile_sampler = Arc::get_mut(tile_sampler).unwrap();
@@ -453,7 +455,7 @@ fn generate_visible_point(
 
     // Follow camera ray path until a visible point is created.
     let mut pixel_ld = Spectrum::ZERO;
-    let mut pixel_vp = VisiblePoint::default();
+    let mut pixel_vp: Option<VisiblePoint> = None;
 
     // Get `SPPMPixel` for `p_pixel`.
     let mut specular_bounce = false;
@@ -483,15 +485,13 @@ fn generate_visible_point(
         }
         let bsdf = bsdf.unwrap();
 
-        // Accumulate direct illumination at SPPM camera ray
-        // intersection.
+        // Accumulate direct illumination at SPPM camera ray intersection.
         let wo = -ray.d;
         if depth == 0 || specular_bounce {
             pixel_ld += beta * isect.le(&wo);
         }
 
         let it = Interaction::Surface { si: isect };
-
         pixel_ld += beta * uniform_sample_one_light(&it, Some(&bsdf), scene, tile_sampler, false, None);
 
         // Need to move the `isect` back out of `it`.
@@ -506,7 +506,7 @@ fn generate_visible_point(
         let is_glossy =
             bsdf.num_components(BxDFType::BSDF_GLOSSY | BxDFType::BSDF_REFLECTION | BxDFType::BSDF_TRANSMISSION) > 0;
         if is_diffuse || (is_glossy && depth == max_depth - 1) {
-            pixel_vp = VisiblePoint::new(isect.hit.p, wo, Some(bsdf), beta);
+            pixel_vp = Some(VisiblePoint::new(isect.hit.p, wo, Some(bsdf), beta));
             break;
         }
 
@@ -517,9 +517,7 @@ fn generate_visible_point(
             if pdf == 0.0 || f.is_black() {
                 break;
             }
-
             specular_bounce = (bxdf_type & BxDFType::BSDF_SPECULAR) > BxDFType::BSDF_NONE;
-
             beta *= f * wi.abs_dot(&isect.shading.n) / pdf;
             if beta.y() < 0.25 {
                 let continue_prob = min(1.0, beta.y());
@@ -551,14 +549,14 @@ fn add_visible_points_to_grid(
 
     let n_threads = OPTIONS.threads();
 
-    crossbeam::scope(|scope| {
+    thread::scope(|scope| {
         let (tx_worker, rx_worker) = crossbeam_channel::bounded::<(usize, &SPPMPixel)>(4096);
 
         // Spawn worker threads.
         for _ in 0..n_threads {
             let rx_worker = rx_worker.clone();
             let progress = &progress;
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for (index, pixel) in rx_worker.iter() {
                     if !pixel.vp.beta.is_black() {
                         // Add pixel's visible point to applicable grid cells.
@@ -592,8 +590,7 @@ fn add_visible_points_to_grid(
         for (index, pixel) in pixels.iter().enumerate() {
             tx_worker.send((index, pixel)).unwrap();
         }
-    })
-    .unwrap();
+    });
 }
 
 /// Compute grid bounds for SPPM visible points.
@@ -646,14 +643,14 @@ fn trace_photons(
 
     let n_threads = OPTIONS.threads();
 
-    crossbeam::scope(|scope| {
+    thread::scope(|scope| {
         let (tx_worker, rx_worker) = crossbeam_channel::bounded::<usize>(8192);
 
         // Spawn worker threads.
         for _ in 0..n_threads {
             let rx_worker = rx_worker.clone();
             let progress = &progress;
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for photon_index in rx_worker.iter() {
                     trace_photon(
                         pixels,
@@ -679,8 +676,7 @@ fn trace_photons(
         for photon_index in 0..photons_per_iteration {
             tx_worker.send(photon_index).unwrap();
         }
-    })
-    .unwrap();
+    });
 }
 
 /// Trace single photon and accumulate contribution.
@@ -783,7 +779,7 @@ fn trace_photon(
                     for i in 0..SPECTRUM_SAMPLES {
                         pixel.phi[i].add(phi[i]);
                     }
-                    pixel.m.fetch_add(1, Ordering::Relaxed);
+                    pixel.m.fetch_add(1, Ordering::SeqCst);
                     current_node = node.next.take(Ordering::Relaxed);
                 }
             }
@@ -842,16 +838,16 @@ fn update_pixels(pixels: &mut Vec<SPPMPixel>, multi_progress: &MultiProgress) {
 
     let n_threads = OPTIONS.threads();
 
-    crossbeam::scope(|scope| {
+    thread::scope(|scope| {
         let (tx_worker, rx_worker) = crossbeam_channel::bounded::<&mut SPPMPixel>(4096);
 
         // Spawn worker threads.
         for _ in 0..n_threads {
             let rx_worker = rx_worker.clone();
             let progress = &progress;
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for p in rx_worker.iter() {
-                    let m = p.m.load(Ordering::Relaxed);
+                    let m = p.m.load(Ordering::SeqCst);
                     if m > 0 {
                         // Update pixel photon count, search radius, and `tau` from photons.
                         const GAMMA: Float = 2.0 / 3.0;
@@ -860,16 +856,16 @@ fn update_pixels(pixels: &mut Vec<SPPMPixel>, multi_progress: &MultiProgress) {
 
                         let mut phi = Spectrum::ZERO;
                         for j in 0..SPECTRUM_SAMPLES {
-                            phi[j] = p.phi[j].load(Ordering::Relaxed);
+                            phi[j] = p.phi[j].load(Ordering::SeqCst);
                         }
 
                         p.tau = (p.tau + p.vp.beta * phi) * (r_new * r_new) / (p.radius * p.radius);
                         p.n = n_new;
                         p.radius = r_new;
-                        p.m.store(0, Ordering::Relaxed);
+                        p.m.store(0, Ordering::SeqCst);
 
                         for j in 0..SPECTRUM_SAMPLES {
-                            p.phi[j].store(0.0, Ordering::Relaxed);
+                            p.phi[j].store(0.0, Ordering::SeqCst);
                         }
                     }
                     // Reset `VisiblePoint` in pixel.
@@ -885,8 +881,7 @@ fn update_pixels(pixels: &mut Vec<SPPMPixel>, multi_progress: &MultiProgress) {
         for pixel in pixels.iter_mut() {
             tx_worker.send(pixel).unwrap();
         }
-    })
-    .unwrap();
+    });
 }
 
 /// Store SPPM image in film and write image.
@@ -922,9 +917,9 @@ fn write_sppm_image(
 
     // Write SPPM radius image, if requested.
     if let Some(sppm_radius) = OPTIONS.sppm_radius.as_ref() {
-        let mut rimg = vec![0.0; 3 * n_pixels];
-        let mut minrad = 1e30;
-        let mut maxrad = 0.0;
+        let mut rimg: Vec<Float> = vec![0.0; 3 * n_pixels];
+        let mut minrad: Float = 1e30;
+        let mut maxrad: Float = 0.0;
         for y in pixel_bounds.p_min.y..pixel_bounds.p_max.y {
             for x in x0..x1 {
                 let pixel_index = (y - pixel_bounds.p_min.y) * (x1 - x0) + (x - x0);
