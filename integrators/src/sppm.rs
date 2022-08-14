@@ -20,7 +20,6 @@ use core::sampler::*;
 use core::sampling::Distribution1D;
 use core::scene::*;
 use core::spectrum::*;
-use indicatif::MultiProgress;
 use samplers::HaltonSampler;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
@@ -117,9 +116,7 @@ impl Integrator for SPPMIntegrator {
         );
         let tile_count = n_tiles.x * n_tiles.y;
 
-        let multi_progress = create_multi_progress();
-
-        let progress = multi_progress.add(create_progress_bar(2 * self.n_iterations as u64));
+        let progress = create_progress_bar(2 * self.n_iterations as u64);
         progress.set_message("Rendering scene");
 
         for iter in 0..self.n_iterations {
@@ -136,7 +133,6 @@ impl Integrator for SPPMIntegrator {
                 inv_sqrt_spp,
                 self.max_depth,
                 Arc::clone(&self.camera),
-                &multi_progress,
             );
             progress.inc(1);
 
@@ -151,7 +147,7 @@ impl Integrator for SPPMIntegrator {
             let grid_res = compute_grid_resolution(&grid_bounds, max_radius);
 
             // Add visible points to SPPM grid.
-            add_visible_points_to_grid(&pixels, &grid_bounds, &grid_res, hash_size, &grid, &multi_progress);
+            add_visible_points_to_grid(&pixels, &grid_bounds, &grid_res, hash_size, &grid);
 
             // Trace photons and accumulate contributions.
             trace_photons(
@@ -166,12 +162,11 @@ impl Integrator for SPPMIntegrator {
                 &grid_res,
                 hash_size,
                 &grid,
-                &multi_progress,
             );
             progress.inc(1);
 
             // Update pixel values from this pass' photons.
-            update_pixels(&mut pixels, &multi_progress);
+            update_pixels(&mut pixels);
 
             // Periodically store SPPM image in film and write image.
             if iter + 1 == self.n_iterations || (iter + 1) % self.write_frequency == 0 {
@@ -189,6 +184,14 @@ impl Integrator for SPPMIntegrator {
         progress.finish_with_message("Render complete");
     }
 
+    /// Returns the incident radiance at the origin of a given ray.
+    ///
+    /// NOTE: This is never called.
+    ///
+    /// * `ray`     - The ray.
+    /// * `scene`   - The scene.
+    /// * `sampler` - The sampler.
+    /// * `depth`   - The recursion depth.
     fn li(&self, _ray: &mut Ray, _scene: &Scene, _sampler: &mut ArcSampler, _depth: usize) -> Spectrum {
         Spectrum::ZERO
     }
@@ -223,48 +226,30 @@ impl From<(&ParamSet, ArcCamera)> for SPPMIntegrator {
     }
 }
 
-struct SPPMTile {
-    pixels: Vec<SPPMPixel>,
-    x: usize,
-    y: usize,
-    offset_min: usize,
-    sampler: ArcSampler,
-    bounds: Bounds2i,
-}
-
-impl SPPMTile {
-    fn new(
-        pixels: Vec<SPPMPixel>,
-        tile_x: usize,
-        tile_y: usize,
-        offset_min: usize,
-        sampler: ArcSampler,
-        bounds: Bounds2i,
-    ) -> Self {
-        Self {
-            pixels,
-            x: tile_x,
-            y: tile_y,
-            offset_min,
-            sampler,
-            bounds,
-        }
-    }
-}
-
+/// Final image pixel.
 #[derive(Default)]
 struct SPPMPixel {
+    /// Search radius for photons.
     radius: Float,
+    /// Estimated average radiance visible over the extent of the pixel including time when
+    /// shutter is open to account for depth-of-field.
     ld: Spectrum,
+    /// Geometric informtion for the visible point.
     vp: VisiblePoint,
+    /// The sum of the product of BSDF values with particle weights
     phi: [AtomicFloat; SPECTRUM_SAMPLES],
+    /// Number of photons that have contributed during current interation.
     m: AtomicI32,
+    /// Number of photons that have contributed to the point after i^th iteration.
     n: Float,
+    /// The sum of products of photons with BSDF values.
     tau: Spectrum,
 }
 
 impl SPPMPixel {
     /// Create a new `SPPMPixel` with initial search radius and default field values.
+    ///
+    /// * `radius` - The search radius for photons.
     fn new(radius: Float) -> Self {
         Self {
             radius,
@@ -275,24 +260,40 @@ impl SPPMPixel {
 
 #[derive(Default, Clone)]
 struct VisiblePoint {
+    /// Point along the camera path to look for nearby photons.
     p: Point3f,
+    /// Outgoing direction used to compute reflected radiance.
     wo: Vector3f,
+    /// The BSDF at the point used to compute reflected radiance.
     bsdf: Option<BSDF>,
+    /// Throughput weight used to compute reflected radiance.
     beta: Spectrum,
 }
 
 impl VisiblePoint {
+    /// Create a new `VisiblePoint`.
+    ///
+    /// `p`    - Point along the camera path to look for nearby photons.
+    /// `wo`   - Outgoing direction used to compute reflected radiance.
+    /// `bsdf` - The BSDF at the point used to compute reflected radiance.
+    /// `beta` - Throughput weight used to compute reflected radiance.
     fn new(p: Point3f, wo: Vector3f, bsdf: Option<BSDF>, beta: Spectrum) -> Self {
         Self { p, wo, bsdf, beta }
     }
 }
 
+/// Used to store nodes in a linked list of visible point grid elements.
 struct SPPMPixelListNode {
+    /// The index of the visible point.
     pixel_index: usize,
+    /// Next visible point.
     next: Atom<Arc<SPPMPixelListNode>>,
 }
 
 impl SPPMPixelListNode {
+    /// Create a new `SPPMPixelListNode` with given point and no next node.
+    ///
+    /// * `pixel_index` - The index of the visible point.
     fn new(pixel_index: usize) -> Self {
         Self {
             pixel_index,
@@ -355,11 +356,7 @@ fn generate_visible_points(
     inv_sqrt_spp: Float,
     max_depth: usize,
     camera: ArcCamera,
-    multi_progress: &MultiProgress,
 ) {
-    let progress = multi_progress.add(create_progress_bar(pixels.len() as u64));
-    progress.set_message("Generate visible points");
-
     let n_threads = OPTIONS.threads();
     let camera = &camera;
 
@@ -375,7 +372,6 @@ fn generate_visible_points(
                 if let Some(vp) = vp {
                     pixels[pixel_offset].vp = vp;
                 }
-                progress.inc(1);
             }
         });
 
@@ -480,8 +476,7 @@ fn generate_visible_point(
         isect.compute_scattering_functions(&mut ray, true, TransportMode::Radiance, &mut bsdf, &mut bssrdf);
         if bsdf.is_none() {
             ray = isect.spawn_ray(&ray.d);
-            depth -= 1;
-            continue;
+            continue; // No need to decrement depth.
         }
         let bsdf = bsdf.unwrap();
 
@@ -542,11 +537,7 @@ fn add_visible_points_to_grid(
     grid_res: &[Int; 3],
     hash_size: usize,
     grid: &[Atom<Arc<SPPMPixelListNode>>],
-    multi_progress: &MultiProgress,
 ) {
-    let progress = multi_progress.add(create_progress_bar(pixels.len() as u64));
-    progress.set_message("Add visible  points to grid");
-
     let n_threads = OPTIONS.threads();
 
     thread::scope(|scope| {
@@ -555,7 +546,6 @@ fn add_visible_points_to_grid(
         // Spawn worker threads.
         for _ in 0..n_threads {
             let rx_worker = rx_worker.clone();
-            let progress = &progress;
             scope.spawn(move || {
                 for (index, pixel) in rx_worker.iter() {
                     if !pixel.vp.beta.is_black() {
@@ -580,7 +570,6 @@ fn add_visible_points_to_grid(
                             }
                         }
                     }
-                    progress.inc(1);
                 }
             });
         }
@@ -635,12 +624,7 @@ fn trace_photons(
     grid_res: &[Int; 3],
     hash_size: usize,
     grid: &[Atom<Arc<SPPMPixelListNode>>],
-    multi_progress: &MultiProgress,
 ) {
-    // Really large numbers causes progress bar to panic when calculated durations.
-    let progress = multi_progress.add(create_progress_bar(photons_per_iteration as u64));
-    progress.set_message("Tracing photons");
-
     let n_threads = OPTIONS.threads();
 
     thread::scope(|scope| {
@@ -649,7 +633,6 @@ fn trace_photons(
         // Spawn worker threads.
         for _ in 0..n_threads {
             let rx_worker = rx_worker.clone();
-            let progress = &progress;
             scope.spawn(move || {
                 for photon_index in rx_worker.iter() {
                     trace_photon(
@@ -666,7 +649,6 @@ fn trace_photons(
                         hash_size,
                         grid,
                     );
-                    progress.inc(1);
                 }
             });
         }
@@ -760,26 +742,20 @@ fn trace_photon(
 
                 // Add photon contribution to visible points in `grid[h]`.
                 let mut current_node = grid[h].take(Ordering::Relaxed);
-                while let Some(node) = current_node.as_ref() {
+                while let Some(node) = current_node {
                     let pixel = &pixels[node.pixel_index];
                     let radius = pixel.radius;
-                    if pixel.vp.p.distance_squared(isect.hit.p) > radius * radius {
-                        current_node = node.next.take(Ordering::Relaxed);
-                        continue;
+                    if pixel.vp.p.distance_squared(isect.hit.p) <= radius * radius {
+                        // Update `pixel` `Phi` and `M` for nearby photon.
+                        let wi = -photon_ray.d;
+                        if let Some(bsdf) = pixel.vp.bsdf.as_ref() {
+                            let phi = beta * bsdf.f(&pixel.vp.wo, &wi, BxDFType::all());
+                            for i in 0..SPECTRUM_SAMPLES {
+                                pixel.phi[i].add(phi[i]);
+                            }
+                            pixel.m.fetch_add(1, Ordering::SeqCst);
+                        }
                     }
-
-                    // Update `pixel` `Phi` and `M` for nearby photon.
-                    let wi = -photon_ray.d;
-                    let phi = beta
-                        * pixel
-                            .vp
-                            .bsdf
-                            .as_ref()
-                            .map_or(Spectrum::ZERO, |bsdf| bsdf.f(&pixel.vp.wo, &wi, BxDFType::all()));
-                    for i in 0..SPECTRUM_SAMPLES {
-                        pixel.phi[i].add(phi[i]);
-                    }
-                    pixel.m.fetch_add(1, Ordering::SeqCst);
                     current_node = node.next.take(Ordering::Relaxed);
                 }
             }
@@ -791,9 +767,8 @@ fn trace_photon(
         let mut bssrdf: Option<BSDF> = None;
         isect.compute_scattering_functions(&mut photon_ray, true, TransportMode::Importance, &mut bsdf, &mut bssrdf);
         if bsdf.is_none() {
-            depth -= 1;
             photon_ray = isect.spawn_ray(&photon_ray.d);
-            continue;
+            continue; // No need to decrement depth.
         }
         let photon_bsdf = bsdf.unwrap();
 
@@ -832,10 +807,7 @@ fn trace_photon(
 }
 
 /// Update pixel values from this pass' photons.
-fn update_pixels(pixels: &mut Vec<SPPMPixel>, multi_progress: &MultiProgress) {
-    let progress = multi_progress.add(create_progress_bar(pixels.len() as u64));
-    progress.set_message("Update pixel values");
-
+fn update_pixels(pixels: &mut Vec<SPPMPixel>) {
     let n_threads = OPTIONS.threads();
 
     thread::scope(|scope| {
@@ -844,7 +816,6 @@ fn update_pixels(pixels: &mut Vec<SPPMPixel>, multi_progress: &MultiProgress) {
         // Spawn worker threads.
         for _ in 0..n_threads {
             let rx_worker = rx_worker.clone();
-            let progress = &progress;
             scope.spawn(move || {
                 for p in rx_worker.iter() {
                     let m = p.m.load(Ordering::SeqCst);
@@ -871,7 +842,6 @@ fn update_pixels(pixels: &mut Vec<SPPMPixel>, multi_progress: &MultiProgress) {
                     // Reset `VisiblePoint` in pixel.
                     p.vp.beta = Spectrum::ZERO;
                     p.vp.bsdf = None;
-                    progress.inc(1);
                 }
             });
         }

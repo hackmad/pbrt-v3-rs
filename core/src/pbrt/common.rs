@@ -413,6 +413,11 @@ impl HashableFloat {
     }
 }
 
+/// Creates a new multi progress.
+pub fn create_multi_progress() -> MultiProgress {
+    MultiProgress::new()
+}
+
 /// Creates a new progress bar of given length.
 ///
 /// * `len` - The length.
@@ -429,8 +434,4 @@ pub fn create_progress_bar(len: u64) -> ProgressBar {
         pb.set_style(progress_style);
         pb
     }
-}
-/// Creates a new multi progress.
-pub fn create_multi_progress() -> MultiProgress {
-    MultiProgress::new()
 }

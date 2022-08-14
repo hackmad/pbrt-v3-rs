@@ -11,5 +11,4 @@ samplers = { path = "../samplers" }
 atom = "0.4.0"
 crossbeam-channel = "0.5.6"
 itertools = "0.10.3"
-indicatif = "0.17.0"
 log = "0.4.14"
