@@ -12,6 +12,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
+use std::thread;
 
 const N_BUCKETS: usize = 12;
 const FIRST_BIT_INDEX: usize = N_BITS - 1 - N_BUCKETS; // The index of the next bit to try splitting
@@ -37,9 +38,7 @@ pub fn build(
     ordered_prims: Arc<Mutex<Vec<ArcPrimitive>>>,
 ) -> ArenaArc<BVHBuildNode> {
     // Compute bounds of all primitives in BVH node.
-    let bounds = primitive_info
-        .iter()
-        .fold(Bounds3f::EMPTY, |b, pi| b.union(&pi.bounds));
+    let bounds = primitive_info.iter().fold(Bounds3f::EMPTY, |b, pi| b.union(&pi.bounds));
 
     // Compute Morton indices of primitives.
     let morton_prims = compute_morton_primitives(primitive_info, &bounds);
@@ -94,33 +93,26 @@ pub fn build(
     *total_nodes = atomic_total.into_inner();
 
     // Create and return SAH BVH from LBVH treelets.
-    build_upper_sah(
-        arena,
-        &mut treelets,
-        0,
-        treelets_to_build.len(),
-        total_nodes,
-    )
+    build_upper_sah(arena, &mut treelets, 0, treelets_to_build.len(), total_nodes)
 }
 
 /// Compute Morton indices of primitives.
 ///
 /// * `primitive_info` - Primitive information.
 /// * `bounds`         - Bounds of all primitives in BVH node.
-fn compute_morton_primitives(
-    primitive_info: &Vec<BVHPrimitiveInfo>,
-    bounds: &Bounds3f,
-) -> Vec<MortonPrimitive> {
+fn compute_morton_primitives(primitive_info: &Vec<BVHPrimitiveInfo>, bounds: &Bounds3f) -> Vec<MortonPrimitive> {
     let n = primitive_info.len();
     let morton_prims = Arc::new(Mutex::new(vec![MortonPrimitive::default(); n]));
 
-    crossbeam::scope(|scope| {
-        let (tx, rx) = crossbeam_channel::bounded::<(usize, &BVHPrimitiveInfo)>(OPTIONS.threads());
+    let n_threads = OPTIONS.threads();
 
-        for _ in 0..OPTIONS.threads() {
+    thread::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded::<(usize, &BVHPrimitiveInfo)>(n_threads);
+
+        for _ in 0..n_threads {
             let rxc = rx.clone();
             let morton_prims = Arc::clone(&morton_prims);
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for (i, pi) in rxc.iter() {
                     let centroid_offset = bounds.offset(&pi.centroid);
                     let v = centroid_offset * MORTON_SCALE;
@@ -137,8 +129,7 @@ fn compute_morton_primitives(
         for (i, pi) in primitive_info.iter().enumerate() {
             tx.send((i, pi)).unwrap();
         }
-    })
-    .unwrap();
+    });
 
     let mut mp = morton_prims.lock().unwrap();
     std::mem::replace(&mut mp, vec![])
@@ -169,17 +160,18 @@ fn build_treelets(
     atomic_total: &AtomicUsize,
 ) -> Vec<ArenaArc<BVHBuildNode>> {
     let n = treelets_to_build.len();
-    let treelets: Arc<Mutex<BTreeMap<usize, ArenaArc<BVHBuildNode>>>> =
-        Arc::new(Mutex::new(BTreeMap::new()));
+    let treelets: Arc<Mutex<BTreeMap<usize, ArenaArc<BVHBuildNode>>>> = Arc::new(Mutex::new(BTreeMap::new()));
 
-    crossbeam::scope(|scope| {
-        let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+    let n_threads = OPTIONS.threads();
 
-        for _ in 0..OPTIONS.threads() {
+    thread::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded(n_threads);
+
+        for _ in 0..n_threads {
             let rxc = rx.clone();
             let treelets = Arc::clone(&treelets);
             let ordered_prims = &ordered_prims;
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for i in rxc.iter() {
                     let tr: &LBVHTreelet = &treelets_to_build[i];
 
@@ -198,7 +190,7 @@ fn build_treelets(
                         &ordered_prims_offset,
                         FIRST_BIT_INDEX as isize,
                     );
-                    atomic_total.fetch_add(nodes_created, Ordering::SeqCst);
+                    atomic_total.fetch_add(nodes_created, Ordering::AcqRel);
 
                     let mut tl = treelets.lock().unwrap();
                     (*tl).insert(i, build_node);
@@ -211,8 +203,7 @@ fn build_treelets(
         for i in 0..n {
             tx.send(i).unwrap();
         }
-    })
-    .unwrap();
+    });
 
     let tl = treelets.lock().unwrap();
     tl.values().map(ArenaArc::clone).collect_vec()
@@ -252,7 +243,7 @@ fn emit_lbvh(
     if bit_index == -1 || n_primitives < max_prims_in_node {
         // Create and return leaf node of LBVH treelet.
         let mut bounds = Bounds3f::EMPTY;
-        let first_prim_offset = ordered_prims_offset.fetch_add(n_primitives, Ordering::SeqCst);
+        let first_prim_offset = ordered_prims_offset.fetch_add(n_primitives, Ordering::AcqRel);
 
         let mut prims = ordered_prims.lock().expect("unabled to lock ordered_prims");
         for i in 0..n_primitives {
@@ -262,17 +253,11 @@ fn emit_lbvh(
         }
 
         *total_nodes += 1;
-        arena.alloc_arc(BVHBuildNode::new_leaf_node(
-            first_prim_offset,
-            n_primitives,
-            bounds,
-        ))
+        arena.alloc_arc(BVHBuildNode::new_leaf_node(first_prim_offset, n_primitives, bounds))
     } else {
         let mask = 1 << bit_index;
         // Advance to next subtree level if there's no LBVH split for this bit.
-        if (morton_prims[0].morton_code & mask)
-            == (morton_prims[n_primitives - 1].morton_code & mask)
-        {
+        if (morton_prims[0].morton_code & mask) == (morton_prims[n_primitives - 1].morton_code & mask) {
             return emit_lbvh(
                 arena,
                 primitives,
@@ -294,9 +279,7 @@ fn emit_lbvh(
             assert_ne!(search_start, search_end);
 
             let mid = (search_start + search_end) / 2;
-            if (morton_prims[search_start].morton_code & mask)
-                == (morton_prims[mid].morton_code & mask)
-            {
+            if (morton_prims[search_start].morton_code & mask) == (morton_prims[mid].morton_code & mask) {
                 search_start = mid;
             } else {
                 assert_eq!(
@@ -393,12 +376,10 @@ fn build_upper_sah(
 
     // Initialize BucketInfo for HLBVH SAH partition buckets
     for i in start..end {
-        let centroid =
-            (treelet_roots[i].bounds.p_min[dim] + treelet_roots[i].bounds.p_max[dim]) * 0.5;
+        let centroid = (treelet_roots[i].bounds.p_min[dim] + treelet_roots[i].bounds.p_max[dim]) * 0.5;
 
         let mut b = (N_BUCKETS as Float
-            * ((centroid - centroid_bounds.p_min[dim])
-                / (centroid_bounds.p_max[dim] - centroid_bounds.p_min[dim])))
+            * ((centroid - centroid_bounds.p_min[dim]) / (centroid_bounds.p_max[dim] - centroid_bounds.p_min[dim])))
             as usize;
         if b == N_BUCKETS {
             b = N_BUCKETS - 1;
@@ -425,9 +406,8 @@ fn build_upper_sah(
             count1 += bucket.count;
         }
 
-        *cost_i = 0.125
-            + (count0 as Float * b0.surface_area() + count1 as Float * b1.surface_area())
-                / bounds.surface_area();
+        *cost_i =
+            0.125 + (count0 as Float * b0.surface_area() + count1 as Float * b1.surface_area()) / bounds.surface_area();
     }
 
     // Find bucket to split at that minimizes SAH metric
@@ -445,8 +425,7 @@ fn build_upper_sah(
     let split = itertools::partition(roots, |node| {
         let centroid = (node.bounds.p_min[dim] + node.bounds.p_max[dim]) * 0.5;
         let mut b = (N_BUCKETS as Float
-            * ((centroid - centroid_bounds.p_min[dim])
-                / (centroid_bounds.p_max[dim] - centroid_bounds.p_min[dim])))
+            * ((centroid - centroid_bounds.p_min[dim]) / (centroid_bounds.p_max[dim] - centroid_bounds.p_min[dim])))
             as usize;
         if b == N_BUCKETS {
             b = N_BUCKETS - 1;

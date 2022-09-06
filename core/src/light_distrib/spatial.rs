@@ -59,10 +59,7 @@ impl SpatialLightDistribution {
         let bmax = diag[b.maximum_extent()];
         let mut n_voxels = [0; 3];
         for i in 0..3 {
-            n_voxels[i] = max(
-                1_usize,
-                (diag[i] / bmax * max_voxels as Float).round() as usize,
-            ) as usize;
+            n_voxels[i] = max(1_usize, (diag[i] / bmax * max_voxels as Float).round() as usize) as usize;
 
             // In the Lookup() method, we require that 20 or fewer bits be
             // sufficient to represent each coordinate value. It's fairly hard
@@ -127,10 +124,7 @@ impl SpatialLightDistribution {
 
             // Use the next two Halton dimensions to sample a point on the
             // light source.
-            let u = Point2f::new(
-                radical_inverse(3_u16, i as u64),
-                radical_inverse(4_u16, i as u64),
-            );
+            let u = Point2f::new(radical_inverse(3_u16, i as u64), radical_inverse(4_u16, i as u64));
             for (j, light) in self.lights.iter().enumerate() {
                 let Li {
                     wi: _,
@@ -155,11 +149,7 @@ impl SpatialLightDistribution {
         // least the corresponding probability.
         let sum_contrib: Float = light_contrib.iter().sum();
         let avg_contrib = sum_contrib / (N_SAMPLES * light_contrib.len()) as Float;
-        let min_contrib = if avg_contrib > 0.0 {
-            0.001 * avg_contrib
-        } else {
-            1.0
-        };
+        let min_contrib = if avg_contrib > 0.0 { 0.001 * avg_contrib } else { 1.0 };
         for (i, contrib) in light_contrib.iter_mut().enumerate() {
             debug!("Voxel pi = {pi}, light {i} contrib = {contrib}");
             *contrib = max(*contrib, min_contrib);
@@ -239,7 +229,7 @@ impl LightDistribution for SpatialLightDistribution {
                 let invalid = INVALID_PACKED_POS;
                 if entry
                     .packed_pos
-                    .compare_exchange_weak(invalid, packed_pos, Ordering::SeqCst, Ordering::Relaxed)
+                    .compare_exchange_weak(invalid, packed_pos, Ordering::Acquire, Ordering::Relaxed)
                     .is_ok()
                 {
                     // Success; we've claimed this position for this voxel's

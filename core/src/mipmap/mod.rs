@@ -10,6 +10,7 @@ use std::hash::Hash;
 use std::marker::{Send, Sync};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
 use std::sync::{Arc, RwLock};
+use std::thread;
 
 mod cache;
 mod convert_in;
@@ -114,12 +115,11 @@ where
         wrap_mode: ImageWrap,
         max_anisotropy: Float,
     ) -> Self {
-        let (resampled_image, resolution) =
-            if !resolution[0].is_power_of_two() || !resolution[1].is_power_of_two() {
-                resample_image(resolution, img, wrap_mode)
-            } else {
-                (vec![], *resolution)
-            };
+        let (resampled_image, resolution) = if !resolution[0].is_power_of_two() || !resolution[1].is_power_of_two() {
+            resample_image(resolution, img, wrap_mode)
+        } else {
+            (vec![], *resolution)
+        };
 
         // Initialize levels of MIPMap from image.
         let n_levels = 1 + max(resolution[0], resolution[1]).log2int() as usize;
@@ -196,10 +196,7 @@ where
     pub fn lookup(&self, st: &Point2f, dst0: &Vector2f, dst1: &Vector2f) -> T {
         match self.filtering_method {
             FilteringMethod::Trilinear => {
-                let width = max(
-                    max(abs(dst0[0]), abs(dst0[1])),
-                    max(abs(dst1[0]), abs(dst1[1])),
-                );
+                let width = max(max(abs(dst0[0]), abs(dst0[1])), max(abs(dst1[0]), abs(dst1[1])));
                 self.lookup_triangle(st, width)
             }
             FilteringMethod::Ewa => self.lookup_ewa(st, dst0, dst1),
@@ -293,10 +290,7 @@ where
         let tx2 = texel(&self.pyramid, self.wrap_mode, level, s0 + 1, t0);
         let tx3 = texel(&self.pyramid, self.wrap_mode, level, s0 + 1, t0 + 1);
 
-        tx0 * (1.0 - ds) * (1.0 - dt)
-            + tx1 * (1.0 - ds) * dt
-            + tx2 * ds * (1.0 - dt)
-            + tx3 * ds * dt
+        tx0 * (1.0 - ds) * (1.0 - dt) + tx1 * (1.0 - ds) * dt + tx2 * ds * (1.0 - dt) + tx3 * ds * dt
     }
 
     /// Interpolates using EWA filter between 4 texels that surround a given
@@ -350,18 +344,9 @@ where
                 // Compute squared radius and filter texel if inside ellipse.
                 let r2 = a * ss * ss + b * ss * tt + c * tt * tt;
                 if r2 < 1.0 {
-                    let index = min(
-                        (r2 * WEIGHT_LUT_SIZE as Float) as usize,
-                        WEIGHT_LUT_SIZE - 1,
-                    );
+                    let index = min((r2 * WEIGHT_LUT_SIZE as Float) as usize, WEIGHT_LUT_SIZE - 1);
                     let weight = self.weight_lut[index];
-                    sum += texel(
-                        &self.pyramid,
-                        self.wrap_mode,
-                        level,
-                        is as usize,
-                        it as usize,
-                    ) * weight;
+                    sum += texel(&self.pyramid, self.wrap_mode, level, is as usize, it as usize) * weight;
                     sum_wts += weight;
                 }
             }
@@ -378,11 +363,7 @@ where
 /// * `resolution`       - Image resolution.
 /// * `img`              - Image data.
 /// * `wrap_mode`        - Determines how to handle out-of-bounds texels.
-fn resample_image<T>(
-    resolution: &Point2<usize>,
-    img: &[T],
-    wrap_mode: ImageWrap,
-) -> (Vec<T>, Point2<usize>)
+fn resample_image<T>(resolution: &Point2<usize>, img: &[T], wrap_mode: ImageWrap) -> (Vec<T>, Point2<usize>)
 where
     T: Copy
         + Clone
@@ -398,10 +379,7 @@ where
         + Sync,
 {
     // Resample image to power-of-two resolution.
-    let res_pow2 = Point2::new(
-        resolution[0].next_power_of_two(),
-        resolution[1].next_power_of_two(),
-    );
+    let res_pow2 = Point2::new(resolution[0].next_power_of_two(), resolution[1].next_power_of_two());
     let res = res_pow2[0] * res_pow2[1];
 
     // Use a mutex to modify resampled image data in parallel.
@@ -416,15 +394,17 @@ where
     let s_weights = resample_weights(resolution[0], res_pow2[0]);
     let s_weights = s_weights.iter().enumerate().take(res_pow2[0]);
 
+    let n_threads = OPTIONS.threads();
+
     // Apply `s_weights` in the `s` direction.
-    crossbeam::scope(|scope| {
-        let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+    thread::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded(n_threads);
 
         // Spawn worker threads.
-        for _ in 0..OPTIONS.threads() {
+        for _ in 0..n_threads {
             let rxc = rx.clone();
             let r_img = Arc::clone(&resampled_image);
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for work in rxc.iter() {
                     let mut r_img = r_img.write().unwrap();
                     for w in work {
@@ -458,27 +438,26 @@ where
             let w: Vec<(usize, (usize, &ResampleWeight))> = work.collect();
             tx.send(w).unwrap();
         }
-    })
-    .unwrap();
+    });
 
     // Resample image in `t` direction.
     let t_weights = resample_weights(resolution[1], res_pow2[1]);
 
     // Setup some mutexes for temporarily holding working data; one per thread.
-    let work_data: Vec<Arc<RwLock<Vec<T>>>> =
-        vec![Arc::new(RwLock::new(vec![])); OPTIONS.threads()];
+    let n_threads = OPTIONS.threads();
+    let work_data: Vec<Arc<RwLock<Vec<T>>>> = vec![Arc::new(RwLock::new(vec![])); n_threads];
 
     // Apply `t_weights` in the `t` direction.
-    crossbeam::scope(|scope| {
-        let (tx, rx) = crossbeam_channel::bounded(OPTIONS.threads());
+    thread::scope(|scope| {
+        let (tx, rx) = crossbeam_channel::bounded(n_threads);
 
         // Spawn worker threads.
-        for thread in 0..OPTIONS.threads() {
+        for thread in 0..n_threads {
             let rxc = rx.clone();
             let work_data = Arc::clone(&work_data[thread]);
             let r_img = Arc::clone(&resampled_image);
             let t_weights = &t_weights;
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for work in rxc.iter() {
                     // Lock for duration of work. Otherwise work_data will
                     // get muddled up between threads.
@@ -508,8 +487,7 @@ where
                                     };
 
                                     if offset < resolution[1] {
-                                        work_data[t] += (*pixels)[offset * res_pow2[0] + s]
-                                            * t_weights[t].weight[j];
+                                        work_data[t] += (*pixels)[offset * res_pow2[0] + s] * t_weights[t].weight[j];
                                     }
                                 }
                             }
@@ -527,18 +505,12 @@ where
         drop(rx); // Drop extra rx since we've cloned one for each woker.
 
         // Send work.
-        for work in (0..res_pow2[0])
-            .into_iter()
-            .chunks(32)
-            .into_iter()
-            .enumerate()
-        {
+        for work in (0..res_pow2[0]).into_iter().chunks(32).into_iter().enumerate() {
             let (vi, chunk) = work;
             let vs: Vec<usize> = chunk.collect();
             tx.send((vi, vs)).unwrap();
         }
-    })
-    .unwrap();
+    });
 
     let resampled_pixels = resampled_image.read().unwrap();
     let mut result: Vec<T> = Vec::with_capacity((*resampled_pixels).len());
@@ -551,7 +523,7 @@ where
 /// * `old_res` - The old resolution.
 /// * `new_res` - The new resolution.
 fn resample_weights(old_res: usize, new_res: usize) -> Vec<ResampleWeight> {
-    assert!(new_res > old_res);
+    assert!(new_res >= old_res);
 
     let mut wt: Vec<ResampleWeight> = vec![ResampleWeight::default(); new_res];
 
@@ -582,13 +554,7 @@ fn resample_weights(old_res: usize, new_res: usize) -> Vec<ResampleWeight> {
 /// * `level`     - MIPMap Level.
 /// * `s`         - s-index.
 /// * `t`         - t-index.
-fn texel<T>(
-    pyramid: &[BlockedArray<T, 2>],
-    wrap_mode: ImageWrap,
-    level: usize,
-    s: usize,
-    t: usize,
-) -> T
+fn texel<T>(pyramid: &[BlockedArray<T, 2>], wrap_mode: ImageWrap, level: usize, s: usize, t: usize) -> T
 where
     T: Copy + Default,
 {

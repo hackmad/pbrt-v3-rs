@@ -12,8 +12,7 @@
                 "args": [
                     "build",
                     "--bin=pbr-rust",
-                    "--package=pbr-rust",
-                    "--features="
+                    "--package=pbr-rust"
                 ],
                 "filter": {
                     "name": "pbr-rust",
@@ -23,12 +22,12 @@
             "args": [
                 "-t",
                 "1",
-                "scenes/media/smoke.pbrt"
+                "f16-9b.pbrt"
             ],
-            "program": "${workspaceFolder}/target/debug/pbr-rust",
-            "cwd": "${workspaceFolder}",
+            //"cwd": "${workspaceFolder}",
+            "cwd": "/Users/ahmad/Documents/Projects/Dev/rust/pbrt-v3-scenes/caustic-glass",
             "env": {
-                "RUST_LOG": "debug"
+                "RUST_LOG": "info"
             }
         },
         {
@@ -40,12 +39,239 @@
                     "test",
                     "--no-run",
                     "--bin=pbr-rust",
-                    "--package=pbr-rust",
-                    "--features="
+                    "--package=pbr-rust"
                 ],
                 "filter": {
                     "name": "pbr-rust",
                     "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'accelerators'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=accelerators"
+                ],
+                "filter": {
+                    "name": "accelerators",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'core'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=core"
+                ],
+                "filter": {
+                    "name": "core",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'api'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=api"
+                ],
+                "filter": {
+                    "name": "api",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'cameras'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=cameras"
+                ],
+                "filter": {
+                    "name": "cameras",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'filters'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=filters"
+                ],
+                "filter": {
+                    "name": "filters",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'integrators'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=integrators"
+                ],
+                "filter": {
+                    "name": "integrators",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'samplers'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=samplers"
+                ],
+                "filter": {
+                    "name": "samplers",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'lights'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=lights"
+                ],
+                "filter": {
+                    "name": "lights",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'materials'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=materials"
+                ],
+                "filter": {
+                    "name": "materials",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'textures'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=textures"
+                ],
+                "filter": {
+                    "name": "textures",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'media'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=media"
+                ],
+                "filter": {
+                    "name": "media",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'shapes'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=shapes"
+                ],
+                "filter": {
+                    "name": "shapes",
+                    "kind": "lib"
                 }
             },
             "args": [],

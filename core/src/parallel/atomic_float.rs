@@ -21,17 +21,15 @@ impl AtomicFloat {
 
     /// Add a floating point value.
     ///
-    /// * `v` - The value to add.
-    pub fn add(&self, v: Float) {
+    /// * `v`        - The value to add.
+    /// * `ordering` - Ordering used for successful store.
+    pub fn add(&self, v: Float, ordering: Ordering) {
         let mut old_bits: u32 = self.bits.load(Ordering::Relaxed);
         loop {
             let new_bits = float_to_bits(bits_to_float(old_bits) + v);
-            let result = self.bits.compare_exchange_weak(
-                old_bits,
-                new_bits,
-                Ordering::SeqCst,
-                Ordering::Relaxed,
-            );
+            let result = self
+                .bits
+                .compare_exchange_weak(old_bits, new_bits, ordering, Ordering::Relaxed);
             match result {
                 Ok(_) => break,
                 Err(x) => {
@@ -40,6 +38,22 @@ impl AtomicFloat {
             }
         }
     }
+
+    /// Loads the floating point value.
+    ///
+    /// * `order` - Memory ordering of this operation
+    pub fn load(&self, order: Ordering) -> Float {
+        let bits: u32 = self.bits.load(order);
+        bits_to_float(bits)
+    }
+
+    /// Stores the floating point value.
+    ///
+    /// * `v`     - The value.
+    /// * `order` - Memory ordering of this operation
+    pub fn store(&self, v: Float, order: Ordering) {
+        self.bits.store(float_to_bits(v), order);
+    }
 }
 
 impl Default for AtomicFloat {
@@ -47,6 +61,15 @@ impl Default for AtomicFloat {
     fn default() -> Self {
         Self {
             bits: AtomicU32::new(0),
+        }
+    }
+}
+
+impl Clone for AtomicFloat {
+    fn clone(&self) -> Self {
+        let bits: u32 = self.bits.load(Ordering::SeqCst);
+        AtomicFloat {
+            bits: AtomicU32::new(bits),
         }
     }
 }
