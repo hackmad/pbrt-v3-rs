@@ -190,7 +190,7 @@ fn build_treelets(
                         &ordered_prims_offset,
                         FIRST_BIT_INDEX as isize,
                     );
-                    atomic_total.fetch_add(nodes_created, Ordering::SeqCst);
+                    atomic_total.fetch_add(nodes_created, Ordering::AcqRel);
 
                     let mut tl = treelets.lock().unwrap();
                     (*tl).insert(i, build_node);
@@ -243,7 +243,7 @@ fn emit_lbvh(
     if bit_index == -1 || n_primitives < max_prims_in_node {
         // Create and return leaf node of LBVH treelet.
         let mut bounds = Bounds3f::EMPTY;
-        let first_prim_offset = ordered_prims_offset.fetch_add(n_primitives, Ordering::SeqCst);
+        let first_prim_offset = ordered_prims_offset.fetch_add(n_primitives, Ordering::AcqRel);
 
         let mut prims = ordered_prims.lock().expect("unabled to lock ordered_prims");
         for i in 0..n_primitives {
