@@ -21,13 +21,13 @@ The relative paths for `Texture`, `Include` etc are relative to the scene file l
 
 PNG files can be compressed using `pngquant`:
 
-```
+```bash
 pngquant --ext .png --force renders/shapes/sphere.png
 ```
 
 OR
 
-```
+```bash
 pngquant --ext .png --force renders/shapes/*.png 
 ```
 
@@ -113,6 +113,11 @@ pngquant --ext .png --force renders/shapes/*.png
 
 <a title="Instances" href="renders/objects/instances.png"><img src="renders/objects/instances.png" style="height: 100px"/></a>
 
+### Integrators
+
+<a title="SPPM 10 iterations caustic-glass" href="renders/integrators/sppm/f16-9a.png"><img src="renders/integrators/sppm/f16-9a.png" style="height: 200px"/></a>
+<a title="SPPM 100 iterations caustic-glass" href="renders/integrators/sppm/f16-9b.png"><img src="renders/integrators/sppm/f16-9b.png" style="height: 200px"/></a>
+
 ## Building
 
 Build debug profile. The executable will be `target/debug/pbr_rust`.
@@ -135,7 +140,7 @@ techniques used in Rust for unit testing, property based testing and debugging.
 
 The unit tests can be run as follows:
 
-```
+```bash
 cargo test
 ```
 
@@ -146,14 +151,28 @@ through the book.
 
 The debug version can be run as:
 
-```
+```bash
 cargo run -- [OPTIONS] <FILE1> <FILE2> ...
 ```
 
 The release version can be run as:
 
-```
+```bash
 cargo run --release -- [OPTIONS] <FILE1> <FILE2> ...
+```
+
+To run the compiled binary directly use:
+
+```bash
+./target/release/pbr-rust [OPTIONS] <FILE1> <FILE2> ...
+```
+
+To run examples from `../pbrt-v3-scenes` you can use relative paths to point to the binary. For example, the example in `../pbrt-v3-scenes/caustic-glass` can be rendered like this:
+
+```bash
+cd ../pbrt-v3-scenes/caustic-glass
+
+../../pbr_rust/target/release/pbr-rust -t 4 f16-9a.pbrt
 ```
 
 ## Profiling / Performance
@@ -163,7 +182,7 @@ cargo run --release -- [OPTIONS] <FILE1> <FILE2> ...
 Use `--features dhat-rs` to get heap profiling stats. Note that this will be a
 lot slower to run.
 
-```
+```bash
 cargo run --release --features dhat-rs -- [OPTIONS] <FILE1> <FILE2> ...
 ```
 
@@ -176,7 +195,7 @@ available as well.
 Use `--features jemalloc` to use jemalloc on Linux/MacOS. On Windows, it will 
 use default global allocator. This is mutually exclusive with `dhat-rs` feature.
 
-```
+```bash
 cargo run --release --features jemalloc -- [OPTIONS] <FILE1> <FILE2> ...
 ```
 
@@ -186,7 +205,7 @@ See [profile guided optimization](https://doc.rust-lang.org/rustc/profile-guided
 
 __NOTE:__ Use of `asdf` is not symlinking toolchain components. Hence the export.
 
-```
+```bash
 # STEP 0: Make sure there is no left-over profiling data from previous runs
 rm -rf /tmp/pgo-data
 
@@ -209,19 +228,19 @@ RUSTFLAGS="-Cprofile-use=/tmp/pgo-data/merged.profdata" \
 
 ### Flamegraph
 
-```
+```bash
 cargo install flamegraph
 ```
 
 On MacOS DTrace needs root permissions!
 
-```
+```bash
 sudo cargo flamegraph --dev -- target/release/pbr-rust scene.pbrt
 ```
 
 Ignore this error if you see `cargo-flamegraph.stacks`.
 
-```
+```bash
 [2021-12-25T21:36:44Z ERROR pbr_rust] Error reading file 'target/release/pbr-rust': stream did not contain valid UTF-8
 ```
 
