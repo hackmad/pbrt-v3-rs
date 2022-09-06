@@ -2,7 +2,6 @@
 
 #![allow(dead_code)]
 
-use atom::Atom;
 use core::app::OPTIONS;
 use core::camera::*;
 use core::geometry::*;
@@ -21,8 +20,9 @@ use core::sampling::Distribution1D;
 use core::scene::*;
 use core::spectrum::*;
 use samplers::HaltonSampler;
+use std::collections::VecDeque;
 use std::sync::atomic::{AtomicI32, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -138,7 +138,8 @@ impl Integrator for SPPMIntegrator {
 
             // Allocate grid for SPPM visible points.
             let hash_size = n_pixels;
-            let grid: Vec<Atom<Arc<SPPMPixelListNode>>> = (0..hash_size).map(|_| Atom::empty()).collect();
+            let grid: Vec<Arc<Mutex<VecDeque<&SPPMPixel>>>> =
+                (0..hash_size).map(|_| Arc::new(Mutex::new(VecDeque::new()))).collect();
 
             // Compute grid bounds for SPPM visible points.
             let (grid_bounds, max_radius) = compute_grid_bounds(&pixels);
@@ -151,7 +152,6 @@ impl Integrator for SPPMIntegrator {
 
             // Trace photons and accumulate contributions.
             trace_photons(
-                &pixels,
                 iter,
                 self.photons_per_iteration,
                 scene,
@@ -279,26 +279,6 @@ impl VisiblePoint {
     /// `beta` - Throughput weight used to compute reflected radiance.
     fn new(p: Point3f, wo: Vector3f, bsdf: Option<BSDF>, beta: Spectrum) -> Self {
         Self { p, wo, bsdf, beta }
-    }
-}
-
-/// Used to store nodes in a linked list of visible point grid elements.
-struct SPPMPixelListNode {
-    /// The index of the visible point.
-    pixel_index: usize,
-    /// Next visible point.
-    next: Atom<Arc<SPPMPixelListNode>>,
-}
-
-impl SPPMPixelListNode {
-    /// Create a new `SPPMPixelListNode` with given point and no next node.
-    ///
-    /// * `pixel_index` - The index of the visible point.
-    fn new(pixel_index: usize) -> Self {
-        Self {
-            pixel_index,
-            next: Atom::empty(),
-        }
     }
 }
 
@@ -459,8 +439,7 @@ fn generate_visible_point(
     while depth < max_depth {
         let isect = scene.intersect(&mut ray);
         if isect.is_none() {
-            // Accumulate light contributions for ray with no
-            // intersection.
+            // Accumulate light contributions for ray with no intersection.
             for light in scene.lights.iter() {
                 pixel_ld += beta * light.le(&ray);
             }
@@ -500,10 +479,13 @@ fn generate_visible_point(
             bsdf.num_components(BxDFType::BSDF_DIFFUSE | BxDFType::BSDF_REFLECTION | BxDFType::BSDF_TRANSMISSION) > 0;
         let is_glossy =
             bsdf.num_components(BxDFType::BSDF_GLOSSY | BxDFType::BSDF_REFLECTION | BxDFType::BSDF_TRANSMISSION) > 0;
-        if is_diffuse || (is_glossy && depth == max_depth - 1) {
+
+        let bsdf = if is_diffuse || (is_glossy && depth == max_depth - 1) {
             pixel_vp = Some(VisiblePoint::new(isect.hit.p, wo, Some(bsdf), beta));
-            break;
-        }
+            pixel_vp.as_ref().unwrap().bsdf.as_ref().unwrap() // just so we can use bsdf later
+        } else {
+            &bsdf
+        };
 
         // Spawn ray from SPPM camera path vertex.
         if depth < max_depth - 1 {
@@ -531,12 +513,12 @@ fn generate_visible_point(
 }
 
 /// Add visible points to SPPM grid.
-fn add_visible_points_to_grid(
-    pixels: &[SPPMPixel],
+fn add_visible_points_to_grid<'p>(
+    pixels: &'p [SPPMPixel],
     grid_bounds: &Bounds3f,
     grid_res: &[Int; 3],
     hash_size: usize,
-    grid: &[Atom<Arc<SPPMPixelListNode>>],
+    grid: &[Arc<Mutex<VecDeque<&'p SPPMPixel>>>],
 ) {
     let n_threads = OPTIONS.threads();
 
@@ -560,12 +542,8 @@ fn add_visible_points_to_grid(
                                 for x in p_min.x..=p_max.x {
                                     // Add visible point to grid cell `(x, y, z)`.
                                     let h = hash(&Point3i::new(x, y, z), hash_size);
-                                    let node = Arc::new(SPPMPixelListNode::new(index));
-
-                                    // Atomically add `node` to the start of `grid[h]`'s linked list.
-                                    if let Some(prev_grid) = grid[h].swap(Arc::clone(&node), Ordering::AcqRel) {
-                                        node.next.swap(prev_grid, Ordering::Relaxed);
-                                    }
+                                    let mut grid_h = grid[h].lock().unwrap();
+                                    (*grid_h).push_front(&pixels[index]);
                                 }
                             }
                         }
@@ -612,8 +590,7 @@ fn compute_grid_resolution(grid_bounds: &Bounds3f, max_radius: Float) -> [Int; 3
 }
 
 /// Trace photons and accumulate contributions.
-fn trace_photons(
-    pixels: &[SPPMPixel],
+fn trace_photons<'p>(
     iter: usize,
     photons_per_iteration: usize,
     scene: &Scene,
@@ -623,7 +600,7 @@ fn trace_photons(
     grid_bounds: &Bounds3f,
     grid_res: &[Int; 3],
     hash_size: usize,
-    grid: &[Atom<Arc<SPPMPixelListNode>>],
+    grid: &[Arc<Mutex<VecDeque<&'p SPPMPixel>>>],
 ) {
     let n_threads = OPTIONS.threads();
 
@@ -636,7 +613,6 @@ fn trace_photons(
             scope.spawn(move || {
                 for photon_index in rx_worker.iter() {
                     trace_photon(
-                        pixels,
                         iter,
                         photon_index,
                         photons_per_iteration,
@@ -662,8 +638,7 @@ fn trace_photons(
 }
 
 /// Trace single photon and accumulate contribution.
-fn trace_photon(
-    pixels: &[SPPMPixel],
+fn trace_photon<'p>(
     iter: usize,
     photon_index: usize,
     photons_per_iteration: usize,
@@ -674,7 +649,7 @@ fn trace_photon(
     grid_bounds: &Bounds3f,
     grid_res: &[Int; 3],
     hash_size: usize,
-    grid: &[Atom<Arc<SPPMPixelListNode>>],
+    grid: &[Arc<Mutex<VecDeque<&'p SPPMPixel>>>],
 ) {
     // Follow photon path for `photon_index`.
     let halton_index = (iter * photons_per_iteration + photon_index) as u64;
@@ -741,22 +716,22 @@ fn trace_photon(
                 let h = hash(&photon_grid_index, hash_size);
 
                 // Add photon contribution to visible points in `grid[h]`.
-                let mut current_node = grid[h].take(Ordering::Relaxed);
-                while let Some(node) = current_node {
-                    let pixel = &pixels[node.pixel_index];
+                let grid_h = grid[h].lock().unwrap();
+                for pixel in (*grid_h).iter() {
                     let radius = pixel.radius;
-                    if pixel.vp.p.distance_squared(isect.hit.p) <= radius * radius {
-                        // Update `pixel` `Phi` and `M` for nearby photon.
-                        let wi = -photon_ray.d;
-                        if let Some(bsdf) = pixel.vp.bsdf.as_ref() {
-                            let phi = beta * bsdf.f(&pixel.vp.wo, &wi, BxDFType::all());
-                            for i in 0..SPECTRUM_SAMPLES {
-                                pixel.phi[i].add(phi[i]);
-                            }
-                            pixel.m.fetch_add(1, Ordering::SeqCst);
-                        }
+                    if pixel.vp.p.distance_squared(isect.hit.p) > radius * radius {
+                        continue;
                     }
-                    current_node = node.next.take(Ordering::Relaxed);
+
+                    // Update `pixel`, `Phi` and `M` for nearby photon.
+                    if let Some(bsdf) = pixel.vp.bsdf.as_ref() {
+                        let wi = -photon_ray.d;
+                        let phi = beta * bsdf.f(&pixel.vp.wo, &wi, BxDFType::all());
+                        for i in 0..SPECTRUM_SAMPLES {
+                            pixel.phi[i].add(phi[i], Ordering::AcqRel);
+                        }
+                        pixel.m.fetch_add(1, Ordering::AcqRel);
+                    }
                 }
             }
         }
@@ -818,7 +793,7 @@ fn update_pixels(pixels: &mut Vec<SPPMPixel>) {
             let rx_worker = rx_worker.clone();
             scope.spawn(move || {
                 for p in rx_worker.iter() {
-                    let m = p.m.load(Ordering::SeqCst);
+                    let m = p.m.load(Ordering::Acquire);
                     if m > 0 {
                         // Update pixel photon count, search radius, and `tau` from photons.
                         const GAMMA: Float = 2.0 / 3.0;
@@ -827,16 +802,16 @@ fn update_pixels(pixels: &mut Vec<SPPMPixel>) {
 
                         let mut phi = Spectrum::ZERO;
                         for j in 0..SPECTRUM_SAMPLES {
-                            phi[j] = p.phi[j].load(Ordering::SeqCst);
+                            phi[j] = p.phi[j].load(Ordering::Acquire);
                         }
 
                         p.tau = (p.tau + p.vp.beta * phi) * (r_new * r_new) / (p.radius * p.radius);
                         p.n = n_new;
                         p.radius = r_new;
-                        p.m.store(0, Ordering::SeqCst);
+                        p.m.store(0, Ordering::Release);
 
                         for j in 0..SPECTRUM_SAMPLES {
-                            p.phi[j].store(0.0, Ordering::SeqCst);
+                            p.phi[j].store(0.0, Ordering::Release);
                         }
                     }
                     // Reset `VisiblePoint` in pixel.

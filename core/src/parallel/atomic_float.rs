@@ -21,17 +21,15 @@ impl AtomicFloat {
 
     /// Add a floating point value.
     ///
-    /// * `v` - The value to add.
-    pub fn add(&self, v: Float) {
+    /// * `v`        - The value to add.
+    /// * `ordering` - Ordering used for successful store.
+    pub fn add(&self, v: Float, ordering: Ordering) {
         let mut old_bits: u32 = self.bits.load(Ordering::Relaxed);
         loop {
             let new_bits = float_to_bits(bits_to_float(old_bits) + v);
-            let result = self.bits.compare_exchange_weak(
-                old_bits,
-                new_bits,
-                Ordering::SeqCst,
-                Ordering::Relaxed,
-            );
+            let result = self
+                .bits
+                .compare_exchange_weak(old_bits, new_bits, ordering, Ordering::Relaxed);
             match result {
                 Ok(_) => break,
                 Err(x) => {

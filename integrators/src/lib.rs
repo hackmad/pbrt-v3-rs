@@ -2,7 +2,6 @@
 
 #[macro_use]
 extern crate log;
-extern crate atom;
 
 mod direct_lighting;
 mod path;
