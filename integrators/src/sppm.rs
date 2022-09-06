@@ -138,8 +138,7 @@ impl Integrator for SPPMIntegrator {
 
             // Allocate grid for SPPM visible points.
             let hash_size = n_pixels;
-            let grid: Vec<Arc<Mutex<VecDeque<&SPPMPixel>>>> =
-                (0..hash_size).map(|_| Arc::new(Mutex::new(VecDeque::new()))).collect();
+            let grid: Vec<SPPMPixelList> = (0..hash_size).map(|_| Arc::new(Mutex::new(VecDeque::new()))).collect();
 
             // Compute grid bounds for SPPM visible points.
             let (grid_bounds, max_radius) = compute_grid_bounds(&pixels);
@@ -257,6 +256,12 @@ impl SPPMPixel {
         }
     }
 }
+
+/// Stores a list of visible points in the grid. Note that this is using a mutex with VecDeque
+/// rather than using a linked list with atomic data types as in the original PBRT implementation.
+/// It avoids having to deal with memory ordering for prepending a node to the list. Might be an
+/// excercise in the future to implement it that way as I couldn't get it to work properly.
+type SPPMPixelList<'p> = Arc<Mutex<VecDeque<&'p SPPMPixel>>>;
 
 #[derive(Default, Clone)]
 struct VisiblePoint {
@@ -518,7 +523,7 @@ fn add_visible_points_to_grid<'p>(
     grid_bounds: &Bounds3f,
     grid_res: &[Int; 3],
     hash_size: usize,
-    grid: &[Arc<Mutex<VecDeque<&'p SPPMPixel>>>],
+    grid: &[SPPMPixelList<'p>],
 ) {
     let n_threads = OPTIONS.threads();
 
@@ -600,7 +605,7 @@ fn trace_photons<'p>(
     grid_bounds: &Bounds3f,
     grid_res: &[Int; 3],
     hash_size: usize,
-    grid: &[Arc<Mutex<VecDeque<&'p SPPMPixel>>>],
+    grid: &[SPPMPixelList<'p>],
 ) {
     let n_threads = OPTIONS.threads();
 
@@ -649,7 +654,7 @@ fn trace_photon<'p>(
     grid_bounds: &Bounds3f,
     grid_res: &[Int; 3],
     hash_size: usize,
-    grid: &[Arc<Mutex<VecDeque<&'p SPPMPixel>>>],
+    grid: &[SPPMPixelList<'p>],
 ) {
     // Follow photon path for `photon_index`.
     let halton_index = (iter * photons_per_iteration + photon_index) as u64;
