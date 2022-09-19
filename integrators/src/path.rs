@@ -34,13 +34,13 @@ pub struct PathIntegrator {
 impl PathIntegrator {
     /// Create a new `PathIntegrator`.
     ///
-    /// * `max_depth`              - Maximum recursion depth.
-    /// * `camera`                 - The camera.
-    /// * `sampler`                - The sampler.
-    /// * `pixel_bounds`           - Pixel bounds for the image.
-    /// * `rr_threshold`           - Russian roulette threshold used to terminate
-    ///                              path sampling. (default to 1.0)
-    /// * `light_sample_strategoy` - Light sampling strategy (default to Spatial)
+    /// * `max_depth`             - Maximum recursion depth.
+    /// * `camera`                - The camera.
+    /// * `sampler`               - The sampler.
+    /// * `pixel_bounds`          - Pixel bounds for the image.
+    /// * `rr_threshold`          - Russian roulette threshold used to terminate path sampling.
+    ///                             (default to 1.0)
+    /// * `light_sample_strategy` - Light sampling strategy (default to Spatial)
     pub fn new(
         max_depth: usize,
         camera: ArcCamera,
@@ -70,10 +70,7 @@ impl Integrator for PathIntegrator {
     ///
     /// * `scene` - The scene
     fn preprocess(&mut self, scene: &Scene) {
-        self.light_distribution = Some(create_light_sample_distribution(
-            self.light_sample_strategy,
-            scene,
-        ));
+        self.light_distribution = Some(create_light_sample_distribution(self.light_sample_strategy, scene));
     }
 
     /// Render the scene.
@@ -89,13 +86,7 @@ impl Integrator for PathIntegrator {
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
-    fn li(
-        &self,
-        ray: &mut Ray,
-        scene: &Scene,
-        sampler: &mut ArcSampler,
-        _depth: usize,
-    ) -> Spectrum {
+    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ArcSampler, _depth: usize) -> Spectrum {
         let mut l = Spectrum::ZERO;
         let mut beta = Spectrum::ONE;
         let mut specular_bounce = false;
@@ -139,13 +130,7 @@ impl Integrator for PathIntegrator {
             // Compute scattering functions and skip over medium boundaries.
             let mut bsdf: Option<BSDF> = None;
             let mut bssrdf: Option<BSDF> = None;
-            isect.compute_scattering_functions(
-                ray,
-                true,
-                TransportMode::Radiance,
-                &mut bsdf,
-                &mut bssrdf,
-            );
+            isect.compute_scattering_functions(ray, true, TransportMode::Radiance, &mut bsdf, &mut bssrdf);
             if bsdf.is_none() {
                 debug!("Skipping intersection due to null bsdf");
                 *ray = isect.spawn_ray(&ray.d);
@@ -165,8 +150,7 @@ impl Integrator for PathIntegrator {
             // skip this for perfectly specular BSDFs).
             let num_components = bsdf.num_components(BxDFType::all() & !BxDFType::BSDF_SPECULAR);
             if num_components > 0 {
-                let ld = beta
-                    * uniform_sample_one_light(&it, Some(&bsdf), scene, sampler, false, distrib);
+                let ld = beta * uniform_sample_one_light(&it, Some(&bsdf), scene, sampler, false, distrib);
                 debug!("Sampled direct lighting Ld = {ld}");
                 assert!(ld.y() >= 0.0);
                 l += ld;
@@ -212,16 +196,9 @@ impl Integrator for PathIntegrator {
             // Account for subsurface scattering, if applicable.
             let bssrdf_bxdf = bssrdf
                 .map(|b| b.bxdfs)
-                .map(|b| {
-                    if b.is_empty() {
-                        None
-                    } else {
-                        Some(b[0].clone())
-                    }
-                })
+                .map(|b| if b.is_empty() { None } else { Some(b[0].clone()) })
                 .flatten();
-            if bssrdf_bxdf.is_some() && (flags & BxDFType::BSDF_TRANSMISSION) > BxDFType::BSDF_NONE
-            {
+            if bssrdf_bxdf.is_some() && (flags & BxDFType::BSDF_TRANSMISSION) > BxDFType::BSDF_NONE {
                 match bssrdf_bxdf.unwrap() {
                     BxDF::TabulatedBSSRDF(bxdf) => {
                         // Importance sample the BSSRDF.
@@ -249,15 +226,7 @@ impl Integrator for PathIntegrator {
                         let pi_shading_n = pi.shading.n.clone();
                         let pi_light_pdf = light_distribution.lookup(&pi.hit.p);
                         let pi = Interaction::Surface { si: pi };
-                        l += beta
-                            * uniform_sample_one_light(
-                                &pi,
-                                bsdf.as_ref(),
-                                scene,
-                                sampler,
-                                false,
-                                pi_light_pdf,
-                            );
+                        l += beta * uniform_sample_one_light(&pi, bsdf.as_ref(), scene, sampler, false, pi_light_pdf);
 
                         // Account for the indirect subsurface scattering component.
                         let sample_2d = {
@@ -323,10 +292,8 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for PathIntegrator {
             if np != 4 {
                 error!("Expected 4 values for 'pixel_bounds' parameter. Got {np}");
             } else {
-                pixel_bounds = pixel_bounds.intersect(&Bounds2i::new(
-                    Point2i::new(pb[0], pb[1]),
-                    Point2i::new(pb[2], pb[3]),
-                ));
+                pixel_bounds =
+                    pixel_bounds.intersect(&Bounds2i::new(Point2i::new(pb[0], pb[1]), Point2i::new(pb[2], pb[3])));
                 if pixel_bounds.area() == 0 {
                     error!("Degenerate 'pixel_bounds' specified.");
                 }

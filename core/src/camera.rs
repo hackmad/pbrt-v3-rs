@@ -15,17 +15,15 @@ pub trait Camera {
     /// Returns the camera data.
     fn get_data(&self) -> &CameraData;
 
-    /// Returns a ray corresponding to a given sample. It also returns, a floating
-    /// point value that affects how much the radiance arriving at the film plane
-    /// will contribute to final image.
+    /// Returns a ray corresponding to a given sample. It also returns, a floating / point value that affects how much
+    /// the radiance arriving at the film plane / will contribute to final image.
     ///
     /// * `sample` - The sample.
     fn generate_ray(&self, sample: &CameraSample) -> (Ray, Float);
 
-    /// Returns a main ray and rays shifted one pixel in x and y directions on
-    /// the film plane for corresponding to a given sample. It also returns a
-    /// floating point value that affects how much the radiance arriving at the
-    /// film plane will contribute to final image.
+    /// Returns a main ray and rays shifted one pixel in x and y directions on / the film plane for corresponding to a
+    /// given sample. It also returns a floating point value that affects how much the radiance arriving at the film
+    /// plane will contribute to final image.
     ///
     /// * `sample` - The sample.
     fn generate_ray_differential(&self, sample: &CameraSample) -> (Ray, Float) {
@@ -79,13 +77,11 @@ pub trait Camera {
         (ray, wt)
     }
 
-    /// Evaluate the importance emitted from the point on the camera in a
-    /// direction. The `include_raster_point` is true, then a raster position
-    /// associated with the ray on the film is returned as well.
+    /// Evaluate the importance emitted from the point on the camera in a / direction. The `include_raster_point` is true,
+    /// then a raster position associated with the ray on the film is returned as well.
     ///
     /// * `ray`                  - The ray.
-    /// * `include_raster_point` - Indicates whether or not to return the raster
-    ///                            position.
+    /// * `include_raster_point` - Indicates whether or not to return the raster position.
     fn we(&self, _ray: &Ray, _include_raster: bool) -> (Spectrum, Option<Point2f>) {
         panic!("Camera::we() is not implemented");
     }
@@ -100,8 +96,7 @@ pub trait Camera {
     ///
     /// * `interaction`          - The interaction point.
     /// * `u`                    - Used to sample point on the lens.
-    /// * `include_raster_point` - Indicates whether or not to return the raster
-    ///                            position.
+    /// * `include_raster_point` - Indicates whether or not to return the raster position.
     fn sample_wi(&self, _interaction: &Interaction, _u: &Point2f) -> SampleResult {
         panic!("Camera::sample_wi() is not implemented");
     }
@@ -120,8 +115,8 @@ pub struct CameraSample {
     /// support lenses).
     pub p_lens: Point2f,
 
-    /// Time at which the ray should sample the scene. This should be linearly
-    /// interpolated between shutter open and close time range.
+    /// Time at which the ray should sample the scene. This should be linearly / interpolated between shutter open and
+    /// close time range.
     pub time: Float,
 }
 
@@ -129,17 +124,11 @@ impl CameraSample {
     /// Create a new `CameraSample`.
     ///
     /// * `p_film` - Point on the film to which the generated ray carries radiance.
-    /// * `p_lens` - The point on the lens the ray passes through (for cameras
-    ///              that support lenses).
-    /// * `time`   - Time at which the ray should sample the scene. This should
-    ///              be linearly interpolated between shutter open and close
-    ///              time range.
+    /// * `p_lens` - The point on the lens the ray passes through (for cameras that support lenses).
+    /// * `time`   - Time at which the ray should sample the scene. This should be linearly interpolated between shutter
+    ///              open and close time range.
     pub fn new(p_film: Point2f, p_lens: Point2f, time: Float) -> Self {
-        Self {
-            p_film,
-            p_lens,
-            time,
-        }
+        Self { p_film, p_lens, time }
     }
 }
 
@@ -183,13 +172,7 @@ impl SampleResult {
     /// * `pdf`      - The PDF value.
     /// * `p_raster` - Raster position.
     /// * `vis`      - Visibility tester.
-    pub fn new(
-        spectrum: Spectrum,
-        wi: Vector3f,
-        pdf: Float,
-        p_raster: Option<Point2f>,
-        vis: VisibilityTester,
-    ) -> Self {
+    pub fn new(spectrum: Spectrum, wi: Vector3f, pdf: Float, p_raster: Option<Point2f>, vis: VisibilityTester) -> Self {
         Self {
             spectrum,
             wi,
@@ -205,10 +188,10 @@ impl SampleResult {
 #[allow(unused)]
 pub struct PDFResult {
     /// Spatial PDF.
-    pos: Float,
+    pub pos: Float,
 
     /// Directional PDF.
-    dir: Float,
+    pub dir: Float,
 }
 
 impl PDFResult {
@@ -242,8 +225,7 @@ pub struct CameraData {
 impl CameraData {
     /// Creates a new instance of `CameraData`.
     ///
-    /// * `camera_to_world` - Animated transformation describing the camera's
-    ///                       motion in the scene.
+    /// * `camera_to_world` - Animated transformation describing the camera's motion in the scene.
     /// * `shutter_open`    - Time when shutter is open.
     /// * `shutter_close`   - Time when shutter is closed.
     /// * `film`            - The film to capture the rendered image.
@@ -301,19 +283,16 @@ impl ProjectiveCameraData {
     ) -> Self {
         // Compute projective camera transformations.
         // Compute projective camera screen transformations.
-        let screen_to_raster = Transform::scale(
-            camera_data.film.full_resolution.x as Float,
-            camera_data.film.full_resolution.y as Float,
-            1.0,
-        ) * &Transform::scale(
-            1.0 / (screen_window.p_max.x - screen_window.p_min.x),
-            1.0 / (screen_window.p_min.y - screen_window.p_max.y),
-            1.0,
-        ) * &Transform::translate(&Vector3f::new(
-            -screen_window.p_min.x,
-            -screen_window.p_max.y,
-            0.0,
-        ));
+        let screen_to_raster =
+            Transform::scale(
+                camera_data.film.full_resolution.x as Float,
+                camera_data.film.full_resolution.y as Float,
+                1.0,
+            ) * &Transform::scale(
+                1.0 / (screen_window.p_max.x - screen_window.p_min.x),
+                1.0 / (screen_window.p_min.y - screen_window.p_max.y),
+                1.0,
+            ) * &Transform::translate(&Vector3f::new(-screen_window.p_min.x, -screen_window.p_max.y, 0.0));
 
         let raster_to_screen = screen_to_raster.inverse();
         let raster_to_camera = camera_to_screen.inverse() * &raster_to_screen;

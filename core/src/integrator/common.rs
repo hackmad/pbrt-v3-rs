@@ -173,15 +173,16 @@ pub fn estimate_direct(
     let mut scattering_pdf = 0.0;
 
     // Sample light source with multiple importance sampling.
-    let Li {
-        mut wi,
-        pdf: light_pdf,
-        visibility,
-        value: mut li,
-    } = light.sample_li(hit, u_light);
+    let (mut wi, light_pdf, visibility, mut li) = if let Some(li) = light.sample_li(hit, u_light) {
+        (li.wi, li.pdf, Some(li.visibility), li.value)
+    } else {
+        (Vector3f::ZERO, 0.0, None, Spectrum::ZERO)
+    };
     debug!("EstimateDirect uLight: {u_light} -> Li: {li}, wi: {wi}, pdf: {light_pdf}");
 
     if light_pdf > 0.0 && !li.is_black() {
+        let visibility = visibility.unwrap();
+
         // Compute BSDF or phase function's value for light sample.
         let mut f = Spectrum::ZERO;
         match it {
@@ -200,22 +201,21 @@ pub fn estimate_direct(
                 scattering_pdf = p;
                 debug!("  medium p: {p}");
             }
+            Interaction::Endpoint { ei: _ } => {
+                panic!("Endpoint interaction not supported");
+            }
         }
 
         if !f.is_black() {
             // Compute effect of visibility for light source sample.
-            if let Some(vis) = visibility {
-                if handle_media {
-                    li *= vis.tr(scene, sampler);
-                    debug!("  after Tr, Li: {li}");
-                } else if !vis.unoccluded(scene) {
-                    debug!("  shadow ray blocked");
-                    li = Spectrum::ZERO;
-                } else {
-                    debug!("  shadow ray unoccluded");
-                }
+            if handle_media {
+                li *= visibility.tr(scene, sampler);
+                debug!("  after Tr, Li: {li}");
+            } else if !visibility.unoccluded(scene) {
+                debug!("  shadow ray blocked");
+                li = Spectrum::ZERO;
             } else {
-                debug!("  no visiblity tester");
+                debug!("  shadow ray unoccluded");
             }
 
             // Add light's contribution to reflected radiance.
@@ -247,8 +247,7 @@ pub fn estimate_direct(
                     scattering_pdf = scatter_pdf;
                     wi = wi2;
                     f = f1 * wi.abs_dot(&si.shading.n);
-                    sampled_specular =
-                        (sampled_type & BxDFType::BSDF_SPECULAR) > BxDFType::BSDF_NONE;
+                    sampled_specular = (sampled_type & BxDFType::BSDF_SPECULAR) > BxDFType::BSDF_NONE;
                 }
             }
             Interaction::Medium { mi } => {
@@ -257,6 +256,9 @@ pub fn estimate_direct(
                 f = Spectrum::new(p);
                 scattering_pdf = p;
                 wi = wi2;
+            }
+            Interaction::Endpoint { ei: _ } => {
+                panic!("Endpoint interaction not supported");
             }
         }
         debug!("  BSDF / phase sampling f: {f}, scattering_pdf: {scattering_pdf}");

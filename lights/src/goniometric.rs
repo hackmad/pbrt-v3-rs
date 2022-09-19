@@ -13,17 +13,19 @@ use core::sampling::*;
 use core::spectrum::*;
 use std::sync::Arc;
 
-/// Implements a light source that uses goniophotometric diagrams encoded in 2D
-/// image maps to describe the emission distribution of the light.
+/// Implements a light source that uses goniophotometric diagrams encoded in 2D image maps to describe the emission
+/// distribution of the light.
 ///
-/// A goniophotometric diagram describes the angular distribution of luminance
-/// from a point light source; it is widely used in illumination engineering to
-/// characterize lights.
+/// A goniophotometric diagram describes the angular distribution of luminance from a point light source; it is widely
+/// used in illumination engineering to characterize lights.
 ///
-/// The light coordinate system to always be at position (0, 0, 0) and pointing
-/// down the +z axis.
+/// The light coordinate system to always be at position (0, 0, 0) and pointing down the +z axis.
 #[derive(Clone)]
 pub struct GonioPhotometricLight {
+    /// Light ID. This is usually the index of the light in the scene's light sources. Usefull for adding lights into
+    /// `std::collections::HashMap`.
+    pub id: usize,
+
     /// Light source type.
     pub light_type: LightType,
 
@@ -42,20 +44,20 @@ pub struct GonioPhotometricLight {
     /// Intensity.
     pub intensity: Spectrum,
 
-    /// The MipMAP images of the goniophotometric diagram that scales the
-    /// intensity based on the angular distribution of light.
+    /// The MipMAP images of the goniophotometric diagram that scales the intensity based on the angular distribution of light.
     pub mipmap: Option<MIPMap<RGBSpectrum>>,
 }
 
 impl GonioPhotometricLight {
     /// Returns a new `GonioPhotometricLight`.
     ///
-    /// * `light_to_world`   - Transformation from light coordinate system to
-    ///                        world coordinate system.
+    /// * `id`               - Light ID.
+    /// * `light_to_world`   - Transformation from light coordinate system to world coordinate system.
     /// * `medium_interface` - Participating medium.
     /// * `intensity`        - Intensity.
     /// * `texmap`           - Path to the image texture.
     pub fn new(
+        id: usize,
         light_to_world: ArcTransform,
         medium_interface: MediumInterface,
         intensity: Spectrum,
@@ -79,10 +81,7 @@ impl GonioPhotometricLight {
                     Some(mipmap)
                 }
                 Err(e) => {
-                    warn!(
-                        "Error reading goniophotometric image texture '{}'. {}.",
-                        texmap, e
-                    );
+                    warn!("Error reading goniophotometric image texture '{}'. {}.", texmap, e);
                     None
                 }
             },
@@ -93,6 +92,7 @@ impl GonioPhotometricLight {
         };
 
         Self {
+            id,
             light_type: LightType::DELTA_POSITION_LIGHT,
             medium_interface: medium_interface.clone(),
             light_to_world,
@@ -128,11 +128,16 @@ impl Light for GonioPhotometricLight {
         self.light_type
     }
 
+    /// Returns the light unique id. Usually the index in the scene's light sources.
+    fn get_id(&self) -> usize {
+        self.id
+    }
+
     /// Return the radiance arriving at an interaction point.
     ///
     /// * `hit` - The interaction hit point.
     /// * `u`   - Sample value for Monte Carlo integration.
-    fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Li {
+    fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Option<Li> {
         let wi = (self.p_light - hit.p).normalize();
         let pdf = 1.0;
 
@@ -141,7 +146,7 @@ impl Light for GonioPhotometricLight {
         let vis = VisibilityTester::new(p0, p1);
 
         let value = self.intensity * self.scale(&-wi) / self.p_light.distance_squared(hit.p);
-        Li::new(wi, pdf, Some(vis), value)
+        Some(Li::new(wi, pdf, vis, value))
     }
 
     /// Return the total emitted power.
@@ -157,8 +162,7 @@ impl Light for GonioPhotometricLight {
         FOUR_PI * self.intensity * spectrum
     }
 
-    /// Returns the probability density with respect to solid angle for the light’s
-    /// `sample_li()`.
+    /// Returns the probability density with respect to solid angle for the light’s `sample_li()`.
     ///
     /// * `hit` - The interaction hit point.
     /// * `wi`  - The incident direction.
@@ -182,13 +186,7 @@ impl Light for GonioPhotometricLight {
         let n_light = Normal3f::from(&ray.d);
         let scale = self.scale(&ray.d);
 
-        Le::new(
-            ray,
-            n_light,
-            1.0,
-            uniform_sphere_pdf(),
-            self.intensity * scale,
-        )
+        Le::new(ray, n_light, 1.0, uniform_sphere_pdf(), self.intensity * scale)
     }
 
     /// Returns the probability density for the light’s `sample_le()`.
@@ -213,20 +211,20 @@ impl Light for GonioPhotometricLight {
     }
 }
 
-impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, &str)> for GonioPhotometricLight {
-    /// Create a `GonioPhotometricLight` from given parameter set, light to world transform,
-    /// medium and current working directory.
+impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, &str, usize)> for GonioPhotometricLight {
+    /// Create a `GonioPhotometricLight` from given parameter set, light to world transform, medium, current working
+    /// directory and id.
     ///
-    /// * `p` - A tuple containing the parameter set, light to world transform,
-    ///         medium and current working directory.
-    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, &str)) -> Self {
-        let (params, light_to_world, medium, cwd) = p;
+    /// * `p` - A tuple containing the parameter set, light to world transform, medium, current working directory and id.
+    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, &str, usize)) -> Self {
+        let (params, light_to_world, medium, cwd, id) = p;
 
         let intensity = params.find_one_spectrum("I", Spectrum::ONE);
         let sc = params.find_one_spectrum("scale", Spectrum::ONE);
         let texmap = params.find_one_filename("mapname", Some(cwd));
 
         Self::new(
+            id,
             Arc::clone(&light_to_world),
             MediumInterface::from(medium),
             intensity * sc,

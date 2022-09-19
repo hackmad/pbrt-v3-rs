@@ -122,6 +122,10 @@ impl RenderOptions {
         )?;
 
         let integrator: Result<Box<dyn Integrator>, String> = match self.integrator_name.as_str() {
+            "bdpt" => {
+                let p = (&self.integrator_params, sampler, camera);
+                Ok(Box::new(BDPTIntegrator::from(p)))
+            }
             "directlighting" => {
                 let p = (&self.integrator_params, sampler, camera);
                 Ok(Box::new(DirectLightingIntegrator::from(p)))
@@ -169,18 +173,15 @@ impl RenderOptions {
 
     /// Returns a `Scene` based on the render options.
     pub fn make_scene(&mut self) -> Scene {
-        let scene = match GraphicsState::make_accelerator(
-            &self.accelerator_name,
-            &self.primitives,
-            &self.accelerator_params,
-        ) {
-            Ok(accelerator) => Scene::new(accelerator, self.lights.clone()),
-            Err(err) => {
-                warn!("Error: {}. Using BVH.", err);
-                let accelerator = Arc::new(BVHAccel::new(&self.primitives, 1, SplitMethod::SAH));
-                Scene::new(accelerator, self.lights.clone())
-            }
-        };
+        let scene =
+            match GraphicsState::make_accelerator(&self.accelerator_name, &self.primitives, &self.accelerator_params) {
+                Ok(accelerator) => Scene::new(accelerator, self.lights.clone()),
+                Err(err) => {
+                    warn!("Error: {}. Using BVH.", err);
+                    let accelerator = Arc::new(BVHAccel::new(&self.primitives, 1, SplitMethod::SAH));
+                    Scene::new(accelerator, self.lights.clone())
+                }
+            };
         self.primitives.clear();
         self.lights.clear();
         scene

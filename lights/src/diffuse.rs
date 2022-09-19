@@ -12,10 +12,13 @@ use core::sampling::*;
 use core::spectrum::*;
 use std::sync::Arc;
 
-/// Implements a basic area light source with uniform spatial and directional
-/// radiance distribution.
+/// Implements a basic area light source with uniform spatial and directional radiance distribution.
 #[derive(Clone)]
 pub struct DiffuseAreaLight {
+    /// Light ID. This is usually the index of the light in the scene's light sources. Usefull for adding lights into
+    /// `std::collections::HashMap`.
+    pub id: usize,
+
     /// Light source type.
     pub light_type: LightType,
 
@@ -47,15 +50,15 @@ pub struct DiffuseAreaLight {
 impl DiffuseAreaLight {
     /// Returns a new `DiffuseAreaLight`.
     ///
-    /// * `light_to_world`   - Transformation from light coordinate system to
-    ///                        world coordinate system.
+    /// * `id`               - Light ID.
+    /// * `light_to_world`   - Transformation from light coordinate system to world coordinate system.
     /// * `medium_interface` - Participating medium.
     /// * `l_emit`           - Emitted radiance.
-    /// * `n_samples`        - Used to trace multiple shadow rays to the light
-    ///                        to compute soft shadows. Default to 1.
+    /// * `n_samples`        - Used to trace multiple shadow rays to the light to compute soft shadows. Default to 1.
     /// * `shape`            - Shape describing surface of the light source.
     /// * `two_sided`        - Indicates whether light source 2-sided.
     pub fn new(
+        id: usize,
         light_to_world: ArcTransform,
         medium_interface: MediumInterface,
         l_emit: Spectrum,
@@ -79,6 +82,7 @@ impl DiffuseAreaLight {
         }
 
         Self {
+            id,
             light_type: LightType::AREA_LIGHT,
             medium_interface,
             light_to_world,
@@ -98,25 +102,30 @@ impl Light for DiffuseAreaLight {
         self.light_type
     }
 
+    /// Returns the light unique id. Usually the index in the scene's light sources.
+    fn get_id(&self) -> usize {
+        self.id
+    }
+
     /// Return the radiance arriving at an interaction point.
     ///
     /// * `hit` - The interaction hit point.
     /// * `u`   - Sample value for Monte Carlo integration.
-    fn sample_li(&self, hit: &Hit, u: &Point2f) -> Li {
+    fn sample_li(&self, hit: &Hit, u: &Point2f) -> Option<Li> {
         let (mut p_shape, pdf) = self.shape.sample_solid_angle(hit, u);
         p_shape.medium_interface = Some(self.medium_interface.clone());
 
         let mut wi = p_shape.p - hit.p;
         let wi_len_sq = wi.length_squared();
         if pdf == 0.0 || wi_len_sq == 0.0 {
-            return Li::new(Vector3f::ZERO, 0.0, None, Spectrum::ZERO);
+            return None;
         }
         wi /= wi_len_sq.sqrt(); // Normalize
 
         let value = self.l(&p_shape, &-wi);
         let vis = VisibilityTester::new(hit.clone(), p_shape);
 
-        Li::new(wi, pdf, Some(vis), value)
+        Some(Li::new(wi, pdf, vis, value))
     }
 
     /// Return the total emitted power.
@@ -125,8 +134,7 @@ impl Light for DiffuseAreaLight {
         s * self.l_emit * self.area * PI
     }
 
-    /// Returns the probability density with respect to solid angle for the light’s
-    /// `sample_li()`.
+    /// Returns the probability density with respect to solid angle for the light’s `sample_li()`.
     ///
     /// * `hit` - The interaction hit point.
     /// * `wi`  - The incident direction.
@@ -149,8 +157,8 @@ impl Light for DiffuseAreaLight {
         // Sample a cosine-weighted outgoing direction `w` for area light.
         if self.two_sided {
             let mut u = *u2;
-            // Choose a side to sample and then remap u[0] to [0,1] before
-            // applying cosine-weighted hemisphere sampling for the chosen side.
+            // Choose a side to sample and then remap u[0] to [0,1] before applying cosine-weighted hemisphere sampling
+            // for the chosen side.
             if u[0] < 0.5 {
                 u[0] = min(u[0] * 2.0, ONE_MINUS_EPSILON);
                 w = cosine_sample_hemisphere(&u);
@@ -218,14 +226,12 @@ impl Light for DiffuseAreaLight {
     }
 }
 
-impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape)> for DiffuseAreaLight {
-    /// Create a `DiffuseAreaLight` from given parameter set, light to world transform
-    /// medium, and shape.
+impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape, usize)> for DiffuseAreaLight {
+    /// Create a `DiffuseAreaLight` from given parameter set, light to world transform medium, shape and id.
     ///
-    /// * `p` - A tuple containing the parameter set, light to world transform,
-    ///         medium, and shape.
-    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape)) -> Self {
-        let (params, light_to_world, medium, shape) = p;
+    /// * `p` - A tuple containing the parameter set, light to world transform, medium, shape and id.
+    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape, usize)) -> Self {
+        let (params, light_to_world, medium, shape, id) = p;
 
         let l = params.find_one_spectrum("L", Spectrum::ONE);
         let sc = params.find_one_spectrum("scale", Spectrum::ONE);
@@ -237,6 +243,7 @@ impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape)> for DiffuseAre
         }
 
         Self::new(
+            id,
             light_to_world,
             MediumInterface::from(medium),
             l * sc,

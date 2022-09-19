@@ -4,26 +4,32 @@
 use crate::geometry::*;
 use crate::medium::*;
 use crate::pbrt::*;
+use num_traits::Zero;
 use std::fmt;
 use std::sync::Arc;
 
+mod endpoint_interaction;
 mod medium_interaction;
 mod surface_interaction;
 
+pub use endpoint_interaction::*;
 pub use medium_interaction::*;
-use num_traits::Zero;
 pub use surface_interaction::*;
 
 /// Interaction enumeration.
 ///
 /// The lifetime specifiers are from `SurfaceInteraction`:
 /// * `'scene` - Shared reference to the scene containing primitive.
+#[derive(Clone)]
 pub enum Interaction<'scene> {
     /// Represents geometry of a particular point on a surface.
     Surface { si: SurfaceInteraction<'scene> },
 
     /// Represents an interaction point in a scattering medium.
     Medium { mi: MediumInteraction },
+
+    /// Represents an endpiont interaction for bi-directional path tracing integrator.
+    Endpoint { ei: EndpointInteraction },
 }
 
 impl<'scene> Interaction<'scene> {
@@ -32,6 +38,12 @@ impl<'scene> Interaction<'scene> {
         match self {
             Self::Surface { si } => &si.hit,
             Self::Medium { mi } => &mi.hit,
+            Self::Endpoint {
+                ei: EndpointInteraction::Camera { hit, camera: _ },
+            } => hit,
+            Self::Endpoint {
+                ei: EndpointInteraction::Light { hit, light: _ },
+            } => hit,
         }
     }
 
@@ -42,6 +54,7 @@ impl<'scene> Interaction<'scene> {
         match self {
             Self::Surface { si } => si.spawn_ray(d),
             Self::Medium { mi } => mi.spawn_ray(d),
+            Self::Endpoint { ei } => ei.spawn_ray(d),
         }
     }
 
@@ -52,6 +65,12 @@ impl<'scene> Interaction<'scene> {
         match self {
             Self::Surface { si } => si.spawn_ray_to_point(p),
             Self::Medium { mi } => mi.spawn_ray_to_point(p),
+            Self::Endpoint {
+                ei: EndpointInteraction::Camera { hit, camera: _ },
+            } => hit.spawn_ray_to_point(p),
+            Self::Endpoint {
+                ei: EndpointInteraction::Light { hit, light: _ },
+            } => hit.spawn_ray_to_point(p),
         }
     }
 
@@ -62,12 +81,54 @@ impl<'scene> Interaction<'scene> {
         match self {
             Self::Surface { si } => si.spawn_ray_to_hit(hit),
             Self::Medium { mi } => mi.spawn_ray_to_hit(hit),
+            Self::Endpoint {
+                ei: EndpointInteraction::Camera { hit, camera: _ },
+            } => hit.spawn_ray_to_hit(hit),
+            Self::Endpoint {
+                ei: EndpointInteraction::Light { hit, light: _ },
+            } => hit.spawn_ray_to_hit(hit),
+        }
+    }
+
+    /// Returns the hit point.
+    pub fn p(&self) -> Point3f {
+        match self {
+            Self::Surface { si } => si.hit.p,
+            Self::Medium { mi } => mi.hit.p,
+            Self::Endpoint { ei } => ei.hit().p,
+        }
+    }
+
+    /// Returns the hit time.
+    pub fn time(&self) -> Float {
+        match self {
+            Self::Surface { si } => si.hit.time,
+            Self::Medium { mi } => mi.hit.time,
+            Self::Endpoint { ei } => ei.hit().time,
+        }
+    }
+
+    /// Returns the hit normal.
+    pub fn ng(&self) -> Normal3f {
+        match self {
+            Self::Surface { si } => si.hit.n,
+            Self::Medium { mi } => mi.hit.n,
+            Self::Endpoint { ei } => ei.hit().n,
+        }
+    }
+
+    /// Returns the shading normal for surface interactions and hit normal for others.
+    pub fn ns(&self) -> Normal3f {
+        match self {
+            Self::Surface { si } => si.shading.n,
+            Self::Medium { mi } => mi.hit.n,
+            Self::Endpoint { ei } => ei.hit().n,
         }
     }
 }
 
 /// Hit provides common data shared by implementations of `Interaction` trait.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Hit {
     /// Point of interaction.
     pub p: Point3f,
@@ -158,13 +219,7 @@ impl Hit {
     /// * `d` - The new direction.
     pub fn spawn_ray(&self, d: &Vector3f) -> Ray {
         let origin = Ray::offset_origin(&self.p, &self.p_error, &self.n, d);
-        Ray::new(
-            origin,
-            *d,
-            INFINITY,
-            self.time,
-            self.get_medium_in_direction(d),
-        )
+        Ray::new(origin, *d, INFINITY, self.time, self.get_medium_in_direction(d))
     }
 
     /// Spawn's a new ray towards another point.

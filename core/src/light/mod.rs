@@ -21,7 +21,7 @@ pub struct Li {
     pub pdf: Float,
 
     /// Visibility tester.
-    pub visibility: Option<VisibilityTester>,
+    pub visibility: VisibilityTester,
 
     /// Radiance arriving at intersection point.
     pub value: Spectrum,
@@ -34,12 +34,7 @@ impl Li {
     /// * `pdf`        - PDF.
     /// * `visibility` - Visibility tester.
     /// * `value`      - Radiance arriving at intersection point.
-    pub fn new(
-        wi: Vector3f,
-        pdf: Float,
-        visibility: Option<VisibilityTester>,
-        value: Spectrum,
-    ) -> Self {
+    pub fn new(wi: Vector3f, pdf: Float, visibility: VisibilityTester, value: Spectrum) -> Self {
         Self {
             wi,
             pdf,
@@ -74,18 +69,10 @@ impl Le {
     ///
     /// * `ray`     - Ray leaving the light source.
     /// * `n_light` - Surface normal at the point on the light source.
-    /// * `pdf_pos` - The ray origin's probability density with respect to surface
-    ///               area on the light.
-    /// * `pdf_dir` - The ray directions's probability density with respect to
-    ///               solid angle.
+    /// * `pdf_pos` - The ray origin's probability density with respect to surface area on the light.
+    /// * `pdf_dir` - The ray directions's probability density with respect to solid angle.
     /// * `value`   - Emitted radiance value.
-    pub fn new(
-        ray: Ray,
-        n_light: Normal3f,
-        pdf_pos: Float,
-        pdf_dir: Float,
-        value: Spectrum,
-    ) -> Self {
+    pub fn new(ray: Ray, n_light: Normal3f, pdf_pos: Float, pdf_dir: Float, value: Spectrum) -> Self {
         Self {
             ray,
             n_light,
@@ -99,8 +86,7 @@ impl Le {
 /// Return value for `Light::pdf_le()`.
 #[derive(Copy, Clone)]
 pub struct Pdf {
-    /// The ray origin's probability density with respect to surface area on the
-    /// light.
+    /// The ray origin's probability density with respect to surface area on the light.
     pub pdf_pos: Float,
 
     /// The ray directions's probability density with respect to solid angle.
@@ -110,10 +96,8 @@ pub struct Pdf {
 impl Pdf {
     /// Return a new `Pdf`.
     ///
-    /// * `pdf_pos` - The ray origin's probability density with respect to
-    ///               surface area on the light.
-    /// * `pdf_dir` - The ray directions's probability density with respect to
-    ///               solid angle.
+    /// * `pdf_pos` - The ray origin's probability density with respect to surface area on the light.
+    /// * `pdf_dir` - The ray directions's probability density with respect to solid angle.
     pub fn new(pdf_pos: Float, pdf_dir: Float) -> Self {
         Self { pdf_pos, pdf_dir }
     }
@@ -129,25 +113,26 @@ pub trait Light {
     /// Returns the type of light.
     fn get_type(&self) -> LightType;
 
+    /// Returns the light unique id. Usually the index in the scene's light sources.
+    fn get_id(&self) -> usize;
+
     /// Return the radiance arriving at an interaction point.
     ///
     /// * `hit` - The interaction hit point.
     /// * `u`   - Sample value for Monte Carlo integration.
-    fn sample_li(&self, hit: &Hit, u: &Point2f) -> Li;
+    fn sample_li(&self, hit: &Hit, u: &Point2f) -> Option<Li>;
 
     /// Return the total emitted power.
     fn power(&self) -> Spectrum;
 
-    /// Returns emitted radiance due to that light along a ray that escapes the
-    /// scene bounds.
+    /// Returns emitted radiance due to that light along a ray that escapes the scene bounds.
     ///
     /// * `ray` - The ray with differentials.
     fn le(&self, _ray: &Ray) -> Spectrum {
         Spectrum::ZERO
     }
 
-    /// Returns the probability density with respect to solid angle for the light’s
-    /// `sample_li()`.
+    /// Returns the probability density with respect to solid angle for the light’s `sample_li()`.
     ///
     /// * `hit` - The interaction hit point.
     /// * `wi`  - The incident direction.

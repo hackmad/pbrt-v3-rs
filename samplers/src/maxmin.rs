@@ -59,8 +59,13 @@ impl MaxMinDistSampler {
 }
 
 impl Sampler for MaxMinDistSampler {
-    /// Returns the underlying `SamplerData`.
-    fn get_data(&mut self) -> &mut SamplerData {
+    /// Returns a shared reference underlying `SamplerData`.
+    fn get_data(&self) -> &SamplerData {
+        &self.sampler.data
+    }
+
+    /// Returns a mutable reference to underlying `SamplerData`.
+    fn get_data_mut(&mut self) -> &mut SamplerData {
         &mut self.sampler.data
     }
 
@@ -136,7 +141,7 @@ impl Sampler for MaxMinDistSampler {
             );
         }
 
-        self.get_data().start_pixel(p);
+        self.get_data_mut().start_pixel(p);
     }
 
     /// Returns the sample value for the next dimension of the current sample

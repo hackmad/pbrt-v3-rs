@@ -72,6 +72,9 @@ pub struct GraphicsState {
 
     /// Current working directory. Used to resolve relative paths.
     pub cwd: String,
+
+    /// Next light ID.
+    pub light_id: usize,
 }
 
 impl GraphicsState {
@@ -100,6 +103,7 @@ impl GraphicsState {
             area_light: None,
             reverse_orientation: false,
             cwd: cwd.to_string(),
+            light_id: 0,
         }
     }
 
@@ -134,12 +138,11 @@ impl GraphicsState {
         }
     }
 
-    // Attempt to determine if the ParamSet for a shape may provide a value for
-    // its material's parameters. Unfortunately, materials don't provide an
-    // explicit representation of their parameters that we can query and
-    // cross-reference with the parameter values available from the shape.
-    //
-    // Therefore, we'll apply some "heuristics".
+    /// Attempt to determine if the ParamSet for a shape may provide a value for its material's parameters. Unfortunately,
+    /// materials don't provide an explicit representation of their parameters that we can query and / cross-reference
+    /// with the parameter values available from the shape.
+    ///
+    /// Therefore, we'll apply some "heuristics".
     fn shape_may_set_material_parameters(&self, ps: &ParamSet) -> bool {
         for name in ps.textures.keys() {
             // Any texture other than one for an alpha mask is almost certainly
@@ -331,10 +334,7 @@ impl GraphicsState {
                 } else if dim == 3 {
                     Ok(Arc::new(CheckerboardTexture3D::<Float>::from(p)))
                 } else {
-                    Err(format!(
-                        "{} dimensional checkerboard texture not supported",
-                        dim
-                    ))
+                    Err(format!("{} dimensional checkerboard texture not supported", dim))
                 }
             }
             "constant" => Ok(Arc::new(ConstantTexture::<Float>::from(p))),
@@ -373,10 +373,7 @@ impl GraphicsState {
                 } else if dim == 3 {
                     Ok(Arc::new(CheckerboardTexture3D::<Spectrum>::from(p)))
                 } else {
-                    Err(format!(
-                        "{} dimensional checkerboard texture not supported",
-                        dim
-                    ))
+                    Err(format!("{} dimensional checkerboard texture not supported", dim))
                 }
             }
             "constant" => Ok(Arc::new(ConstantTexture::<Spectrum>::from(p))),
@@ -401,11 +398,7 @@ impl GraphicsState {
     /// * `name`         - Name.
     /// * `medium2world` - Medium to world space transform.
     /// * `paramset`     - Parameter set.
-    pub fn make_medium(
-        name: &str,
-        medium2world: ArcTransform,
-        paramset: &ParamSet,
-    ) -> Result<ArcMedium, String> {
+    pub fn make_medium(name: &str, medium2world: ArcTransform, paramset: &ParamSet) -> Result<ArcMedium, String> {
         const SIG_A_RGB: [Float; 3] = [0.0011, 0.0024, 0.014];
         const SIG_S_RGB: [Float; 3] = [2.55, 3.21, 3.77];
 
@@ -453,9 +446,7 @@ impl GraphicsState {
                         let data2medium = Transform::translate(&Vector3f::from(p0))
                             * &Transform::scale(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z);
                         let m2w = medium2world * &data2medium;
-                        Ok(Arc::new(GridDensityMedium::new(
-                            sig_a, sig_s, g, nx, ny, nz, m2w, data,
-                        )))
+                        Ok(Arc::new(GridDensityMedium::new(sig_a, sig_s, g, nx, ny, nz, m2w, data)))
                     }
                 }
             }
@@ -469,20 +460,22 @@ impl GraphicsState {
     /// * `light2world`      - Light to world space transform.
     /// * `medium_interface` - Medium interface.
     /// * `paramset`         - Parameter set.
+    /// * `id`               - Light ID.
     pub fn make_light(
-        &self,
+        &mut self,
         name: &str,
         light2world: ArcTransform,
         medium_interface: &MediumInterface,
         paramset: &ParamSet,
+        id: usize,
     ) -> Result<ArcLight, String> {
         match name {
             "distant" => {
-                let p = (paramset, Arc::clone(&light2world));
+                let p = (paramset, Arc::clone(&light2world), id);
                 Ok(Arc::new(DistantLight::from(p)))
             }
             "exinfinite" => {
-                let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref());
+                let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref(), id);
                 Ok(Arc::new(InfiniteAreaLight::from(p)))
             }
             "goniometric" => {
@@ -491,11 +484,12 @@ impl GraphicsState {
                     Arc::clone(&light2world),
                     medium_interface.outside.as_ref().map(Arc::clone),
                     self.cwd.as_ref(),
+                    id,
                 );
                 Ok(Arc::new(GonioPhotometricLight::from(p)))
             }
             "infinite" => {
-                let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref());
+                let p = (paramset, Arc::clone(&light2world), self.cwd.as_ref(), id);
                 Ok(Arc::new(InfiniteAreaLight::from(p)))
             }
             "point" => {
@@ -503,6 +497,7 @@ impl GraphicsState {
                     paramset,
                     Arc::clone(&light2world),
                     medium_interface.outside.as_ref().map(Arc::clone),
+                    id,
                 );
                 Ok(Arc::new(PointLight::from(p)))
             }
@@ -512,6 +507,7 @@ impl GraphicsState {
                     Arc::clone(&light2world),
                     medium_interface.outside.as_ref().map(Arc::clone),
                     self.cwd.as_ref(),
+                    id,
                 );
                 Ok(Arc::new(ProjectionLight::from(p)))
             }
@@ -520,6 +516,7 @@ impl GraphicsState {
                     paramset,
                     Arc::clone(&light2world),
                     medium_interface.outside.as_ref().map(Arc::clone),
+                    id,
                 );
                 Ok(Arc::new(SpotLight::from(p)))
             }
@@ -529,29 +526,33 @@ impl GraphicsState {
 
     /// Creates an area light.
     ///
-    /// NOTE: Upcasting from AreaLight -> Light is not possible. So we return
-    /// Result<ArcLight, String>.
+    /// NOTE: Upcasting from AreaLight -> Light is not possible. So we return / Result<ArcLight, String>.
     ///
     /// * `name`             - Name.
     /// * `light2world`      - Light to world space transform.
     /// * `medium_interface` - Medium interface.
     /// * `shape`            - Shape
     /// * `paramset`         - Parameter set.
+    /// * `id`               - Light ID.
     pub fn make_area_light(
         name: &str,
         light2world: ArcTransform,
         medium_interface: &MediumInterface,
         shape: ArcShape,
         paramset: &ParamSet,
+        id: usize,
     ) -> Result<ArcLight, String> {
-        let p = (
-            paramset,
-            Arc::clone(&light2world),
-            medium_interface.outside.clone(),
-            shape,
-        );
         match name {
-            "area" | "diffuse" => Ok(Arc::new(DiffuseAreaLight::from(p))),
+            "area" | "diffuse" => {
+                let p = (
+                    paramset,
+                    Arc::clone(&light2world),
+                    medium_interface.outside.clone(),
+                    shape,
+                    id,
+                );
+                Ok(Arc::new(DiffuseAreaLight::from(p)))
+            }
             _ => Err(format!("AreaLight '{}' unknown.", name)),
         }
     }
@@ -561,11 +562,7 @@ impl GraphicsState {
     /// * `name`     - Name.
     /// * `prims`    - Primitives.
     /// * `paramset` - Parameter set.
-    pub fn make_accelerator(
-        name: &str,
-        prims: &[ArcPrimitive],
-        paramset: &ParamSet,
-    ) -> Result<ArcPrimitive, String> {
+    pub fn make_accelerator(name: &str, prims: &[ArcPrimitive], paramset: &ParamSet) -> Result<ArcPrimitive, String> {
         let p = (paramset, prims);
         match name {
             "bvh" => Ok(Arc::new(BVHAccel::from(p))),
@@ -578,8 +575,7 @@ impl GraphicsState {
     ///
     /// * `name`             - Name.
     /// * `paramset`         - Parameter set.
-    /// * `cam2world_set`    - Transform set for camera space to world space
-    ///                        transformations.
+    /// * `cam2world_set`    - Transform set for camera space to world space transformations.
     /// * `transform_start`  - Start time.
     /// * `transform_end`    - End time.
     /// * `film`             - The film.
@@ -599,12 +595,7 @@ impl GraphicsState {
         let cam2world_start = transform_cache.lookup(&cam2world_set[0]);
         let cam2world_end = transform_cache.lookup(&cam2world_set[1]);
 
-        let animated_cam2world = AnimatedTransform::new(
-            cam2world_start,
-            cam2world_end,
-            transform_start,
-            transform_end,
-        );
+        let animated_cam2world = AnimatedTransform::new(cam2world_start, cam2world_end, transform_start, transform_end);
 
         match name {
             "realistic" => {
@@ -639,11 +630,7 @@ impl GraphicsState {
     /// * `name`               - Name.
     /// * `paramset`           - Parameter set.
     /// * `film_sample_bounds` - The film sample bounds.
-    pub fn make_sampler(
-        name: &str,
-        paramset: &ParamSet,
-        film_sample_bounds: Bounds2i,
-    ) -> Result<ArcSampler, String> {
+    pub fn make_sampler(name: &str, paramset: &ParamSet, film_sample_bounds: Bounds2i) -> Result<ArcSampler, String> {
         let p = (paramset, film_sample_bounds);
 
         match name {

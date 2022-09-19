@@ -11,10 +11,13 @@ use core::scene::*;
 use core::spectrum::*;
 use std::sync::{Arc, RwLock};
 
-/// Implements a directional light source that deposits illumination from the
-/// same direction at every point in space.
+/// Implements a directional light source that deposits illumination from the same direction at every point in space.
 #[derive(Clone)]
 pub struct DistantLight {
+    /// Light ID. This is usually the index of the light in the scene's light sources. Usefull for adding lights into
+    /// `std::collections::HashMap`.
+    pub id: usize,
+
     /// Light source type.
     pub light_type: LightType,
 
@@ -40,19 +43,16 @@ pub struct DistantLight {
 impl DistantLight {
     /// Returns a new `DistantLight`.
     ///
-    /// * `light_to_world`   - Transformation from light coordinate system to
-    ///                        world coordinate system.
+    /// * `id`               - Light ID.
+    /// * `light_to_world`   - Transformation from light coordinate system to world coordinate system.
     /// * `emitted_radiance` - The emitted radiance.
     /// * `w_light`          - Direction of light.
-    pub fn new(
-        light_to_world: ArcTransform,
-        emitted_radiance: Spectrum,
-        w_light: Vector3f,
-    ) -> Self {
+    pub fn new(id: usize, light_to_world: ArcTransform, emitted_radiance: Spectrum, w_light: Vector3f) -> Self {
         let light_to_world = Arc::clone(&light_to_world);
         let w_light = light_to_world.transform_vector(&w_light).normalize();
 
         Self {
+            id,
             light_type: LightType::DELTA_DIRECTION_LIGHT,
             light_to_world,
             medium_interface: MediumInterface::vacuum(),
@@ -79,11 +79,16 @@ impl Light for DistantLight {
         self.light_type
     }
 
+    /// Returns the light unique id. Usually the index in the scene's light sources.
+    fn get_id(&self) -> usize {
+        self.id
+    }
+
     /// Return the radiance arriving at an interaction point.
     ///
     /// * `hit` - The interaction hit point.
     /// * `u`   - Sample value for Monte Carlo integration.
-    fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Li {
+    fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Option<Li> {
         let world_radius = *self.world_radius.read().unwrap();
         let p_outside = hit.p + self.w_light * (2.0 * world_radius);
 
@@ -91,7 +96,7 @@ impl Light for DistantLight {
         let p1 = Hit::new_minimal(p_outside, hit.time, Some(self.medium_interface.clone()));
         let vis = VisibilityTester::new(p0, p1);
 
-        Li::new(self.w_light, 1.0, Some(vis), self.emitted_radiance)
+        Some(Li::new(self.w_light, 1.0, vis, self.emitted_radiance))
     }
 
     /// Return the total emitted power.
@@ -100,8 +105,7 @@ impl Light for DistantLight {
         self.emitted_radiance * PI * world_radius * world_radius
     }
 
-    /// Returns the probability density with respect to solid angle for the light’s
-    /// `sample_li()`.
+    /// Returns the probability density with respect to solid angle for the light’s `sample_li()`.
     ///
     /// * `hit` - The interaction hit point.
     /// * `wi`  - The incident direction.
@@ -164,18 +168,18 @@ impl Light for DistantLight {
     }
 }
 
-impl From<(&ParamSet, ArcTransform)> for DistantLight {
-    /// Create a `DistantLight` from given parameter set and light to world transform.
+impl From<(&ParamSet, ArcTransform, usize)> for DistantLight {
+    /// Create a `DistantLight` from given parameter set, light to world transform and id.
     ///
-    /// * `p` - A tuple containing the parameter set and light to world transform.
-    fn from(p: (&ParamSet, ArcTransform)) -> Self {
-        let (params, light_to_world) = p;
+    /// * `p` - A tuple containing the parameter set, light to world transform and id.
+    fn from(p: (&ParamSet, ArcTransform, usize)) -> Self {
+        let (params, light_to_world, id) = p;
 
         let emitted_radiance = params.find_one_spectrum("L", Spectrum::ONE);
         let sc = params.find_one_spectrum("scale", Spectrum::ONE);
         let from = params.find_one_point3f("from", Point3f::new(0.0, 0.0, 0.0));
         let to = params.find_one_point3f("to", Point3f::new(0.0, 0.0, 1.0));
         let dir = from - to;
-        Self::new(Arc::clone(&light_to_world), emitted_radiance * sc, dir)
+        Self::new(id, Arc::clone(&light_to_world), emitted_radiance * sc, dir)
     }
 }

@@ -54,8 +54,13 @@ impl StratifiedSampler {
 }
 
 impl Sampler for StratifiedSampler {
-    /// Returns the underlying `SamplerData`.
-    fn get_data(&mut self) -> &mut SamplerData {
+    /// Returns a shared reference underlying `SamplerData`.
+    fn get_data(&self) -> &SamplerData {
+        &self.sampler.data
+    }
+
+    /// Returns a mutable reference to underlying `SamplerData`.
+    fn get_data_mut(&mut self) -> &mut SamplerData {
         &mut self.sampler.data
     }
 
@@ -82,11 +87,7 @@ impl Sampler for StratifiedSampler {
 
         // Generate single stratified samples for the pixel.
         for i in 0..self.sampler.samples_1d.len() {
-            let mut samples = stratified_sample_1d(
-                &mut self.sampler.rng,
-                samples_per_pixel,
-                self.jitter_samples,
-            );
+            let mut samples = stratified_sample_1d(&mut self.sampler.rng, samples_per_pixel, self.jitter_samples);
             self.sampler.rng.shuffle(&mut samples, samples_per_pixel, 1);
             for j in 0..samples_per_pixel {
                 self.sampler.samples_1d[i][j] = samples[j];
@@ -110,8 +111,7 @@ impl Sampler for StratifiedSampler {
         for i in 0..self.sampler.data.samples_1d_array_sizes.len() {
             for j in 0..samples_per_pixel {
                 let count = self.sampler.data.samples_1d_array_sizes[i];
-                let mut samples =
-                    stratified_sample_1d(&mut self.sampler.rng, count, self.jitter_samples);
+                let mut samples = stratified_sample_1d(&mut self.sampler.rng, count, self.jitter_samples);
                 self.sampler.rng.shuffle(&mut samples, count, 1);
                 for k in 0..count {
                     self.sampler.data.sample_array_1d[i][j * count + k];
@@ -124,13 +124,12 @@ impl Sampler for StratifiedSampler {
                 let count = self.sampler.data.samples_2d_array_sizes[i];
                 let samples = latin_hypercube(&mut self.sampler.rng, count, 2);
                 for k in 0..count * 2 {
-                    self.sampler.data.sample_array_2d[i][j * count + k] =
-                        Point2f::new(samples[k], samples[k + 1]);
+                    self.sampler.data.sample_array_2d[i][j * count + k] = Point2f::new(samples[k], samples[k + 1]);
                 }
             }
         }
 
-        self.get_data().start_pixel(p);
+        self.get_data_mut().start_pixel(p);
     }
 
     /// Returns the sample value for the next dimension of the current sample

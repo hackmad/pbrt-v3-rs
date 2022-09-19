@@ -46,8 +46,8 @@ impl SobolSampler {
             samples_per_pixel
         };
 
-        let resolution = (max(sample_bounds.diagonal().x, sample_bounds.diagonal().y) as u32)
-            .next_power_of_two() as i32;
+        let resolution =
+            (max(sample_bounds.diagonal().x, sample_bounds.diagonal().y) as u32).next_power_of_two() as i32;
 
         Self {
             data: SamplerData::new(samples_per_pixel),
@@ -98,8 +98,13 @@ impl SobolSampler {
 }
 
 impl Sampler for SobolSampler {
-    /// Returns the underlying `SamplerData`.
-    fn get_data(&mut self) -> &mut SamplerData {
+    /// Returns a shared reference underlying `SamplerData`.
+    fn get_data(&self) -> &SamplerData {
+        &self.data
+    }
+
+    /// Returns a mutable reference to underlying `SamplerData`.
+    fn get_data_mut(&mut self) -> &mut SamplerData {
         &mut self.data
     }
 
@@ -132,8 +137,7 @@ impl Sampler for SobolSampler {
             let n_samples = self.data.samples_1d_array_sizes[i] * self.data.samples_per_pixel;
             for j in 0..n_samples {
                 let index = self.get_index_for_sample(j);
-                self.data.sample_array_1d[i][j] =
-                    self.sample_dimension(index, self.gdata.array_start_dim + i as u16);
+                self.data.sample_array_1d[i][j] = self.sample_dimension(index, self.gdata.array_start_dim + i as u16);
             }
         }
 
@@ -144,10 +148,8 @@ impl Sampler for SobolSampler {
             let n_samples = self.data.samples_2d_array_sizes[i] * self.data.samples_per_pixel;
             for j in 0..n_samples {
                 let index = self.get_index_for_sample(j);
-                self.data.sample_array_2d[i][j] = Point2f::new(
-                    self.sample_dimension(index, dim),
-                    self.sample_dimension(index, dim + 1),
-                );
+                self.data.sample_array_2d[i][j] =
+                    Point2f::new(self.sample_dimension(index, dim), self.sample_dimension(index, dim + 1));
             }
             dim += 2;
         }
@@ -158,16 +160,11 @@ impl Sampler for SobolSampler {
     /// Returns the sample value for the next dimension of the current sample
     /// vector.
     fn get_1d(&mut self) -> Float {
-        if self.gdata.dimension >= self.gdata.array_start_dim
-            && self.gdata.dimension < self.gdata.array_end_dim
-        {
+        if self.gdata.dimension >= self.gdata.array_start_dim && self.gdata.dimension < self.gdata.array_end_dim {
             self.gdata.dimension = self.gdata.array_end_dim;
         }
 
-        let p = self.sample_dimension(
-            self.gdata.interval_sample_index as u64,
-            self.gdata.dimension as u16,
-        );
+        let p = self.sample_dimension(self.gdata.interval_sample_index as u64, self.gdata.dimension as u16);
         self.gdata.dimension += 1;
         p
     }
@@ -175,17 +172,12 @@ impl Sampler for SobolSampler {
     /// Returns the sample value for the next two dimensions of the current
     /// sample vector.
     fn get_2d(&mut self) -> Point2f {
-        if self.gdata.dimension + 1 >= self.gdata.array_start_dim
-            && self.gdata.dimension < self.gdata.array_end_dim
-        {
+        if self.gdata.dimension + 1 >= self.gdata.array_start_dim && self.gdata.dimension < self.gdata.array_end_dim {
             self.gdata.dimension = self.gdata.array_end_dim;
         }
 
         let p = Point2f::new(
-            self.sample_dimension(
-                self.gdata.interval_sample_index as u64,
-                self.gdata.dimension as u16,
-            ),
+            self.sample_dimension(self.gdata.interval_sample_index as u64, self.gdata.dimension as u16),
             self.sample_dimension(
                 self.gdata.interval_sample_index as u64,
                 (self.gdata.dimension + 1) as u16,
@@ -199,8 +191,7 @@ impl Sampler for SobolSampler {
     /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.gdata.dimension = 0;
-        self.gdata.interval_sample_index =
-            self.get_index_for_sample(self.data.current_pixel_sample_index + 1);
+        self.gdata.interval_sample_index = self.get_index_for_sample(self.data.current_pixel_sample_index + 1);
         self.data.start_next_sample()
     }
 

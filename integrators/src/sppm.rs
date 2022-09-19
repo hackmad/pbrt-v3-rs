@@ -1,4 +1,4 @@
-//! Direct Lighting Integrator
+//! SPPM Integrator
 
 #![allow(dead_code)]
 

@@ -3,12 +3,13 @@
 use super::PhaseFunction;
 use crate::geometry::*;
 use crate::pbrt::*;
+use std::fmt;
 
 /// Henyey-Greenstein phase function.
+#[derive(Clone)]
 pub struct HenyeyGreenstein {
-    /// The asymmetry parameter. It is the average value of the product of the
-    /// phase function being approximated and the cosine of the angle between two
-    /// directions. Isotropic phase functions use g = 0.
+    /// The asymmetry parameter. It is the average value of the product of the / phase function being approximated and
+    /// the cosine of the angle between two directions. Isotropic phase functions use g = 0.
     pub g: Float,
 }
 
@@ -29,8 +30,8 @@ impl HenyeyGreenstein {
         phase_hg(wo.dot(wi), self.g)
     }
 
-    /// Returns the phase function value and sampled incident direction given the
-    /// outgoing direction and a sample value in [0, 1)^2.
+    /// Returns the phase function value and sampled incident direction given the / outgoing direction and a sample value
+    /// in [0, 1)^2.
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - Sample value in [0, 1)^2.
@@ -54,8 +55,16 @@ impl HenyeyGreenstein {
     }
 }
 
-/// Computes the Henyey-Greenstein phase function which can be used by other
-/// phase function
+impl fmt::Display for HenyeyGreenstein {
+    /// Formats the value using the given formatter.
+    ///
+    /// * `f` - Formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[HenyeyGreenstein g: {}]", self.g)
+    }
+}
+
+/// Computes the Henyey-Greenstein phase function which can be used by other phase function
 ///
 /// * `cos_theta` - Angle between two direction vectors.
 /// * `g`         - Asymmetry parametery.
