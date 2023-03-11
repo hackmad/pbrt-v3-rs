@@ -12,17 +12,17 @@ use std::sync::Arc;
 pub enum EndpointInteraction {
     /// Records the position of a path endpoint on the lens of the camera.
     Camera {
-        // The interaction point.
+        /// The interaction point.
         hit: Hit,
-        // The camera.
+        /// The camera.
         camera: ArcCamera,
     },
 
     /// Records the position of a path endpoint on a light source.
     Light {
-        // The interaction point.
+        /// The interaction point.
         hit: Hit,
-        // The light source.
+        /// The light source.
         light: Option<ArcLight>,
     },
 }
@@ -32,11 +32,8 @@ impl EndpointInteraction {
     ///
     /// * `hit`    - The hit point on camera lens.
     /// * `camera` - The camera.
-    pub fn camera_from_hit(hit: &Hit, camera: ArcCamera) -> Self {
-        Self::Camera {
-            hit: hit.clone(),
-            camera,
-        }
+    pub fn camera_from_hit(hit: Hit, camera: ArcCamera) -> Self {
+        Self::Camera { hit, camera }
     }
 
     /// Create a camera endpoint interaction from a ray.
@@ -67,9 +64,8 @@ impl EndpointInteraction {
 
     /// Create a light endpoint interaction from a ray.
     ///
-    /// * `ray`    - The ray starting point on a light source.
-    /// * `light`  - The light source.
-    pub fn light_from_ray(ray: &Ray, light: Option<ArcLight>) -> Self {
+    /// * `ray` - The ray starting point on a light source.
+    pub fn light_from_ray(ray: &Ray) -> Self {
         let n = Normal3f::from(-ray.d);
         let hit = Hit::new(
             ray.at(1.0),
@@ -79,7 +75,7 @@ impl EndpointInteraction {
             n,
             ray.medium.as_ref().map(Arc::clone).map(MediumInterface::from),
         );
-        Self::Light { hit, light }
+        Self::Light { hit, light: None }
     }
 
     /// Create a light endpoint interaction from a ray and normal.
@@ -87,7 +83,7 @@ impl EndpointInteraction {
     /// * `ray`    - The ray starting point on a light source.
     /// * `normal` - The normal.
     /// * `light`  - The light source.
-    pub fn light_from_ray_and_normal(ray: &Ray, nl: Normal3f, light: Option<ArcLight>) -> Self {
+    pub fn light_from_ray_and_normal(ray: &Ray, nl: Normal3f, light: ArcLight) -> Self {
         Self::Light {
             hit: Hit::new(
                 ray.o,
@@ -97,15 +93,15 @@ impl EndpointInteraction {
                 nl,
                 ray.medium.as_ref().map(Arc::clone).map(MediumInterface::from),
             ),
-            light,
+            light: Some(light),
         }
     }
 
     /// Returns the hit point.
     pub fn hit(&self) -> &Hit {
         match self {
-            Self::Camera { hit, camera: _ } => &hit,
-            Self::Light { hit, light: _ } => &hit,
+            Self::Camera { hit, .. } => &hit,
+            Self::Light { hit, .. } => &hit,
         }
     }
 
@@ -114,8 +110,8 @@ impl EndpointInteraction {
     /// * `d` - The new direction.
     pub fn spawn_ray(&self, d: &Vector3f) -> Ray {
         match self {
-            Self::Camera { hit, camera: _ } => hit.spawn_ray(d),
-            Self::Light { hit, light: _ } => hit.spawn_ray(d),
+            Self::Camera { hit, .. } => hit.spawn_ray(d),
+            Self::Light { hit, .. } => hit.spawn_ray(d),
         }
     }
 
@@ -124,18 +120,18 @@ impl EndpointInteraction {
     /// * `p` - The target point.
     pub fn spawn_ray_to_point(&self, p: &Point3f) -> Ray {
         match self {
-            Self::Camera { hit, camera: _ } => hit.spawn_ray_to_point(p),
-            Self::Light { hit, light: _ } => hit.spawn_ray_to_point(p),
+            Self::Camera { hit, .. } => hit.spawn_ray_to_point(p),
+            Self::Light { hit, .. } => hit.spawn_ray_to_point(p),
         }
     }
 
     /// Spawn's a new ray towards another interaction.
     ///
-    /// * `hit` - The interaction.
-    pub fn spawn_ray_to_hit(&self, hit: &Hit) -> Ray {
+    /// * `h` - The interaction.
+    pub fn spawn_ray_to_hit(&self, h: &Hit) -> Ray {
         match self {
-            Self::Camera { hit: h, camera: _ } => h.spawn_ray_to_hit(hit),
-            Self::Light { hit: h, light: _ } => h.spawn_ray_to_hit(hit),
+            Self::Camera { hit, .. } => hit.spawn_ray_to_hit(h),
+            Self::Light { hit, .. } => hit.spawn_ray_to_hit(h),
         }
     }
 }

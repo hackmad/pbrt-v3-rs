@@ -703,6 +703,7 @@ impl PbrtParser {
     }
 
     /// Parse rule `ident_expr`.
+    #[allow(dead_code)]
     fn ident_expr(input: Node) -> Result<String> {
         Ok(match_nodes!(input.into_children();
             [ident(v)] => v,
@@ -758,10 +759,7 @@ where
     if n % 3 != 0 {
         msg = Some("length is not divisible by 3".to_owned());
     }
-    let res = (0..n)
-        .step_by(3)
-        .map(|i| new(v[i], v[i + 1], v[i + 2]))
-        .collect();
+    let res = (0..n).step_by(3).map(|i| new(v[i], v[i + 1], v[i + 2])).collect();
     (res, msg)
 }
 

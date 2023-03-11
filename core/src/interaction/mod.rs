@@ -38,12 +38,7 @@ impl<'scene> Interaction<'scene> {
         match self {
             Self::Surface { si } => &si.hit,
             Self::Medium { mi } => &mi.hit,
-            Self::Endpoint {
-                ei: EndpointInteraction::Camera { hit, camera: _ },
-            } => hit,
-            Self::Endpoint {
-                ei: EndpointInteraction::Light { hit, light: _ },
-            } => hit,
+            Self::Endpoint { ei } => ei.hit(),
         }
     }
 
@@ -65,12 +60,7 @@ impl<'scene> Interaction<'scene> {
         match self {
             Self::Surface { si } => si.spawn_ray_to_point(p),
             Self::Medium { mi } => mi.spawn_ray_to_point(p),
-            Self::Endpoint {
-                ei: EndpointInteraction::Camera { hit, camera: _ },
-            } => hit.spawn_ray_to_point(p),
-            Self::Endpoint {
-                ei: EndpointInteraction::Light { hit, light: _ },
-            } => hit.spawn_ray_to_point(p),
+            Self::Endpoint { ei } => ei.spawn_ray_to_point(p),
         }
     }
 
@@ -81,12 +71,7 @@ impl<'scene> Interaction<'scene> {
         match self {
             Self::Surface { si } => si.spawn_ray_to_hit(hit),
             Self::Medium { mi } => mi.spawn_ray_to_hit(hit),
-            Self::Endpoint {
-                ei: EndpointInteraction::Camera { hit, camera: _ },
-            } => hit.spawn_ray_to_hit(hit),
-            Self::Endpoint {
-                ei: EndpointInteraction::Light { hit, light: _ },
-            } => hit.spawn_ray_to_hit(hit),
+            Self::Endpoint { ei } => ei.spawn_ray_to_hit(hit),
         }
     }
 
@@ -112,15 +97,6 @@ impl<'scene> Interaction<'scene> {
     pub fn ng(&self) -> Normal3f {
         match self {
             Self::Surface { si } => si.hit.n,
-            Self::Medium { mi } => mi.hit.n,
-            Self::Endpoint { ei } => ei.hit().n,
-        }
-    }
-
-    /// Returns the shading normal for surface interactions and hit normal for others.
-    pub fn ns(&self) -> Normal3f {
-        match self {
-            Self::Surface { si } => si.shading.n,
             Self::Medium { mi } => mi.hit.n,
             Self::Endpoint { ei } => ei.hit().n,
         }

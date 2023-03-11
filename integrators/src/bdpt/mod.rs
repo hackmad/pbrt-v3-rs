@@ -528,7 +528,7 @@ fn generate_light_subpath<'scene>(
     }
 
     // Generate first vertex on light subpath and start random walk.
-    path[0] = Vertex::create_light_from_ray_normal(Arc::clone(light), &ray, &n_light, le, pdf_pos * light_pdf);
+    path[0] = Vertex::create_light_from_ray_normal(Arc::clone(light), &ray, n_light, le, pdf_pos * light_pdf);
     let beta = le * n_light.abs_dot(&ray.d) / (light_pdf * pdf_pos * pdf_dir);
 
     info!("Starting light subpath. Ray: {ray}, le {le}, beta {beta}, pdf_pos {pdf_pos}, pdf_dir {pdf_dir}");
@@ -635,7 +635,7 @@ fn random_walk<'scene>(
             if isect.is_none() {
                 // Capture escaped rays when tracing from the camera.
                 if mode == TransportMode::Radiance {
-                    let ei = EndpointInteraction::light_from_ray(ray, None);
+                    let ei = EndpointInteraction::light_from_ray(ray);
                     path[vertex] = Vertex::create_light_from_endpoint_interaction(ei, beta, pdf_fwd);
                     bounces += 1;
                 }
@@ -712,10 +712,10 @@ fn g<'scene>(scene: &'scene Scene, sampler: &mut ArcSampler, v0: &Vertex<'scene>
     d *= g1.sqrt();
 
     if v0.is_on_surface() {
-        g1 *= v0.it.ns().abs_dot(&d);
+        g1 *= v0.ns().abs_dot(&d);
     }
     if v1.is_on_surface() {
-        g1 *= v1.it.ns().abs_dot(&d);
+        g1 *= v1.ns().abs_dot(&d);
     }
 
     let vis = VisibilityTester::new(v0.it.get_hit().clone(), v1.it.get_hit().clone());
@@ -952,11 +952,11 @@ fn connect_bdpt<'scene>(
 
             if pdf > 0.0 && !spectrum_wi.is_black() {
                 // Initialize dynamically sampled vertex and _L_ for `t=1` case.
-                sampled = Vertex::create_camera_from_hit(Arc::clone(camera), &vis.p1, spectrum_wi / pdf);
+                sampled = Vertex::create_camera_from_hit(Arc::clone(camera), vis.p1.clone(), spectrum_wi / pdf);
                 l = qs.beta * qs.f(&sampled, TransportMode::Importance) * sampled.beta;
 
                 if qs.is_on_surface() {
-                    l *= wi.abs_dot(&qs.it.ns());
+                    l *= wi.abs_dot(qs.ns());
                 }
                 debug_assert!(!l.has_nans());
 
@@ -995,7 +995,7 @@ fn connect_bdpt<'scene>(
 
                 l = pt.beta * pt.f(&sampled, TransportMode::Radiance) * sampled.beta;
                 if pt.is_on_surface() {
-                    l *= wi.abs_dot(&pt.it.ns());
+                    l *= wi.abs_dot(pt.ns());
                 }
 
                 // Only check visibility if the path would carry radiance.

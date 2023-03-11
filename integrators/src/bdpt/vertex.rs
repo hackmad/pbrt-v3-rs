@@ -152,7 +152,7 @@ impl<'scene> Vertex<'scene> {
     pub(crate) fn create_camera_from_interaction(camera: ArcCamera, it: &Interaction, beta: Spectrum) -> Self {
         Self::new(
             VertexType::Camera,
-            EndpointInteraction::camera_from_hit(it.get_hit(), camera),
+            EndpointInteraction::camera_from_hit(it.get_hit().clone(), camera),
             beta,
         )
     }
@@ -164,7 +164,7 @@ impl<'scene> Vertex<'scene> {
     /// * `beta`   - Tracks β which is the product of the BSDF or phase function values,
     ///              transmittances, and cosine terms for the vertices in the path generated,
     ///              divided by their respective sampling PDFs.
-    pub(crate) fn create_camera_from_hit(camera: ArcCamera, hit: &Hit, beta: Spectrum) -> Self {
+    pub(crate) fn create_camera_from_hit(camera: ArcCamera, hit: Hit, beta: Spectrum) -> Self {
         Self::new(
             VertexType::Camera,
             EndpointInteraction::camera_from_hit(hit, camera),
@@ -184,13 +184,13 @@ impl<'scene> Vertex<'scene> {
     pub(crate) fn create_light_from_ray_normal(
         light: ArcLight,
         ray: &Ray,
-        n_light: &Normal3f,
+        n_light: Normal3f,
         le: Spectrum,
         pdf: Float,
     ) -> Self {
         let mut v = Self::new(
             VertexType::Light,
-            EndpointInteraction::light_from_ray_and_normal(ray, *n_light, Some(light)),
+            EndpointInteraction::light_from_ray_and_normal(ray, n_light, light),
             le,
         );
         v.pdf_fwd = pdf;
@@ -250,6 +250,17 @@ impl<'scene> Vertex<'scene> {
         self.it.ng() != Normal3f::ZERO
     }
 
+    /// Returns the shading normal for `VertexType::Surface`; otherwise the hit normal.
+    pub(crate) fn ns(&self) -> &Normal3f {
+        match self.vertex_type {
+            VertexType::Surface => match &self.it {
+                Interaction::Surface { si } => &si.shading.n,
+                _ => unreachable!(),
+            },
+            _ => &self.it.get_hit().n,
+        }
+    }
+
     /// Evaluates the portion of the path-space measurement equation associated with a vertex.
     /// NOTE: This is only handled surface and medium interactions.
     ///
@@ -275,17 +286,17 @@ impl<'scene> Vertex<'scene> {
     /// Returns true if a connection strategy involving the current vertex can succeed.
     pub(crate) fn is_connectible(&self) -> bool {
         match &self.it {
-            Interaction::Medium { mi: _ } => true,
+            Interaction::Medium { .. } => true,
             Interaction::Endpoint {
-                ei: EndpointInteraction::Camera { hit: _, camera: _ },
+                ei: EndpointInteraction::Camera { .. },
             } => true,
             Interaction::Endpoint {
-                ei: EndpointInteraction::Light { hit: _, light },
+                ei: EndpointInteraction::Light { light, .. },
             } => match light {
-                Some(l) => l.get_type().matches(LightType::DELTA_DIRECTION_LIGHT),
+                Some(l) => !l.get_type().matches(LightType::DELTA_DIRECTION_LIGHT),
                 None => false,
             },
-            Interaction::Surface { si: _ } => self.bsdf.as_ref().map_or(false, |bsdf| {
+            Interaction::Surface { .. } => self.bsdf.as_ref().map_or(false, |bsdf| {
                 bsdf.num_components(
                     BxDFType::BSDF_DIFFUSE
                         | BxDFType::BSDF_GLOSSY
@@ -300,7 +311,7 @@ impl<'scene> Vertex<'scene> {
     pub(crate) fn is_light(&self) -> bool {
         match &self.it {
             Interaction::Endpoint {
-                ei: EndpointInteraction::Light { hit: _, light: _ },
+                ei: EndpointInteraction::Light { .. },
             } => true,
             Interaction::Surface { si } => si.primitive.map_or(false, |p| p.get_area_light().is_some()),
             _ => false,
@@ -312,11 +323,8 @@ impl<'scene> Vertex<'scene> {
     pub(crate) fn is_delta_light(&self) -> bool {
         match &self.it {
             Interaction::Endpoint {
-                ei: EndpointInteraction::Light { hit: _, light },
-            } => match light {
-                Some(l) => l.is_delta_light(),
-                None => false,
-            },
+                ei: EndpointInteraction::Light { light: Some(l), .. },
+            } => l.is_delta_light(),
             _ => false,
         }
     }
@@ -326,13 +334,13 @@ impl<'scene> Vertex<'scene> {
     pub(crate) fn is_infinite_light(&self) -> bool {
         match &self.it {
             Interaction::Endpoint {
-                ei: EndpointInteraction::Light { hit: _, light },
+                ei: EndpointInteraction::Light { light, .. },
             } => match light {
                 Some(l) => {
-                    l.get_type().matches(LightType::DELTA_DIRECTION_LIGHT)
-                        || l.get_type().matches(LightType::INFINITE_LIGHT)
+                    l.get_type().matches(LightType::INFINITE_LIGHT)
+                        || l.get_type().matches(LightType::DELTA_DIRECTION_LIGHT)
                 }
-                None => false,
+                None => true,
             },
             _ => false,
         }
@@ -363,15 +371,19 @@ impl<'scene> Vertex<'scene> {
         } else {
             // Must be an area light.
             match &self.it {
-                Interaction::Surface { si } => match si.primitive {
-                    Some(p) => {
-                        let light = p.get_area_light();
-                        assert!(light.is_some());
-                        light.unwrap().l(&si.hit, &w)
-                    }
-                    None => unreachable!(),
-                },
-                _ => Spectrum::ZERO, //unreachable!(),
+                Interaction::Surface {
+                    si:
+                        SurfaceInteraction {
+                            primitive: Some(p),
+                            hit,
+                            ..
+                        },
+                } => {
+                    let light = p.get_area_light();
+                    assert!(light.is_some());
+                    light.unwrap().l(hit, &w)
+                }
+                _ => unreachable!(),
             }
         }
     }
@@ -436,10 +448,9 @@ impl<'scene> Vertex<'scene> {
                 ei: EndpointInteraction::Camera { hit, camera },
             } => {
                 let ray = hit.spawn_ray(&wn);
-                let PDFResult { pos: _, dir: pdf } = camera.pdf_we(&ray);
-                pdf
+                camera.pdf_we(&ray).dir
             }
-            Interaction::Surface { si: _ } => self
+            Interaction::Surface { .. } => self
                 .bsdf
                 .as_ref()
                 .map_or(0.0, |bsdf| bsdf.pdf(&wp, &wn, BxDFType::all())),
@@ -468,15 +479,11 @@ impl<'scene> Vertex<'scene> {
             // Get pointer `light` to the light source at the vertex.
             let light = match &self.it {
                 Interaction::Endpoint {
-                    ei: EndpointInteraction::Light { hit: _, light },
-                } => match light {
-                    Some(l) => Some(Arc::clone(l)),
-                    None => None,
-                },
-                Interaction::Surface { si } => match si.primitive {
-                    Some(p) => p.get_area_light(),
-                    None => None,
-                },
+                    ei: EndpointInteraction::Light { light: Some(l), .. },
+                } => Some(Arc::clone(l)),
+                Interaction::Surface {
+                    si: SurfaceInteraction { primitive: Some(p), .. },
+                } => p.get_area_light(),
                 _ => None,
             }
             .expect("Cannot call Vertex::pdf_light() on path vertex that is not a light source");
@@ -523,18 +530,14 @@ impl<'scene> Vertex<'scene> {
             // Get pointer `light` to the light source at the vertex.
             let light = match &self.it {
                 Interaction::Endpoint {
-                    ei: EndpointInteraction::Light { hit: _, light },
-                } => match light {
-                    Some(l) => Some(Arc::clone(l)),
-                    None => None,
-                },
-                Interaction::Surface { si } => match si.primitive {
-                    Some(p) => p.get_area_light(),
-                    None => None,
-                },
+                    ei: EndpointInteraction::Light { light: Some(l), .. },
+                } => Some(Arc::clone(l)),
+                Interaction::Surface {
+                    si: SurfaceInteraction { primitive: Some(p), .. },
+                } => p.get_area_light(),
                 _ => None,
             }
-            .expect("Cannot call Vertex::pdf_light() on path vertex that is not a light source");
+            .expect("Cannot call Vertex::pdf_light_origin() on path vertex that is not a light source");
 
             // Compute the discrete probability of sampling `light`, `pdf_choice`.
             let index = light_to_distr_index
@@ -542,7 +545,7 @@ impl<'scene> Vertex<'scene> {
                 .expect("Light ID not found in light_to_distr_index map");
             let pdf_choice = light_distr.discrete_pdf(*index);
 
-            let Pdf { pdf_pos, pdf_dir: _ } =
+            let Pdf { pdf_pos, .. } =
                 light.pdf_le(&Ray::new(self.it.p(), w, INFINITY, self.it.time(), None), &self.it.ng());
             pdf_pos * pdf_choice
         }
@@ -577,7 +580,7 @@ impl<'scene> fmt::Display for Vertex<'scene> {
             self.pdf_fwd, self.pdf_rev, self.beta
         )?;
         match &self.it {
-            Interaction::Surface { si: _ } => write!(f, "\n  bsdf: {}", self.bsdf.as_ref().unwrap())?,
+            Interaction::Surface { .. } => write!(f, "\n  bsdf: {}", self.bsdf.as_ref().unwrap())?,
             Interaction::Medium { mi } => write!(f, "\n  phase: {}", mi.phase)?,
             _ => (),
         }
