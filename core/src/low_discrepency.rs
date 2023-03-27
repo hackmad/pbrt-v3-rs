@@ -1799,7 +1799,7 @@ pub fn sobol_interval_to_index(m: u32, mut frame: u64, p: &Point2i) -> u64 {
     }
 
     // Flipped b
-    // NOTE: `p.x` and `p.y` have to be coverted down to u32 and then u64 to match the C++ implementation.
+    // NOTE: `p.x` and `p.y` have to be coverted to u32 and then u64 to match the C++ implementation.
     // Otherwise negative values wrap around to extremely high values that result in an incorrect result for `index`.
     let mut b = ((((p.x as u32) as u64) << m) | ((p.y as u32) as u64)) ^ delta;
 
