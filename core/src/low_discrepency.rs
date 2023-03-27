@@ -1810,7 +1810,6 @@ pub fn sobol_interval_to_index(m: u32, mut frame: u64, p: &Point2i) -> u64 {
 
     c = 0;
     while b > 0 {
-        info!("sobol_interval_to_index: m={m}, frame={frame}, p={p}, c={c}");
         if b & 1 > 0 {
             // Add column 2 * m - c.
             index ^= sobol_mat_inv[c];
@@ -1818,8 +1817,6 @@ pub fn sobol_interval_to_index(m: u32, mut frame: u64, p: &Point2i) -> u64 {
         b >>= 1;
         c += 1;
     }
-
-    info!("index={index}");
 
     index
 }
