@@ -255,7 +255,11 @@ impl<'scene> Vertex<'scene> {
         match self.vertex_type {
             VertexType::Surface => match &self.it {
                 Interaction::Surface { si } => &si.shading.n,
-                _ => unreachable!(),
+                _ => {
+                    // This should not be reached.
+                    error!("Vertex::ns vertex_type does not match interaction.");
+                    &self.it.get_hit().n
+                }
             },
             _ => &self.it.get_hit().n,
         }
@@ -279,7 +283,10 @@ impl<'scene> Vertex<'scene> {
                     * correct_shading_normal(&si, &si.hit.wo, &wi, mode)
             }
             Interaction::Medium { mi } => Spectrum::new(mi.phase.p(&mi.hit.wo, &wi)),
-            _ => unreachable!(),
+            _ => {
+                error!("Vertex::f(): Unimplemented");
+                Spectrum::ZERO
+            }
         }
     }
 
@@ -340,7 +347,7 @@ impl<'scene> Vertex<'scene> {
                     l.get_type().matches(LightType::INFINITE_LIGHT)
                         || l.get_type().matches(LightType::DELTA_DIRECTION_LIGHT)
                 }
-                None => true,
+                None => true, // !ei,light
             },
             _ => false,
         }
@@ -393,7 +400,7 @@ impl<'scene> Vertex<'scene> {
     ///
     /// * `pdf`  - The PDF.
     /// * `next` - The next vertex in the path.
-    pub(crate) fn convert_density(&self, pdf: Float, next: &Self) -> Float {
+    pub(crate) fn convert_density(&self, mut pdf: Float, next: &Self) -> Float {
         // Return solid angle density if `next` is an infinite area light.
         if next.is_infinite_light() {
             return pdf;
@@ -407,10 +414,9 @@ impl<'scene> Vertex<'scene> {
 
         let inv_dist_2 = 1.0 / w_len_sq;
         if next.is_on_surface() {
-            pdf * next.it.ng().abs_dot(&(w * inv_dist_2.sqrt())) * inv_dist_2
-        } else {
-            pdf * inv_dist_2
+            pdf *= next.it.ng().abs_dot(&(w * inv_dist_2.sqrt()));
         }
+        pdf * inv_dist_2
     }
 
     /// Returns the probability per unit area of the sampling technique associated with a given vertex.
@@ -455,7 +461,10 @@ impl<'scene> Vertex<'scene> {
                 .as_ref()
                 .map_or(0.0, |bsdf| bsdf.pdf(&wp, &wn, BxDFType::all())),
             Interaction::Medium { mi } => mi.phase.p(&wp, &wn),
-            _ => panic!("Vertex::pdf(): Unimplemented"),
+            _ => {
+                error!("Vertex::pdf(): Unimplemented");
+                0.0
+            }
         };
 
         // Return probability per unit area at vertex `next`.
@@ -477,6 +486,7 @@ impl<'scene> Vertex<'scene> {
             1.0 / (PI * world_radius * world_radius)
         } else {
             // Get pointer `light` to the light source at the vertex.
+            assert!(self.is_light());
             let light = match &self.it {
                 Interaction::Endpoint {
                     ei: EndpointInteraction::Light { light: Some(l), .. },
@@ -528,6 +538,7 @@ impl<'scene> Vertex<'scene> {
             // Return solid angle density for non-infinite light sources.
 
             // Get pointer `light` to the light source at the vertex.
+            assert!(self.is_light());
             let light = match &self.it {
                 Interaction::Endpoint {
                     ei: EndpointInteraction::Light { light: Some(l), .. },

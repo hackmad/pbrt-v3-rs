@@ -61,7 +61,7 @@ pub(crate) fn infinite_light_density(
             .get(&light_id)
             .expect("Light not found in light_to_distr_index map");
 
-        pdf += scene.lights[light_id].pdf_li(&Hit::default(), &-w) * light_distr.func[*index];
+        pdf += scene.lights[light_id].pdf_li(&Hit::default(), &(-w)) * light_distr.func[*index];
     }
     pdf / (light_distr.func_int * light_distr.count() as Float)
 }

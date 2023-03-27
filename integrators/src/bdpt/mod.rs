@@ -163,61 +163,61 @@ impl BDPTIntegrator {
                 // the light path follows multiple bounces, basing the sampling distribution on any of
                 // the vertices of the camera path is unlikely to be a good strategy. We use the
                 // PowerLightDistribution by default here, which doesn't use the point passed to it.
+                let light_distr = light_distr.lookup(&camera_vertices[0].it.p()).unwrap();
+
+                // Now trace the light subpath
+                let n_light = generate_light_subpath(
+                    scene,
+                    &mut tile_sampler,
+                    self.max_depth + 1,
+                    camera_vertices[0].it.time(),
+                    Arc::clone(&light_distr),
+                    Arc::clone(&light_to_index),
+                    &mut light_vertices,
+                );
+
+                // Execute all BDPT connection strategies.
                 let mut l = Spectrum::ZERO;
-                if let Some(light_distr) = light_distr.lookup(&camera_vertices[0].it.p()) {
-                    // Now trace the light subpath
-                    let n_light = generate_light_subpath(
-                        scene,
-                        &mut tile_sampler,
-                        self.max_depth + 1,
-                        camera_vertices[0].it.time(),
-                        Arc::clone(&light_distr),
-                        Arc::clone(&light_to_index),
-                        &mut light_vertices,
-                    );
+                for t in 1..=n_camera {
+                    for s in 0..=n_light {
+                        let depth = t as isize + s as isize - 2;
+                        if (s == 1 && t == 1) || depth < 0 || depth > self.max_depth as isize {
+                            continue;
+                        }
 
-                    // Execute all BDPT connection strategies.
-                    for t in 1..=n_camera {
-                        for s in 0..=n_light {
-                            let depth = t as isize + s as isize - 2;
-                            if (s == 1 && t == 1) || depth < 0 || depth > self.max_depth as isize {
-                                continue;
-                            }
+                        // Execute the $(s, t)$ connection strategy and update `L`.
+                        let (l_path, p_film_new, mis_wt) = connect_bdpt(
+                            scene,
+                            &mut light_vertices,
+                            &mut camera_vertices,
+                            s,
+                            t,
+                            Arc::clone(&light_distr),
+                            Arc::clone(&light_to_index),
+                            &self.camera,
+                            &mut tile_sampler,
+                        );
 
-                            // Execute the $(s, t)$ connection strategy and update `L`.
-                            let (l_path, p_film_new, mis_wt) = connect_bdpt(
-                                scene,
-                                &mut light_vertices,
-                                &mut camera_vertices,
-                                s,
-                                t,
-                                Arc::clone(&light_distr),
-                                Arc::clone(&light_to_index),
-                                &self.camera,
-                                &mut tile_sampler,
-                            );
-
-                            info!("Connect bdpt s: {s}, t: {t}, l_path: {l_path}, mis_weight: {mis_wt}");
-                            if self.visualize_strategies || self.visualize_weights {
-                                let mut value = Spectrum::ZERO;
-                                if self.visualize_strategies {
-                                    if mis_wt != 0.0 {
-                                        value = l_path / mis_wt;
-                                    }
-                                }
-                                if self.visualize_weights {
-                                    value = l_path;
-                                }
-                                let weight_films = weight_films.lock().unwrap();
-                                if let Some(wf) = &(*weight_films)[buffer_index(s, t)] {
-                                    wf.add_splat(&p_film_new.unwrap(), &value);
+                        info!("Connect bdpt s: {s}, t: {t}, l_path: {l_path}, mis_weight: {mis_wt}");
+                        if self.visualize_strategies || self.visualize_weights {
+                            let mut value = Spectrum::ZERO;
+                            if self.visualize_strategies {
+                                if mis_wt != 0.0 {
+                                    value = l_path / mis_wt;
                                 }
                             }
-                            if t != 1 {
-                                l += l_path;
-                            } else {
-                                film.add_splat(&p_film_new.unwrap_or(p_film), &l_path);
+                            if self.visualize_weights {
+                                value = l_path;
                             }
+                            let weight_films = weight_films.lock().unwrap();
+                            if let Some(wf) = &(*weight_films)[buffer_index(s, t)] {
+                                wf.add_splat(&p_film_new.unwrap_or(p_film), &value);
+                            }
+                        }
+                        if t != 1 {
+                            l += l_path;
+                        } else {
+                            film.add_splat(&p_film_new.unwrap_or(p_film), &l_path);
                         }
                     }
                 }
@@ -304,7 +304,7 @@ impl Integrator for BDPTIntegrator {
         progress.set_message("Rendering scene");
 
         // Render and write the output image to disk.
-        if scene.lights.len() > 0 {
+        if !scene.lights.is_empty() {
             let n_threads = OPTIONS.threads();
 
             thread::scope(|scope| {
@@ -775,24 +775,33 @@ fn mis_weight<'scene>(
     // reference to the fields of T will make it so that the original T cannot be accessed until the
     // second one is dropped. So we resort to backing up values ourselves we need and restoring them
     // when we are done.
-    let backup_qs       = if s > 0 { Some(light_vertices [qs       as usize].clone()) } else { None };
-    let backup_pt       = if t > 0 { Some(camera_vertices[pt       as usize].clone()) } else { None };
-    let backup_qs_minus = if s > 1 { Some(light_vertices [qs_minus as usize].clone()) } else { None };
-    let backup_pt_minus = if t > 1 { Some(camera_vertices[pt_minus as usize].clone()) } else { None };
 
     // Update sampled vertex for `s=1` and `t=1` strategy.
+    let mut backup_qs: Option<Vertex> = None;
+    let mut backup_pt: Option<Vertex> = None;
     if s == 1 {
+        backup_qs = Some(light_vertices[qs as usize].clone());
         light_vertices[qs as usize] = sampled.clone();
     } else if t == 1 {
+        backup_pt = Some(camera_vertices[pt as usize].clone());
         camera_vertices[pt as usize] = sampled.clone();
     }
 
     // Make connection vertices as non-degenerate.
-    let backup_pt_delta = if pt >= 0 { Some(camera_vertices[pt as usize].delta) } else { None };
-    let backup_qs_delta = if qs >= 0 { Some(light_vertices [qs as usize].delta) } else { None };
+    let mut backup_pt_delta: Option<bool> = None;
+    if pt >= 0 {
+        backup_pt_delta = Some(camera_vertices[pt as usize].delta);
+        camera_vertices[pt as usize].delta = false;
+    }
 
-    // Update reverse density of vertex `p_t-1`.
-    let mut backup_pt_pdf_rev = None;
+    let mut backup_qs_delta: Option<bool> = None;
+    if qs >= 0 {
+        backup_qs_delta = Some(light_vertices [qs as usize].delta);
+        light_vertices [qs as usize].delta = false;
+    }
+
+    // Update reverse density of vertex `pt_t-1`.
+    let mut backup_pt_pdf_rev: Option<Float> = None;
     if pt >= 0 {
         backup_pt_pdf_rev = Some(camera_vertices[pt as usize].pdf_rev);
         camera_vertices[pt as usize].pdf_rev = if s > 0 {
@@ -812,8 +821,8 @@ fn mis_weight<'scene>(
         };
     }
 
-    // Update reverse density of vertex `p_t-2`.
-    let mut backup_pt_minus_pdf_rev = None;
+    // Update reverse density of vertex `pt_t-2`.
+    let mut backup_pt_minus_pdf_rev: Option<Float> = None;
     if pt_minus >= 0 {
         backup_pt_minus_pdf_rev = Some(camera_vertices[pt_minus as usize].pdf_rev);
         camera_vertices[pt_minus as usize].pdf_rev = if s > 0 {
@@ -827,8 +836,8 @@ fn mis_weight<'scene>(
         };
     }
 
-    // Update reverse density of vertices `q_s-1` and `q_s-2`.
-    let mut backup_qs_pdf_rev = None;
+    // Update reverse density of vertices `qs_s-1` and `qs_s-2`.
+    let mut backup_qs_pdf_rev: Option<Float> = None;
     if qs >= 0 {
         backup_qs_pdf_rev = Some(light_vertices[qs as usize].pdf_rev);
         light_vertices[qs as usize].pdf_rev = camera_vertices[pt as usize].pdf(
@@ -838,7 +847,7 @@ fn mis_weight<'scene>(
         );
     }
 
-    let mut backup_qs_minus_pdf_rev = None;
+    let mut backup_qs_minus_pdf_rev: Option<Float> = None;
     if qs_minus >= 0 {
         backup_qs_minus_pdf_rev = Some(light_vertices[qs_minus as usize].pdf_rev);
         light_vertices[qs_minus as usize].pdf_rev = light_vertices[qs as usize].pdf(
@@ -875,18 +884,16 @@ fn mis_weight<'scene>(
     }
 
     // Restore snapshots in reverse order of backups.
-    if let Some(pdf_rev) = backup_qs_minus_pdf_rev { light_vertices [qs_minus as usize].pdf_rev = pdf_rev; }
-    if let Some(pdf_rev) = backup_qs_pdf_rev       { light_vertices [qs       as usize].pdf_rev = pdf_rev; }
-    if let Some(pdf_rev) = backup_pt_minus_pdf_rev { camera_vertices[pt_minus as usize].pdf_rev = pdf_rev; }
-    if let Some(pdf_rev) = backup_pt_pdf_rev       { camera_vertices[pt       as usize].pdf_rev = pdf_rev; }
+    if let Some(v) = backup_qs_minus_pdf_rev { light_vertices [qs_minus as usize].pdf_rev = v; }
+    if let Some(v) = backup_qs_pdf_rev       { light_vertices [qs       as usize].pdf_rev = v; }
+    if let Some(v) = backup_pt_minus_pdf_rev { camera_vertices[pt_minus as usize].pdf_rev = v; }
+    if let Some(v) = backup_pt_pdf_rev       { camera_vertices[pt       as usize].pdf_rev = v; }
 
-    if let Some(delta) = backup_qs_delta { light_vertices [qs as usize].delta = delta; }
-    if let Some(delta) = backup_pt_delta { camera_vertices[pt as usize].delta = delta; }
+    if let Some(v) = backup_qs_delta { light_vertices [qs as usize].delta = v; }
+    if let Some(v) = backup_pt_delta { camera_vertices[pt as usize].delta = v; }
 
-    if let Some(vertex) = backup_pt_minus { camera_vertices[pt_minus as usize] = vertex.clone(); }
-    if let Some(vertex) = backup_qs_minus { light_vertices [qs_minus as usize] = vertex.clone(); }
-    if let Some(vertex) = backup_pt       { camera_vertices[pt as usize]       = vertex.clone(); }
-    if let Some(vertex) = backup_qs       { light_vertices [qs as usize]       = vertex.clone(); }
+    if let Some(v) = backup_pt { camera_vertices[pt as usize] = v.clone(); }
+    if let Some(v) = backup_qs { light_vertices [qs as usize] = v.clone(); }
 
     1.0 / (1.0 + sum_ri)
 }
@@ -967,7 +974,7 @@ fn connect_bdpt<'scene>(
             }
         }
     } else if s == 1 {
-        // Sample a point on a light and connect it to the camera subpath
+        // Sample a point on a light and connect it to the camera subpath.
         assert!(t >= 1);
         let pt = &camera_vertices[t - 1];
         if pt.is_connectible() {
