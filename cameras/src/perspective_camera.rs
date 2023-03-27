@@ -59,13 +59,7 @@ impl PerspectiveCamera {
         let film_clone = film;
         let res = film_clone.full_resolution;
 
-        let data = CameraData::new(
-            camera_to_world,
-            shutter_open,
-            shutter_close,
-            film_clone,
-            medium,
-        );
+        let data = CameraData::new(camera_to_world, shutter_open, shutter_close, film_clone, medium);
         let proj_data = ProjectiveCameraData::new(
             &data,
             Transform::perspective(fov, 1e-2, 1000.0),
@@ -75,29 +69,17 @@ impl PerspectiveCamera {
         );
 
         // Compute differential changes in origin for perspective camera rays.
-        let dx_camera = proj_data
-            .raster_to_camera
-            .transform_point(&Point3f::new(1.0, 0.0, 0.0))
-            - proj_data
-                .raster_to_camera
-                .transform_point(&Point3f::new(0.0, 0.0, 0.0));
-        let dy_camera = proj_data
-            .raster_to_camera
-            .transform_point(&Point3f::new(0.0, 1.0, 0.0))
-            - proj_data
-                .raster_to_camera
-                .transform_point(&Point3f::new(0.0, 0.0, 0.0));
+        let dx_camera = proj_data.raster_to_camera.transform_point(&Point3f::new(1.0, 0.0, 0.0))
+            - proj_data.raster_to_camera.transform_point(&Point3f::new(0.0, 0.0, 0.0));
+        let dy_camera = proj_data.raster_to_camera.transform_point(&Point3f::new(0.0, 1.0, 0.0))
+            - proj_data.raster_to_camera.transform_point(&Point3f::new(0.0, 0.0, 0.0));
 
         // Compute the image plane bounds at z=1 for perspective camera.
-        let mut p_min = proj_data
-            .raster_to_camera
-            .transform_point(&Point3f::new(0.0, 0.0, 0.0));
+        let mut p_min = proj_data.raster_to_camera.transform_point(&Point3f::new(0.0, 0.0, 0.0));
 
-        let mut p_max = proj_data.raster_to_camera.transform_point(&Point3f::new(
-            res.x as Float,
-            res.y as Float,
-            0.0,
-        ));
+        let mut p_max = proj_data
+            .raster_to_camera
+            .transform_point(&Point3f::new(res.x as Float, res.y as Float, 0.0));
 
         p_min /= p_min.z;
         p_max /= p_max.z;
@@ -236,9 +218,7 @@ impl Camera for PerspectiveCamera {
 
         // Interpolate camera matrix and check if `ω` is forward-facing.
         let c2w = self.data.camera_to_world.interpolate(ray.time);
-        let cos_theta = ray
-            .d
-            .dot(&c2w.transform_vector(&Vector3f::new(0.0, 0.0, 1.0)));
+        let cos_theta = ray.d.dot(&c2w.transform_vector(&Vector3f::new(0.0, 0.0, 1.0)));
         if cos_theta <= 0.0 {
             return (Spectrum::ZERO, p_raster2);
         }
@@ -289,9 +269,7 @@ impl Camera for PerspectiveCamera {
     fn pdf_we(&self, ray: &Ray) -> PDFResult {
         // Interpolate camera matrix and check if `ω` is forward-facing.
         let c2w = self.data.camera_to_world.interpolate(ray.time);
-        let cos_theta = ray
-            .d
-            .dot(&c2w.transform_vector(&Vector3f::new(0.0, 0.0, 1.0)));
+        let cos_theta = ray.d.dot(&c2w.transform_vector(&Vector3f::new(0.0, 0.0, 1.0)));
         if cos_theta <= 0.0 {
             return PDFResult::default();
         }
@@ -323,10 +301,7 @@ impl Camera for PerspectiveCamera {
         } else {
             1.0
         };
-        PDFResult::new(
-            1.0 / lens_area,
-            1.0 / (self.a * cos_theta * cos_theta * cos_theta),
-        )
+        PDFResult::new(1.0 / lens_area, 1.0 / (self.a * cos_theta * cos_theta * cos_theta))
     }
 
     /// Returns a PDF value with respect to the solid angle at a reference point.
@@ -346,18 +321,10 @@ impl Camera for PerspectiveCamera {
             .camera_to_world
             .transform_point(time, &Point3f::new(p_lens.x, p_lens.y, 0.0));
 
-        let mut si = SurfaceInteraction::new(
+        let mut si = SurfaceInteraction::new_from_point_time_medium_interface(
             p_lens_world,
-            Vector3f::default(),
-            Point2f::default(),
-            Vector3f::default(),
-            Vector3f::default(),
-            Vector3f::default(),
-            Normal3f::default(),
-            Normal3f::default(),
             time,
-            None,
-            0,
+            Some(MediumInterface::from(self.data.medium.clone())),
         );
         si.hit.n = Normal3f::from(
             &self
@@ -365,6 +332,7 @@ impl Camera for PerspectiveCamera {
                 .camera_to_world
                 .transform_vector(time, &Vector3f::new(0.0, 0.0, 1.0)),
         );
+
         let lens_intr = Interaction::Surface { si };
         let lens_intr_hit = lens_intr.get_hit().to_owned();
 
@@ -424,10 +392,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Perspect
         let mut screen = if frame > 1.0 {
             Bounds2::new(Point2::new(-frame, -1.0), Point2::new(frame, 1.0))
         } else {
-            Bounds2::new(
-                Point2::new(-1.0, -1.0 / frame),
-                Point2::new(1.0, 1.0 / frame),
-            )
+            Bounds2::new(Point2::new(-1.0, -1.0 / frame), Point2::new(1.0, 1.0 / frame))
         };
 
         let sw = params.find_float("screenwindow");

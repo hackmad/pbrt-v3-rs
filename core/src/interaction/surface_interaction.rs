@@ -4,6 +4,7 @@
 use super::Hit;
 use crate::geometry::*;
 use crate::material::*;
+use crate::medium::*;
 use crate::pbrt::*;
 use crate::primitive::*;
 use crate::reflection::*;
@@ -97,6 +98,51 @@ impl<'scene> SurfaceInteraction<'scene> {
             shape_data,
             primitive: None,
             face_index,
+        }
+    }
+
+    /// Create a new surface interaction from point, time and medium interface.
+    ///
+    /// * `p`                - Point of interaction.
+    /// * `time`             - Time when interaction occurred.
+    /// * `medium_interface` - The medium interface.
+    pub fn new_from_point_time_medium_interface(
+        p: Point3f,
+        time: Float,
+        medium_interface: Option<MediumInterface>,
+    ) -> Self {
+        Self {
+            hit: Hit::new(
+                p,
+                time,
+                Vector3f::ZERO,
+                Vector3f::ZERO,
+                Normal3f::ZERO,
+                medium_interface,
+            ),
+            uv: Point2f::ZERO,
+            der: Derivatives::new(
+                Vector3f::ZERO,
+                Vector3f::ZERO,
+                Normal3f::ZERO,
+                Normal3f::ZERO,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                Vector3f::ZERO,
+                Vector3f::ZERO,
+            ),
+            shading: Shading::new(
+                Normal3f::ZERO,
+                Vector3f::ZERO,
+                Vector3f::ZERO,
+                Normal3f::ZERO,
+                Normal3f::ZERO,
+            ),
+            shape_data: None,
+            primitive: None,
+            face_index: 0,
         }
     }
 
@@ -298,13 +344,7 @@ impl Shading {
     /// * `dpdv` - Parametric partial derivative of the point ∂p/∂v.
     /// * `dndu` - Differential change ∂n/∂v in surface normal as we move along u.
     /// * `dndv` - Differential change ∂n/∂v in surface normal as we move along v.
-    pub fn new(
-        n: Normal3f,
-        dpdu: Vector3f,
-        dpdv: Vector3f,
-        dndu: Normal3f,
-        dndv: Normal3f,
-    ) -> Self {
+    pub fn new(n: Normal3f, dpdu: Vector3f, dpdv: Vector3f, dndu: Normal3f, dndv: Normal3f) -> Self {
         Self {
             n,
             dpdu,
