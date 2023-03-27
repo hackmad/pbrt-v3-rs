@@ -1776,7 +1776,9 @@ pub fn sobol_2d(
 /// * `m`     - Resolution.
 /// * `frame` - Sample number.
 /// * `p`     - Pixel.
-pub fn sobol_interval_to_index(m: u32, frame: u64, p: &Point2i) -> u64 {
+pub fn sobol_interval_to_index(m: u32, mut frame: u64, p: &Point2i) -> u64 {
+    info!("m={m}, frame={frame}, p=[{}, {}]", p.x, p.y);
+
     if m == 0 {
         return 0;
     }
@@ -1784,31 +1786,41 @@ pub fn sobol_interval_to_index(m: u32, frame: u64, p: &Point2i) -> u64 {
     let m2 = m << 1;
     let mut index = frame << m2;
 
+    info!("m2={m2}, index={index}");
+
+    let sobol_mat = VD_C_SOBOL_MATRICES[(m - 1) as usize];
+    let sobol_mat_inv = VD_C_SOBOL_MATRICES_INV[(m - 1) as usize];
+
     let mut delta = 0;
     let mut c = 0;
-    let mut frame = frame;
-
     while frame > 0 {
         if frame & 1 > 0 {
             // Add flipped column m + c + 1.
-            delta ^= VD_C_SOBOL_MATRICES[(m - 1) as usize][c];
+            delta ^= sobol_mat[c];
         }
         frame >>= 1;
         c += 1;
     }
 
     // Flipped b
-    let mut b = (((p.x as u32) << m) as u64 | (p.y as u64)) ^ delta;
+    // NOTE: `p.x` and `p.y` have to be coverted down to u32 and then u64 to match the C++ implementation.
+    // Otherwise the next loop starts with extremely high values for `b` that result in an
+    // incorrect result for `index`.
+    let mut b = ((((p.x as u32) as u64) << m) | ((p.y as u32) as u64)) ^ delta;
+    info!("delta={delta}, b={b}");
 
     c = 0;
     while b > 0 {
+        info!("sobol_interval_to_index: m={m}, frame={frame}, p={p}, c={c}");
         if b & 1 > 0 {
             // Add column 2 * m - c.
-            index ^= VD_C_SOBOL_MATRICES_INV[(m - 1) as usize][c];
+            index ^= sobol_mat_inv[c];
         }
         b >>= 1;
         c += 1;
     }
+
+    info!("index={index}");
 
     index
 }
