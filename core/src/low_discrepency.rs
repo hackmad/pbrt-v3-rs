@@ -1777,16 +1777,12 @@ pub fn sobol_2d(
 /// * `frame` - Sample number.
 /// * `p`     - Pixel.
 pub fn sobol_interval_to_index(m: u32, mut frame: u64, p: &Point2i) -> u64 {
-    info!("m={m}, frame={frame}, p=[{}, {}]", p.x, p.y);
-
     if m == 0 {
         return 0;
     }
 
     let m2 = m << 1;
     let mut index = frame << m2;
-
-    info!("m2={m2}, index={index}");
 
     let sobol_mat = VD_C_SOBOL_MATRICES[(m - 1) as usize];
     let sobol_mat_inv = VD_C_SOBOL_MATRICES_INV[(m - 1) as usize];
@@ -1806,7 +1802,6 @@ pub fn sobol_interval_to_index(m: u32, mut frame: u64, p: &Point2i) -> u64 {
     // NOTE: `p.x` and `p.y` have to be coverted down to u32 and then u64 to match the C++ implementation.
     // Otherwise negative values wrap around to extremely high values that result in an incorrect result for `index`.
     let mut b = ((((p.x as u32) as u64) << m) | ((p.y as u32) as u64)) ^ delta;
-    info!("delta={delta}, b={b}");
 
     c = 0;
     while b > 0 {
@@ -1830,7 +1825,7 @@ pub fn sobol_sample(a: u64, dimension: u16, scramble: u64) -> Float {
     // TODO: There is no way to use generics or traits to implement this
     // function for both f32/f64. Maybe macros with compiler feature flags
     // might be the way.
-    sobol_sample_f32(a, dimension, scramble)
+    sobol_sample_f32(a, dimension, scramble as u32)
 }
 
 /// Returns the sample value for a given sample index and dimension.
@@ -1839,7 +1834,7 @@ pub fn sobol_sample(a: u64, dimension: u16, scramble: u64) -> Float {
 /// * `dimension` - Dimension.
 /// * `scramble`  - Encodes the scrambling as bits of `u32` integeger.
 ///                 Default to 0.
-fn sobol_sample_f32(a: u64, dimension: u16, scramble: u64) -> f32 {
+fn sobol_sample_f32(mut a: u64, dimension: u16, scramble: u32) -> f32 {
     assert!(
         (dimension as usize) < NUM_SOBOL_DIMENSIONS,
         "Integrator has consumed too many Sobol dimensions; you \
@@ -1847,15 +1842,10 @@ fn sobol_sample_f32(a: u64, dimension: u16, scramble: u64) -> f32 {
             (0, 2)-sequence"
     );
 
-    let mut a = a;
-    let mut v = scramble as u32;
+    let mut v = scramble;
 
     let mut i = (dimension as usize) * SOBOL_MATRIX_SIZE;
-    loop {
-        if a == 0 {
-            break;
-        }
-
+    while a != 0 {
         if (a & 1) > 0 {
             v ^= SOBOL_MATRICES_32[i];
         }
@@ -1864,10 +1854,8 @@ fn sobol_sample_f32(a: u64, dimension: u16, scramble: u64) -> f32 {
         i += 1;
     }
 
-    min(
-        (v as f32) * (hexf32!("0x1.0p-32") as f32),
-        FLOAT_ONE_MINUS_EPSILON,
-    )
+    let sample = (v as f32) * (hexf32!("0x1.0p-32") as f32);
+    min(sample, FLOAT_ONE_MINUS_EPSILON)
 }
 
 /// Returns the sample value for a given sample index and dimension.
@@ -1877,7 +1865,7 @@ fn sobol_sample_f32(a: u64, dimension: u16, scramble: u64) -> f32 {
 /// * `scramble`  - Encodes the scrambling as bits of `u32` integeger.
 ///                 Default to 0.
 #[allow(unused)]
-fn sobol_sample_f64(a: u64, dimension: u16, scramble: u64) -> f64 {
+fn sobol_sample_f64(mut a: u64, dimension: u16, scramble: u64) -> f64 {
     assert!(
         (dimension as usize) < NUM_SOBOL_DIMENSIONS,
         "Integrator has consumed too many Sobol dimensions; you \
@@ -1885,15 +1873,10 @@ fn sobol_sample_f64(a: u64, dimension: u16, scramble: u64) -> f64 {
             (0, 2)-sequence"
     );
 
-    let mut a = a;
     let mut result = scramble & !(-((1_usize << SOBOL_MATRIX_SIZE) as i64) as u64);
 
     let mut i = (dimension as usize) * SOBOL_MATRIX_SIZE;
-    loop {
-        if a == 0 {
-            break;
-        }
-
+    while a != 0 {
         if (a & 1) > 0 {
             result ^= SOBOL_MATRICES_64[i];
         }
@@ -1902,8 +1885,6 @@ fn sobol_sample_f64(a: u64, dimension: u16, scramble: u64) -> f64 {
         i += 1;
     }
 
-    min(
-        result as f64 * (1.0 / (1_usize << SOBOL_MATRIX_SIZE) as f64),
-        DOUBLE_ONE_MINUS_EPSILON,
-    )
+    let sample = result as f64 * (1.0 / (1_usize << SOBOL_MATRIX_SIZE) as f64);
+    min(sample, DOUBLE_ONE_MINUS_EPSILON)
 }

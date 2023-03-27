@@ -80,8 +80,7 @@ impl SobolSampler {
     fn sample_dimension(&mut self, index: u64, dim: u16) -> Float {
         assert!(
             (dim as usize) <= NUM_SOBOL_DIMENSIONS,
-            "SobolSampler can only sample up to {} dimensions.",
-            NUM_SOBOL_DIMENSIONS
+            "SobolSampler can only sample up to {NUM_SOBOL_DIMENSIONS} dimensions.",
         );
 
         let mut s = sobol_sample(index, dim, 0);

@@ -136,6 +136,8 @@ impl BDPTIntegrator {
 
         // Loop over pixels in tile to render them.
         for pixel in tile_bounds {
+            Arc::get_mut(&mut tile_sampler).unwrap().start_pixel(&pixel);
+
             if !self.pixel_bounds.contains_exclusive(&pixel) {
                 continue;
             }
@@ -222,7 +224,7 @@ impl BDPTIntegrator {
                     }
                 }
 
-                info!("Add film sample pFilm: {p_film }, L: {l}, (y: {})", l.y());
+                info!("Add film sample pFilm: {p_film}, L: {l}, (y: {})", l.y());
                 film_tile.add_sample(p_film, l, 1.0);
 
                 {
