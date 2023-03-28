@@ -216,7 +216,7 @@ impl BSDF {
         }
         let bxdf_idx = bxdf_idx.expect("bsdf::sample_f() did not find matching bxdf");
         let matched_bxdf = &self.bxdfs[bxdf_idx];
-        debug!("BSDF::Sample_f chose comp = {comp} / matching = {matching_comps}, bxdf: {matched_bxdf}");
+        info!("BSDF::Sample_f chose comp = {comp} / matching = {matching_comps}, bxdf: {matched_bxdf}");
 
         // Remap BxDF sample `u` to `[0,1)^2`.
         let u_remapped = Point2f::new(
@@ -232,9 +232,8 @@ impl BSDF {
         }
 
         let mut sample = matched_bxdf.sample_f(&wo, &u_remapped);
-        debug!(
-            "For wo_world = {}, wo = {}, sampled f = {}, pdf = {}, ratio = {}, wi = {}",
-            wo_world,
+        info!(
+            "For wo = {}, sampled f = {}, pdf = {}, ratio = {}, wi = {}",
             wo,
             sample.f,
             sample.pdf,
@@ -247,7 +246,6 @@ impl BSDF {
         );
 
         if sample.pdf == 0.0 {
-            debug!("sample.pdf = 0");
             return BxDFSample::default();
         }
 
@@ -279,7 +277,7 @@ impl BSDF {
             }
         }
 
-        debug!(
+        info!(
             "Overall f = {}, pdf = {}, ratio = {}",
             sample.f,
             sample.pdf,

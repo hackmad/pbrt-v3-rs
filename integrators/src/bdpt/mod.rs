@@ -578,7 +578,7 @@ fn random_walk<'scene>(
     scene: &'scene Scene,
     ray: &mut Ray,
     sampler: &mut ArcSampler,
-    beta: Spectrum,
+    mut beta: Spectrum,
     pdf: Float,
     max_depth: usize,
     mode: TransportMode,
@@ -600,11 +600,12 @@ fn random_walk<'scene>(
         // Trace a ray and sample the medium, if any.
         let isect = scene.intersect(ray);
 
-        let (mut beta, mi) = if let Some(medium) = ray.medium.as_ref() {
+        let mi = if let Some(medium) = ray.medium.as_ref() {
             let (sample, mi) = medium.sample(&ray, sampler);
-            (beta * sample, mi)
+            beta *= sample;
+            mi
         } else {
-            (beta, None)
+            None
         };
 
         if beta.is_black() {
