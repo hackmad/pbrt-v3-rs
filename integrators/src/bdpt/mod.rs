@@ -24,7 +24,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-mod bdpt_interaction;
 mod common;
 mod vertex;
 
