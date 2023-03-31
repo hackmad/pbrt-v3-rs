@@ -439,3 +439,14 @@ impl Derivatives {
         }
     }
 }
+
+impl fmt::Display for Derivatives {
+    /// Formats the value using the given formatter.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Derivatives {{ dpdu: {}, dpdv: {}, dndu: {}, dndv: {}, dudx: {}, dudy: {}, dvdx: {}, dvdy: {}, dpdx: {}, dpdy: {}, }}",
+            self.dpdu, self.dpdv, self.dndu, self.dndv, self.dudx, self.dudy, self.dvdx, self.dvdy, self.dpdx, self.dpdy,
+        )
+    }
+}
