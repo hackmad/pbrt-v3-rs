@@ -56,7 +56,7 @@ impl PbrtParser {
                         Err(e) => Err(Error::new_from_span(CustomError { message: e }, span))
                     }
                 } else {
-                    Ok(Stmt::Include(path.to_owned()))
+                    Ok(Stmt::Include(path))
                 }
             },
         )
@@ -729,7 +729,7 @@ pub fn parse(abs_path: &str, api: &mut Api) -> std::result::Result<(), String> {
     let unparsed_file = file_to_string(&abs_path)?;
 
     // Parse the input file into `Nodes`.
-    match PbrtParser::parse_with_userdata(Rule::pbrt, &unparsed_file, scene_path.to_owned())
+    match PbrtParser::parse_with_userdata(Rule::pbrt, &unparsed_file, scene_path)
         // There should be a single root node in the parsed tree.
         .and_then(|inputs| inputs.single())
         // Consume the `Node` recursively into the final value.

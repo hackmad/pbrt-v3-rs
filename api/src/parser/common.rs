@@ -40,10 +40,18 @@ impl Stmt {
     /// * `api` - The PBRT API interface.
     pub(crate) fn process(&self, api: &mut Api) {
         match self {
-            Self::Include(ref abs_path) => match super::parse(abs_path, api) {
-                Ok(()) => (),
-                Err(e) => error!("Error parsing include file '{}'. {}", abs_path, e),
-            },
+            Self::Include(ref abs_path) => {
+                let cwd = api.cwd.clone();
+
+                let result = match super::parse(abs_path, api) {
+                    Ok(()) => (),
+                    Err(e) => error!("Error parsing include file '{}'. {}", abs_path, e),
+                };
+
+                api.set_current_working_dir(&cwd);
+
+                result
+            }
             Self::Block(stmt) => stmt.process(api),
             Self::Option(stmt) => stmt.process(api),
             Self::Scene(stmt) => stmt.process(api),
@@ -133,17 +141,17 @@ impl OptionStmt {
 
 /// Represents the `scene_stmt` rule of the PBRT file.
 pub(crate) enum SceneStmt {
-    AreaLightSource(String, Vec<Param>), // area_light_source_stmt(name, params)
-    LightSource(String, Vec<Param>),     // light_source_stmt(name, params)
-    MakeNamedMaterial(String, Vec<Param>), // make_named_material_stmt(name, params)
-    Material(String, Vec<Param>),        // material_stmt(name, params)
-    Shape(String, Vec<Param>),           // shape_stmt(name, params)
-    NamedMaterial(String),               // named_material_stmt(name)
-    ObjectInstance(String),              // object_instance_stmt(name)
+    AreaLightSource(String, Vec<Param>),         // area_light_source_stmt(name, params)
+    LightSource(String, Vec<Param>),             // light_source_stmt(name, params)
+    MakeNamedMaterial(String, Vec<Param>),       // make_named_material_stmt(name, params)
+    Material(String, Vec<Param>),                // material_stmt(name, params)
+    Shape(String, Vec<Param>),                   // shape_stmt(name, params)
+    NamedMaterial(String),                       // named_material_stmt(name)
+    ObjectInstance(String),                      // object_instance_stmt(name)
     Texture(String, String, String, Vec<Param>), // texture_stmt(name, type, class, params)
-    ReverseOrientation,                  // reverse_orientation_stmt
-    MediumInterface(String, String),     // medium_interface_stmt(inside, outside)
-    ActiveTransform(ActiveTransformTime), // active_transform_stmt(time)
+    ReverseOrientation,                          // reverse_orientation_stmt
+    MediumInterface(String, String),             // medium_interface_stmt(inside, outside)
+    ActiveTransform(ActiveTransformTime),        // active_transform_stmt(time)
 }
 
 impl SceneStmt {
@@ -176,17 +184,10 @@ impl SceneStmt {
             Self::ObjectInstance(name) => api.pbrt_object_instance(name.to_owned()),
             Self::Texture(name, tex_type, tex_class, params) => {
                 let ps = Param::params_to_paramset(params, &api.cwd);
-                api.pbrt_texture(
-                    name.to_owned(),
-                    tex_type.to_owned(),
-                    tex_class.to_owned(),
-                    &ps,
-                );
+                api.pbrt_texture(name.to_owned(), tex_type.to_owned(), tex_class.to_owned(), &ps);
             }
             Self::ReverseOrientation => api.pbrt_reverse_orientation(),
-            Self::MediumInterface(inside, outside) => {
-                api.pbrt_medium_interface(inside.to_owned(), outside.to_owned())
-            }
+            Self::MediumInterface(inside, outside) => api.pbrt_medium_interface(inside.to_owned(), outside.to_owned()),
             Self::ActiveTransform(time) => match time {
                 ActiveTransformTime::Start => api.pbrt_active_transform_start_time(),
                 ActiveTransformTime::End => api.pbrt_active_transform_end_time(),
@@ -287,9 +288,7 @@ impl Param {
                 },
                 Self::Blackbody(name, v) => ps.add_blackbody_spectrum(&name, &v),
                 Self::SpectrumFloat(name, v) => ps.add_sampled_spectrum(&name, &v),
-                Self::SpectrumFile(name, path) => {
-                    ps.add_sampled_spectrum_files(&name, &[path.clone()], cwd)
-                }
+                Self::SpectrumFile(name, path) => ps.add_sampled_spectrum_files(&name, &[path.clone()], cwd),
                 Self::Texture(name, v) => ps.add_texture(&name, &v),
             }
         }

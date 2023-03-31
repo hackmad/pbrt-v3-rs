@@ -29,21 +29,12 @@ impl PLYMesh {
     ///         world to object transform, whether or not surface normal
     ///         orientation is reversed, floating point texture maps and current
     ///         working directory.
-    pub fn from_props(
-        p: (
-            &ParamSet,
-            ArcTransform,
-            ArcTransform,
-            bool,
-            &FloatTextureMap,
-            &str,
-        ),
-    ) -> Vec<ArcShape> {
+    pub fn from_props(p: (&ParamSet, ArcTransform, ArcTransform, bool, &FloatTextureMap, &str)) -> Vec<ArcShape> {
         let (params, o2w, w2o, reverse_orientation, float_textures, cwd) = p;
 
         let path = params
             .find_one_filename("filename", Some(cwd))
-            .expect("PLY filename not provied");
+            .expect("PLY filename not provided");
 
         // Look up an alpha texture, if applicable.
         let alpha_tex_name = params.find_one_texture("alpha", String::from(""));
@@ -51,10 +42,7 @@ impl PLYMesh {
             if let Some(tex) = float_textures.get(&alpha_tex_name) {
                 Arc::clone(&tex)
             } else {
-                warn!(
-                    "Couldn't find float texture '{}' for 'alpha' parameter",
-                    alpha_tex_name
-                );
+                warn!("Couldn't find float texture '{alpha_tex_name}' for 'alpha' parameter");
                 let alpha = params.find_one_float("alpha", 1.0);
                 Arc::new(ConstantTexture::new(alpha))
             }
@@ -135,10 +123,7 @@ impl PLYMesh {
 
         // Inspect the structure of the PLY file.
         if points.len() == 0 || face_count == 0 {
-            error!(
-                "PLY file '{}' is invalid! No face/vertex elements found!",
-                path
-            );
+            error!("PLY file '{path}' is invalid! No face/vertex elements found!");
             return vec![];
         }
 

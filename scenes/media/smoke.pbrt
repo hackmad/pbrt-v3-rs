@@ -20,7 +20,7 @@ WorldBegin
 
   AttributeBegin
       LightSource "infinite" 
-                  "string mapname" ["/Users/ahmad/Documents/Projects/Dev/rust/pbrt-v3-scenes/cloud/textures/skylight-morn.exr"]
+                  "string mapname" ["../../../pbrt-v3-scenes/cloud/textures/skylight-morn.exr"]
                   "color scale" [3 3 3]
   AttributeEnd
   
@@ -34,7 +34,7 @@ WorldBegin
   TransformBegin
   	Translate -1 0 -1.2
   	Rotate 90 1 0 0
-  	Include "/Users/ahmad/Documents/Projects/Dev/rust/pbr_rust/scenes/media/geometry/density_render.70.smoke.pbrt"
+  	Include "geometry/density_render.70.smoke.pbrt"
   TransformEnd
   
   AttributeBegin
@@ -42,7 +42,7 @@ WorldBegin
   	Rotate 90 1 0 0
     Material ""
     MediumInterface "smoke" ""
-  	Shape "plymesh" "string filename" "/Users/ahmad/Documents/Projects/Dev/rust/pbr_rust/scenes/media/geometry/density_render.ply"
+  	Shape "plymesh" "string filename" "geometry/density_render.ply"
   AttributeEnd
   
   AttributeBegin
