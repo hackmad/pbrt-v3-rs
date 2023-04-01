@@ -70,10 +70,10 @@ impl Medium for HomogeneousMedium {
         // Sample a channel and distance along the ray.
         let sampler = Arc::get_mut(sampler).unwrap();
         let channel = min(
-            (sampler.get_1d() * SPECTRUM_SAMPLES as Float) as Int,
-            SPECTRUM_SAMPLES as Int - 1,
-        ) as usize;
-        let dist = (1.0 - sampler.get_1d()).ln() / self.sigma_t[channel];
+            (sampler.get_1d() * SPECTRUM_SAMPLES as Float) as usize,
+            SPECTRUM_SAMPLES - 1,
+        );
+        let dist = -(1.0 - sampler.get_1d()).ln() / self.sigma_t[channel];
         let t = min(dist / ray.d.length(), ray.t_max);
         let sampled_medium = t < ray.t_max;
 
@@ -94,11 +94,7 @@ impl Medium for HomogeneousMedium {
         let tr = (-self.sigma_t * min(t, Float::MAX) * ray.d.length()).exp();
 
         // Return weighting factor for scattering from homogeneous medium
-        let density = if sampled_medium {
-            self.sigma_t * tr
-        } else {
-            tr
-        };
+        let density = if sampled_medium { self.sigma_t * tr } else { tr };
 
         let mut pdf = 0.0;
         for i in 0..SPECTRUM_SAMPLES {
