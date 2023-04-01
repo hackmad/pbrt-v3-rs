@@ -143,13 +143,13 @@ where
             pyramid.push(BlockedArray::<T, 2>::new(s_res, t_res));
 
             // Filter four texels from finer level of pyramid.
-            for t in 0..t_res {
-                for s in 0..s_res {
+            for t in 0..t_res as isize {
+                for s in 0..s_res as isize {
                     let tx0 = texel(&pyramid, wrap_mode, i - 1, 2 * s, 2 * t);
                     let tx1 = texel(&pyramid, wrap_mode, i - 1, 2 * s + 1, 2 * t);
                     let tx2 = texel(&pyramid, wrap_mode, i - 1, 2 * s, 2 * t + 1);
                     let tx3 = texel(&pyramid, wrap_mode, i - 1, 2 * s + 1, 2 * t + 1);
-                    pyramid[i][(s, t)] = (tx0 + tx1 + tx2 + tx3) * 0.25;
+                    pyramid[i][(s as usize, t as usize)] = (tx0 + tx1 + tx2 + tx3) * 0.25;
                 }
             }
         }
@@ -279,8 +279,8 @@ where
         let s = st[0] * self.pyramid[level].u_size() as Float - 0.5;
         let t = st[1] * self.pyramid[level].v_size() as Float - 0.5;
 
-        let s0 = s.floor() as usize;
-        let t0 = t.floor() as usize;
+        let s0 = s.floor() as isize;
+        let t0 = t.floor() as isize;
 
         let ds = s - s0 as Float;
         let dt = t - t0 as Float;
@@ -346,7 +346,7 @@ where
                 if r2 < 1.0 {
                     let index = min((r2 * WEIGHT_LUT_SIZE as Float) as usize, WEIGHT_LUT_SIZE - 1);
                     let weight = self.weight_lut[index];
-                    sum += texel(&self.pyramid, self.wrap_mode, level, is as usize, it as usize) * weight;
+                    sum += texel(&self.pyramid, self.wrap_mode, level, is, it) * weight;
                     sum_wts += weight;
                 }
             }
@@ -554,25 +554,25 @@ fn resample_weights(old_res: usize, new_res: usize) -> Vec<ResampleWeight> {
 /// * `level`     - MIPMap Level.
 /// * `s`         - s-index.
 /// * `t`         - t-index.
-fn texel<T>(pyramid: &[BlockedArray<T, 2>], wrap_mode: ImageWrap, level: usize, s: usize, t: usize) -> T
+fn texel<T>(pyramid: &[BlockedArray<T, 2>], wrap_mode: ImageWrap, level: usize, s: isize, t: isize) -> T
 where
     T: Copy + Default,
 {
     assert!(level < pyramid.len());
 
     let l = &pyramid[level];
-    let u_size = l.u_size();
-    let v_size = l.v_size();
+    let u_size = l.u_size() as isize;
+    let v_size = l.v_size() as isize;
 
     // Compute texel `(s, t)` accounting for boundary conditions.
     match wrap_mode {
-        ImageWrap::Repeat => l[(rem(s, u_size), rem(t, v_size))],
-        ImageWrap::Clamp => l[(clamp(s, 0, u_size - 1), clamp(t, 0, v_size - 1))],
+        ImageWrap::Repeat => l[(rem(s, u_size) as usize, rem(t, v_size) as usize)],
+        ImageWrap::Clamp => l[(clamp(s, 0, u_size - 1) as usize, clamp(t, 0, v_size - 1) as usize)],
         ImageWrap::Black => {
             if s >= u_size || t >= v_size {
                 T::default()
             } else {
-                l[(s, t)]
+                l[(s as usize, t as usize)]
             }
         }
     }

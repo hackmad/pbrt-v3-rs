@@ -66,8 +66,13 @@ impl PixelSampler {
 }
 
 impl Sampler for PixelSampler {
-    /// Returns the underlying `SamplerData`.
-    fn get_data(&mut self) -> &mut SamplerData {
+    /// Returns a shared reference underlying `SamplerData`.
+    fn get_data(&self) -> &SamplerData {
+        &self.data
+    }
+
+    /// Returns a mutable reference to underlying `SamplerData`.
+    fn get_data_mut(&mut self) -> &mut SamplerData {
         &mut self.data
     }
 
@@ -88,8 +93,7 @@ impl Sampler for PixelSampler {
     fn get_1d(&mut self) -> Float {
         assert!(self.data.current_pixel_sample_index < self.data.samples_per_pixel);
         if self.current_1d_dimension < self.samples_1d.len() {
-            let r =
-                self.samples_1d[self.current_1d_dimension][self.data.current_pixel_sample_index];
+            let r = self.samples_1d[self.current_1d_dimension][self.data.current_pixel_sample_index];
             self.current_1d_dimension += 1;
             r
         } else {
@@ -102,8 +106,7 @@ impl Sampler for PixelSampler {
     fn get_2d(&mut self) -> Point2f {
         assert!(self.data.current_pixel_sample_index < self.data.samples_per_pixel);
         if self.current_2d_dimension < self.samples_2d.len() {
-            let r =
-                self.samples_2d[self.current_2d_dimension][self.data.current_pixel_sample_index];
+            let r = self.samples_2d[self.current_2d_dimension][self.data.current_pixel_sample_index];
             self.current_2d_dimension += 1;
             r
         } else {

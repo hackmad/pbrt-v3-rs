@@ -15,10 +15,13 @@ use core::spectrum::*;
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 
-/// Implements an infinite area light source using a latitude-longitude radiance
-/// map.
+/// Implements an infinite area light source using a latitude-longitude radiance map.
 #[derive(Clone)]
 pub struct InfiniteAreaLight {
+    /// Light ID. This is usually the index of the light in the scene's light sources. Usefull for adding lights into
+    /// `std::collections::HashMap`.
+    pub id: usize,
+
     /// Light source type.
     pub light_type: LightType,
 
@@ -50,13 +53,12 @@ pub struct InfiniteAreaLight {
 impl InfiniteAreaLight {
     /// Returns a new `InfiniteAreaLight`.
     ///
-    /// * `light_to_world`   - Transformation from light coordinate system to
-    ///                        world coordinate system.
+    /// * `id`               - Light ID.
+    /// * `light_to_world`   - Transformation from light coordinate system to world coordinate system.
     /// * `l`                - Power `L`.
-    /// * `n_samples`        - Used to trace multiple shadow rays to the light
-    ///                        to compute soft shadows. Default to 1.
+    /// * `n_samples`        - Used to trace multiple shadow rays to the light to compute soft shadows. Default to 1.
     /// * `texmap`           - Path to the image to use for the radiance map.
-    pub fn new(light_to_world: ArcTransform, l: Spectrum, n_samples: usize, texmap: Option<&str>) -> Self {
+    pub fn new(id: usize, light_to_world: ArcTransform, l: Spectrum, n_samples: usize, texmap: Option<&str>) -> Self {
         let light_to_world = Arc::clone(&light_to_world);
         let world_to_light = Arc::new(light_to_world.inverse());
 
@@ -88,6 +90,7 @@ impl InfiniteAreaLight {
         let distribution = Distribution2D::new(img.clone());
 
         Self {
+            id,
             light_type: LightType::INFINITE_LIGHT,
             medium_interface: MediumInterface::vacuum(),
             light_to_world,
@@ -116,15 +119,20 @@ impl Light for InfiniteAreaLight {
         self.light_type
     }
 
+    /// Returns the light unique id. Usually the index in the scene's light sources.
+    fn get_id(&self) -> usize {
+        self.id
+    }
+
     /// Return the radiance arriving at an interaction point.
     ///
     /// * `hit` - The interaction hit point.
     /// * `u`   - Sample value for Monte Carlo integration.
-    fn sample_li(&self, hit: &Hit, u: &Point2f) -> Li {
+    fn sample_li(&self, hit: &Hit, u: &Point2f) -> Option<Li> {
         // Find `(u,v)` sample coordinates in infinite light texture.
         let (uv, map_pdf) = self.distribution.sample_continuous(u);
         if map_pdf == 0.0 {
-            Li::new(Vector3f::ZERO, 0.0, None, Spectrum::ZERO)
+            None
         } else {
             // Convert infinite light sample point to direction.
             let theta = uv[1] * PI;
@@ -158,7 +166,7 @@ impl Light for InfiniteAreaLight {
 
             let rgb = self.l_map.lookup_triangle(&uv, 0.0).to_rgb();
             let spectrum = Spectrum::from_rgb(&rgb, Some(SpectrumType::Illuminant));
-            Li::new(wi, pdf, Some(vis), spectrum)
+            Some(Li::new(wi, pdf, vis, spectrum))
         }
     }
 
@@ -172,8 +180,7 @@ impl Light for InfiniteAreaLight {
         PI * world_radius * world_radius * spectrum
     }
 
-    /// Returns emitted radiance due to that light along a ray that escapes the
-    /// scene bounds.
+    /// Returns emitted radiance due to that light along a ray that escapes the scene bounds.
     ///
     /// * `ray` - The ray with differentials.
     fn le(&self, ray: &Ray) -> Spectrum {
@@ -185,8 +192,7 @@ impl Light for InfiniteAreaLight {
         )
     }
 
-    /// Returns the probability density with respect to solid angle for the light’s
-    /// `sample_li()`.
+    /// Returns the probability density with respect to solid angle for the light’s `sample_li()`.
     ///
     /// * `hit` - The interaction hit point.
     /// * `wi`  - The incident direction.
@@ -282,14 +288,12 @@ impl Light for InfiniteAreaLight {
     }
 }
 
-impl From<(&ParamSet, ArcTransform, &str)> for InfiniteAreaLight {
-    /// Create a `InfiniteAreaLight` from given parameter set and, light to world
-    /// transform and current working directory.
+impl From<(&ParamSet, ArcTransform, &str, usize)> for InfiniteAreaLight {
+    /// Create a `InfiniteAreaLight` from given parameter set and, light to world transform, current working directory and id.
     ///
-    /// * `p` - A tuple containing the parameter set and light to world transform
-    ///         and current working directory.
-    fn from(p: (&ParamSet, ArcTransform, &str)) -> Self {
-        let (params, light_to_world, cwd) = p;
+    /// * `p` - A tuple containing the parameter set and light to world transform, current working directory and id.
+    fn from(p: (&ParamSet, ArcTransform, &str, usize)) -> Self {
+        let (params, light_to_world, cwd, id) = p;
 
         let l = params.find_one_spectrum("L", Spectrum::ONE);
         let sc = params.find_one_spectrum("scale", Spectrum::ONE);
@@ -301,6 +305,7 @@ impl From<(&ParamSet, ArcTransform, &str)> for InfiniteAreaLight {
         }
 
         Self::new(
+            id,
             light_to_world,
             l * sc,
             n_samples as usize,

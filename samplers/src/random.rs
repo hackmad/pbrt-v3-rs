@@ -33,8 +33,13 @@ impl RandomSampler {
 }
 
 impl Sampler for RandomSampler {
-    /// Returns the underlying `SamplerData`.
-    fn get_data(&mut self) -> &mut SamplerData {
+    /// Returns a shared reference underlying `SamplerData`.
+    fn get_data(&self) -> &SamplerData {
+        &self.data
+    }
+
+    /// Returns a mutable reference to underlying `SamplerData`.
+    fn get_data_mut(&mut self) -> &mut SamplerData {
         &mut self.data
     }
 
@@ -61,12 +66,11 @@ impl Sampler for RandomSampler {
         let n = self.data.sample_array_2d.len();
         for i in 0..n {
             for j in 0..self.data.sample_array_2d[i].len() {
-                self.data.sample_array_2d[i][j] =
-                    Point2f::new(self.rng.uniform_float(), self.rng.uniform_float());
+                self.data.sample_array_2d[i][j] = Point2f::new(self.rng.uniform_float(), self.rng.uniform_float());
             }
         }
 
-        self.get_data().start_pixel(p);
+        self.get_data_mut().start_pixel(p);
     }
 
     /// Returns the sample value for the next dimension of the current sample

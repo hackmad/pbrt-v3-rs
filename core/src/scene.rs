@@ -6,6 +6,7 @@ use crate::light::*;
 use crate::primitive::*;
 use crate::sampler::*;
 use crate::spectrum::*;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Scene.
@@ -21,6 +22,10 @@ pub struct Scene {
 
     /// The bounding box of the scene geometry.
     pub world_bound: Bounds3f,
+
+    /// Maps light indices by the Light ID field so we can correctly index into the `lights` vector
+    /// given a light ID.
+    light_id_to_index: HashMap<usize, usize>,
 }
 
 impl Scene {
@@ -29,6 +34,11 @@ impl Scene {
     /// * `aggregate` - An aggregate of all primitives in the scene.
     /// * `lights`    - All light sources in the scene.
     pub fn new(aggregate: ArcPrimitive, lights: Vec<ArcLight>) -> Self {
+        let mut light_id_to_index = HashMap::new();
+        for (i, light) in lights.iter().enumerate() {
+            light_id_to_index.insert(light.get_id(), i);
+        }
+
         let scene = Self {
             aggregate: Arc::clone(&aggregate),
             world_bound: aggregate.world_bound(),
@@ -38,6 +48,7 @@ impl Scene {
                 .filter(|l| l.get_type().matches(LightType::INFINITE_LIGHT))
                 .map(Arc::clone)
                 .collect(),
+            light_id_to_index,
         };
 
         for light in lights {
@@ -45,6 +56,14 @@ impl Scene {
         }
 
         scene
+    }
+
+    /// Retrieve a light by its ID.
+    ///
+    /// * `id` - The light ID.
+    pub fn light_by_id(&self, id: usize) -> Option<&ArcLight> {
+        let index = self.light_id_to_index.get(&id);
+        index.map(|i| &self.lights[*i])
     }
 
     /// Traces the ray into the scene and returns the `SurfaceInteraction` if
@@ -69,11 +88,7 @@ impl Scene {
     ///
     /// * `ray`     - The ray to trace.
     /// * `sampler` - Sampler.
-    pub fn intersect_tr(
-        &self,
-        ray: &mut Ray,
-        sampler: &mut ArcSampler,
-    ) -> (Option<SurfaceInteraction>, Spectrum) {
+    pub fn intersect_tr(&self, ray: &mut Ray, sampler: &mut ArcSampler) -> (Option<SurfaceInteraction>, Spectrum) {
         let mut tr = Spectrum::ONE;
 
         loop {

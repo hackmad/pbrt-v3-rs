@@ -52,8 +52,7 @@ pub struct Api {
     /// Current set of transformations.
     current_transforms: TransformSet,
 
-    /// Active transformation (start time, end time or both) to which
-    /// new transformations will be applied.
+    /// Active transformation (start time, end time or both) to which / new transformations will be applied.
     active_transform_bits: usize,
 
     /// Stores transformations for named coordinate systems.
@@ -85,12 +84,7 @@ impl Api {
     /// Returns a newly initialized API.
     pub fn new() -> Self {
         let transform_cache = Rc::new(Mutex::new(TransformCache::new()));
-        let cwd = std::env::current_dir()
-            .unwrap()
-            .as_path()
-            .to_str()
-            .unwrap()
-            .to_string();
+        let cwd = std::env::current_dir().unwrap().as_path().to_str().unwrap().to_string();
         let graphics_state = GraphicsState::new(Rc::clone(&transform_cache), &cwd);
 
         Self {
@@ -175,8 +169,8 @@ impl Api {
         if self.verify_initialized("Transform") {
             for i in 0..MAX_TRANSFORMS {
                 let t = Transform::from(Matrix4x4::new(
-                    tr[0], tr[4], tr[8], tr[12], tr[1], tr[5], tr[9], tr[13], tr[2], tr[6], tr[10],
-                    tr[14], tr[3], tr[7], tr[11], tr[15],
+                    tr[0], tr[4], tr[8], tr[12], tr[1], tr[5], tr[9], tr[13], tr[2], tr[6], tr[10], tr[14], tr[3],
+                    tr[7], tr[11], tr[15],
                 ));
                 self.current_transforms[i] = Arc::new(t);
             }
@@ -193,8 +187,8 @@ impl Api {
     pub fn pbrt_concat_transform(&mut self, tr: &[Float; 16]) {
         if self.verify_initialized("ConcatTransform") {
             let transform = Transform::from(Matrix4x4::new(
-                tr[0], tr[4], tr[8], tr[12], tr[1], tr[5], tr[9], tr[13], tr[2], tr[6], tr[10],
-                tr[14], tr[3], tr[7], tr[11], tr[15],
+                tr[0], tr[4], tr[8], tr[12], tr[1], tr[5], tr[9], tr[13], tr[2], tr[6], tr[10], tr[14], tr[3], tr[7],
+                tr[11], tr[15],
             ));
             for i in 0..MAX_TRANSFORMS {
                 let t = self.current_transforms[i].as_ref() * &transform;
@@ -238,8 +232,7 @@ impl Api {
         }
     }
 
-    /// Apply a transformation to the active transformation, to point the camera
-    /// in a given direction.
+    /// Apply a transformation to the active transformation, to point the camera in a given direction.
     ///
     /// * `ex` - Camera x-position.
     /// * `ey` - Camera y-position.
@@ -381,8 +374,8 @@ impl Api {
         }
     }
 
-    /// Set the camera type and parameters. Also sets the camera-to-world transformation
-    /// using the inverse of the current transformation matrices.
+    /// Set the camera type and parameters. Also sets the camera-to-world transformation using the inverse of the current
+    /// transformation matrices.
     ///
     /// * `name`   - Camera type name.
     /// * `params` - Camera parameters.
@@ -391,10 +384,8 @@ impl Api {
             self.render_options.camera_name = name;
             self.render_options.camera_params = params.clone();
             self.render_options.camera_to_world = self.current_transforms.inverse();
-            self.named_coordinate_systems.insert(
-                "camera".to_string(),
-                self.render_options.camera_to_world.clone(),
-            );
+            self.named_coordinate_systems
+                .insert("camera".to_string(), self.render_options.camera_to_world.clone());
         }
     }
 
@@ -482,12 +473,7 @@ impl Api {
             let mut transform_cache = self.transform_cache.lock().unwrap();
             transform_cache.clear();
 
-            let cwd = std::env::current_dir()
-                .unwrap()
-                .as_path()
-                .to_str()
-                .unwrap()
-                .to_string();
+            let cwd = std::env::current_dir().unwrap().as_path().to_str().unwrap().to_string();
             self.graphics_state = GraphicsState::new(Rc::clone(&self.transform_cache), &cwd);
             self.cwd = cwd;
 
@@ -507,23 +493,19 @@ impl Api {
         }
     }
 
-    /// Begin an attribute section where current graphics state can be
-    /// pushed onto the stack.
+    /// Begin an attribute section where current graphics state can be pushed onto the stack.
     pub fn pbrt_attribute_begin(&mut self) {
         if self.verify_world("AttributeBegin") {
-            self.pushed_graphics_states
-                .push(self.graphics_state.clone());
+            self.pushed_graphics_states.push(self.graphics_state.clone());
             self.graphics_state.float_textures_shared = true;
             self.graphics_state.spectrum_textures_shared = true;
             self.graphics_state.named_materials_shared = true;
             self.pushed_transforms.push(self.current_transforms.clone());
-            self.pushed_active_transform_bits
-                .push(self.active_transform_bits);
+            self.pushed_active_transform_bits.push(self.active_transform_bits);
         }
     }
 
-    /// End the attribute section where current graphics state can be
-    /// popped off the stack and restored.
+    /// End the attribute section where current graphics state can be popped off the stack and restored.
     pub fn pbrt_attribute_end(&mut self) {
         if self.verify_world("AttributeEnd") {
             if let Some(graphics_state) = self.pushed_graphics_states.pop() {
@@ -540,13 +522,11 @@ impl Api {
         }
     }
 
-    /// Save the transformation matrix on the stack independantly of the
-    /// graphics state.
+    /// Save the transformation matrix on the stack independantly of the graphics state.
     pub fn pbrt_transform_begin(&mut self) {
         if self.verify_world("TransformBegin") {
             self.pushed_transforms.push(self.current_transforms.clone());
-            self.pushed_active_transform_bits
-                .push(self.active_transform_bits);
+            self.pushed_active_transform_bits.push(self.active_transform_bits);
         }
     }
 
@@ -570,13 +550,7 @@ impl Api {
     /// * `texture_type` - Texture type (float or color or spectrum).
     /// * `tex_name`     - Texture name (bilerp, checkerboard, etc).
     /// * `params`       - Texture parameters.
-    pub fn pbrt_texture(
-        &mut self,
-        name: String,
-        tex_type: String,
-        tex_class: String,
-        params: &ParamSet,
-    ) {
+    pub fn pbrt_texture(&mut self, name: String, tex_type: String, tex_class: String, params: &ParamSet) {
         if self.verify_world("Texture") {
             let tp = TextureParams::new(
                 params.clone(),
@@ -593,11 +567,10 @@ impl Api {
 
                 self.warn_if_animated_transform("Texture");
 
-                if let Ok(ft) = self.graphics_state.make_float_texture(
-                    &tex_class,
-                    Arc::clone(&self.current_transforms[0]),
-                    &tp,
-                ) {
+                if let Ok(ft) =
+                    self.graphics_state
+                        .make_float_texture(&tex_class, Arc::clone(&self.current_transforms[0]), &tp)
+                {
                     if self.graphics_state.float_textures_shared {
                         let ftm = self.graphics_state.float_textures.clone();
                         self.graphics_state.float_textures = ftm;
@@ -613,11 +586,10 @@ impl Api {
 
                 self.warn_if_animated_transform("Texture");
 
-                if let Ok(st) = self.graphics_state.make_spectrum_texture(
-                    &tex_class,
-                    Arc::clone(&self.current_transforms[0]),
-                    &tp,
-                ) {
+                if let Ok(st) =
+                    self.graphics_state
+                        .make_spectrum_texture(&tex_class, Arc::clone(&self.current_transforms[0]), &tp)
+                {
                     if self.graphics_state.spectrum_textures_shared {
                         let stm = self.graphics_state.spectrum_textures.clone();
                         self.graphics_state.spectrum_textures = stm;
@@ -657,11 +629,8 @@ impl Api {
                     );
                 }
 
-                self.graphics_state.current_material = Some(Arc::new(MaterialInstance::new(
-                    &name,
-                    Arc::clone(&mtl),
-                    params,
-                )));
+                self.graphics_state.current_material =
+                    Some(Arc::new(MaterialInstance::new(&name, Arc::clone(&mtl), params)));
             } else {
                 self.graphics_state.current_material = None;
             }
@@ -740,9 +709,12 @@ impl Api {
             let light2world = self.current_transforms[0].clone();
             match self
                 .graphics_state
-                .make_light(&name, light2world, &mi, params)
+                .make_light(&name, light2world, &mi, params, self.graphics_state.light_id)
             {
-                Ok(lt) => self.render_options.lights.push(lt),
+                Ok(lt) => {
+                    self.render_options.lights.push(lt);
+                    self.graphics_state.light_id += 1;
+                }
                 Err(err) => error!("{}", err),
             }
         }
@@ -798,6 +770,7 @@ impl Api {
                 for shape in shapes.iter() {
                     // Possibly create area light for shape.
                     let mut area_light: Option<ArcLight> = None;
+                    let mut added = false;
                     if let Some(area) = self.graphics_state.area_light.as_ref() {
                         if let Ok(al) = GraphicsState::make_area_light(
                             area,
@@ -805,11 +778,17 @@ impl Api {
                             &mi,
                             Arc::clone(shape),
                             &self.graphics_state.area_light_params,
+                            self.graphics_state.light_id,
                         ) {
                             area_lights.push(Arc::clone(&al));
                             area_light = Some(al);
+                            added = true;
                         }
                     }
+                    if added {
+                        self.graphics_state.light_id += 1;
+                    }
+
                     let prim = GeometricPrimitive::new(
                         Arc::clone(shape),
                         mtl.as_ref().map(Arc::clone),
@@ -851,12 +830,8 @@ impl Api {
                 let mi = self.create_medium_interface();
 
                 for shape in shapes.iter() {
-                    let prim = GeometricPrimitive::new(
-                        Arc::clone(shape),
-                        mtl.as_ref().map(Arc::clone),
-                        None,
-                        mi.clone(),
-                    );
+                    let prim =
+                        GeometricPrimitive::new(Arc::clone(shape), mtl.as_ref().map(Arc::clone), None, mi.clone());
                     prims.push(Arc::new(prim));
                 }
 
@@ -878,10 +853,7 @@ impl Api {
                     prims = vec![Arc::new(bvh)];
                 }
                 if prims.len() == 1 {
-                    let prim = Arc::new(TransformedPrimitive::new(
-                        Arc::clone(&prims[0]),
-                        animated_object2world,
-                    ));
+                    let prim = Arc::new(TransformedPrimitive::new(Arc::clone(&prims[0]), animated_object2world));
                     prims[0] = prim;
                 } else {
                     error!("Error creating TransformedPrimitive in pbrt_shape.");
@@ -911,8 +883,7 @@ impl Api {
         }
     }
 
-    /// Reverse the orientation of surface normals for shapes that follow this
-    /// directive.
+    /// Reverse the orientation of surface normals for shapes that follow this directive.
     pub fn pbrt_reverse_orientation(&mut self) {
         if self.verify_world("ReverseOrientation") {
             self.graphics_state.reverse_orientation = !self.graphics_state.reverse_orientation;
@@ -1000,8 +971,7 @@ impl Api {
 
     /* Helpers */
 
-    /// Returns `true` if the API state is initialized; otherwise it reports
-    /// an error and returns `false`.
+    /// Returns `true` if the API state is initialized; otherwise it reports an error and returns `false`.
     ///
     /// * `func` - Function name to report.
     fn verify_initialized(&self, func: &str) -> bool {
@@ -1013,8 +983,8 @@ impl Api {
         }
     }
 
-    /// Returns `true` if the API state is initialized and inside an Options
-    /// block; otherwise it reports an error and returns `false`.
+    /// Returns `true` if the API state is initialized and inside an Options block; otherwise it reports an error and
+    /// returns `false`.
     ///
     /// * `func` - Function name to report.
     fn verify_options(&self, func: &str) -> bool {
@@ -1032,8 +1002,8 @@ impl Api {
         }
     }
 
-    /// Returns `true` if the API state is initialized and not inside an Options
-    /// block; otherwise it reports an error and returns `false`.
+    /// Returns `true` if the API state is initialized and not inside an Options block; otherwise it reports an error and
+    /// returns `false`.
     ///
     /// * `func` - Function name to report.
     fn verify_world(&self, func: &str) -> bool {

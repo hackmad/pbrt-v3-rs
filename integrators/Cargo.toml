@@ -6,6 +6,7 @@ edition = "2021"
 
 [dependencies]
 core = { path = "../core" }
+filters = { path = "../filters" }
 samplers = { path = "../samplers" }
 
 crossbeam-channel = "0.5.6"

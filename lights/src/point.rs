@@ -10,10 +10,13 @@ use core::sampling::*;
 use core::spectrum::*;
 use std::sync::Arc;
 
-/// Implements an isotropic point light source that emits the same amount of
-/// light in all directions.
+/// Implements an isotropic point light source that emits the same amount of light in all directions.
 #[derive(Clone)]
 pub struct PointLight {
+    /// Light ID. This is usually the index of the light in the scene's light sources. Usefull for adding lights into
+    /// `std::collections::HashMap`.
+    pub id: usize,
+
     /// Light source type.
     pub light_type: LightType,
 
@@ -36,11 +39,12 @@ pub struct PointLight {
 impl PointLight {
     /// Returns a new `PointLight`.
     ///
-    /// * `light_to_world`   - Transformation from light coordinate system to
-    ///                        world coordinate system.
+    /// * `id`               - Light ID.
+    /// * `light_to_world`   - Transformation from light coordinate system to world coordinate system.
     /// * `medium_interface` - Participating medium.
     /// * `intensity`        - Intensity.
     pub fn new(
+        id: usize,
         light_to_world: ArcTransform,
         medium_interface: MediumInterface,
         intensity: Spectrum,
@@ -50,6 +54,7 @@ impl PointLight {
         let p_light = light_to_world.transform_point(&Point3f::ZERO);
 
         Self {
+            id,
             light_type: LightType::DELTA_POSITION_LIGHT,
             medium_interface: medium_interface.clone(),
             light_to_world,
@@ -66,11 +71,16 @@ impl Light for PointLight {
         self.light_type
     }
 
+    /// Returns the light unique id. Usually the index in the scene's light sources.
+    fn get_id(&self) -> usize {
+        self.id
+    }
+
     /// Return the radiance arriving at an interaction point.
     ///
     /// * `hit` - The interaction hit point.
     /// * `u`   - Sample value for Monte Carlo integration.
-    fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Li {
+    fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Option<Li> {
         let wi = (self.p_light - hit.p).normalize();
         let pdf = 1.0;
 
@@ -79,7 +89,7 @@ impl Light for PointLight {
         let vis = VisibilityTester::new(p0, p1);
 
         let value = self.intensity / self.p_light.distance_squared(hit.p);
-        Li::new(wi, pdf, Some(vis), value)
+        Some(Li::new(wi, pdf, vis, value))
     }
 
     /// Return the total emitted power.
@@ -87,8 +97,7 @@ impl Light for PointLight {
         FOUR_PI * self.intensity
     }
 
-    /// Returns the probability density with respect to solid angle for the light’s
-    /// `sample_li()`.
+    /// Returns the probability density with respect to solid angle for the light’s `sample_li()`.
     ///
     /// * `hit` - The interaction hit point.
     /// * `wi`  - The incident direction.
@@ -110,13 +119,7 @@ impl Light for PointLight {
             time,
             self.medium_interface.inside.as_ref().map(Arc::clone),
         );
-        Le::new(
-            ray,
-            Normal3f::from(dir),
-            1.0,
-            uniform_sphere_pdf(),
-            self.intensity,
-        )
+        Le::new(ray, Normal3f::from(dir), 1.0, uniform_sphere_pdf(), self.intensity)
     }
 
     /// Returns the probability density for the light’s `sample_le()`.
@@ -141,19 +144,17 @@ impl Light for PointLight {
     }
 }
 
-impl From<(&ParamSet, ArcTransform, Option<ArcMedium>)> for PointLight {
-    /// Create a `PointLight` from given parameter set, light to world transform
-    /// and medium.
+impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, usize)> for PointLight {
+    /// Create a `PointLight` from given parameter set, light to world transform, medium and id.
     ///
-    /// * `p` - A tuple containing the parameter set, light to world transform
-    ///         and medium.
-    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>)) -> Self {
-        let (params, light_to_world, medium) = p;
+    /// * `p` - A tuple containing the parameter set, light to world transform, medium and id.
+    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, usize)) -> Self {
+        let (params, light_to_world, medium, id) = p;
 
         let intensity = params.find_one_spectrum("I", Spectrum::ONE);
         let sc = params.find_one_spectrum("scale", Spectrum::ONE);
         let p = params.find_one_point3f("from", Point3f::ZERO);
         let l2w = Transform::translate(&Vector3f::new(p.x, p.y, p.z)) * light_to_world.as_ref();
-        Self::new(Arc::new(l2w), MediumInterface::from(medium), intensity * sc)
+        Self::new(id, Arc::new(l2w), MediumInterface::from(medium), intensity * sc)
     }
 }

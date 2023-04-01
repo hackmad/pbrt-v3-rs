@@ -56,7 +56,7 @@ impl PbrtParser {
                         Err(e) => Err(Error::new_from_span(CustomError { message: e }, span))
                     }
                 } else {
-                    Ok(Stmt::Include(path.to_owned()))
+                    Ok(Stmt::Include(path))
                 }
             },
         )
@@ -703,6 +703,7 @@ impl PbrtParser {
     }
 
     /// Parse rule `ident_expr`.
+    #[allow(dead_code)]
     fn ident_expr(input: Node) -> Result<String> {
         Ok(match_nodes!(input.into_children();
             [ident(v)] => v,
@@ -728,7 +729,7 @@ pub fn parse(abs_path: &str, api: &mut Api) -> std::result::Result<(), String> {
     let unparsed_file = file_to_string(&abs_path)?;
 
     // Parse the input file into `Nodes`.
-    match PbrtParser::parse_with_userdata(Rule::pbrt, &unparsed_file, scene_path.to_owned())
+    match PbrtParser::parse_with_userdata(Rule::pbrt, &unparsed_file, scene_path)
         // There should be a single root node in the parsed tree.
         .and_then(|inputs| inputs.single())
         // Consume the `Node` recursively into the final value.
@@ -758,10 +759,7 @@ where
     if n % 3 != 0 {
         msg = Some("length is not divisible by 3".to_owned());
     }
-    let res = (0..n)
-        .step_by(3)
-        .map(|i| new(v[i], v[i + 1], v[i + 2]))
-        .collect();
+    let res = (0..n).step_by(3).map(|i| new(v[i], v[i + 1], v[i + 2])).collect();
     (res, msg)
 }
 

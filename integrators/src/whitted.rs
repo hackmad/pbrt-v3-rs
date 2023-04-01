@@ -5,7 +5,6 @@
 use core::camera::*;
 use core::geometry::*;
 use core::integrator::*;
-use core::light::*;
 use core::material::*;
 use core::paramset::*;
 use core::reflection::*;
@@ -27,12 +26,7 @@ impl WhittedIntegrator {
     /// * `camera`       - The camera.
     /// * `sampler`      - The sampler.
     /// * `pixel_bounds` - Pixel bounds for the image.
-    pub fn new(
-        max_depth: usize,
-        camera: ArcCamera,
-        sampler: ArcSampler,
-        pixel_bounds: Bounds2i,
-    ) -> Self {
+    pub fn new(max_depth: usize, camera: ArcCamera, sampler: ArcSampler, pixel_bounds: Bounds2i) -> Self {
         Self {
             data: SamplerIntegratorData::new(max_depth, camera, sampler, pixel_bounds),
         }
@@ -75,13 +69,7 @@ impl Integrator for WhittedIntegrator {
             // Compute scattering functions for surface interaction.
             let mut bsdf: Option<BSDF> = None;
             let mut bssrdf: Option<BSDF> = None;
-            isect.compute_scattering_functions(
-                ray,
-                false,
-                TransportMode::Radiance,
-                &mut bsdf,
-                &mut bssrdf,
-            );
+            isect.compute_scattering_functions(ray, false, TransportMode::Radiance, &mut bsdf, &mut bssrdf);
             if bsdf.is_none() {
                 let mut new_ray = isect.hit.spawn_ray(&ray.d);
                 return self.li(&mut new_ray, scene, sampler, depth);
@@ -97,26 +85,26 @@ impl Integrator for WhittedIntegrator {
             // Add contribution of each light source.
             for light in scene.lights.iter() {
                 let sample = Arc::get_mut(sampler).unwrap().get_2d();
-                let Li {
-                    wi,
-                    pdf,
-                    visibility,
-                    value: li,
-                } = light.sample_li(&isect.hit, &sample);
+                let li = light.sample_li(&isect.hit, &sample);
+                if li.is_none() {
+                    // Same as li.value.is_black()
+                    continue;
+                }
+                let li = li.unwrap();
 
-                if li.is_black() || pdf == 0.0 {
+                if li.value.is_black() || li.pdf == 0.0 {
                     continue;
                 }
 
                 let f = bsdf
                     .as_ref()
-                    .map_or(Spectrum::ZERO, |bsdf| bsdf.f(&wo, &wi, BxDFType::all()));
+                    .map_or(Spectrum::ZERO, |bsdf| bsdf.f(&wo, &li.wi, BxDFType::all()));
                 if !f.is_black() {
                     // If no visiblity tester, then unoccluded = true.
-                    let unoccluded = visibility.map_or(true, |vis| vis.unoccluded(scene));
+                    let unoccluded = li.visibility.unoccluded(scene);
 
                     if unoccluded {
-                        l += f * li * wi.abs_dot(&n) / pdf;
+                        l += f * li.value * li.wi.abs_dot(&n) / li.pdf;
                     }
                 }
             }
@@ -154,21 +142,14 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for WhittedIntegrator {
             if np != 4 {
                 error!("Expected 4 values for 'pixel_bounds' parameter. Got {np}");
             } else {
-                pixel_bounds = pixel_bounds.intersect(&Bounds2i::new(
-                    Point2i::new(pb[0], pb[1]),
-                    Point2i::new(pb[2], pb[3]),
-                ));
+                pixel_bounds =
+                    pixel_bounds.intersect(&Bounds2i::new(Point2i::new(pb[0], pb[1]), Point2i::new(pb[2], pb[3])));
                 if pixel_bounds.area() == 0 {
                     error!("Degenerate 'pixel_bounds' specified.");
                 }
             }
         }
 
-        Self::new(
-            max_depth,
-            Arc::clone(&camera),
-            Arc::clone(&sampler),
-            pixel_bounds,
-        )
+        Self::new(max_depth, Arc::clone(&camera), Arc::clone(&sampler), pixel_bounds)
     }
 }

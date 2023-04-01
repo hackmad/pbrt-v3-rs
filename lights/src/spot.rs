@@ -11,13 +11,15 @@ use core::sampling::*;
 use core::spectrum::*;
 use std::sync::Arc;
 
-/// Implements an spot light source that emits light in a cone of directions from
-/// its position.
+/// Implements an spot light source that emits light in a cone of directions from its position.
 ///
-/// The light coordinate system to always be at position (0, 0, 0) and pointing 
-/// down the +z axis.
+/// The light coordinate system to always be at position (0, 0, 0) and pointing down the +z axis.
 #[derive(Clone)]
 pub struct SpotLight {
+    /// Light ID. This is usually the index of the light in the scene's light sources. Usefull for adding lights into 
+    /// `std::collections::HashMap`.
+    pub id: usize,
+
     /// Light source type.
     pub light_type: LightType,
 
@@ -46,13 +48,14 @@ pub struct SpotLight {
 impl SpotLight {
     /// Returns a new `SpotLight`.
     ///
-    /// * `light_to_world`   - Transformation from light coordinate system to
-    ///                        world coordinate system.
+    /// * `id`               - Light ID.
+    /// * `light_to_world`   - Transformation from light coordinate system to world coordinate system.
     /// * `medium_interface` - Participating medium.
     /// * `intensity`        - Intensity.
     /// * `total_width`      - Overall angular width of the cone in degrees.
     /// * `falloff_start`    - Angle at which fallof starts in degrees.
     pub fn new(
+        id: usize,
         light_to_world: ArcTransform,
         medium_interface: MediumInterface,
         intensity: Spectrum,
@@ -64,6 +67,7 @@ impl SpotLight {
         let p_light = light_to_world.transform_point(&Point3f::ZERO);
 
         Self {
+            id,
             light_type: LightType::DELTA_POSITION_LIGHT,
             medium_interface: medium_interface.clone(),
             light_to_world,
@@ -101,11 +105,16 @@ impl Light for SpotLight {
         self.light_type
     }
 
+    /// Returns the light unique id. Usually the index in the scene's light sources.
+    fn get_id(&self) -> usize {
+        self.id
+    }
+
     /// Return the radiance arriving at an interaction point.
     ///
     /// * `hit` - The interaction hit point.
     /// * `u`   - Sample value for Monte Carlo integration.
-    fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Li {
+    fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Option<Li> {
         let wi = (self.p_light - hit.p).normalize();
         let pdf = 1.0;
 
@@ -114,7 +123,7 @@ impl Light for SpotLight {
         let vis = VisibilityTester::new(p0, p1);
 
         let value = self.intensity * self.falloff(&-wi) / self.p_light.distance_squared(hit.p);
-        Li::new(wi, pdf, Some(vis), value)
+        Some(Li::new(wi, pdf, vis, value))
     }
 
     /// Return the total emitted power.
@@ -122,8 +131,7 @@ impl Light for SpotLight {
         self.intensity * TWO_PI * (1.0 - 0.5 * (self.cos_falloff_start + self.cos_total_width))
     }
 
-    /// Returns the probability density with respect to solid angle for the light’s
-    /// `sample_li()`.
+    /// Returns the probability density with respect to solid angle for the light’s `sample_li()`.
     ///
     /// * `hit` - The interaction hit point.
     /// * `wi`  - The incident direction.
@@ -186,15 +194,13 @@ impl Light for SpotLight {
     }
 }
 
-impl From<(&ParamSet, ArcTransform, Option<ArcMedium>)> for SpotLight {
-    /// Create a `SpotLight` from given parameter set, light to world transform
-    /// and medium.
+impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, usize)> for SpotLight {
+    /// Create a `SpotLight` from given parameter set, light to world transform, medium and id.
     ///
-    /// * `p` - A tuple containing the parameter set, light to world transform
-    ///         and medium.
+    /// * `p` - A tuple containing the parameter set, light to world transform, medium and id.
     #[rustfmt::skip]
-    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>)) -> Self {
-        let (params, light_to_world, medium) = p;
+    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, usize)) -> Self {
+        let (params, light_to_world, medium, id) = p;
 
         let intensity = params.find_one_spectrum("I", Spectrum::ONE);
         let sc = params.find_one_spectrum("scale", Spectrum::ONE);
@@ -219,6 +225,7 @@ impl From<(&ParamSet, ArcTransform, Option<ArcMedium>)> for SpotLight {
         let t = Vector3f::new(from.x, from.y, from.z);
         let l2w = (*light_to_world).clone() * &Transform::translate(&t) * &dir_to_z.inverse();
         Self::new(
+            id,
             Arc::new(l2w), 
             MediumInterface::from(medium),
             intensity * sc,

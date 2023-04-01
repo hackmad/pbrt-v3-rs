@@ -200,10 +200,7 @@ impl BSDF {
             debug!("For wo_world = {}, matching_comps = 0", wo_world);
             return BxDFSample::default();
         }
-        let comp = min(
-            (u[0] * matching_comps as Float).floor() as usize,
-            matching_comps - 1,
-        );
+        let comp = min((u[0] * matching_comps as Float).floor() as usize, matching_comps - 1);
 
         // Get BxDF for chosen component.
         let mut count = comp;
@@ -219,14 +216,11 @@ impl BSDF {
         }
         let bxdf_idx = bxdf_idx.expect("bsdf::sample_f() did not find matching bxdf");
         let matched_bxdf = &self.bxdfs[bxdf_idx];
-        debug!("BSDF::Sample_f chose comp = {comp} / matching = {matching_comps}, bxdf: {matched_bxdf}");
+        info!("BSDF::Sample_f chose comp = {comp} / matching = {matching_comps}, bxdf: {matched_bxdf}");
 
         // Remap BxDF sample `u` to `[0,1)^2`.
         let u_remapped = Point2f::new(
-            min(
-                u[0] * matching_comps as Float - comp as Float,
-                ONE_MINUS_EPSILON,
-            ),
+            min(u[0] * matching_comps as Float - comp as Float, ONE_MINUS_EPSILON),
             u[1],
         );
 
@@ -238,9 +232,8 @@ impl BSDF {
         }
 
         let mut sample = matched_bxdf.sample_f(&wo, &u_remapped);
-        debug!(
-            "For wo_world = {}, wo = {}, sampled f = {}, pdf = {}, ratio = {}, wi = {}",
-            wo_world,
+        info!(
+            "For wo = {}, sampled f = {}, pdf = {}, ratio = {}, wi = {}",
             wo,
             sample.f,
             sample.pdf,
@@ -253,7 +246,6 @@ impl BSDF {
         );
 
         if sample.pdf == 0.0 {
-            debug!("sample.pdf = 0");
             return BxDFSample::default();
         }
 
@@ -277,18 +269,15 @@ impl BSDF {
             sample.f = Spectrum::ZERO;
             for bxdf in self.bxdfs.iter() {
                 if bxdf.matches_flags(bxdf_type)
-                    && ((reflect
-                        && (bxdf.get_type() & BxDFType::BSDF_REFLECTION != BxDFType::BSDF_NONE))
-                        || (!reflect
-                            && (bxdf.get_type() & BxDFType::BSDF_TRANSMISSION
-                                != BxDFType::BSDF_NONE)))
+                    && ((reflect && (bxdf.get_type() & BxDFType::BSDF_REFLECTION != BxDFType::BSDF_NONE))
+                        || (!reflect && (bxdf.get_type() & BxDFType::BSDF_TRANSMISSION != BxDFType::BSDF_NONE)))
                 {
                     sample.f += bxdf.f(&wo, &sample.wi);
                 }
             }
         }
 
-        debug!(
+        info!(
             "Overall f = {}, pdf = {}, ratio = {}",
             sample.f,
             sample.pdf,

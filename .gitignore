@@ -20,3 +20,4 @@ dhat-heap.json
 cargo-flamegraph.stacks
 flamegraph*.svg
 *.log
+*.patch

@@ -20,13 +20,16 @@ const NEAR: Float = 1e-3;
 // Far plane of projection.
 const FAR: Float = 1e30;
 
-/// Implements a light source that acts like a slide projector; it takes an image
-/// map and projects its image out into the scene.
+/// Implements a light source that acts like a slide projector; it takes an image map and projects its image out into the
+/// scene.
 ///
-/// The light coordinate system to always be at position (0, 0, 0) and pointing
-/// down the +z axis.
+/// The light coordinate system to always be at position (0, 0, 0) and pointing down the +z axis.
 #[derive(Clone)]
 pub struct ProjectionLight {
+    /// Light ID. This is usually the index of the light in the scene's light sources. Usefull for adding lights into
+    /// `std::collections::HashMap`.
+    pub id: usize,
+
     /// Light source type.
     pub light_type: LightType,
 
@@ -45,9 +48,8 @@ pub struct ProjectionLight {
     /// Intensity.
     pub intensity: Spectrum,
 
-    /// The MipMAP images of the projection texture. This is a precise representation,
-    /// compared to an image texture, of the projection function useful for being
-    /// able to sample the projection distribution using Monte Carlo techniques.
+    /// The MipMAP images of the projection texture. This is a precise representation, compared to an image texture, of
+    /// the projection function useful for being able to sample the projection distribution using Monte Carlo techniques.
     pub projection_map: Option<MIPMap<RGBSpectrum>>,
 
     /// Projective transformation.
@@ -56,23 +58,22 @@ pub struct ProjectionLight {
     /// Screen space extent of the projection.
     pub screen_bounds: Bounds2f,
 
-    /// The cosine of the angle between the +z axis and the vector to a corner of
-    /// the screen window. This value is used elsewhere to define the minimal
-    /// cone of directions that encompasses the set of directions in which light
-    /// is projected.
+    /// The cosine of the angle between the +z axis and the vector to a corner of the screen window. This value is used
+    /// elsewhere to define the minimal cone of directions that encompasses the set of directions in which light is projected.
     pub cos_total_width: Float,
 }
 
 impl ProjectionLight {
     /// Returns a new `ProjectionLight`.
     ///
-    /// * `light_to_world`   - Transformation from light coordinate system to
-    ///                        world coordinate system.
+    /// * `id`               - Light ID.
+    /// * `light_to_world`   - Transformation from light coordinate system to world coordinate system.
     /// * `medium_interface` - Participating medium.
     /// * `intensity`        - Intensity.
     /// * `texmap`           - Path to the image texture.
     /// * `fov`              - Field of view in degrees.
     pub fn new(
+        id: usize,
         light_to_world: ArcTransform,
         medium_interface: MediumInterface,
         intensity: Spectrum,
@@ -98,10 +99,7 @@ impl ProjectionLight {
                     (Some(mipmap), aspect)
                 }
                 Err(e) => {
-                    warn!(
-                        "Error reading projection image texture '{}'. {}.",
-                        texmap, e
-                    );
+                    warn!("Error reading projection image texture '{}'. {}.", texmap, e);
                     (None, 1.0)
                 }
             },
@@ -115,10 +113,7 @@ impl ProjectionLight {
         let screen_bounds = if aspect > 1.0 {
             Bounds2f::new(Point2f::new(-aspect, -1.0), Point2f::new(aspect, 1.0))
         } else {
-            Bounds2f::new(
-                Point2f::new(-1.0, -1.0 / aspect),
-                Point2f::new(1.0, 1.0 / aspect),
-            )
+            Bounds2f::new(Point2f::new(-1.0, -1.0 / aspect), Point2f::new(1.0, 1.0 / aspect))
         };
 
         let light_projection = Transform::perspective(fov, NEAR, FAR);
@@ -129,6 +124,7 @@ impl ProjectionLight {
         let cos_total_width = w_corner.z;
 
         Self {
+            id,
             light_type: LightType::DELTA_POSITION_LIGHT,
             medium_interface: medium_interface.clone(),
             light_to_world,
@@ -154,9 +150,7 @@ impl ProjectionLight {
         }
 
         // Project point onto projection plane and compute light
-        let p = self
-            .light_projection
-            .transform_point(&Point3f::new(wl.x, wl.y, wl.z));
+        let p = self.light_projection.transform_point(&Point3f::new(wl.x, wl.y, wl.z));
         if !self.screen_bounds.contains(&Point2f::new(p.x, p.y)) {
             return Spectrum::ZERO;
         }
@@ -178,11 +172,16 @@ impl Light for ProjectionLight {
         self.light_type
     }
 
+    /// Returns the light unique id. Usually the index in the scene's light sources.
+    fn get_id(&self) -> usize {
+        self.id
+    }
+
     /// Return the radiance arriving at an interaction point.
     ///
     /// * `hit` - The interaction hit point.
     /// * `u`   - Sample value for Monte Carlo integration.
-    fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Li {
+    fn sample_li(&self, hit: &Hit, _u: &Point2f) -> Option<Li> {
         let wi = (self.p_light - hit.p).normalize();
         let pdf = 1.0;
 
@@ -191,7 +190,7 @@ impl Light for ProjectionLight {
         let vis = VisibilityTester::new(p0, p1);
 
         let value = self.intensity * self.projection(&-wi) / self.p_light.distance_squared(hit.p);
-        Li::new(wi, pdf, Some(vis), value)
+        Some(Li::new(wi, pdf, vis, value))
     }
 
     /// Return the total emitted power.
@@ -207,8 +206,7 @@ impl Light for ProjectionLight {
         spectrum * self.intensity * TWO_PI * (1.0 - self.cos_total_width)
     }
 
-    /// Returns the probability density with respect to solid angle for the light’s
-    /// `sample_li()`.
+    /// Returns the probability density with respect to solid angle for the light’s `sample_li()`.
     ///
     /// * `hit` - The interaction hit point.
     /// * `wi`  - The incident direction.
@@ -247,12 +245,11 @@ impl Light for ProjectionLight {
     /// * `ray`     - The ray.
     /// * `n_light` - The normal.
     fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f) -> Pdf {
-        let pdf_dir =
-            if cos_theta(&self.world_to_light.transform_vector(&ray.d)) >= self.cos_total_width {
-                uniform_cone_pdf(self.cos_total_width)
-            } else {
-                0.0
-            };
+        let pdf_dir = if cos_theta(&self.world_to_light.transform_vector(&ray.d)) >= self.cos_total_width {
+            uniform_cone_pdf(self.cos_total_width)
+        } else {
+            0.0
+        };
         Pdf::new(0.0, pdf_dir)
     }
 
@@ -270,14 +267,12 @@ impl Light for ProjectionLight {
     }
 }
 
-impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, &str)> for ProjectionLight {
-    /// Create a `ProjectionLight` from given parameter set, light to world transform,
-    /// medium and current working directory.
+impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, &str, usize)> for ProjectionLight {
+    /// Create a `ProjectionLight` from given parameter set, light to world transform, medium, current working directory and id.
     ///
-    /// * `p` - A tuple containing the parameter set, light to world transform,
-    ///         medium and current working directory.
-    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, &str)) -> Self {
-        let (params, light_to_world, medium, cwd) = p;
+    /// * `p` - A tuple containing the parameter set, light to world transform, medium, current working directory and id.
+    fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, &str, usize)) -> Self {
+        let (params, light_to_world, medium, cwd, id) = p;
 
         let intensity = params.find_one_spectrum("I", Spectrum::ONE);
         let sc = params.find_one_spectrum("scale", Spectrum::ONE);
@@ -285,6 +280,7 @@ impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, &str)> for ProjectionLigh
         let texmap = params.find_one_filename("mapname", Some(cwd));
 
         Self::new(
+            id,
             Arc::clone(&light_to_world),
             MediumInterface::from(medium),
             intensity * sc,
