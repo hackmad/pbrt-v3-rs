@@ -4,14 +4,14 @@
 
 use core::app::OPTIONS;
 use core::camera::*;
-use core::film::Film;
-use core::film::FilmTile;
+use core::film::{Film, FilmTile};
 use core::geometry::*;
 use core::integrator::*;
 use core::interaction::*;
 use core::light::*;
 use core::light_distrib::*;
 use core::material::*;
+use core::medium::MediumInterface;
 use core::paramset::*;
 use core::pbrt::*;
 use core::reflection::*;
@@ -598,10 +598,13 @@ fn random_walk<'scene>(
 
         // Trace a ray and sample the medium, if any.
         let isect = scene.intersect(ray);
-
         let mi = if let Some(medium) = ray.medium.as_ref() {
-            let (sample, mi) = medium.sample(&ray, sampler);
-            beta *= sample;
+            let (s, mut mi) = medium.sample(&ray, sampler);
+            if let Some(m) = mi.as_mut() {
+                // Need to attach medium interface for the interaction.
+                m.hit.medium_interface = Some(MediumInterface::from(Arc::clone(medium)));
+            }
+            beta *= s;
             mi
         } else {
             None

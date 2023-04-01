@@ -99,7 +99,7 @@ impl From<ArcMedium> for MediumInterface {
     fn from(medium: ArcMedium) -> Self {
         Self {
             inside: Some(Arc::clone(&medium)),
-            outside: Some(Arc::clone(&medium)),
+            outside: Some(medium),
         }
     }
 }
@@ -111,7 +111,7 @@ impl From<Option<ArcMedium>> for MediumInterface {
     fn from(medium: Option<ArcMedium>) -> Self {
         Self {
             inside: medium.as_ref().map(Arc::clone),
-            outside: medium.as_ref().map(Arc::clone),
+            outside: medium,
         }
     }
 }

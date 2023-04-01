@@ -71,10 +71,7 @@ impl Integrator for VolPathIntegrator {
     ///
     /// * `scene` - The scene
     fn preprocess(&mut self, scene: &Scene) {
-        self.light_distribution = Some(create_light_sample_distribution(
-            self.light_sample_strategy,
-            scene,
-        ));
+        self.light_distribution = Some(create_light_sample_distribution(self.light_sample_strategy, scene));
     }
 
     /// Render the scene.
@@ -90,13 +87,7 @@ impl Integrator for VolPathIntegrator {
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
-    fn li(
-        &self,
-        ray: &mut Ray,
-        scene: &Scene,
-        sampler: &mut ArcSampler,
-        _depth: usize,
-    ) -> Spectrum {
+    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ArcSampler, _depth: usize) -> Spectrum {
         let mut l = Spectrum::ZERO;
         let mut beta = Spectrum::ONE;
         let mut specular_bounce = false;
@@ -121,9 +112,8 @@ impl Integrator for VolPathIntegrator {
             let mi = if let Some(medium) = ray.medium.as_ref() {
                 let (s, mut mi) = medium.sample(&ray, sampler);
                 if let Some(m) = mi.as_mut() {
-                    let inside = Some(Arc::clone(medium));
-                    let outside = Some(Arc::clone(medium));
-                    m.hit.medium_interface = Some(MediumInterface::new(inside, outside));
+                    // Need to attach medium interface for the interaction.
+                    m.hit.medium_interface = Some(MediumInterface::from(Arc::clone(medium)));
                 }
                 beta *= s;
                 mi
@@ -190,13 +180,7 @@ impl Integrator for VolPathIntegrator {
                 // Compute scattering functions and skip over medium boundaries.
                 let mut bsdf: Option<BSDF> = None;
                 let mut bssrdf: Option<BSDF> = None;
-                isect.compute_scattering_functions(
-                    ray,
-                    true,
-                    TransportMode::Radiance,
-                    &mut bsdf,
-                    &mut bssrdf,
-                );
+                isect.compute_scattering_functions(ray, true, TransportMode::Radiance, &mut bsdf, &mut bssrdf);
                 if bsdf.is_none() {
                     debug!("Skipping intersection due to null bsdf");
                     *ray = isect.spawn_ray(&ray.d);
@@ -214,8 +198,7 @@ impl Integrator for VolPathIntegrator {
 
                 // Sample illumination from lights to find path contribution. (But
                 // skip this for perfectly specular BSDFs).
-                let ld = beta
-                    * uniform_sample_one_light(&it, Some(&bsdf), scene, sampler, true, distrib);
+                let ld = beta * uniform_sample_one_light(&it, Some(&bsdf), scene, sampler, true, distrib);
                 debug!("Sampled direct lighting Ld = {ld}");
                 assert!(ld.y() >= 0.0);
                 l += ld;
@@ -260,17 +243,9 @@ impl Integrator for VolPathIntegrator {
                 // Account for subsurface scattering, if applicable.
                 let bssrdf_bxdf = bssrdf
                     .map(|b| b.bxdfs)
-                    .map(|b| {
-                        if b.is_empty() {
-                            None
-                        } else {
-                            Some(b[0].clone())
-                        }
-                    })
+                    .map(|b| if b.is_empty() { None } else { Some(b[0].clone()) })
                     .flatten();
-                if bssrdf_bxdf.is_some()
-                    && (flags & BxDFType::BSDF_TRANSMISSION) > BxDFType::BSDF_NONE
-                {
+                if bssrdf_bxdf.is_some() && (flags & BxDFType::BSDF_TRANSMISSION) > BxDFType::BSDF_NONE {
                     match bssrdf_bxdf.unwrap() {
                         BxDF::TabulatedBSSRDF(bxdf) => {
                             // Importance sample the BSSRDF.
@@ -298,15 +273,8 @@ impl Integrator for VolPathIntegrator {
                             let pi_shading_n = pi.shading.n.clone();
                             let pi_light_pdf = light_distribution.lookup(&pi.hit.p);
                             let pi = Interaction::Surface { si: pi };
-                            l += beta
-                                * uniform_sample_one_light(
-                                    &pi,
-                                    bsdf.as_ref(),
-                                    scene,
-                                    sampler,
-                                    true,
-                                    pi_light_pdf,
-                                );
+                            l +=
+                                beta * uniform_sample_one_light(&pi, bsdf.as_ref(), scene, sampler, true, pi_light_pdf);
 
                             // Account for the indirect subsurface scattering component.
                             let sample_2d = {
@@ -326,8 +294,7 @@ impl Integrator for VolPathIntegrator {
                             }
                             beta *= f * wi.abs_dot(&pi_shading_n) / pdf;
                             debug_assert!(!beta.y().is_infinite());
-                            specular_bounce =
-                                (flags & BxDFType::BSDF_SPECULAR) > BxDFType::BSDF_NONE;
+                            specular_bounce = (flags & BxDFType::BSDF_SPECULAR) > BxDFType::BSDF_NONE;
                             *ray = pi.spawn_ray(&wi);
                         }
                         _ => warn!("bssrdf reflection model should be BxDF::*BSSRDF."),
@@ -373,10 +340,8 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for VolPathIntegrator {
             if np != 4 {
                 error!("Expected 4 values for 'pixel_bounds' parameter. Got {np}");
             } else {
-                pixel_bounds = pixel_bounds.intersect(&Bounds2i::new(
-                    Point2i::new(pb[0], pb[1]),
-                    Point2i::new(pb[2], pb[3]),
-                ));
+                pixel_bounds =
+                    pixel_bounds.intersect(&Bounds2i::new(Point2i::new(pb[0], pb[1]), Point2i::new(pb[2], pb[3])));
                 if pixel_bounds.area() == 0 {
                     error!("Degenerate 'pixel_bounds' specified.");
                 }
