@@ -1,14 +1,11 @@
 # Physically Based Rendering in Rust
 
-The motivation is to explore the algorithms outlined in the
-[book](http://www.pbr-book.org/) while simultaneously learning a new language
-like Rust.
+The motivation is to explore the algorithms outlined in the [book](http://www.pbr-book.org/) while simultaneously 
+learning a new language like Rust.
 
 ## Releases
 
-Completed work from the book will be tagged as a release which can be found
-[here](https://github.com/hackmad/pbr_rust/releases).
-
+Completed work from the book will be tagged as a release which can be found [here](https://github.com/hackmad/pbr_rust/releases).
 ## Renders
 
 Some scenes include PBRT files from:
@@ -74,6 +71,7 @@ pngquant --ext .png --force renders/shapes/*.png
 ### Media
 
 <a title="Grid Density" href="renders/media/smoke.png"><img src="renders/media/smoke.png" style="height: 100px"/></a>
+<a title="Homogeneous" href="renders/media/spotfog.png"><img src="renders/media/spotfog.png" style="height: 100px"/></a>
 
 ### Cameras
 
@@ -130,9 +128,6 @@ cargo build --release
 
 ## Testing
 
-Not everything will be unit tested. The goal was to learn about different
-techniques used in Rust for unit testing, property based testing and debugging.
-
 The unit tests can be run as follows:
 ```bash
 cargo test
@@ -140,10 +135,7 @@ cargo test
 
 ## Running
 
-This section will be updated as new features get added while progressing
-through the book.
-
-The debug version can be run as:
+This section will be updated as new features get added while progressing through the book. The debug version can be run as:
 ```bash
 cargo run -- [OPTIONS] <FILE1> <FILE2> ...
 ```
@@ -166,7 +158,8 @@ cargo run --release -- [OPTIONS] <FILE1> <FILE2> ...
 ./target/releases/pbr-rust [OPTIONS] $(find scenes | grep -v geometry | grep "\.pbrt$")
 ```
 
-To run examples from `../pbrt-v3-scenes` you can use relative paths to point to the binary. For example, the example in `../pbrt-v3-scenes/caustic-glass` can be rendered like this:
+To run examples from `../pbrt-v3-scenes` you can use relative paths to point to the binary. For example, the example in
+`../pbrt-v3-scenes/caustic-glass` can be rendered like this:
 ```bash
 cd ../pbrt-v3-scenes/caustic-glass
 
@@ -189,8 +182,8 @@ available as well.
 
 ### Jemalloc
 
-Use `--features jemalloc` to use jemalloc on Linux/MacOS. On Windows, it will 
-use default global allocator. This is mutually exclusive with `dhat-rs` feature.
+Use `--features jemalloc` to use jemalloc on Linux/MacOS. On Windows, it will use default global allocator. This is 
+mutually exclusive with `dhat-rs` feature.
 ```bash
 cargo run --release --features jemalloc -- [OPTIONS] <FILE1> <FILE2> ...
 ```
