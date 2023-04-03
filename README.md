@@ -112,6 +112,7 @@ pngquant --ext .png --force renders/shapes/*.png
 
 <a title="SPPM 10 iterations caustic-glass" href="renders/integrators/sppm/f16-9a.png"><img src="renders/integrators/sppm/f16-9a.png" style="height: 200px"/></a>
 <a title="SPPM 100 iterations caustic-glass" href="renders/integrators/sppm/f16-9b.png"><img src="renders/integrators/sppm/f16-9b.png" style="height: 200px"/></a>
+<a title="BDPT breakfast" href="renders/integrators/bdpt/breakfast.png"><img src="renders/integrators/bdpt/breakfast.png" style="height: 200px"/></a>
 
 ## Building
 
