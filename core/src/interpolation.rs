@@ -35,10 +35,7 @@ pub fn catmull_rom(nodes: &[Float], values: &[Float], x: Float) -> Float {
     let t = (x - x0) / (x1 - x0);
     let t2 = t * t;
     let t3 = t2 * t;
-    (2.0 * t3 - 3.0 * t2 + 1.0) * f0
-        + (-2.0 * t3 + 3.0 * t2) * f1
-        + (t3 - 2.0 * t2 + t) * d0
-        + (t3 - t2) * d1
+    (2.0 * t3 - 3.0 * t2 + 1.0) * f0 + (-2.0 * t3 + 3.0 * t2) * f1 + (t3 - 2.0 * t2 + t) * d0 + (t3 - t2) * d1
 }
 
 /// Returns the weights and the index offset for Catmull-Rom spline.
@@ -105,12 +102,7 @@ pub fn catmull_rom_weights(nodes: &[Float], x: Float) -> Option<([Float; 4], isi
 /// * `F` - Discrete CDF values computed via `integrate_catmull_rom()`.
 /// * `u` - Uniform random variate ξ.
 #[allow(non_snake_case)]
-pub fn sample_catmull_rom(
-    x: &[Float],
-    f: &[Float],
-    F: &[Float],
-    u: Float,
-) -> (Float, Float, Float) {
+pub fn sample_catmull_rom(x: &[Float], f: &[Float], F: &[Float], u: Float) -> (Float, Float, Float) {
     // Get number of samples.
     let n = x.len();
 
@@ -163,10 +155,8 @@ pub fn sample_catmull_rom(
         Fhat = t
             * (f0
                 + t * (0.5 * d0
-                    + t * ((1.0 / 3.0) * (-2.0 * d0 - d1) + f1 - f0
-                        + t * (0.25 * (d0 + d1) + 0.5 * (f0 - f1)))));
-        fhat = f0
-            + t * (d0 + t * (-2.0 * d0 - d1 + 3.0 * (f1 - f0) + t * (d0 + d1 + 2.0 * (f0 - f1))));
+                    + t * ((1.0 / 3.0) * (-2.0 * d0 - d1) + f1 - f0 + t * (0.25 * (d0 + d1) + 0.5 * (f0 - f1)))));
+        fhat = f0 + t * (d0 + t * (-2.0 * d0 - d1 + 3.0 * (f1 - f0) + t * (d0 + d1 + 2.0 * (f0 - f1))));
 
         // Stop the iteration if converged.
         if abs(Fhat - u) < 1e-6 || b - a < 1e-6 {
@@ -280,10 +270,8 @@ pub fn sample_catmull_rom_2d(
         Fhat = t
             * (f0
                 + t * (0.5 * d0
-                    + t * ((1.0 / 3.0) * (-2.0 * d0 - d1) + f1 - f0
-                        + t * (0.25 * (d0 + d1) + 0.5 * (f0 - f1)))));
-        fhat = f0
-            + t * (d0 + t * (-2.0 * d0 - d1 + 3.0 * (f1 - f0) + t * (d0 + d1 + 2.0 * (f0 - f1))));
+                    + t * ((1.0 / 3.0) * (-2.0 * d0 - d1) + f1 - f0 + t * (0.25 * (d0 + d1) + 0.5 * (f0 - f1)))));
+        fhat = f0 + t * (d0 + t * (-2.0 * d0 - d1 + 3.0 * (f1 - f0) + t * (d0 + d1 + 2.0 * (f0 - f1))));
 
         // Stop the iteration if converged.
         if abs(Fhat - u) < 1e-6 || b - a < 1e-6 {
@@ -401,10 +389,8 @@ pub fn invert_catmull_rom(x: &[Float], values: &[Float], u: Float) -> Float {
         let t3 = t2 * t;
 
         // Set `Fhat` using Equation (8.27).
-        Fhat = (2.0 * t3 - 3.0 * t2 + 1.0) * f0
-            + (-2.0 * t3 + 3.0 * t2) * f1
-            + (t3 - 2.0 * t2 + t) * d0
-            + (t3 - t2) * d1;
+        Fhat =
+            (2.0 * t3 - 3.0 * t2 + 1.0) * f0 + (-2.0 * t3 + 3.0 * t2) * f1 + (t3 - 2.0 * t2 + t) * d0 + (t3 - t2) * d1;
 
         // Set `fhat` using Equation (not present).
         fhat = (6.0 * t2 - 6.0 * t) * f0
@@ -456,11 +442,10 @@ pub fn fourier(a: &[Float], cos_phi: f64) -> Float {
 ///
 /// * `ak`    - The weighted coefficients from a Fourier BSDF for order `m`.
 /// * `recip` - Contains 1 / i for i in [0..`m_max`].
+/// * `m`     - The number of Fourier orders.
 /// * `u`     - Uniform random variate ξ.
 #[allow(non_snake_case)]
-pub fn sample_fourier(ak: &[Float], recip: &[Float], u: Float) -> (Float, Float, Float) {
-    let m = ak.len();
-
+pub fn sample_fourier(ak: &[Float], recip: &[Float], m: usize, u: Float) -> (Float, Float, Float) {
     // Pick a side and declare bisection variables.
     let flip = u >= 0.5;
     let u = if flip { 1.0 - 2.0 * (u - 0.5) } else { u * 2.0 };

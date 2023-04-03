@@ -28,9 +28,7 @@ impl FourierBSDF {
     ///                  or from camera.
     pub fn new(bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> BxDF {
         let model = Self {
-            bxdf_type: BxDFType::BSDF_REFLECTION
-                | BxDFType::BSDF_TRANSMISSION
-                | BxDFType::BSDF_GLOSSY,
+            bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_GLOSSY,
             bsdf_table: Arc::clone(&bsdf_table),
             mode,
         };
@@ -76,10 +74,9 @@ impl FourierBSDF {
                 // Add contribution of `(a, b)` to `ak` values.
                 let weight = wtia * wtob;
                 if weight != 0.0 {
-                    let (m, ap) = self.bsdf_table.get_ak(
-                        (offset_i + a as isize) as usize,
-                        (offset_o + b as isize) as usize,
-                    );
+                    let (m, ap) = self
+                        .bsdf_table
+                        .get_ak((offset_i + a as isize) as usize, (offset_o + b as isize) as usize);
                     m_max = max(m_max, m);
                     for c in 0..self.bsdf_table.n_channels {
                         for k in 0..m {
@@ -162,10 +159,9 @@ impl FourierBSDF {
                 // Add contribution of `(a, b)` to `ak` values.
                 let weight = wtia * wtob;
                 if weight != 0.0 {
-                    let (m, ap) = self.bsdf_table.get_ak(
-                        (offset_i + a as isize) as usize,
-                        (offset_o + b as isize) as usize,
-                    );
+                    let (m, ap) = self
+                        .bsdf_table
+                        .get_ak((offset_i + a as isize) as usize, (offset_o + b as isize) as usize);
                     m_max = max(m_max, m);
                     for c in 0..self.bsdf_table.n_channels {
                         for k in 0..m {
@@ -177,7 +173,7 @@ impl FourierBSDF {
         }
 
         // Importance sample the luminance Fourier expansion.
-        let (y, pdf_phi, phi) = sample_fourier(&ak[0..m_max], &self.bsdf_table.recip, u[0]);
+        let (y, pdf_phi, phi) = sample_fourier(&ak, &self.bsdf_table.recip, m_max, u[0]);
         let pdf = max(0.0, pdf_phi * pdf_mu);
 
         // Compute the scattered direction for `FourierBSDF`.
@@ -265,10 +261,9 @@ impl FourierBSDF {
                     continue;
                 }
 
-                let (order, coeffs) = self.bsdf_table.get_ak(
-                    (offset_i + i as isize) as usize,
-                    (offset_o + o as isize) as usize,
-                );
+                let (order, coeffs) = self
+                    .bsdf_table
+                    .get_ak((offset_i + i as isize) as usize, (offset_o + o as isize) as usize);
                 m_max = max(m_max, order);
 
                 for k in 0..order {
