@@ -1,4 +1,4 @@
-pbrt = { SOI ~ stmt* ~ EOI }
+pbrt = { SOI ~ NEWLINE* ~ stmt* ~ NEWLINE* ~ EOI }
 
 stmt = { include_stmt | option_stmt | scene_stmt | block_stmt | ctm_stmt }
 
@@ -81,56 +81,69 @@ param = {
 }
 
 point3d_param = ${
-    QUOTATION_MARK ~ ("point3" | "point") ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ float_list_expr
+    QUOTATION_MARK ~ ("point3" | "point")
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ float_list_expr
 }
 vector3d_param = ${
-    QUOTATION_MARK ~ ("vector3" | "vector") ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ float_list_expr
+    QUOTATION_MARK ~ ("vector3" | "vector")
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ float_list_expr
 }
 normal3d_param = ${
-    QUOTATION_MARK ~ ("normal3" | "normal") ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ float_list_expr
+    QUOTATION_MARK ~ ("normal3" | "normal")
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ float_list_expr
 }
 point2d_param = ${
-    QUOTATION_MARK ~ "point2" ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ float_list_expr
+    QUOTATION_MARK ~ "point2"
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ float_list_expr
 }
 vector2d_param = ${
-    QUOTATION_MARK ~ "vector2" ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ float_list_expr
+    QUOTATION_MARK ~ "vector2"
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ float_list_expr
 }
 string_param = ${
-    QUOTATION_MARK ~ "string" ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ (quoted_str_expr | quoted_str_list_expr)
+    QUOTATION_MARK ~ "string"
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ (quoted_str_expr | quoted_str_list_expr)
 }
 bool_param = ${
-    QUOTATION_MARK ~ "bool" ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ (quoted_bool_expr | quoted_bool_list_expr)
+    QUOTATION_MARK ~ "bool"
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ (quoted_bool_expr | quoted_bool_list_expr)
 }
 float_param = ${
-    QUOTATION_MARK ~ "float" ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ (float_expr | float_list_expr)
+    QUOTATION_MARK ~ "float"
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ (float_expr | float_list_expr)
 }
 int_param = ${
-    QUOTATION_MARK ~ "integer" ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ (int_expr | int_list_expr)
+    QUOTATION_MARK ~ "integer"
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ (int_expr | int_list_expr)
 }
 spectrum_param = ${
-    QUOTATION_MARK ~ "spectrum" ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ (float_list_expr | quoted_str_expr)
+    QUOTATION_MARK ~ "spectrum"
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ (float_list_expr | quoted_str_expr)
 }
 blackbody_param = ${
-    QUOTATION_MARK ~ "blackbody" ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ float_list_expr
+    QUOTATION_MARK ~ "blackbody"
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ float_list_expr
 }
 texture_param = ${
-    QUOTATION_MARK ~ "texture" ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ (quoted_str_expr | quoted_str_list_expr)
+    QUOTATION_MARK ~ "texture"
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ (quoted_str_expr | quoted_str_list_expr)
 }
 colour_param = ${
-    QUOTATION_MARK ~ colour_type ~ WHITESPACE ~ ident ~ QUOTATION_MARK ~ WHITESPACE+
-    ~ float_list_expr
+    QUOTATION_MARK ~ colour_type
+    ~ WHITESPACE ~ ident ~ QUOTATION_MARK
+    ~ WHITESPACE_OR_NEWLINE+ ~ float_list_expr
 }
 colour_type = { "colour" | "color" | "rgb" | "xyz" }
 
