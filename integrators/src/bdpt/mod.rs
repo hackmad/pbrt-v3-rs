@@ -1,7 +1,5 @@
 //! Bi-directional Path Tracer
 
-#![allow(dead_code)]
-
 use core::app::OPTIONS;
 use core::camera::*;
 use core::film::{Film, FilmTile};

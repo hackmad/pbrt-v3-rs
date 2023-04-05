@@ -1,6 +1,5 @@
 //! 2D Axis Aligned Bounding Boxes.
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::pbrt::*;
 use itertools::{iproduct, Product};
@@ -22,9 +21,8 @@ pub struct Bounds2<T: Num> {
 /// 2-D bounding box containing `Float` points.
 pub type Bounds2f = Bounds2<Float>;
 impl Bounds2f {
-    /// 2-D bounding box where minimum and maximum bounds are maximum and minimum
-    /// floating point values. This is so we can easily grow the bounding box
-    /// from nothing iteratively.
+    /// 2-D bounding box where minimum and maximum bounds are maximum and minimum floating point values. This is so we
+    /// can easily grow the bounding box from nothing iteratively.
     pub const EMPTY: Self = Self {
         p_min: Point2f::MAX,
         p_max: Point2f::MIN,
@@ -34,9 +32,8 @@ impl Bounds2f {
 /// 2-D bounding box containing `Int` points.
 pub type Bounds2i = Bounds2<Int>;
 impl Bounds2i {
-    /// 2-D bounding box where minimum and maximum bounds are maximum and minimum
-    /// floating point values. This is so we can easily grow the bounding box
-    /// from nothing iteratively.
+    /// 2-D bounding box where minimum and maximum bounds are maximum and minimum floating point values. This is so we
+    /// can easily grow the bounding box from nothing iteratively.
     pub const EMPTY: Self = Self {
         p_min: Point2i::MAX,
         p_max: Point2i::MIN,
@@ -77,8 +74,7 @@ impl From<Bounds2f> for Bounds2i {
 }
 
 impl<T: Num + Copy> Bounds2<T> {
-    /// Creates a new 2D bounding box from 2 points. The minimum and maximum bounds
-    /// are used for each coordinate axis.
+    /// Creates a new 2D bounding box from 2 points. The minimum and maximum bounds are used for each coordinate axis.
     ///
     /// * `p1` - First point.
     /// * `p2` - Second point.
@@ -92,23 +88,20 @@ impl<T: Num + Copy> Bounds2<T> {
         }
     }
 
-    /// Returns a 2D bounding box where minimum and maximum bounds are maximum and
-    /// minimum values respectively of the type's limits. This is so we can easily
-    /// grow the boundng box from nothing iteratively.
+    /// Returns a 2D bounding box where minimum and maximum bounds are maximum and minimum values respectively of the
+    /// type's limits. This is so we can easily grow the boundng box from nothing iteratively.
     pub fn empty() -> Self
     where
         T: Bounded + PartialOrd + Copy,
     {
-        // Don't call new() because it'll create the largest bounding box
-        // by flipping p_min and p_max.
+        // Don't call new() because it'll create the largest bounding box by flipping p_min and p_max.
         Self {
             p_min: Point2::new(T::max_value(), T::max_value()),
             p_max: Point2::new(T::min_value(), T::min_value()),
         }
     }
 
-    /// Returns true if the bounding box describes an empty box where any the
-    /// components of any p_max are less than p_max.
+    /// Returns true if the bounding box describes an empty box where any the components of any p_max are less than p_max.
     pub fn is_empty(&self) -> bool
     where
         T: PartialOrd,
@@ -116,8 +109,7 @@ impl<T: Num + Copy> Bounds2<T> {
         self.p_max.x < self.p_min.x || self.p_max.y < self.p_min.y
     }
 
-    /// Returns the vector along the box diagonal from the minimum point to
-    /// the maximum point.
+    /// Returns the vector along the box diagonal from the minimum point to the maximum point.
     pub fn diagonal(&self) -> Vector2<T> {
         self.p_max - self.p_min
     }
@@ -135,9 +127,8 @@ impl<T: Num + Copy> Bounds2<T> {
         }
     }
 
-    /// Returns the index of which of the axes is longest. This is useful, for
-    /// example, when deciding which axis to subdivide when building some of
-    /// the ray-intersection acceleration structures.
+    /// Returns the index of which of the axes is longest. This is useful, for example, when deciding which axis to
+    /// subdivide when building some of the ray-intersection acceleration structures.
     pub fn maximum_extent(&self) -> Axis
     where
         T: PartialOrd,
@@ -162,9 +153,8 @@ impl<T: Num + Copy> Bounds2<T> {
         x && y
     }
 
-    /// Returns the continuous position of a point relative to the corners of the
-    /// box, where a point at the minimum corner has offset `(0, 0)` and a
-    /// point at the maximum corner has offset is `(1, 1)`.
+    /// Returns the continuous position of a point relative to the corners of the box, where a point at the minimum
+    /// corner has offset `(0, 0)` and a point at the maximum corner has offset is `(1, 1)`.
     ///
     /// * `p` - The point.
     pub fn offset(&self, p: &Point2<T>) -> Vector2<T>
@@ -191,8 +181,8 @@ impl<T: Num + Copy> Bounds2<T> {
         p.x >= self.p_min.x && p.x <= self.p_max.x && p.y >= self.p_min.y && p.y <= self.p_max.y
     }
 
-    /// Returns true if a point is inside the bounding box. The upper boundary
-    /// is considered out of bounds. This is useful for integer-typed bounds.
+    /// Returns true if a point is inside the bounding box. The upper boundary is considered out of bounds. This is
+    /// useful for integer-typed bounds.
     ///
     /// * `p` - The point.
     pub fn contains_exclusive(&self, p: &Point2<T>) -> bool
@@ -202,8 +192,7 @@ impl<T: Num + Copy> Bounds2<T> {
         p.x >= self.p_min.x && p.x < self.p_max.x && p.y >= self.p_min.y && p.y < self.p_max.y
     }
 
-    /// Return the center and radius of a circle bounded on the corners of the
-    /// bounding box.
+    /// Return the center and radius of a circle bounded on the corners of the bounding box.
     pub fn bounding_circle(&self) -> (Point2<T>, T)
     where
         T: num_traits::Float + Zero,
@@ -218,8 +207,7 @@ impl<T: Num + Copy> Bounds2<T> {
         (center, radius)
     }
 
-    /// Linearly interpolates between the corners of the box by the given amount
-    /// in each dimension.
+    /// Linearly interpolates between the corners of the box by the given amount in each dimension.
     ///
     /// * `t` - The interpolation parameter in x and y directions.
     pub fn lerp(&self, t: &Point2f) -> Point2<T>
@@ -239,8 +227,7 @@ impl<T: Num + Copy> Bounds2<T> {
     where
         T: PartialOrd,
     {
-        // Don't call bounds2<T>() to prevent flipping p_min and p_max when
-        // the input is empty box.
+        // Don't call bounds2<T>() to prevent flipping p_min and p_max when the input is empty box.
         Self {
             p_min: self.p_min - Vector2::new(delta, delta),
             p_max: self.p_max + Vector2::new(delta, delta),
@@ -294,14 +281,8 @@ impl<T: Num + PartialOrd + Copy> Union<Bounds2<T>> for Bounds2<T> {
     /// * `other` - The other bounding box.
     fn union(&self, other: &Bounds2<T>) -> Self {
         Bounds2 {
-            p_min: Point2::new(
-                min(self.p_min.x, other.p_min.x),
-                min(self.p_min.y, other.p_min.y),
-            ),
-            p_max: Point2::new(
-                max(self.p_max.x, other.p_max.x),
-                max(self.p_max.y, other.p_max.y),
-            ),
+            p_min: Point2::new(min(self.p_min.x, other.p_min.x), min(self.p_min.y, other.p_min.y)),
+            p_max: Point2::new(max(self.p_max.x, other.p_max.x), max(self.p_max.y, other.p_max.y)),
         }
     }
 }
@@ -312,14 +293,8 @@ impl<T: Num + PartialOrd + Copy> Intersect<Bounds2<T>> for Bounds2<T> {
     /// * `other` - The other bounding box.
     fn intersect(&self, other: &Bounds2<T>) -> Self {
         Bounds2 {
-            p_min: Point2::new(
-                max(self.p_min.x, other.p_min.x),
-                max(self.p_min.y, other.p_min.y),
-            ),
-            p_max: Point2::new(
-                min(self.p_max.x, other.p_max.x),
-                min(self.p_max.y, other.p_max.y),
-            ),
+            p_min: Point2::new(max(self.p_min.x, other.p_min.x), max(self.p_min.y, other.p_min.y)),
+            p_max: Point2::new(min(self.p_max.x, other.p_max.x), min(self.p_max.y, other.p_max.y)),
         }
     }
 }
@@ -345,8 +320,8 @@ impl<T: Num + fmt::Display> fmt::Display for Bounds2<T> {
     }
 }
 
-/// An iterator that can step through integer coordinates in a bounding box
-/// in a left-to-right (x-axis) and top-to-bottom (y-axis) scan order.
+/// An iterator that can step through integer coordinates in a bounding box in a left-to-right (x-axis) and top-to-bottom
+/// (y-axis) scan order.
 pub struct Bounds2iIterator {
     /// The iterator that will supply points.
     p: Product<Range<Int>, Range<Int>>,

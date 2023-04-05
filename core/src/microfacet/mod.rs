@@ -1,6 +1,5 @@
 //! Microfacet Distribution Models
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::reflection::*;
@@ -29,8 +28,7 @@ impl MicrofacetDistribution {
         }
     }
 
-    /// Return the differential area of microfacets oriented with the surface
-    /// normal `wh`.
+    /// Return the differential area of microfacets oriented with the surface normal `wh`.
     ///
     /// * `wh` - A sample normal from the distrubition of normal vectors.
     pub fn d(&self, wh: &Vector3f) -> Float {
@@ -50,16 +48,15 @@ impl MicrofacetDistribution {
         }
     }
 
-    /// Evaluates Smith's masking-shadowing function which gives the fraction of
-    /// microfacets that are visible from a given direction.
+    /// Evaluates Smith's masking-shadowing function which gives the fraction of microfacets that are visible from a
+    /// given direction.
     ///
     /// * `w` - The direction from camera/viewer.
     pub fn g1(&self, w: &Vector3f) -> Float {
         1.0 / (1.0 + self.lambda(w))
     }
 
-    /// Returns the fraction of microfacets in a differential area that are
-    /// visible from both directions `wo` and `wi`.
+    /// Returns the fraction of microfacets in a differential area that are visible from both directions `wo` and `wi`.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -78,8 +75,7 @@ impl MicrofacetDistribution {
         }
     }
 
-    /// Evaluates the PDF for the given outgoing direction and sampled surface
-    /// normal.
+    /// Evaluates the PDF for the given outgoing direction and sampled surface normal.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wh` - A sample normal from the distrubition of normal vectors.

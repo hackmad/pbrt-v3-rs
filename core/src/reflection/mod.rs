@@ -1,6 +1,5 @@
 //! Reflection and surface scattering models
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::sampling::*;
@@ -49,9 +48,8 @@ pub use tabulated_bssrdf::*;
 ///
 /// NOTES:
 ///
-/// The PBRT source code uses a `SeparableBSDFAdapter`. We bypass that by
-/// enumerating the BSSRDFs directly to avoid dealing with trait objects or
-/// nesting enumerations which will add more boiler plate code.
+/// The PBRT source code uses a `SeparableBSDFAdapter`. We bypass that by enumerating the BSSRDFs directly to avoid
+/// dealing with trait objects or nesting enumerations which will add more boiler plate code.
 #[derive(Clone)]
 pub enum BxDF {
     FourierBSDF(FourierBSDF),
@@ -95,8 +93,7 @@ impl BxDF {
         bxdf_type & t == bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -117,8 +114,7 @@ impl BxDF {
         }
     }
 
-    /// Returns the value of the BxDF given the outgpoing direction.
-    /// directions.
+    /// Returns the value of the BxDF given the outgpoing direction. directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
@@ -145,8 +141,8 @@ impl BxDF {
         }
     }
 
-    /// Evaluates the PDF for the sampling method. Default is based on the
-    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    /// Evaluates the PDF for the sampling method. Default is based on the cosine-weighted sampling in `BxDF::sample_f()`
+    /// default implementation.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -214,8 +210,7 @@ impl BxDF {
                     let sample = self.sample_f(&wo, s2);
                     let pdfi = sample.pdf;
                     if pdfi > 0.0 {
-                        r += sample.f * abs_cos_theta(&sample.wi) * abs_cos_theta(&wo)
-                            / (pdfo * pdfi);
+                        r += sample.f * abs_cos_theta(&sample.wi) * abs_cos_theta(&wo) / (pdfo * pdfi);
                     }
                 }
                 r / (PI * u1.len() as Float)

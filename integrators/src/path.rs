@@ -1,7 +1,5 @@
 //! Path Integrator
 
-#![allow(dead_code)]
-
 use core::camera::*;
 use core::geometry::*;
 use core::integrator::*;
@@ -38,8 +36,7 @@ impl PathIntegrator {
     /// * `camera`                - The camera.
     /// * `sampler`               - The sampler.
     /// * `pixel_bounds`          - Pixel bounds for the image.
-    /// * `rr_threshold`          - Russian roulette threshold used to terminate path sampling.
-    ///                             (default to 1.0)
+    /// * `rr_threshold`          - Russian roulette threshold used to terminate path sampling. (default to 1.0)
     /// * `light_sample_strategy` - Light sampling strategy (default to Spatial)
     pub fn new(
         max_depth: usize,
@@ -91,13 +88,11 @@ impl Integrator for PathIntegrator {
         let mut beta = Spectrum::ONE;
         let mut specular_bounce = false;
 
-        // Added after book publication: etaScale tracks the accumulated effect
-        // of radiance scaling due to rays passing through refractive boundaries
-        // (see the derivation on p. 527 of the third edition). We track this
-        // value in order to remove it from beta when we apply Russian roulette;
-        // this is worthwhile, since it lets us sometimes avoid terminating
-        // refracted rays that are about to be refracted back out of a medium and
-        // thus have their beta value increased.
+        // Added after book publication: etaScale tracks the accumulated effect of radiance scaling due to rays passing
+        // through refractive boundaries (see the derivation on p. 527 of the third edition). We track this value in
+        // order to remove it from beta when we apply Russian roulette; this is worthwhile, since it lets us sometimes
+        // avoid terminating refracted rays that are about to be refracted back out of a medium and thus have their beta
+        // value increased.
         let mut eta_scale: Float = 1.0;
 
         let mut bounces = 0_usize;
@@ -146,8 +141,7 @@ impl Integrator for PathIntegrator {
 
             let it = Interaction::Surface { si: isect };
 
-            // Sample illumination from lights to find path contribution. (But
-            // skip this for perfectly specular BSDFs).
+            // Sample illumination from lights to find path contribution. (But skip this for perfectly specular BSDFs).
             let num_components = bsdf.num_components(BxDFType::all() & !BxDFType::BSDF_SPECULAR);
             if num_components > 0 {
                 let ld = beta * uniform_sample_one_light(&it, Some(&bsdf), scene, sampler, false, distrib);
@@ -183,8 +177,8 @@ impl Integrator for PathIntegrator {
                 && (flags & BxDFType::BSDF_TRANSMISSION) > BxDFType::BSDF_NONE
             {
                 let eta = bsdf.eta;
-                // Update the term that tracks radiance scaling for refraction
-                // depending on whether the ray is entering or leaving the medium.
+                // Update the term that tracks radiance scaling for refraction depending on whether the ray is entering
+                // or leaving the medium.
                 eta_scale *= if wo.dot(&it.get_hit().n) > 0.0 {
                     eta * eta
                 } else {
@@ -253,8 +247,7 @@ impl Integrator for PathIntegrator {
                 }
             }
 
-            // Possibly terminate the path with Russian roulette. Factor out
-            // radiance scaling due to refraction in `rr_beta`.
+            // Possibly terminate the path with Russian roulette. Factor out radiance scaling due to refraction in `rr_beta`.
             let rr_beta = beta * eta_scale;
             if rr_beta.max_component_value() < self.rr_threshold && bounces > 3 {
                 let q = max(0.05, 1.0 - rr_beta.max_component_value());

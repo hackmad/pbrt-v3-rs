@@ -1,6 +1,5 @@
 //! Spheres
 
-#![allow(dead_code)]
 use core::efloat::*;
 use core::geometry::*;
 use core::interaction::*;
@@ -39,8 +38,7 @@ impl Sphere {
     ///
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
     /// * `radius`              - Radius of sphere.
     /// * `z_min`               - Minimum z-value to truncate sphere.
     /// * `z_max`               - Maximum z-value to truncate sphere.
@@ -71,8 +69,7 @@ impl Sphere {
 }
 
 impl Shape for Sphere {
-    /// Returns the shape type. Usually these are behind ArcShape and harder to
-    /// debug. So this will be helpful.
+    /// Returns the shape type. Usually these are behind ArcShape and harder to debug. So this will be helpful.
     fn get_type(&self) -> &'static str {
         "sphere"
     }
@@ -90,16 +87,12 @@ impl Shape for Sphere {
         )
     }
 
-    /// Returns geometric details if a ray intersects the shape intersection.
-    /// If there is no intersection, `None` is returned.
+    /// Returns geometric details if a ray intersects the shape intersection. If there is no intersection, `None` is
+    /// returned.
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect<'scene>(
-        &self,
-        r: &Ray,
-        _test_alpha_texture: bool,
-    ) -> Option<Intersection<'scene>> {
+    fn intersect<'scene>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'scene>> {
         // Transform ray to object space
         let (ray, o_err, d_err) = self
             .data
@@ -202,18 +195,11 @@ impl Shape for Sphere {
         let sin_phi = p_hit.y * inv_z_radius;
         let dpdu = Vector3::new(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
         let dpdv = (self.theta_max - self.theta_min)
-            * Vector3::new(
-                p_hit.z * cos_phi,
-                p_hit.z * sin_phi,
-                -self.radius * theta.sin(),
-            );
+            * Vector3::new(p_hit.z * cos_phi, p_hit.z * sin_phi, -self.radius * theta.sin());
 
         // Compute sphere dndu and dndv
         let d2p_duu = -self.phi_max * self.phi_max * Vector3::new(p_hit.x, p_hit.y, 0.0);
-        let d2p_duv = (self.theta_max - self.theta_min)
-            * p_hit.z
-            * self.phi_max
-            * Vector3::new(-sin_phi, cos_phi, 0.0);
+        let d2p_duv = (self.theta_max - self.theta_min) * p_hit.z * self.phi_max * Vector3::new(-sin_phi, cos_phi, 0.0);
         let d2p_dvv = -(self.theta_max - self.theta_min)
             * (self.theta_max - self.theta_min)
             * Vector3::new(p_hit.x, p_hit.y, p_hit.z);
@@ -233,12 +219,8 @@ impl Shape for Sphere {
 
         // Compute dndu and dndv from fundamental form coefficients.
         let inv_egf_1 = 1.0 / (e1 * g1 - f1 * f1);
-        let dndu = Normal3::from(
-            (f2 * f1 - e2 * g1) * inv_egf_1 * dpdu + (e2 * f1 - f2 * e1) * inv_egf_1 * dpdv,
-        );
-        let dndv = Normal3::from(
-            (g2 * f1 - f2 * g1) * inv_egf_1 * dpdu + (f2 * f1 - g2 * e1) * inv_egf_1 * dpdv,
-        );
+        let dndu = Normal3::from((f2 * f1 - e2 * g1) * inv_egf_1 * dpdu + (e2 * f1 - f2 * e1) * inv_egf_1 * dpdv);
+        let dndv = Normal3::from((g2 * f1 - f2 * g1) * inv_egf_1 * dpdu + (f2 * f1 - g2 * e1) * inv_egf_1 * dpdv);
 
         // Compute error bounds for sphere intersection
         let p_error = gamma(5) * Vector3::from(p_hit).abs();
@@ -259,9 +241,7 @@ impl Shape for Sphere {
         );
 
         // Create hit.
-        self.data
-            .object_to_world
-            .transform_surface_interaction(&mut si);
+        self.data.object_to_world.transform_surface_interaction(&mut si);
 
         Some(Intersection::new(Float::from(t_shape_hit), si))
     }
@@ -373,8 +353,7 @@ impl Shape for Sphere {
         self.phi_max * self.radius * (self.z_max - self.z_min)
     }
 
-    /// Sample a point on the surface and return the PDF with respect to area on
-    /// the surface.
+    /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
@@ -403,8 +382,7 @@ impl Shape for Sphere {
         (it, pdf)
     }
 
-    /// Sample a point on the shape given a reference point and return the PDF
-    /// with respect to the solid angle from ref.
+    /// Sample a point on the shape given a reference point and return the PDF with respect to the solid angle from ref.
     ///
     /// * `hit` - Reference point on shape.
     /// * `u`   - Sample value to use.
@@ -419,8 +397,7 @@ impl Shape for Sphere {
             if wi.length_squared() == 0.0 {
                 pdf = 0.0;
             } else {
-                // Convert from area measure returned by Sample() call above to
-                // solid angle measure.
+                // Convert from area measure returned by Sample() call above to solid angle measure.
                 wi = wi.normalize();
                 pdf *= hit.p.distance_squared(intr.p) / intr.n.abs_dot(&-wi);
             }
@@ -449,26 +426,20 @@ impl Shape for Sphere {
 
         // sin^2(1.5 deg) = 0.00068523
         if sin_theta_max2 < 0.00068523 {
-            // Fall back to a Taylor series expansion for small angles, where
-            // the standard approach suffers from severe cancellation errors.
+            // Fall back to a Taylor series expansion for small angles, where the standard approach suffers from severe
+            // cancellation errors.
             sin_theta2 = sin_theta_max2 * u[0];
             cos_theta = (1.0 - sin_theta2).sqrt();
         }
 
         // Compute angle `alpha` from center of sphere to sampled point on surface.
         let cos_alpha = sin_theta2 * inv_sin_theta_max
-            + cos_theta
-                * max(
-                    0.0,
-                    1.0 - sin_theta2 * inv_sin_theta_max * inv_sin_theta_max,
-                )
-                .sqrt();
+            + cos_theta * max(0.0, 1.0 - sin_theta2 * inv_sin_theta_max * inv_sin_theta_max).sqrt();
         let sin_alpha = max(0.0, 1.0 - cos_alpha * cos_alpha).sqrt();
         let phi = u[1] * TWO_PI;
 
         // Compute surface normal and sampled point on sphere.
-        let n_world =
-            spherical_direction_in_coord_frame(sin_alpha, cos_alpha, phi, &-wc_x, &-wc_y, &-wc);
+        let n_world = spherical_direction_in_coord_frame(sin_alpha, cos_alpha, phi, &-wc_x, &-wc_y, &-wc);
 
         let p_world = p_center + self.radius * Point3f::from(n_world);
         let p_error = gamma(5) * Vector3f::from(&p_world).abs();
@@ -503,10 +474,8 @@ impl Shape for Sphere {
         uniform_cone_pdf(cos_theta_max)
     }
 
-    /// Returns the solid angle subtended by the shape w.r.t. the reference
-    /// point p, given in world space. Some shapes compute this value in
-    /// closed-form, while the default implementation uses Monte Carlo
-    /// integration.
+    /// Returns the solid angle subtended by the shape w.r.t. the reference point p, given in world space. Some shapes
+    /// compute this value in closed-form, while the default implementation uses Monte Carlo integration.
     ///
     /// * `p`         - The reference point.
     /// * `n_samples` - The number of samples to use for Monte-Carlo integration.
@@ -523,13 +492,11 @@ impl Shape for Sphere {
 }
 
 impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Sphere {
-    /// Create a `Sphere` from given parameter set, object to world transform,
-    /// world to object transform and whether or not surface normal orientation
-    /// is reversed.
+    /// Create a `Sphere` from given parameter set, object to world transform, world to object transform and whether or
+    /// not surface normal orientation is reversed.
     ///
-    /// * `p` - A tuple containing the parameter set, object to world transform,
-    ///         world to object transform and whether or not surface normal
-    ///         orientation is reversed.
+    /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform and whether
+    ///         or not surface normal orientation is reversed.
     fn from(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
         let (params, o2w, w2o, reverse_orientation) = p;
 

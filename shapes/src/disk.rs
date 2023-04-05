@@ -1,6 +1,5 @@
 //! Disks
 
-#![allow(dead_code)]
 use core::interaction::*;
 use core::paramset::*;
 use core::pbrt::*;
@@ -31,8 +30,7 @@ impl Disk {
     ///
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
     /// * `height`              - Height where disk is located.
     /// * `radius`              - Radius of disk.
     /// * `inner_radius`        - Inner radius of disk to truncate center.
@@ -61,8 +59,7 @@ impl Disk {
 }
 
 impl Shape for Disk {
-    /// Returns the shape type. Usually these are behind ArcShape and harder to
-    /// debug. So this will be helpful.
+    /// Returns the shape type. Usually these are behind ArcShape and harder to debug. So this will be helpful.
     fn get_type(&self) -> &'static str {
         "disk"
     }
@@ -80,20 +77,16 @@ impl Shape for Disk {
         )
     }
 
-    /// Returns geometric details if a ray intersects the shape intersection.
-    /// If there is no intersection, `None` is returned.
+    /// Returns geometric details if a ray intersects the shape intersection. If there is no intersection, `None` is
+    /// returned.
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect<'scene>(
-        &self,
-        r: &Ray,
-        _test_alpha_texture: bool,
-    ) -> Option<Intersection<'scene>> {
+    fn intersect<'scene>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'scene>> {
         // Transform ray to object space
         //
-        // We could just use transform_ray() but there is minor adjustment in
-        // it that adjusts t_max which is not in transform_ray_with_error().
+        // We could just use transform_ray() but there is minor adjustment in it that adjusts t_max which is not in
+        // transform_ray_with_error().
         let (ray, _o_err, _d_err) = self
             .data
             .world_to_object
@@ -157,9 +150,7 @@ impl Shape for Disk {
             Some(Arc::clone(&self.data)),
             0,
         );
-        self.data
-            .object_to_world
-            .transform_surface_interaction(&mut si);
+        self.data.object_to_world.transform_surface_interaction(&mut si);
 
         Some(Intersection::new(t_shape_hit, si))
     }
@@ -171,8 +162,8 @@ impl Shape for Disk {
     fn intersect_p(&self, r: &Ray, _test_alpha_texture: bool) -> bool {
         // Transform ray to object space
         //
-        // We could just use transform_ray() but there is minor adjustment in
-        // it that adjusts t_max which is not in transform_ray_with_error().
+        // We could just use transform_ray() but there is minor adjustment in it that adjusts t_max which is not in
+        // transform_ray_with_error().
         let (ray, _o_err, _d_err) = self
             .data
             .world_to_object
@@ -215,8 +206,7 @@ impl Shape for Disk {
         self.phi_max * 0.5 * (self.radius * self.radius - self.inner_radius * self.inner_radius)
     }
 
-    /// Sample a point on the surface and return the PDF with respect to area on
-    /// the surface.
+    /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
@@ -245,13 +235,11 @@ impl Shape for Disk {
 }
 
 impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Disk {
-    /// Create a `Disk` from given parameter set, object to world transform,
-    /// world to object transform and whether or not surface normal orientation
-    /// is reversed.
+    /// Create a `Disk` from given parameter set, object to world transform, world to object transform and whether or
+    /// not surface normal orientation is reversed.
     ///
-    /// * `p` - A tuple containing the parameter set, object to world transform,
-    ///         world to object transform and whether or not surface normal
-    ///         orientation is reversed.
+    /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform and whether
+    ///         or not surface normal orientation is reversed.
     fn from(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
         let (params, o2w, w2o, reverse_orientation) = p;
 

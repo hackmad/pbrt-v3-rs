@@ -1,6 +1,5 @@
 //! Utility functions.
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::pbrt::*;
 

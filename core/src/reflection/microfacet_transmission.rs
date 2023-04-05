@@ -1,7 +1,5 @@
 //! Torrance-Sparrow Microfacet Transmission Model
 
-#![allow(dead_code)]
-
 use super::*;
 use crate::material::*;
 use crate::microfacet::*;
@@ -37,12 +35,9 @@ impl MicrofacetTransmission {
     ///
     /// * `t`            - Spectrum used to scale the transmitted colour.
     /// * `distribution` - Microfacet distribution.
-    /// * `eta_a`        - Index of refraction above the surface (same side as
-    ///                    surface normal).
-    /// * `eta_b`        - Index of refraction below the surface (opposite side
-    ///                    as surface normal).
-    /// * `mode`         - Indicates whether incident ray started from a light
-    ///                    source or from camera.
+    /// * `eta_a`        - Index of refraction above the surface (same side as surface normal).
+    /// * `eta_b`        - Index of refraction below the surface (opposite side as surface normal).
+    /// * `mode`         - Indicates whether incident ray started from a light source or from camera.
     pub fn new(
         t: Spectrum,
         distribution: MicrofacetDistribution,
@@ -123,7 +118,6 @@ impl MicrofacetTransmission {
     }
 
     /// Returns the value of the BxDF given the outgpoing direction.
-    /// directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
@@ -151,8 +145,11 @@ impl MicrofacetTransmission {
         }
     }
 
-    /// Evaluates the PDF for the sampling method. Default is based on the
-    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    /// Evaluates the PDF for the sampling method. Default is based on the cosine-weighted sampling in `BxDF::sample_f()`
+    /// default implementation.
+    ///
+    /// * `wo` - Outgoing direction.
+    /// * `wi` - Incident direction.
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if same_hemisphere(wo, wi) {
             0.0

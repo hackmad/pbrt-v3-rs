@@ -1,6 +1,5 @@
 //! Transform Set
 
-#![allow(dead_code)]
 use core::geometry::{ArcTransform, Transform};
 use std::ops::{Index, IndexMut};
 use std::sync::Arc;

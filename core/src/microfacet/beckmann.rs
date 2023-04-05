@@ -1,25 +1,22 @@
 //! Beckmann–Spizzichino Distribution
 
-#![allow(dead_code)]
-
 use crate::geometry::*;
 use crate::pbrt::*;
 use crate::reflection::*;
 use super::MicrofacetDistribution;
 use std::fmt;
 
-/// Implements the Beckmann–Spizzichino distribution which based on Gaussian 
-/// distribution of microfacet slopes.
+/// Implements the Beckmann–Spizzichino distribution which based on Gaussian distribution of microfacet slopes.
 #[derive(Clone, Default)]
 pub struct BeckmannDistribution {
     /// Indicates whether or not the visible area is sampled or not.
     sample_visible_area: bool,
 
-    /// For microfacets oriented perpendicular to the x-axis and where
+    /// For microfacets oriented perpendicular to the x-axis and where:
     /// α = sqrt(2) * σ and σ is the RMS slope of microfacets.
     alpha_x: Float,
 
-    /// For microfacets oriented perpendicular to the y-axis and where
+    /// For microfacets oriented perpendicular to the y-axis and where:
     /// α = sqrt(2) * σ and σ is the RMS slope of microfacets.
     alpha_y: Float,
 }
@@ -27,14 +24,11 @@ pub struct BeckmannDistribution {
 impl BeckmannDistribution {
     /// Creates a new `BeckmannDistribution`.
     ///
-    /// * `alpha_x`             - For microfacets oriented perpendicular to the
-    ///                           x-axis and where α = sqrt(2) * σ and σ is the
-    ///                           RMS slope of microfacets.
-    /// * `alpha_y`             - For microfacets oriented perpendicular to the
-    ///                           y-axis and where α = sqrt(2) * σ and σ is the
-    ///                           RMS slope of microfacets.
-    /// * `sample_visible_area` - Indicates whether or not the visible area is
-    ///                           sampled or not (default to `true`).
+    /// * `alpha_x`             - For microfacets oriented perpendicular to the x-axis and where α = sqrt(2) * σ and σ
+    ///                           is the RMS slope of microfacets.
+    /// * `alpha_y`             - For microfacets oriented perpendicular to the y-axis and where α = sqrt(2) * σ and σ
+    ///                           is the RMS slope of microfacets.
+    /// * `sample_visible_area` - Indicates whether or not the visible area is sampled or not (default to `true`).
     pub fn new(alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> MicrofacetDistribution {
         let dist = Self {
             sample_visible_area,
@@ -44,8 +38,8 @@ impl BeckmannDistribution {
         MicrofacetDistribution::Beckmann(dist)
     }
 
-    /// Maps scalar roughness parameter in [0, 1] to alpha values where
-    /// values close to 0 are near-perfect specular reflection.
+    /// Maps scalar roughness parameter in [0, 1] to alpha values where values close to 0 are near-perfect specular
+    /// reflection.
     ///
     /// * `roughness` - Roughness parameter value.
     pub fn roughness_to_alpha(roughness: Float) -> Float {
@@ -63,8 +57,7 @@ impl BeckmannDistribution {
         self.sample_visible_area
     }
 
-    /// Return the differential area of microfacets oriented with the surface
-    /// normal `wh`.
+    /// Return the differential area of microfacets oriented with the surface normal `wh`.
     ///
     /// * `wh` - A sample normal from the distrubition of normal vectors.
     #[rustfmt::skip]
@@ -164,8 +157,7 @@ impl fmt::Display for BeckmannDistribution {
 
 /// Helper function for sampling visible area of normals.
 ///
-/// * `cos_theta_i` - Cosine of the angle θ measured from the incident direction
-///                   to the z-axis.
+/// * `cos_theta_i` - Cosine of the angle θ measured from the incident direction to the z-axis.
 /// * `u1`          - The uniform random value.
 /// * `u2`          - The uniform random value.
 fn beckmann_sample_11(cos_theta_i: Float, u1: Float, u2: Float) -> (Float, Float) {
@@ -179,9 +171,8 @@ fn beckmann_sample_11(cos_theta_i: Float, u1: Float, u2: Float) -> (Float, Float
         return (slope_x, slope_y);
     }
 
-    // The original inversion routine from the paper contained discontinuities,
-    // which causes issues for QMC integration and techniques like Kelemen-style
-    // MLT. The following code performs a numerical inversion with better behavior.
+    // The original inversion routine from the paper contained discontinuities, which causes issues for QMC integration
+    // and techniques like Kelemen-style MLT. The following code performs a numerical inversion with better behavior.
     let sin_theta_i = max(0.0, 1.0 - cos_theta_i * cos_theta_i).sqrt();
     let tan_theta_i = sin_theta_i / cos_theta_i;
     let cot_theta_i = 1.0 / tan_theta_i;
@@ -192,7 +183,7 @@ fn beckmann_sample_11(cos_theta_i: Float, u1: Float, u2: Float) -> (Float, Float
     let sample_x = max(u1, 1e-6);
 
     // Start with a good initial guess.
-    // Float b = (1-sample_x) * a + sample_x * c;
+    // let b = (1-sample_x) * a + sample_x * c;
 
     // We can do better (inverse of an approximation computed in Mathematica).
     let theta_i = acos(cos_theta_i);
@@ -212,8 +203,8 @@ fn beckmann_sample_11(cos_theta_i: Float, u1: Float, u2: Float) -> (Float, Float
             break;
         }
 
-        // Bisection criterion -- the oddly-looking Boolean expression are
-        // intentional to check for NaNs at little additional cost.
+        // Bisection criterion -- the oddly-looking Boolean expression are intentional to check for NaNs at little
+        // additional cost.
         if !(b >= a && b <= c) {
             b = 0.5 * (a + c);
         }
@@ -256,9 +247,9 @@ fn beckmann_sample_11(cos_theta_i: Float, u1: Float, u2: Float) -> (Float, Float
 /// Helper function for sampling visible area of normals.
 ///
 /// * `wi`      - Incident direction.
-/// * `alpha_x` - For microfacets oriented perpendicular to the x-axis and where
+/// * `alpha_x` - For microfacets oriented perpendicular to the x-axis and where:
 ///               α = sqrt(2) * σ and σ is the RMS slope of microfacets.
-/// * `alpha_y` - For microfacets oriented perpendicular to the y-axis and where
+/// * `alpha_y` - For microfacets oriented perpendicular to the y-axis and where:
 ///               α = sqrt(2) * σ and σ is the RMS slope of microfacets.
 /// * `u1`      - The uniform random value.
 /// * `u2`      - The uniform random value.

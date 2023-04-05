@@ -1,6 +1,5 @@
 //! Common
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::pbrt::*;
 
@@ -8,6 +7,7 @@ use crate::pbrt::*;
 const NOISE_PERM_SIZE: usize = 256;
 
 /// Precomputed noise permutation table.
+#[rustfmt::skip]
 const NOISE_PERM: [usize; 2 * NOISE_PERM_SIZE] = [
     151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69,
     142, 8, 99, 37, 240, 21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219,
@@ -78,8 +78,7 @@ pub fn noise_3d(x: Float, y: Float, z: Float) -> Float {
     lerp(wz, y0, y1)
 }
 
-/// Evaluates the Perlin Noise function for a 2-D point. Evaluates `noise_3d()`
-/// at z = 0.5.
+/// Evaluates the Perlin Noise function for a 2-D point. Evaluates `noise_3d()` at z = 0.5.
 ///
 /// * `x` - x-coordinate of point.
 /// * `y` - y-coordinate of point.
@@ -87,8 +86,7 @@ pub fn noise_2d(x: Float, y: Float) -> Float {
     noise_3d(x, y, 0.5)
 }
 
-/// Evaluates the Perlin Noise function for a 1-D point. Evaluates `noise_1d()`
-/// at y = z = 0.5.
+/// Evaluates the Perlin Noise function for a 1-D point. Evaluates `noise_1d()` at y = z = 0.5.
 ///
 /// * `x` - x-coordinate of point.
 pub fn noise_1d(x: Float) -> Float {
@@ -102,8 +100,7 @@ pub fn noise_point3f(p: Point3f) -> Float {
     noise_3d(p.x, p.y, p.z)
 }
 
-/// Evaluates the Perlin Noise function for a 2-D point. Evaluates `noise_3d()`
-/// at z = 0.5.
+/// Evaluates the Perlin Noise function for a 2-D point. Evaluates `noise_3d()` at z = 0.5.
 ///
 /// * `p` - The 2-D point.
 pub fn noise_point2f(p: Point2f) -> Float {
@@ -159,13 +156,7 @@ fn noise_weight(t: Float) -> Float {
 /// * `dpdy`        - Partial derivative at point p with respect to y.
 /// * `omega`       - Smoothness falloff value in [0, 1].
 /// * `max_octaves` - Maximum number of octaves of noise to use for the sum.
-pub fn fbm(
-    p: &Point3f,
-    dpdx: &Vector3f,
-    dpdy: &Vector3f,
-    omega: Float,
-    max_octaves: usize,
-) -> Float {
+pub fn fbm(p: &Point3f, dpdx: &Vector3f, dpdy: &Vector3f, omega: Float, max_octaves: usize) -> Float {
     // Compute number of octaves for antialiased FBm.
     let len2 = max(dpdx.length_squared(), dpdy.length_squared());
     let n = clamp(-1.0 - 0.5 * len2.log2(), 0.0, max_octaves as Float);
@@ -192,13 +183,7 @@ pub fn fbm(
 /// * `dpdy`        - Partial derivative at point p with respect to y.
 /// * `omega`       - Smoothness falloff value in [0, 1].
 /// * `max_octaves` - Maximum number of octaves of noise to use for the sum.
-pub fn turbulence(
-    p: &Point3f,
-    dpdx: &Vector3f,
-    dpdy: &Vector3f,
-    omega: Float,
-    max_octaves: usize,
-) -> Float {
+pub fn turbulence(p: &Point3f, dpdx: &Vector3f, dpdy: &Vector3f, omega: Float, max_octaves: usize) -> Float {
     // Compute number of octaves for antialiased FBm
     let len2 = max(dpdx.length_squared(), dpdy.length_squared());
     let n = clamp(-1.0 - 0.5 * len2.log2(), 0.0, max_octaves as Float);
@@ -216,11 +201,7 @@ pub fn turbulence(
 
     // Account for contributions of clamped octaves in turbulence
     let n_partial = n - n_int as Float;
-    sum += o * lerp(
-        smooth_step(0.3, 0.7, n_partial),
-        0.2,
-        abs(noise_point3f(lambda * p)),
-    );
+    sum += o * lerp(smooth_step(0.3, 0.7, n_partial), 0.2, abs(noise_point3f(lambda * p)));
     for _i in n_int..max_octaves {
         sum += o * 0.2;
         o *= omega;
@@ -231,8 +212,7 @@ pub fn turbulence(
 /// Reconstruction filter function Lanczos (sinc) that works on x in (0, 1].
 ///
 /// * `x`   - Distance.
-/// * `tau` - Number of cycles the sinc function passes through before it is
-///           clamped to 0. Use default of 2.0.
+/// * `tau` - Number of cycles the sinc function passes through before it is clamped to 0. Use default of 2.0.
 pub fn lanczos(x: Float, tau: Float) -> Float {
     let mut x = abs(x);
     if x < 1e-5 {

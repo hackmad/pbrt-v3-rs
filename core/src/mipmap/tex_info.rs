@@ -1,6 +1,5 @@
 //! TexInfo
 
-#![allow(dead_code)]
 use crate::mipmap::*;
 use ordered_float::OrderedFloat;
 use std::hash::{Hash, Hasher};
@@ -23,8 +22,7 @@ pub struct TexInfo {
     /// Do gamma correction for the texel values.
     pub gamma: bool,
 
-    /// Used to clamp the ellipse eccentricity (EWA).
-    /// Set to 0 if EWA is not being used.
+    /// Used to clamp the ellipse eccentricity (EWA). Set to 0 if EWA is not being used.
     pub max_anisotropy: Float,
 }
 
@@ -36,8 +34,7 @@ impl TexInfo {
     /// * `wrap_mode`        - Image wrapping convention.
     /// * `scale`            - Scale for the texel values.
     /// * `gamma`            - Do gamma correction for the texel values.
-    /// * `max_anisotropy`   - Used to clamp the ellipse eccentricity (EWA).
-    ///                        Set to 0 if EWA is not being used.
+    /// * `max_anisotropy`   - Used to clamp the ellipse eccentricity (EWA). Set to 0 if EWA is not being used.
     pub fn new(
         path: &str,
         filtering_method: FilteringMethod,

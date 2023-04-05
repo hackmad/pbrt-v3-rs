@@ -1,6 +1,5 @@
 //! Transformations
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::pbrt::*;
 use std::cmp::{Eq, Ord, Ordering, PartialOrd};
@@ -187,8 +186,7 @@ impl Transform {
     ///
     /// * `pos`  - Position of camera.
     /// * `look` - Position to point towards.
-    /// * `up`   - Used to orient the camera's viewing direction implied by `pos`
-    ///            and `look`.
+    /// * `up`   - Used to orient the camera's viewing direction implied by `pos` and `look`.
     #[rustfmt::skip]
     pub fn look_at(pos: &Point3f, look: &Point3f, up: &Vector3f) -> Self {
         let dir = (*look - *pos).normalize();
@@ -215,9 +213,8 @@ impl Transform {
         }
     }
 
-    /// Generate a transformation for orthographic projection that leaves the
-    /// x and y coordinates unchanged but maps z values at the near plane to
-    /// 0 and z values at the far plane to 1.
+    /// Generate a transformation for orthographic projection that leaves the x and y coordinates unchanged but maps z
+    /// values at the near plane to 0 and z values at the far plane to 1.
     ///
     /// * `z_near` - The near z-plane.
     /// * `z_far`  - The far z-plane.
@@ -227,9 +224,8 @@ impl Transform {
             &Self::translate(&Vector3f::new(0.0, 0.0,-z_near))
     }
 
-    /// Generate a transformation for perspective projection where points in
-    /// the scene are projected onto a viewing plane perpendicular to the z-axis.
-    /// It maps z values at the near plane to 0 and z values at the far plane to 1.
+    /// Generate a transformation for perspective projection where points in the scene are projected onto a viewing
+    /// plane perpendicular to the z-axis. It maps z values at the near plane to 0 and z values at the far plane to 1.
     ///
     /// * `fov` - The field-of-view angle in degrees.
     /// * `n`   - The near z-plane.
@@ -270,9 +266,8 @@ impl Transform {
         self.m == Matrix4x4::IDENTITY
     }
 
-    /// Checks if transformation has a scaling term by transforming the
-    /// coordinate axes and checking that their transformed length is close
-    /// to 1.0.
+    /// Checks if transformation has a scaling term by transforming the coordinate axes and checking that their
+    /// transformed length is close to 1.0.
     pub fn has_scale(&self) -> bool {
         let la2 = self
             .transform_vector(&Vector3::new(1.0, 0.0, 0.0))
@@ -306,8 +301,7 @@ impl Transform {
         }
     }
 
-    /// Returns the transformed point and absolute error due to applying the
-    /// transformation to a point.
+    /// Returns the transformed point and absolute error due to applying the transformation to a point.
     ///
     /// * `p` - The point.
     pub fn transform_point_with_error(&self, p: &Point3f) -> (Point3f, Vector3f) {
@@ -336,9 +330,8 @@ impl Transform {
         (p2, p_error)
     }
 
-    /// Using the original point passed to `transform_point` and the error
-    /// returned by `transform_point_error` returns the absolute error in the
-    /// result.
+    /// Using the original point passed to `transform_point` and the error returned by `transform_point_error` returns
+    /// the absolute error in the result.
     ///
     /// * `p`       - The point passed to `transform_point_with_error`.
     /// * `p_error` - The error computed in `transform_point_with_error`.
@@ -386,8 +379,7 @@ impl Transform {
         )
     }
 
-    /// Returns the transformed vector with absolute error due to applying the
-    /// transformation to a vector.
+    /// Returns the transformed vector with absolute error due to applying the transformation to a vector.
     ///
     /// * `v` - The vector.
     pub fn transform_vector_with_error(&self, v: &Vector3f) -> (Vector3f, Vector3f) {
@@ -410,9 +402,8 @@ impl Transform {
         (v2, abs_error)
     }
 
-    /// Using the original vector passed to `transform_vector` and the error
-    /// returned by `transform_vector_error` returns the absolute error in the
-    /// result.
+    /// Using the original vector passed to `transform_vector` and the error returned by `transform_vector_error`
+    /// returns the absolute error in the result.
     ///
     /// * `v`       - The vector passed to `transform_vector_with_error`.
     /// * `v_error` - The error computed in `transform_vector_with_error`.
@@ -484,8 +475,7 @@ impl Transform {
         }
     }
 
-    /// Returns the transformed ray with absolute errors due to applying the
-    /// transformation to its origin and direction.
+    /// Returns the transformed ray with absolute errors due to applying the transformation to its origin and direction.
     ///
     /// * `r` - The ray.
     pub fn transform_ray_with_error(&self, r: &Ray) -> (Ray, Vector3f, Vector3f) {
@@ -522,8 +512,8 @@ impl Transform {
         }
     }
 
-    /// Transforms the ray taking into account absolute errors due to applying the
-    /// transformation to its origin and direction.
+    /// Transforms the ray taking into account absolute errors due to applying the transformation to its origin and
+    /// direction.
     ///
     /// * `r` - The ray.
     pub fn transform_ray_with_abs_error(&self, r: &Ray, o_error_in: &Vector3f, d_error_in: &Vector3f) -> (Ray, Vector3f, Vector3f) {
@@ -599,8 +589,7 @@ impl Transform {
         si.shading.dndv = self.transform_normal(&si.shading.dndv);
     }
 
-    /// Returns `true` if the transformation changes the handedness of the
-    /// coordinate system.
+    /// Returns `true` if the transformation changes the handedness of the coordinate system.
     pub fn swaps_handedness(&self) -> bool {
         let m = &self.m;
         let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
@@ -655,8 +644,7 @@ impl Eq for Transform {}
 impl Mul<&Transform> for Transform {
     type Output = Self;
 
-    /// Composes this transformation with another one. The resulting transform
-    /// is the same as applying `self` then `rhs`.
+    /// Composes this transformation with another one. The resulting transform is the same as applying `self` then `rhs`.
     ///
     /// * `rhs` - The transformation to compose.
     fn mul(self, rhs: &Transform) -> Self::Output {
@@ -670,8 +658,7 @@ impl Mul<&Transform> for Transform {
 impl Mul<&Transform> for &Transform {
     type Output = Transform;
 
-    /// Composes this transformation with another one. The resulting transform
-    /// is the same as applying `self` then `rhs`.
+    /// Composes this transformation with another one. The resulting transform is the same as applying `self` then `rhs`.
     ///
     /// * `rhs` - The transformation to compose.
     fn mul(self, rhs: &Transform) -> Self::Output {
@@ -685,8 +672,7 @@ impl Mul<&Transform> for &Transform {
 impl Mul<&Transform> for ArcTransform {
     type Output = Transform;
 
-    /// Composes this transformation with another one. The resulting transform
-    /// is the same as applying `self` then `rhs`.
+    /// Composes this transformation with another one. The resulting transform is the same as applying `self` then `rhs`.
     ///
     /// * `rhs` - The transformation to compose.
     fn mul(self, rhs: &Transform) -> Self::Output {
@@ -700,8 +686,7 @@ impl Mul<&Transform> for ArcTransform {
 impl Mul<ArcTransform> for Transform {
     type Output = Transform;
 
-    /// Composes this transformation with another one. The resulting transform
-    /// is the same as applying `self` then `rhs`.
+    /// Composes this transformation with another one. The resulting transform is the same as applying `self` then `rhs`.
     ///
     /// * `rhs` - The transformation to compose.
     fn mul(self, rhs: ArcTransform) -> Self::Output {

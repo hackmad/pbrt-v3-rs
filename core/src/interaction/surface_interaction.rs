@@ -1,6 +1,5 @@
 //! Surface Interactions
 
-#![allow(dead_code)]
 use super::Hit;
 use crate::geometry::*;
 use crate::material::*;
@@ -46,16 +45,14 @@ impl<'scene> SurfaceInteraction<'scene> {
     /// * `p`          - Point of interaction.
     /// * `p_error`    - Floating point error for ray intersection points.
     /// * `uv`         - The uv coordinates from surface parametrization.
-    /// * `wo`         - The negative ray direction (outgoing direction used when
-    ///                  computing lighting at points).
+    /// * `wo`         - The negative ray direction (outgoing direction used when computing lighting at points).
     /// * `dpdu`       - Parametric partial derivative of the point ∂p/∂u.
     /// * `dpdv`       - Parametric partial derivative of the point ∂p/∂v.
     /// * `dndu`       - Differential change ∂n/∂v in surface normal as we move along u.
     /// * `dndv`       - Differential change ∂n/∂v in surface normal as we move along v.
     /// * `time`       - Time when interaction occurred.
     /// * `shape_data` - The shape data.
-    /// * `face_index` - The face index in a triangle mesh where hit occurred.
-    ///                  Use 0 if not triangel mesh.
+    /// * `face_index` - The face index in a triangle mesh where hit occurred. Use 0 if not triangel mesh.
     pub fn new(
         p: Point3f,
         p_error: Vector3f,
@@ -175,15 +172,13 @@ impl<'scene> SurfaceInteraction<'scene> {
         self.shading.dndv = dndv;
     }
 
-    /// Initializes representations of the light-scattering properties of the
-    /// material at the intersection point on the primtive's surface.
+    /// Initializes representations of the light-scattering properties of the material at the intersection point on the
+    /// primtive's surface.
     ///
     /// * `ray`                  - The ray.
     /// * `mode`                 - Transport mode.
-    /// * `allow_multiple_lobes` - Indicates whether the material should use
-    ///                            BxDFs that aggregate multiple types of
-    ///                            scattering into a single BxDF when such BxDFs
-    ///                            are available.
+    /// * `allow_multiple_lobes` - Indicates whether the material should use BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs are available.
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
     pub fn compute_scattering_functions(
@@ -200,9 +195,8 @@ impl<'scene> SurfaceInteraction<'scene> {
         }
     }
 
-    /// Use offset rays to estimate the partial derivatives mapping p(x, y) from
-    /// image position to world space position and the partial derivatives of the
-    /// mappings u(x, y) and v(x, y) from (x, y) to (u, v) parametric coordinates,
+    /// Use offset rays to estimate the partial derivatives mapping p(x, y) from image position to world space position
+    /// and the partial derivatives of the mappings u(x, y) and v(x, y) from (x, y) to (u, v) parametric coordinates,
     /// giving theworld space positions ∂p/∂x and ∂p/∂y.
     ///
     /// * `ray` - The ray.
@@ -283,8 +277,7 @@ impl<'scene> SurfaceInteraction<'scene> {
         }
     }
 
-    /// Returns the emitted radiance at a surface point intersected by a ray
-    /// for an area light.
+    /// Returns the emitted radiance at a surface point intersected by a ray for an area light.
     ///
     /// * `w` - The outgoing direction.
     pub fn le(&self, w: &Vector3f) -> Spectrum {

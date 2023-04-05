@@ -1,6 +1,5 @@
 //! Endpiont Interactions
 
-#![allow(dead_code)]
 use crate::camera::*;
 use crate::geometry::*;
 use crate::interaction::*;

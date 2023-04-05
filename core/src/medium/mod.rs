@@ -1,6 +1,5 @@
 //! Medium
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::interaction::MediumInteraction;
 use crate::sampler::*;
@@ -26,12 +25,10 @@ pub trait Medium {
 
     /// Samples a medium scattering interaction along a world-space ray.
     ///
-    /// The ray will generally have been intersected against the scene geometry;
-    /// thus, implementations of this method shouldn’t ever sample a medium
-    /// interaction at a point on the ray beyond its `t_max` value.
+    /// The ray will generally have been intersected against the scene geometry; thus, implementations of this method
+    /// shouldn’t ever sample a medium interaction at a point on the ray beyond its `t_max` value.
     ///
-    /// NOTE: Calling code will need to assign this medium as we cannot pass
-    /// back and `ArcMedium` out of here for `Self`.
+    /// NOTE: Calling code will need to assign this medium as we cannot pass back and `ArcMedium` out of here for `Self`.
     ///
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
@@ -80,8 +77,7 @@ impl MediumInterface {
         }
     }
 
-    /// Returns `true` if the medium interface marks a transition between
-    /// two distinct media.
+    /// Returns `true` if the medium interface marks a transition between two distinct media.
     pub fn is_medium_transition(&self) -> bool {
         match (self.inside.as_ref(), self.outside.as_ref()) {
             (Some(inside), Some(outside)) => Arc::ptr_eq(inside, outside),

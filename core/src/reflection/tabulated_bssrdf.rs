@@ -1,7 +1,5 @@
 //! Tabulated BSSRDF
 
-#![allow(dead_code)]
-
 use super::*;
 use crate::bssrdf::*;
 use crate::interaction::*;
@@ -35,18 +33,8 @@ impl<'scene> SampleS<'scene> {
     /// * `bsdf`  - BSDF.
     /// * `value` - Sample value.
     /// * `pdf`   - PDF.
-    pub fn new(
-        si: Option<SurfaceInteraction<'scene>>,
-        bsdf: Option<BSDF>,
-        value: Spectrum,
-        pdf: Float,
-    ) -> Self {
-        Self {
-            si,
-            bsdf,
-            value,
-            pdf,
-        }
+    pub fn new(si: Option<SurfaceInteraction<'scene>>, bsdf: Option<BSDF>, value: Spectrum, pdf: Float) -> Self {
+        Self { si, bsdf, value, pdf }
     }
 }
 
@@ -94,8 +82,8 @@ impl SubsurfaceScatteringProps {
     }
 }
 
-/// A tabulated BSSRDF representation that can handle a wide range of scattering
-/// profiles including measured real-world BSSRDFs.
+/// A tabulated BSSRDF representation that can handle a wide range of scattering profiles including measured real-world
+/// BSSRDFs.
 #[derive(Clone)]
 pub struct TabulatedBSSRDF {
     /// BxDF type.
@@ -104,9 +92,8 @@ pub struct TabulatedBSSRDF {
     /// Scattering profile details.
     table: Arc<BSSRDFTable>,
 
-    /// Total reduction in radiance due to absorption and out-scattering
-    /// `σt = σs + σa`. This combined effect of absorption and out-scattering is
-    /// called attenuation or extinction./
+    /// Total reduction in radiance due to absorption and out-scattering `σt = σs + σa`. This combined effect of
+    /// absorption and out-scattering is called attenuation or extinction.
     sigma_t: Spectrum,
 
     /// Albedo.
@@ -163,8 +150,7 @@ impl TabulatedBSSRDF {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -179,8 +165,8 @@ impl TabulatedBSSRDF {
         }
     }
 
-    /// Evaluates the eight-dimensional distribution function S(), which quantifies / the ratio of differential radiance at point `po` in direction `ωo` to the
-    /// incident differential flux at `pi` from direction `ωi`.
+    /// Evaluates the eight-dimensional distribution function S(), which quantifies / the ratio of differential radiance
+    /// at point `po` in direction `ωo` to the incident differential flux at `pi` from direction `ωi`.
     ///
     /// * `pi` - Interaction point for incident differential flux.
     /// * `wi` - Direction for incident different flux.
@@ -254,18 +240,13 @@ impl TabulatedBSSRDF {
         sr.clamp_default()
     }
 
-    /// Returns the value of the BSSRDF, the surface position where a ray
-    /// re-emerges following internal scattering and probability density function.
+    /// Returns the value of the BSSRDF, the surface position where a ray re-emerges following internal scattering and
+    /// probability density function.
     ///
     /// * `scene` - The scene.
     /// * `u1`    - Sample values for Monte Carlo.
     /// * `u2`    - Sample values for Monte Carlo.
-    pub fn sample_s<'scene>(
-        &self,
-        scene: &'scene Scene,
-        u1: Float,
-        u2: &Point2f,
-    ) -> SampleS<'scene> {
+    pub fn sample_s<'scene>(&self, scene: &'scene Scene, u1: Float, u2: &Point2f) -> SampleS<'scene> {
         let SampleSp { si, value: sp, pdf } = self.sample_sp(scene, u1, u2);
         let mut si_result: Option<SurfaceInteraction<'scene>> = None;
         let mut bsdf_result: Option<BSDF> = None;
@@ -286,30 +267,18 @@ impl TabulatedBSSRDF {
         SampleS::new(si_result, bsdf_result, sp, pdf)
     }
 
-    /// Use a different sampling technique per wavelength to deal with spectral
-    /// variation, and each technique is additionally replicated three times with
-    /// different projection axes given by the basis vectors of a local frame,
-    /// resulting in a total of 3 * Spectrum::nSamples sampling techniques. This
-    /// ensures that every point `S` where takes on non-negligible values is
-    /// intersected with a reasonable probability.
+    /// Use a different sampling technique per wavelength to deal with spectral variation, and each technique is
+    /// additionally replicated three times with different projection axes given by the basis vectors of a local frame,
+    /// resulting in a total of 3 * Spectrum::nSamples sampling techniques. This ensures that every point `S` where
+    /// takes on non-negligible values is intersected with a reasonable probability.
     ///
     /// * `scene` - The scene.
     /// * `u1`    - Sample values for Monte Carlo.
     /// * `u2`    - Sample values for Monte Carlo.
-    pub fn sample_sp<'scene>(
-        &self,
-        scene: &'scene Scene,
-        u1: Float,
-        u2: &Point2f,
-    ) -> SampleSp<'scene> {
+    pub fn sample_sp<'scene>(&self, scene: &'scene Scene, u1: Float, u2: &Point2f) -> SampleSp<'scene> {
         // Choose projection axis for BSSRDF sampling.
         let (vx, vy, vz, mut u1) = if u1 < 0.5 {
-            (
-                self.bssrdf.ss,
-                self.bssrdf.ts,
-                Vector3f::from(self.bssrdf.ns),
-                u1 * 2.0,
-            )
+            (self.bssrdf.ss, self.bssrdf.ts, Vector3f::from(self.bssrdf.ns), u1 * 2.0)
         } else if u1 < 0.75 {
             // Prepare for sampling rays with respect to `ss`.
             (
@@ -329,11 +298,7 @@ impl TabulatedBSSRDF {
         };
 
         // Choose spectral channel for BSSRDF sampling.
-        let ch = clamp(
-            (u1 * SPECTRUM_SAMPLES as Float) as usize,
-            0,
-            SPECTRUM_SAMPLES - 1,
-        );
+        let ch = clamp((u1 * SPECTRUM_SAMPLES as Float) as usize, 0, SPECTRUM_SAMPLES - 1);
         u1 = u1 * SPECTRUM_SAMPLES as Float - ch as Float;
 
         // Sample BSSRDF profile in polar coordinates.
@@ -353,14 +318,7 @@ impl TabulatedBSSRDF {
         // Compute BSSRDF sampling ray segment.
         let base_p = self.bssrdf.po_hit.p + r * (vx * cos(phi) + vy * sin(phi)) - l * vz * 0.5;
         let base_time = self.bssrdf.po_hit.time;
-        let mut base = Hit::new(
-            base_p,
-            base_time,
-            Vector3f::ZERO,
-            Vector3f::ZERO,
-            Normal3f::ZERO,
-            None,
-        );
+        let mut base = Hit::new(base_p, base_time, Vector3f::ZERO, Vector3f::ZERO, Normal3f::ZERO, None);
         let p_target = base.p + l * vz;
 
         // Intersect BSSRDF sampling ray against the scene geometry.
@@ -405,18 +363,13 @@ impl TabulatedBSSRDF {
         SampleSp::new(Some(pi), term, pdf)
     }
 
-    /// Evaluate the combined PDF that takes all of the sampling strategies
-    /// `sample_sp()` into account.
+    /// Evaluate the combined PDF that takes all of the sampling strategies `sample_sp()` into account.
     ///
     /// * `pi_hit` - Surface interaction hit point.
     pub fn pdf_sp(&self, pi_hit: &Hit) -> Float {
         // Express `pti-pto` and `n_i` with respect to local coordinates at `pto`.
         let d = self.bssrdf.po_hit.p - pi_hit.p;
-        let d_local = Vector3f::new(
-            self.bssrdf.ss.dot(&d),
-            self.bssrdf.ts.dot(&d),
-            self.bssrdf.ns.dot(&d),
-        );
+        let d_local = Vector3f::new(self.bssrdf.ss.dot(&d), self.bssrdf.ts.dot(&d), self.bssrdf.ns.dot(&d));
         let n_local = Normal3f::new(
             self.bssrdf.ss.dot(&pi_hit.n),
             self.bssrdf.ts.dot(&pi_hit.n),
@@ -436,8 +389,7 @@ impl TabulatedBSSRDF {
         let ch_prob = 1.0 / SPECTRUM_SAMPLES as Float;
         for axis in 0..3 {
             for ch in 0..SPECTRUM_SAMPLES {
-                pdf +=
-                    self.pdf_sr(ch, r_proj[axis]) * abs(n_local[axis]) * ch_prob * axis_prob[axis];
+                pdf += self.pdf_sr(ch, r_proj[axis]) * abs(n_local[axis]) * ch_prob * axis_prob[axis];
             }
         }
 
@@ -464,8 +416,8 @@ impl TabulatedBSSRDF {
         }
     }
 
-    /// Returns the PDF of samples obtained via `sample_sr()`. It evaluates the
-    /// profile function divided by the normalizing constant.
+    /// Returns the PDF of samples obtained via `sample_sr()`. It evaluates the profile function divided by the
+    /// normalizing constant.
     ///
     /// * `ch` - Channel.
     /// * `r`  - Radius.
@@ -511,8 +463,8 @@ impl TabulatedBSSRDF {
             sr /= TWO_PI * r_optical;
         }
 
-        // NOTE: We want the IEEE-754 behaviour for handling NaN which happens when
-        // rho_eff == 0.0. So we use Float::max() rather than our generic pbrt::max().
+        // NOTE: We want the IEEE-754 behaviour for handling NaN which happens when rho_eff == 0.0. So we use
+        // Float::max() rather than our generic pbrt::max().
         (0.0 as Float).max(sr * self.sigma_t[ch] * self.sigma_t[ch] / rho_eff)
     }
 }
@@ -589,11 +541,7 @@ impl BSSRDFTable {
     ///
     /// * `rho_eff` - Effective albedo.
     /// * `mfp`     - Mean free path.
-    pub fn subsurface_from_diffuse(
-        &self,
-        rho_eff: &Spectrum,
-        mfp: &Spectrum,
-    ) -> SubsurfaceScatteringProps {
+    pub fn subsurface_from_diffuse(&self, rho_eff: &Spectrum, mfp: &Spectrum) -> SubsurfaceScatteringProps {
         let mut ss = SubsurfaceScatteringProps::default();
 
         for c in 0..SPECTRUM_SAMPLES {
@@ -619,8 +567,8 @@ impl BSSRDFTable {
 
         // Choose albedo values of the diffusion profile discretization.
         for (i, rho_sample) in self.rho_samples.iter_mut().enumerate() {
-            *rho_sample = (1.0 - (-8.0 * i as Float / (self.n_rho_samples - 1) as Float).exp())
-                / (1.0 - (-8.0 as Float).exp());
+            *rho_sample =
+                (1.0 - (-8.0 * i as Float / (self.n_rho_samples - 1) as Float).exp()) / (1.0 - (-8.0 as Float).exp());
         }
 
         // TODO: Parallelize
@@ -632,15 +580,13 @@ impl BSSRDFTable {
                 let r = self.radius_samples[j];
                 self.profile[i * self.n_radius_samples + j] = TWO_PI
                     * r
-                    * (beam_diffusion_ss(rho, 1.0 - rho, g, eta, r)
-                        + beam_diffusion_ms(rho, 1.0 - rho, g, eta, r));
+                    * (beam_diffusion_ss(rho, 1.0 - rho, g, eta, r) + beam_diffusion_ms(rho, 1.0 - rho, g, eta, r));
             }
 
             // Compute effective albedo `rho_eff` and CDF for importance sampling.
             let start = i * self.n_radius_samples;
             let end = start + self.n_radius_samples;
-            let (profile_cdf, rho_eff) =
-                integrate_catmull_rom(&self.radius_samples, &self.profile[start..end]);
+            let (profile_cdf, rho_eff) = integrate_catmull_rom(&self.radius_samples, &self.profile[start..end]);
             self.rho_eff[i] = rho_eff;
             self.profile_cdf[start..end].copy_from_slice(&profile_cdf);
         });
@@ -653,10 +599,9 @@ const PBD_SAMPLES: usize = 100;
 /// Compute the photon beam diffusion (PBD) single-scattering profile using 100
 /// samples for the integral estimate.
 ///
-/// * `sigma_s` - Scattering coefficient `σs` is the probability of an out-scattering
-///               event occurring per unit distance
-/// * `sigma_a` - Absorption cross section `σa` is the probability density that
-///               light is absorbed per unit distance traveled in the medium
+/// * `sigma_s` - Scattering coefficient `σs` is the probability of an out-scattering event occurring per unit distance.
+/// * `sigma_a` - Absorption cross section `σa` is the probability density that light is absorbed per unit distance
+///               traveled in the medium.
 /// * `g`       - The asymmetry parameter for Henyey-Greenstein phase function.
 /// * `eta`     - Index of refraction of the scattering medium.
 /// * `radius`  - Radius.
@@ -687,10 +632,9 @@ fn beam_diffusion_ss(sigma_s: Float, sigma_a: Float, g: Float, eta: Float, r: Fl
 
 /// Compute the average of 100 samples of the photon beam diffusion (PBD) integrand.
 ///
-/// * `sigma_s` - Scattering coefficient `σs` is the probability of an out-scattering
-///               event occurring per unit distance
-/// * `sigma_a` - Absorption cross section `σa` is the probability density that
-///               light is absorbed per unit distance traveled in the medium
+/// * `sigma_s` - Scattering coefficient `σs` is the probability of an out-scattering event occurring per unit distance.
+/// * `sigma_a` - Absorption cross section `σa` is the probability density that light is absorbed per unit distance
+///               traveled in the medium.
 /// * `g`       - The asymmetry parameter for Henyey-Greenstein phase function.
 /// * `eta`     - Index of refraction of the scattering medium.
 /// * `radius`  - Radius.

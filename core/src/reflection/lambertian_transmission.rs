@@ -1,27 +1,23 @@
 //! Lambertian Reflection
 
-#![allow(dead_code)]
-
 use super::*;
 use std::fmt;
 
-/// BRDF for the Lambertian model for perfect transmissive surfaces that scatters
-/// incident illumination equally through a surface in all directions.
+/// BRDF for the Lambertian model for perfect transmissive surfaces that scatters incident illumination equally through
+/// a surface in all directions.
 #[derive(Clone)]
 pub struct LambertianTransmission {
     /// BxDF type.
     bxdf_type: BxDFType,
 
-    /// Transmission spectrum which gives the fraction of incident light that
-    /// is scattered through the surface.
+    /// Transmission spectrum which gives the fraction of incident light that is scattered through the surface.
     t: Spectrum,
 }
 
 impl LambertianTransmission {
     /// Creates a new instance of `LambertianTransmission`.
     ///
-    /// * `t`     - Transmission spectrum which gives the fraction of incident
-    ///             light that is scattered through the surface.
+    /// * `t` - Transmission spectrum which gives the fraction of incident light that is scattered through the surface.
     pub fn new(t: Spectrum) -> BxDF {
         let model = Self {
             bxdf_type: BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_DIFFUSE,
@@ -35,8 +31,7 @@ impl LambertianTransmission {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -44,8 +39,7 @@ impl LambertianTransmission {
         self.t * INV_PI
     }
 
-    /// Returns the value of the BxDF given the outgpoing direction.
-    /// directions.
+    /// Returns the value of the BxDF given the outgpoing direction. directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
@@ -59,8 +53,8 @@ impl LambertianTransmission {
         BxDFSample::new(self.f(wo, &wi), pdf, wi, self.get_type())
     }
 
-    /// Evaluates the PDF for the sampling method. Default is based on the
-    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    /// Evaluates the PDF for the sampling method. Default is based on the cosine-weighted sampling in `BxDF::sample_f()`
+    /// default implementation.
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if !same_hemisphere(wo, wi) {
             abs_cos_theta(wi) * INV_PI

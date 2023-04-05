@@ -1,7 +1,5 @@
 //! File Utility Functions
 
-#![allow(dead_code)]
-
 use std::path::PathBuf;
 use std::result::Result;
 
@@ -24,9 +22,7 @@ pub fn absolute_path(path: &str) -> Result<String, String> {
 ///
 /// * `path` - The path.
 pub fn parent_path(path: &str) -> Option<String> {
-    PathBuf::from(path)
-        .parent()
-        .and_then(|p| p.to_str().map(String::from))
+    PathBuf::from(path).parent().and_then(|p| p.to_str().map(String::from))
 }
 
 /// Returns `true` if given path is a relative path; otherwise returns `false`.

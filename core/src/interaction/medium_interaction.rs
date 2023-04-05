@@ -1,6 +1,5 @@
 //! Medium Interactions
 
-#![allow(dead_code)]
 use super::Hit;
 use crate::geometry::*;
 use crate::medium::*;
@@ -20,8 +19,7 @@ impl MediumInteraction {
     /// Create a new medium interaction.
     ///
     /// * `p`      - The point of interaction.
-    /// * `wo`     - The negative ray direction (outgoing direction used
-    ///              hen computing lighting at points).
+    /// * `wo`     - The negative ray direction (outgoing direction used hen computing lighting at points).
     /// * `time`   - Time when interaction occurred.
     /// * `medium` - The medium.
     /// * `phase`  - The phase function.

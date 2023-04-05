@@ -1,6 +1,5 @@
 //! Path vertex
 
-#![allow(dead_code)]
 use super::common::*;
 use core::camera::*;
 use core::geometry::*;

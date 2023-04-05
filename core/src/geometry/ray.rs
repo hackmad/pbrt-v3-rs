@@ -1,6 +1,5 @@
 //! Rays
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::medium::*;
 use crate::pbrt::*;
@@ -36,13 +35,7 @@ impl Ray {
     /// * `t_max`  - Maximum extent of the ray.
     /// * `time`   - Time value.
     /// * `medium` - Medium containing origin `o`.
-    pub fn new(
-        o: Point3f,
-        d: Vector3f,
-        t_max: Float,
-        time: Float,
-        medium: Option<ArcMedium>,
-    ) -> Self {
+    pub fn new(o: Point3f, d: Vector3f, t_max: Float, time: Float, medium: Option<ArcMedium>) -> Self {
         Self {
             o,
             d,
@@ -91,8 +84,7 @@ impl Ray {
         self.o + self.d * t
     }
 
-    /// Scale the differential rays to account for spacing between samples on
-    /// the film plane.
+    /// Scale the differential rays to account for spacing between samples on the film plane.
     ///
     /// * `s` - The weight used to scale the differential rays.
     pub fn scale_differentials(&mut self, s: Float) {
@@ -300,21 +292,9 @@ mod tests {
     // Define some properties for tests.
     prop_range!(range_f32, f32, -100.0..100.0f32);
 
-    prop_point3!(
-        point3_f32,
-        f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32
-    );
+    prop_point3!(point3_f32, f32, -100.0..100.0f32, -100.0..100.0f32, -100.0..100.0f32);
 
-    prop_vector3!(
-        vector3_f32,
-        f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32
-    );
+    prop_vector3!(vector3_f32, f32, -100.0..100.0f32, -100.0..100.0f32, -100.0..100.0f32);
 
     proptest! {
         #[test]

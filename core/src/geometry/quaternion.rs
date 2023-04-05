@@ -1,6 +1,5 @@
 //! Quaternions
 
-#![allow(dead_code)]
 use super::common::*;
 use crate::geometry::*;
 use crate::pbrt::*;
@@ -31,28 +30,24 @@ impl Quaternion {
         *self / self.length()
     }
 
-    /// Returns the square of the length of the quaternion which is the
-    /// inner product with itself.
+    /// Returns the square of the length of the quaternion which is the inner product with itself.
     pub fn length_squared(&self) -> Float {
         self.dot(self)
     }
 
-    /// Returns the length of the quaternion which is square root of the inner
-    /// product with itself.
+    /// Returns the length of the quaternion which is square root of the inner product with itself.
     pub fn length(&self) -> Float {
         self.length_squared().sqrt()
     }
 
-    /// Interpolate between this and another quaternion using sqpherical linear
-    /// interpolation.
+    /// Interpolate between this and another quaternion using sqpherical linear interpolation.
     ///
     /// * `t` - The interpolation parameter.
     /// * `q` - The other quaternion.
     pub fn slerp(&self, t: Float, q: Self) -> Self {
         let cos_theta = self.dot(&q);
         if cos_theta > 0.9995 {
-            // Quaternions are nearly parallel. Use linear interpolation to
-            // avoid numerical instability.
+            // Quaternions are nearly parallel. Use linear interpolation to avoid numerical instability.
             ((1.0 - t) * *self + t * q).normalize()
         } else {
             //  Compute the orthogonal quaternion `qperp`.

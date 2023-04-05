@@ -1,6 +1,5 @@
 //! BSDF
 
-#![allow(dead_code)]
 use super::*;
 use crate::interaction::*;
 use crate::rng::*;
@@ -69,10 +68,9 @@ pub const MAX_BXDFS: usize = 8;
 /// BSDF interface represents a collection of BRDFs and BTDFs.
 #[derive(Clone)]
 pub struct BSDF {
-    /// The shading normal given by per-vertex normals and/or bump mapping.
-    /// It is the first axis in the orthonormal coordinate system and also
-    /// used to define hemispheres for integrating incident illumincation for
-    /// surface reflection.
+    /// The shading normal given by per-vertex normals and/or bump mapping. It is the first axis in the orthonormal
+    /// coordinate system and also used to define hemispheres for integrating incident illumincation for surface
+    /// reflection.
     pub ns: Normal3f,
 
     /// The geometric normal defined by surface geometry.
@@ -96,9 +94,8 @@ impl BSDF {
     ///
     /// * `hit`     - The surface interaction hit.
     /// * `shading` - The surface interacton shading.
-    /// * `eta`     - Optional relative index of refraction over the surface
-    ///               boundary. If not provided, defaults to 1.0; used for
-    ///               opaque surfaces.
+    /// * `eta`     - Optional relative index of refraction over the surface boundary. If not provided, defaults to 1.0;
+    ///               used for opaque surfaces.
     pub fn new(hit: &Hit, shading: &Shading, eta: Option<Float>) -> Self {
         let eta = eta.map_or_else(|| 1.0, |e| e);
         let ns = shading.n;
@@ -324,8 +321,8 @@ impl BSDF {
         l
     }
 
-    /// Evaluates the PDF for the sampling method. Default is based on the
-    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    /// Evaluates the PDF for the sampling method. Default is based on the cosine-weighted sampling in `BxDF::sample_f()`
+    /// default implementation.
     ///
     /// * `wo_world`  - Outgoing direction in world-space.
     /// * `wi_world`  - Incident direction in world-space.

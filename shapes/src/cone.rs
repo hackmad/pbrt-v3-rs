@@ -1,6 +1,5 @@
 //! Cones
 
-#![allow(dead_code)]
 use core::efloat::*;
 use core::geometry::*;
 use core::interaction::*;
@@ -29,8 +28,7 @@ impl Cone {
     ///
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default.
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default.
     /// * `radius`              - Radius of cone.
     /// * `height`              - Height of cone.
     /// * `phi_max`             - Maximum spherical coordinate for Φ.
@@ -56,8 +54,7 @@ impl Cone {
 }
 
 impl Shape for Cone {
-    /// Returns the shape type. Usually these are behind ArcShape and harder to
-    /// debug. So this will be helpful.
+    /// Returns the shape type. Usually these are behind ArcShape and harder to debug. So this will be helpful.
     fn get_type(&self) -> &'static str {
         "cone"
     }
@@ -75,16 +72,12 @@ impl Shape for Cone {
         )
     }
 
-    /// Returns geometric details if a ray intersects the shape intersection.
-    /// If there is no intersection, `None` is returned.
+    /// Returns geometric details if a ray intersects the shape intersection. If there is no intersection, `None` is
+    /// returned.
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect<'scene>(
-        &self,
-        r: &Ray,
-        _test_alpha_texture: bool,
-    ) -> Option<Intersection<'scene>> {
+    fn intersect<'scene>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'scene>> {
         // Transform ray to object space.
         let (ray, o_err, d_err) = self
             .data
@@ -188,12 +181,8 @@ impl Shape for Cone {
 
         // Compute dndu and dndv from fundamental form coefficients.
         let inv_egf_1 = 1.0 / (e1 * g1 - f1 * f1);
-        let dndu = Normal3::from(
-            (f2 * f1 - e2 * g1) * inv_egf_1 * dpdu + (e2 * f1 - f2 * e1) * inv_egf_1 * dpdv,
-        );
-        let dndv = Normal3::from(
-            (g2 * f1 - f2 * g1) * inv_egf_1 * dpdu + (f2 * f1 - g2 * e1) * inv_egf_1 * dpdv,
-        );
+        let dndu = Normal3::from((f2 * f1 - e2 * g1) * inv_egf_1 * dpdu + (e2 * f1 - f2 * e1) * inv_egf_1 * dpdv);
+        let dndv = Normal3::from((g2 * f1 - f2 * g1) * inv_egf_1 * dpdu + (f2 * f1 - g2 * e1) * inv_egf_1 * dpdv);
 
         // Compute error bounds for cone intersection.
 
@@ -221,9 +210,7 @@ impl Shape for Cone {
             Some(Arc::clone(&self.data)),
             0,
         );
-        self.data
-            .object_to_world
-            .transform_surface_interaction(&mut si);
+        self.data.object_to_world.transform_surface_interaction(&mut si);
 
         Some(Intersection::new(Float::from(t_shape_hit), si))
     }
@@ -317,10 +304,7 @@ impl Shape for Cone {
 
     /// Returns the surface area of the shape in object space.
     fn area(&self) -> Float {
-        self.radius
-            * ((self.height * self.height) + (self.radius * self.radius)).sqrt()
-            * self.phi_max
-            / 2.0
+        self.radius * ((self.height * self.height) + (self.radius * self.radius)).sqrt() * self.phi_max / 2.0
     }
 
     /// Sample a point on the surface and return the PDF with respect to area on
@@ -335,13 +319,11 @@ impl Shape for Cone {
 }
 
 impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Cone {
-    /// Create a `Cone` from given parameter set, object to world transform,
-    /// world to object transform and whether or not surface normal orientation
-    /// is reversed.
+    /// Create a `Cone` from given parameter set, object to world transform, world to object transform and whether or
+    /// not surface normal orientation is reversed.
     ///
-    /// * `p` - A tuple containing the parameter set, object to world transform,
-    ///         world to object transform and whether or not surface normal
-    ///         orientation is reversed.
+    /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform and whether
+    ///         or not surface normal orientation is reversed.
     fn from(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
         let (params, o2w, w2o, reverse_orientation) = p;
 

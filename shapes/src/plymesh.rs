@@ -1,7 +1,5 @@
 //! PLY mesh.
 
-#![allow(dead_code)]
-
 use super::TriangleMesh;
 use core::geometry::*;
 use core::paramset::*;
@@ -17,18 +15,13 @@ use textures::ConstantTexture;
 pub struct PLYMesh;
 
 impl PLYMesh {
-    /// Create mesh from a PLY file using given parameter set, object to world
-    /// transform, world to object transform, whether or not surface normal
-    /// orientation is reversed, floating point texture maps and current working
-    /// directory.
+    /// Create mesh from a PLY file using given parameter set, object to world transform, world to object transform,
+    /// whether or not surface normal orientation is reversed, floating point texture maps and current working directory.
     ///
-    /// NOTE: Because we return a set of shapes as `Vec<Arc<Shape>>` we cannot
-    /// implement this as `From` trait :(
+    /// NOTE: Because we return a set of shapes as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
     ///
-    /// * `p` - A tuple containing the parameter set, object to world transform,
-    ///         world to object transform, whether or not surface normal
-    ///         orientation is reversed, floating point texture maps and current
-    ///         working directory.
+    /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform, whether or
+    ///         not surface normal orientation is reversed, floating point texture maps and current working directory.
     pub fn from_props(p: (&ParamSet, ArcTransform, ArcTransform, bool, &FloatTextureMap, &str)) -> Vec<ArcShape> {
         let (params, o2w, w2o, reverse_orientation, float_textures, cwd) = p;
 
@@ -154,11 +147,10 @@ impl PLYMesh {
         )
     }
 
-    /// Parse vertex data. Because of the way the parser works it gives one
-    /// property at a time. Vertex normals and UV coordinates are treated as
-    /// optional. We are assuming if any one property of a vertex, normal or UV
-    /// are present then all properties of corresponding data are present. So,
-    /// bad data where a property is missing will result in bad return values.
+    /// Parse vertex data. Because of the way the parser works it gives one property at a time. Vertex normals and UV
+    /// coordinates are treated as optional. We are assuming if any one property of a vertex, normal or UV are present
+    /// then all properties of corresponding data are present. So, bad data where a property is missing will result in
+    /// bad return values.
     ///
     /// * `elem` - A map of property names and values.
     fn parse_vertex(elem: &KeyMap<Property>) -> Vertex {
@@ -210,8 +202,8 @@ impl PLYMesh {
         Vertex::new(p, n, uv, nc == 3, uvc == 2)
     }
 
-    /// Parse face data. Only vertex indices are supporeted. Unfortunately,
-    /// these can be present as i32 or u32 and have to be converted to usize.
+    /// Parse face data. Only vertex indices are supporeted. Unfortunately, these can be present as i32 or u32 and have
+    /// to be converted to usize.
     ///
     /// * `elem` - A map of property names and values.
     fn parse_face(elem: &KeyMap<Property>, vertex_indices: &mut Vec<usize>) {

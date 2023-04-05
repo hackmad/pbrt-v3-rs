@@ -1,11 +1,9 @@
 //! EFloat
 
-#![allow(dead_code)]
 use super::pbrt::*;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-/// Same as regular float but uses operator overloading to provide
-/// arithmetic operations while computing error bounds.
+/// Same as regular float but uses operator overloading to provide arithmetic operations while computing error bounds.
 #[derive(Copy, Clone, Debug, Default)]
 pub struct EFloat {
     /// The floating point value.
@@ -17,8 +15,7 @@ pub struct EFloat {
     /// The upper bound on `v`.
     high: f32,
 
-    /// 64-bit precision value corresponding to `v`.
-    /// Only used for debug builds.
+    /// 64-bit precision value corresponding to `v`. Only used for debug builds.
     #[cfg(debug_assertions)]
     v_precise: f64,
 }
@@ -32,9 +29,8 @@ impl EFloat {
         let (low, high) = if err == 0.0 {
             (v, v)
         } else {
-            // Compute conservative bounds by rounding the endpoints away from the
-            // middle. Note that this will be over-conservative in cases where v-err
-            // or v+err are exactly representable in floating-point, but it's
+            // Compute conservative bounds by rounding the endpoints away from the middle. Note that this will be
+            // over-conservative in cases where v-err or v+err are exactly representable in floating-point, but it's
             // probably not worth the trouble of checking this case.
             (next_float_down(v - err), next_float_up(v + err))
         };
@@ -72,11 +68,7 @@ impl EFloat {
 
     /// Asserts low < high, low < v_precise < high for finite non-NAN values.
     fn check(&self) {
-        if self.low.is_finite()
-            && !self.low.is_nan()
-            && self.high.is_finite()
-            && !self.high.is_nan()
-        {
+        if self.low.is_finite() && !self.low.is_nan() && self.high.is_finite() && !self.high.is_nan() {
             assert!(self.low <= self.high);
         }
 
@@ -211,8 +203,7 @@ impl Add for EFloat {
     ///
     /// * `ef` - The value to add.
     fn add(self, ef: EFloat) -> Self::Output {
-        // Interval arithemetic addition, with the result rounded away from
-        // the value r.v in order to be conservative.
+        // Interval arithemetic addition, with the result rounded away from the value r.v in order to be conservative.
         let r = Self {
             v: self.v + ef.v,
             low: next_float_down(self.lower_bound() + ef.lower_bound()),
@@ -349,8 +340,7 @@ impl Div for EFloat {
     /// * `ef` - The value to divide by.
     fn div(self, ef: EFloat) -> Self::Output {
         let (low, high) = if ef.low < 0.0 && ef.high > 0.0 {
-            // The interval we're dividing by straddles zero, so just
-            // return an interval of everything.
+            // The interval we're dividing by straddles zero, so just return an interval of everything.
             (f32::NEG_INFINITY, f32::INFINITY)
         } else {
             let div = [
@@ -421,7 +411,7 @@ impl Neg for EFloat {
 pub struct Quadratic {}
 
 impl Quadratic {
-    /// Solve the quadratic equation a * x ^ 2  + b * x + c = 0 for EFloat.
+    /// Solve the quadratic equation a * x ^ 2  + b * x + c = 0 for `EFloat`.
     ///
     /// * `a` - Coefficient of x ^ 2 term.
     /// * `b` - Coefficient of x term.

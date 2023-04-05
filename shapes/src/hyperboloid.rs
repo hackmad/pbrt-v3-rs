@@ -1,6 +1,5 @@
 //! Hyperboloids
 
-#![allow(dead_code)]
 use core::efloat::*;
 use core::geometry::*;
 use core::interaction::*;
@@ -58,8 +57,7 @@ impl Hyperboloid {
     ///
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
     /// * `point1`              - First point defining line segment to revolve.
     /// * `point2`              - Second point defining line segment to revolve.
     /// * `phi_max`             - Maximum spherical coordinate for Φ.
@@ -94,8 +92,7 @@ impl Hyperboloid {
             pp += 2.0 * (p2 - p1);
             let xy1 = pp.x * pp.x + pp.y * pp.y;
             let xy2 = p2.x * p2.x + p2.y * p2.y;
-            ah = (1.0 / xy1 - (pp.z * pp.z) / (xy1 * p2.z * p2.z))
-                / (1.0 - (xy2 * pp.z * pp.z) / (xy1 * p2.z * p2.z));
+            ah = (1.0 / xy1 - (pp.z * pp.z) / (xy1 * p2.z * p2.z)) / (1.0 - (xy2 * pp.z * pp.z) / (xy1 * p2.z * p2.z));
             ch = (ah * xy2 - 1.0) / (p2.z * p2.z);
 
             if ah.is_finite() && !ah.is_nan() {
@@ -129,8 +126,7 @@ impl Hyperboloid {
 }
 
 impl Shape for Hyperboloid {
-    /// Returns the shape type. Usually these are behind ArcShape and harder to
-    /// debug. So this will be helpful.
+    /// Returns the shape type. Usually these are behind ArcShape and harder to debug. So this will be helpful.
     fn get_type(&self) -> &'static str {
         "hyperboloid"
     }
@@ -148,16 +144,12 @@ impl Shape for Hyperboloid {
         )
     }
 
-    /// Returns geometric details if a ray intersects the shape intersection.
-    /// If there is no intersection, `None` is returned.
+    /// Returns geometric details if a ray intersects the shape intersection. If there is no intersection, `None` is
+    /// returned.
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect<'scene>(
-        &self,
-        r: &Ray,
-        _test_alpha_texture: bool,
-    ) -> Option<Intersection<'scene>> {
+    fn intersect<'scene>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'scene>> {
         // Transform ray to object space.
         let (ray, o_err, d_err) = self
             .data
@@ -269,12 +261,8 @@ impl Shape for Hyperboloid {
 
         // Compute dndu and dndv from fundamental form coefficients.
         let inv_egf_1 = 1.0 / (e1 * g1 - f1 * f1);
-        let dndu = Normal3::from(
-            (f2 * f1 - e2 * g1) * inv_egf_1 * dpdu + (e2 * f1 - f2 * e1) * inv_egf_1 * dpdv,
-        );
-        let dndv = Normal3::from(
-            (g2 * f1 - f2 * g1) * inv_egf_1 * dpdu + (f2 * f1 - g2 * e1) * inv_egf_1 * dpdv,
-        );
+        let dndu = Normal3::from((f2 * f1 - e2 * g1) * inv_egf_1 * dpdu + (e2 * f1 - f2 * e1) * inv_egf_1 * dpdv);
+        let dndv = Normal3::from((g2 * f1 - f2 * g1) * inv_egf_1 * dpdu + (f2 * f1 - g2 * e1) * inv_egf_1 * dpdv);
 
         // Compute error bounds for hyperboloid intersection.
 
@@ -302,9 +290,7 @@ impl Shape for Hyperboloid {
             Some(Arc::clone(&self.data)),
             0,
         );
-        self.data
-            .object_to_world
-            .transform_surface_interaction(&mut si);
+        self.data.object_to_world.transform_surface_interaction(&mut si);
 
         Some(Intersection::new(Float::from(t_shape_hit), si))
     }
@@ -409,8 +395,7 @@ impl Shape for Hyperboloid {
                     * (sqr!(self.p1.y - self.p2.y) + sqr!(self.p1.z - self.p2.z))
                 + self.p2.x
                     * self.p2.x
-                    * (5.0 * self.p1.y * self.p1.y + 2.0 * self.p1.y * self.p2.y
-                        - 4.0 * self.p2.y * self.p2.y
+                    * (5.0 * self.p1.y * self.p1.y + 2.0 * self.p1.y * self.p2.y - 4.0 * self.p2.y * self.p2.y
                         + 2.0 * sqr!(self.p1.z - self.p2.z))
                 + self.p1.x
                     * self.p1.x
@@ -428,8 +413,7 @@ impl Shape for Hyperboloid {
                         - self.p2.z * self.p2.z))
     }
 
-    /// Sample a point on the surface and return the PDF with respect to area on
-    /// the surface.
+    /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
@@ -440,18 +424,15 @@ impl Shape for Hyperboloid {
 }
 
 impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Hyperboloid {
-    /// Create a `Hyperboloid` from given parameter set, object to world transform,
-    /// world to object transform and whether or not surface normal orientation
-    /// is reversed.
+    /// Create a `Hyperboloid` from given parameter set, object to world transform, world to object transform and whether
+    /// or not surface normal orientation is reversed.
     ///
-    /// * `p` - A tuple containing the parameter set, object to world transform,
-    ///         world to object transform and whether or not surface normal
-    ///         orientation is reversed.
+    /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform and whether
+    ///         or not surface normal orientation is reversed.
     fn from(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
         let (params, o2w, w2o, reverse_orientation) = p;
 
-        // NOTE: These are the original defaults in PBRT v2/v3 that cause
-        // the constructor to get stuck in an infinite loop.
+        // NOTE: These are the original defaults in PBRT v2/v3 that cause the constructor to get stuck in an infinite loop.
         //let p1 = params.find_one_point3f("p1", Point3f::new(0.0, 0.0, 0.0));
         //let p2 = params.find_one_point3f("p2", Point3f::new(1.0, 1.0, 1.0));
 
@@ -460,13 +441,6 @@ impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Hyperboloid {
 
         let phi_max = params.find_one_float("phimax", 360.0);
 
-        Self::new(
-            Arc::clone(&o2w),
-            Arc::clone(&w2o),
-            reverse_orientation,
-            p1,
-            p2,
-            phi_max,
-        )
+        Self::new(Arc::clone(&o2w), Arc::clone(&w2o), reverse_orientation, p1, p2, phi_max)
     }
 }

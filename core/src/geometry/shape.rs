@@ -1,6 +1,5 @@
 //! Shapes
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::low_discrepency::radical_inverse;
@@ -9,8 +8,7 @@ use std::sync::Arc;
 
 /// Shape common functions
 pub trait Shape {
-    /// Returns the shape type. Usually these are behind ArcShape and harder to
-    /// debug. So this will be helpful.
+    /// Returns the shape type. Usually these are behind ArcShape and harder to debug. So this will be helpful.
     fn get_type(&self) -> &'static str;
 
     /// Returns the underlying shape data.
@@ -21,14 +19,14 @@ pub trait Shape {
 
     /// Returns a bounding box in the world space.
     ///
-    /// Default is to transform the object bounds with the object-to0world
-    /// transformation. Override for tighter bounds implementation.
+    /// Default is to transform the object bounds with the object-to0world transformation. Override for tighter bounds
+    /// implementation.
     fn world_bound(&self) -> Bounds3f {
         Arc::clone(&self.get_data().object_to_world).transform_bounds(&self.object_bound())
     }
 
-    /// Returns geometric details if a ray intersects the shape intersection.
-    /// If there is no intersection, `None` is returned.
+    /// Returns geometric details if a ray intersects the shape intersection. If there is no intersection, `None` is
+    /// returned.
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests.
@@ -45,8 +43,7 @@ pub trait Shape {
     /// Returns the surface area of the shape in object space.
     fn area(&self) -> Float;
 
-    /// Sample a point on the surface and return the PDF with respect to area on
-    /// the surface.
+    /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
@@ -60,8 +57,7 @@ pub trait Shape {
         1.0 / self.area()
     }
 
-    /// Sample a point on the shape given a reference point and return the PDF
-    /// with respect to the solid angle from ref.
+    /// Sample a point on the shape given a reference point and return the PDF with respect to the solid angle from ref.
     ///
     /// * `hit` - Reference point on shape.
     /// * `u`   - Sample value to use.
@@ -73,8 +69,7 @@ pub trait Shape {
             pdf = 0.0;
         } else {
             wi = wi.normalize();
-            // Convert from area measure, as returned by the sample_area() call
-            // above, to solid angle measure.
+            // Convert from area measure, as returned by the sample_area() call above, to solid angle measure.
             pdf *= hit.p.distance_squared(intr.p) / intr.n.abs_dot(&(-wi));
             if pdf.is_infinite() {
                 pdf = 0.0;
@@ -92,17 +87,15 @@ pub trait Shape {
         // Intersect sample ray with area light geometry.
         let ray = hit.spawn_ray(wi);
 
-        // Ignore any alpha textures used for trimming the shape when performing
-        // this intersection. Hack for the "San Miguel" scene, where this is used
-        // to make an invisible area light.
+        // Ignore any alpha textures used for trimming the shape when performing this intersection. Hack for the
+        // "San Miguel" scene, where this is used to make an invisible area light.
         if let Some(Intersection {
             t: _t_hit,
             isect: isect_light,
         }) = self.intersect(&ray, false)
         {
             // Convert light sample weight to solid angle measure.
-            let pdf = hit.p.distance_squared(isect_light.hit.p)
-                / (isect_light.hit.n.abs_dot(&-wi) * self.area());
+            let pdf = hit.p.distance_squared(isect_light.hit.p) / (isect_light.hit.n.abs_dot(&-wi) * self.area());
             if pdf.is_infinite() {
                 0.0
             } else {
@@ -113,10 +106,8 @@ pub trait Shape {
         }
     }
 
-    /// Returns the solid angle subtended by the shape w.r.t. the reference
-    /// point p, given in world space. Some shapes compute this value in
-    /// closed-form, while the default implementation uses Monte Carlo
-    /// integration.
+    /// Returns the solid angle subtended by the shape w.r.t. the reference point p, given in world space. Some shapes
+    /// compute this value in closed-form, while the default implementation uses Monte Carlo integration.
     ///
     /// * `p`         - The reference point.
     /// * `n_samples` - The number of samples to use for Monte-Carlo integration.
@@ -176,12 +167,10 @@ pub struct ShapeData {
     /// The world to object transfomation.
     pub world_to_object: Option<ArcTransform>,
 
-    /// Indicates whether their surface normal directions should be reversed
-    /// from the default
+    /// Indicates whether their surface normal directions should be reversed from the default
     pub reverse_orientation: bool,
 
-    /// Indicates if `object_to_world` transformation changes the handedness
-    /// of the coordinate system.
+    /// Indicates if `object_to_world` transformation changes the handedness of the coordinate system.
     pub transform_swaps_handedness: bool,
 }
 
@@ -190,8 +179,7 @@ impl ShapeData {
     ///
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
     pub fn new(
         object_to_world: ArcTransform,
         world_to_object: Option<ArcTransform>,

@@ -1,27 +1,23 @@
 //! Lambertian Reflection
 
-#![allow(dead_code)]
-
 use super::*;
 use std::fmt;
 
-/// BRDF for the Lambertian model for perfect diffuse surfaces that scatters
-/// incident illumination equally in all directions.
+/// BRDF for the Lambertian model for perfect diffuse surfaces that scatters incident illumination equally in all
+/// directions.
 #[derive(Clone)]
 pub struct LambertianReflection {
     /// BxDF type.
     bxdf_type: BxDFType,
 
-    /// Reflectance spectrum which gives the fraction of incident light that
-    /// is scattered.
+    /// Reflectance spectrum which gives the fraction of incident light that is scattered.
     r: Spectrum,
 }
 
 impl LambertianReflection {
     /// Creates a new instance of `LambertianReflection`.
     ///
-    /// * `r`     - Reflectance spectrum which gives the fraction of incident
-    ///             light that is scattered.
+    /// * `r` - Reflectance spectrum which gives the fraction of incident light that is scattered.
     pub fn new(r: Spectrum) -> BxDF {
         let model = Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_DIFFUSE,
@@ -35,8 +31,7 @@ impl LambertianReflection {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.

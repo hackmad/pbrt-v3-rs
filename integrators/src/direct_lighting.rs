@@ -1,7 +1,5 @@
 //! Direct Lighting Integrator
 
-#![allow(dead_code)]
-
 use core::camera::*;
 use core::geometry::*;
 use core::integrator::*;
@@ -17,8 +15,8 @@ use std::sync::Arc;
 /// Direct light sampling strategy.
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum DirectLightStrategy {
-    /// Loops over all of the lights and takes a number of samples based on
-    /// `n_samples` from each of them, summing the result.
+    /// Loops over all of the lights and takes a number of samples based on `n_samples` from each of them, summing the
+    /// result.
     UniformSampleAll,
 
     /// Takes a single sample from just one of the lights, chosen at random.
@@ -112,13 +110,7 @@ impl Integrator for DirectLightingIntegrator {
             // Compute scattering functions for surface interaction.
             let mut bsdf: Option<BSDF> = None;
             let mut bssrdf: Option<BSDF> = None;
-            isect.compute_scattering_functions(
-                ray,
-                false,
-                TransportMode::Radiance,
-                &mut bsdf,
-                &mut bssrdf,
-            );
+            isect.compute_scattering_functions(ray, false, TransportMode::Radiance, &mut bsdf, &mut bssrdf);
             if bsdf.is_none() {
                 let mut new_ray = isect.hit.spawn_ray(&ray.d);
                 return self.li(&mut new_ray, scene, sampler, depth);
@@ -136,14 +128,9 @@ impl Integrator for DirectLightingIntegrator {
             if !scene.lights.is_empty() {
                 // Compute direct lighting for `DirectLightingIntegrator`.
                 let light_sample = match self.strategy {
-                    DirectLightStrategy::UniformSampleAll => uniform_sample_all_lights(
-                        &it,
-                        bsdf.as_ref(),
-                        scene,
-                        sampler,
-                        &self.n_light_samples,
-                        false,
-                    ),
+                    DirectLightStrategy::UniformSampleAll => {
+                        uniform_sample_all_lights(&it, bsdf.as_ref(), scene, sampler, &self.n_light_samples, false)
+                    }
                     DirectLightStrategy::UniformSampleOne => {
                         uniform_sample_one_light(&it, bsdf.as_ref(), scene, sampler, false, None)
                     }
@@ -188,10 +175,7 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for DirectLightingIntegrator {
             "one" => DirectLightStrategy::UniformSampleOne,
             "all" => DirectLightStrategy::UniformSampleAll,
             _ => {
-                warn!(
-                    "Strategy '{}' for direct lighting unknown. Using 'all'.",
-                    st
-                );
+                warn!("Strategy '{}' for direct lighting unknown. Using 'all'.", st);
                 DirectLightStrategy::UniformSampleAll
             }
         };
@@ -204,10 +188,8 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for DirectLightingIntegrator {
             if np != 4 {
                 error!("Expected 4 values for 'pixel_bounds' parameter. Got {np}");
             } else {
-                pixel_bounds = pixel_bounds.intersect(&Bounds2i::new(
-                    Point2i::new(pb[0], pb[1]),
-                    Point2i::new(pb[2], pb[3]),
-                ));
+                pixel_bounds =
+                    pixel_bounds.intersect(&Bounds2i::new(Point2i::new(pb[0], pb[1]), Point2i::new(pb[2], pb[3])));
                 if pixel_bounds.area() == 0 {
                     error!("Degenerate 'pixel_bounds' specified.");
                 }

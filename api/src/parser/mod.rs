@@ -703,7 +703,7 @@ impl PbrtParser {
     }
 
     /// Parse rule `ident_expr`.
-    #[allow(dead_code)]
+    #[allow(unused)]
     fn ident_expr(input: Node) -> Result<String> {
         Ok(match_nodes!(input.into_children();
             [ident(v)] => v,
@@ -744,8 +744,7 @@ pub fn parse(abs_path: &str, api: &mut Api) -> std::result::Result<(), String> {
     }
 }
 
-/// Converts a named parameter to a vector of some type that stores
-/// 3 values.
+/// Converts a named parameter to a vector of some type that stores 3 values.
 ///
 /// * `v`    - Slice containing floating point values.
 /// * `new`  - Function used to construct elements of resulting vector.
@@ -763,8 +762,7 @@ where
     (res, msg)
 }
 
-/// Converts a named parameter to a vector of some type that stores
-/// 2 values.
+/// Converts a named parameter to a vector of some type that stores 2 values.
 ///
 /// * `v`    - Slice containing floating point values.
 /// * `new`  - Function used to construct elements of resulting vector.

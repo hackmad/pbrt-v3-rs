@@ -1,13 +1,10 @@
 //! 3-D Points
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::pbrt::*;
 use num_traits::{Num, Zero};
 use std::fmt;
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
-};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// A 3-D point containing numeric values.
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -26,11 +23,7 @@ pub struct Point3<T> {
 pub type Point3f = Point3<Float>;
 impl Point3f {
     /// Zero point.
-    pub const ZERO: Self = Self {
-        x: 0.0,
-        y: 0.0,
-        z: 0.0,
-    };
+    pub const ZERO: Self = Self { x: 0.0, y: 0.0, z: 0.0 };
 
     /// Point with all coordinates set to minimum floating point value.
     pub const MIN: Self = Self {
@@ -125,11 +118,7 @@ impl<T: Num> Point3<T> {
     where
         T: PartialOrd + Copy,
     {
-        Self::new(
-            min(self.x, other.x),
-            min(self.y, other.y),
-            min(self.z, other.z),
-        )
+        Self::new(min(self.x, other.x), min(self.y, other.y), min(self.z, other.z))
     }
 
     /// Return the component-wise maximum coordinate values with another point.
@@ -139,11 +128,7 @@ impl<T: Num> Point3<T> {
     where
         T: PartialOrd + Copy,
     {
-        Self::new(
-            max(self.x, other.x),
-            max(self.y, other.y),
-            max(self.z, other.z),
-        )
+        Self::new(max(self.x, other.x), max(self.y, other.y), max(self.z, other.z))
     }
 
     /// Returns a new point with permuted coordinates according to given axes.
@@ -513,11 +498,7 @@ impl<T> From<Vector3<T>> for Point3<T> {
     ///
     /// * `v` - 3-D vector.
     fn from(v: Vector3<T>) -> Self {
-        Self {
-            x: v.x,
-            y: v.y,
-            z: v.z,
-        }
+        Self { x: v.x, y: v.y, z: v.z }
     }
 }
 
@@ -526,11 +507,7 @@ impl<T> From<Normal3<T>> for Point3<T> {
     ///
     /// * `n` - 3-D normal.
     fn from(n: Normal3<T>) -> Self {
-        Self {
-            x: n.x,
-            y: n.y,
-            z: n.z,
-        }
+        Self { x: n.x, y: n.y, z: n.z }
     }
 }
 
@@ -614,22 +591,10 @@ mod tests {
     prop_non_zero_range!(non_zero_f32, f32, -100.0..100.0f32);
 
     prop_point3!(point3_i32, i32, -100..100i32, -100..100i32, -100..100i32);
-    prop_point3!(
-        point3_f32,
-        f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32
-    );
+    prop_point3!(point3_f32, f32, -100.0..100.0f32, -100.0..100.0f32, -100.0..100.0f32);
 
     prop_vector3!(vector3_i32, i32, -100..100i32, -100..100i32, -100..100i32);
-    prop_vector3!(
-        vector3_f32,
-        f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32
-    );
+    prop_vector3!(vector3_f32, f32, -100.0..100.0f32, -100.0..100.0f32, -100.0..100.0f32);
 
     proptest! {
         #[test]

@@ -1,7 +1,5 @@
 //! Common
 
-#![allow(dead_code)]
-
 use crate::app::OPTIONS;
 
 use super::clamp::*;
@@ -47,6 +45,9 @@ pub const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
 
 /// Shadow Epsilon
 pub const SHADOW_EPSILON: Float = 0.0001;
+
+/// √2
+pub const SQRT2: Float = 1.41421356237309504880;
 
 /// Returns the absolute value of a number.
 ///
@@ -95,8 +96,8 @@ where
     }
 }
 
-/// Computes a mod b (the remainder of a divided by b). This version
-/// ensures that modulus of a negative number is zero or positive.
+/// Computes a mod b (the remainder of a divided by b). This version ensures that modulus of a negative number is zero
+/// or positive.
 ///
 /// * `a` - Dividend.
 /// * `b` - Divisor.
@@ -145,8 +146,7 @@ pub fn inv_gamma_correct(value: Float) -> Float {
     }
 }
 
-/// Linearly interpolate between two points for parameters in [0, 1] and
-/// extrapolate for parameters outside that interval.
+/// Linearly interpolate between two points for parameters in [0, 1] and extrapolate for parameters outside that interval.
 ///
 /// * `t` - Parameter.
 /// * `p0` - Point at t=0.
@@ -160,8 +160,7 @@ where
     (1.0 - t) * p0 + t * p1
 }
 
-/// Convert a 32-bit floating point value to its constituent bits and
-/// return the representation as 32-bit unsigned integer.
+/// Convert a 32-bit floating point value to its constituent bits and return the representation as 32-bit unsigned integer.
 ///
 /// * `f` - The 32-bit floating point number.
 pub fn float_to_bits(f: f32) -> u32 {
@@ -174,8 +173,7 @@ pub fn float_to_bits(f: f32) -> u32 {
     result
 }
 
-/// Convert the bits of a 32-bit unsigned interger value and return the
-/// representation as a 32-bit floating point value.
+/// Convert the bits of a 32-bit unsigned interger value and return the representation as a 32-bit floating point value.
 ///
 /// * `i` - The 32-bit unsigned interger.
 pub fn bits_to_float(i: u32) -> f32 {
@@ -188,8 +186,7 @@ pub fn bits_to_float(i: u32) -> f32 {
     result
 }
 
-/// Bump a floating point value up to the next greater representable floating
-/// point value.
+/// Bump a floating point value up to the next greater representable floating point value.
 ///
 /// * `v` - Floating point value.
 pub fn next_float_up(v: Float) -> Float {
@@ -211,8 +208,7 @@ pub fn next_float_up(v: Float) -> Float {
     bits_to_float(ui)
 }
 
-/// Bump a floating point value up to the next lower representable floating
-/// point value.
+/// Bump a floating point value up to the next lower representable floating point value.
 ///
 /// * `v` - Floating point value.
 pub fn next_float_down(v: Float) -> Float {
@@ -233,9 +229,8 @@ pub fn next_float_down(v: Float) -> Float {
     bits_to_float(ui)
 }
 
-/// Emulates the behavior of `upper_bound` but uses a function object to get
-/// values at various indices instead of requiring access to an actual array.
-/// It is used to bisect arrays that are procedurally generated such as those
+/// Emulates the behavior of `upper_bound` but uses a function object to get values at various indices instead of
+/// requiring access to an actual array. It is used to bisect arrays that are procedurally generated such as those
 /// interpolated from point samples.
 ///
 /// * `size` - Size of array.
@@ -307,8 +302,7 @@ pub fn asin(theta: Float) -> Float {
     theta.asin()
 }
 
-/// Computes the arctangent of a number. Return value is in radians in the range
-/// [-π/2, π/2];
+/// Computes the arctangent of a number. Return value is in radians in the range [-π/2, π/2];
 ///
 /// * `theta` - The angle in radians.
 #[inline(always)]
@@ -399,8 +393,8 @@ pub fn erf_inv(x: Float) -> Float {
     }
 }
 
-/// Deconstructs a floating point value as a (mantissa, exponent, sign) tuple
-/// so it can be used in data structures that require hashing.
+/// Deconstructs a floating point value as a (mantissa, exponent, sign) tuple so it can be used in data structures that
+/// require hashing.
 #[derive(Hash, Eq, PartialEq)]
 pub struct HashableFloat(u64, i16, i8);
 impl HashableFloat {

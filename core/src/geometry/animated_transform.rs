@@ -1,6 +1,5 @@
 //! Animated Transformations
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::pbrt::*;
 use std::sync::Arc;
@@ -50,12 +49,7 @@ impl AnimatedTransform {
     /// * `end_transform`   - transform representing ending point in animation.
     /// * `start_time`      - start time.
     /// * `end_time`        - End time.
-    pub fn new(
-        start_transform: ArcTransform,
-        end_transform: ArcTransform,
-        start_time: Float,
-        end_time: Float,
-    ) -> Self {
+    pub fn new(start_transform: ArcTransform, end_transform: ArcTransform, start_time: Float, end_time: Float) -> Self {
         let start_transform = Arc::clone(&start_transform);
         let end_transform = Arc::clone(&end_transform);
         let actually_animated = start_transform != end_transform;
@@ -121,8 +115,7 @@ impl AnimatedTransform {
 
                 c1[0] = derivative_term(
                     -t0x + t1x,
-                    (-1.0 + q1y * q1y + q1z * q1z + qperpy * qperpy + qperpz * qperpz) * s000
-                        + q1w * q1z * s010
+                    (-1.0 + q1y * q1y + q1z * q1z + qperpy * qperpy + qperpz * qperpz) * s000 + q1w * q1z * s010
                         - qperpx * qperpy * s010
                         + qperpw * qperpz * s010
                         - q1w * q1y * s020
@@ -140,8 +133,7 @@ impl AnimatedTransform {
                         + qperpw * qperpy * s120
                         + qperpx * qperpz * s120
                         + q1x * (-(q1y * s010) - q1z * s020 + q1y * s110 + q1z * s120),
-                    (-1.0 + q1y * q1y + q1z * q1z + qperpy * qperpy + qperpz * qperpz) * s001
-                        + q1w * q1z * s011
+                    (-1.0 + q1y * q1y + q1z * q1z + qperpy * qperpy + qperpz * qperpz) * s001 + q1w * q1z * s011
                         - qperpx * qperpy * s011
                         + qperpw * qperpz * s011
                         - q1w * q1y * s021
@@ -159,8 +151,7 @@ impl AnimatedTransform {
                         + qperpw * qperpy * s121
                         + qperpx * qperpz * s121
                         + q1x * (-(q1y * s011) - q1z * s021 + q1y * s111 + q1z * s121),
-                    (-1.0 + q1y * q1y + q1z * q1z + qperpy * qperpy + qperpz * qperpz) * s002
-                        + q1w * q1z * s012
+                    (-1.0 + q1y * q1y + q1z * q1z + qperpy * qperpy + qperpz * qperpz) * s002 + q1w * q1z * s012
                         - qperpx * qperpy * s012
                         + qperpw * qperpz * s012
                         - q1w * q1y * s022
@@ -201,14 +192,10 @@ impl AnimatedTransform {
                         + q1y
                             * (q1x * (-s010 + s110)
                                 + q1w * (-s020 + s120)
-                                + 2.0
-                                    * (-2.0 * qperpy * s000 + qperpx * s010 + qperpw * s020)
-                                    * theta)
+                                + 2.0 * (-2.0 * qperpy * s000 + qperpx * s010 + qperpw * s020) * theta)
                         + q1z
                             * (q1w * (s010 - s110) + q1x * (-s020 + s120)
-                                - 2.0
-                                    * (2.0 * qperpz * s000 + qperpw * s010 - qperpx * s020)
-                                    * theta),
+                                - 2.0 * (2.0 * qperpz * s000 + qperpw * s010 - qperpx * s020) * theta),
                     -(qperpy * qperpy * s001) - qperpz * qperpz * s001 + qperpx * qperpy * s011
                         - qperpw * qperpz * s011
                         + qperpw * qperpy * s021
@@ -228,14 +215,10 @@ impl AnimatedTransform {
                         + q1y
                             * (q1x * (-s011 + s111)
                                 + q1w * (-s021 + s121)
-                                + 2.0
-                                    * (-2.0 * qperpy * s001 + qperpx * s011 + qperpw * s021)
-                                    * theta)
+                                + 2.0 * (-2.0 * qperpy * s001 + qperpx * s011 + qperpw * s021) * theta)
                         + q1z
                             * (q1w * (s011 - s111) + q1x * (-s021 + s121)
-                                - 2.0
-                                    * (2.0 * qperpz * s001 + qperpw * s011 - qperpx * s021)
-                                    * theta),
+                                - 2.0 * (2.0 * qperpz * s001 + qperpw * s011 - qperpx * s021) * theta),
                     -(qperpy * qperpy * s002) - qperpz * qperpz * s002 + qperpx * qperpy * s012
                         - qperpw * qperpz * s012
                         + qperpw * qperpy * s022
@@ -255,30 +238,21 @@ impl AnimatedTransform {
                         + q1y
                             * (q1x * (-s012 + s112)
                                 + q1w * (-s022 + s122)
-                                + 2.0
-                                    * (-2.0 * qperpy * s002 + qperpx * s012 + qperpw * s022)
-                                    * theta)
+                                + 2.0 * (-2.0 * qperpy * s002 + qperpx * s012 + qperpw * s022) * theta)
                         + q1z
                             * (q1w * (s012 - s112) + q1x * (-s022 + s122)
-                                - 2.0
-                                    * (2.0 * qperpz * s002 + qperpw * s012 - qperpx * s022)
-                                    * theta),
+                                - 2.0 * (2.0 * qperpz * s002 + qperpw * s012 - qperpx * s022) * theta),
                 );
 
                 c3[0] = derivative_term(
                     0.0,
-                    -2.0 * (q1x * qperpy * s010 - q1w * qperpz * s010
-                        + q1w * qperpy * s020
-                        + q1x * qperpz * s020
+                    -2.0 * (q1x * qperpy * s010 - q1w * qperpz * s010 + q1w * qperpy * s020 + q1x * qperpz * s020
                         - q1x * qperpy * s110
                         + q1w * qperpz * s110
                         - q1w * qperpy * s120
                         - q1x * qperpz * s120
                         + q1y
-                            * (-2.0 * qperpy * s000
-                                + qperpx * s010
-                                + qperpw * s020
-                                + 2.0 * qperpy * s100
+                            * (-2.0 * qperpy * s000 + qperpx * s010 + qperpw * s020 + 2.0 * qperpy * s100
                                 - qperpx * s110
                                 - qperpw * s120)
                         + q1z
@@ -288,18 +262,13 @@ impl AnimatedTransform {
                                 + qperpw * s110
                                 - qperpx * s120))
                         * theta,
-                    -2.0 * (q1x * qperpy * s011 - q1w * qperpz * s011
-                        + q1w * qperpy * s021
-                        + q1x * qperpz * s021
+                    -2.0 * (q1x * qperpy * s011 - q1w * qperpz * s011 + q1w * qperpy * s021 + q1x * qperpz * s021
                         - q1x * qperpy * s111
                         + q1w * qperpz * s111
                         - q1w * qperpy * s121
                         - q1x * qperpz * s121
                         + q1y
-                            * (-2.0 * qperpy * s001
-                                + qperpx * s011
-                                + qperpw * s021
-                                + 2.0 * qperpy * s101
+                            * (-2.0 * qperpy * s001 + qperpx * s011 + qperpw * s021 + 2.0 * qperpy * s101
                                 - qperpx * s111
                                 - qperpw * s121)
                         + q1z
@@ -309,18 +278,13 @@ impl AnimatedTransform {
                                 + qperpw * s111
                                 - qperpx * s121))
                         * theta,
-                    -2.0 * (q1x * qperpy * s012 - q1w * qperpz * s012
-                        + q1w * qperpy * s022
-                        + q1x * qperpz * s022
+                    -2.0 * (q1x * qperpy * s012 - q1w * qperpz * s012 + q1w * qperpy * s022 + q1x * qperpz * s022
                         - q1x * qperpy * s112
                         + q1w * qperpz * s112
                         - q1w * qperpy * s122
                         - q1x * qperpz * s122
                         + q1y
-                            * (-2.0 * qperpy * s002
-                                + qperpx * s012
-                                + qperpw * s022
-                                + 2.0 * qperpy * s102
+                            * (-2.0 * qperpy * s002 + qperpx * s012 + qperpw * s022 + 2.0 * qperpy * s102
                                 - qperpx * s112
                                 - qperpw * s122)
                         + q1z
@@ -334,9 +298,7 @@ impl AnimatedTransform {
 
                 c4[0] = derivative_term(
                     0.0,
-                    -(q1x * qperpy * s010) + q1w * qperpz * s010
-                        - q1w * qperpy * s020
-                        - q1x * qperpz * s020
+                    -(q1x * qperpy * s010) + q1w * qperpz * s010 - q1w * qperpy * s020 - q1x * qperpz * s020
                         + q1x * qperpy * s110
                         - q1w * qperpz * s110
                         + q1w * qperpy * s120
@@ -364,9 +326,7 @@ impl AnimatedTransform {
                                 + qperpx * s120
                                 + 2.0 * q1w * s010 * theta
                                 - 2.0 * q1x * s020 * theta),
-                    -(q1x * qperpy * s011) + q1w * qperpz * s011
-                        - q1w * qperpy * s021
-                        - q1x * qperpz * s021
+                    -(q1x * qperpy * s011) + q1w * qperpz * s011 - q1w * qperpy * s021 - q1x * qperpz * s021
                         + q1x * qperpy * s111
                         - q1w * qperpz * s111
                         + q1w * qperpy * s121
@@ -394,9 +354,7 @@ impl AnimatedTransform {
                                 + qperpx * s121
                                 + 2.0 * q1w * s011 * theta
                                 - 2.0 * q1x * s021 * theta),
-                    -(q1x * qperpy * s012) + q1w * qperpz * s012
-                        - q1w * qperpy * s022
-                        - q1x * qperpz * s022
+                    -(q1x * qperpy * s012) + q1w * qperpz * s012 - q1w * qperpy * s022 - q1x * qperpz * s022
                         + q1x * qperpy * s112
                         - q1w * qperpz * s112
                         + q1w * qperpy * s122
@@ -428,8 +386,7 @@ impl AnimatedTransform {
 
                 c5[0] = derivative_term(
                     0.0,
-                    2.0 * (qperpy * qperpy * s000 + qperpz * qperpz * s000
-                        - qperpx * qperpy * s010
+                    2.0 * (qperpy * qperpy * s000 + qperpz * qperpz * s000 - qperpx * qperpy * s010
                         + qperpw * qperpz * s010
                         - qperpw * qperpy * s020
                         - qperpx * qperpz * s020
@@ -444,8 +401,7 @@ impl AnimatedTransform {
                         + qperpx * qperpz * s120
                         + q1z * (-(q1w * s010) + q1x * s020 + q1w * s110 - q1x * s120))
                         * theta,
-                    2.0 * (qperpy * qperpy * s001 + qperpz * qperpz * s001
-                        - qperpx * qperpy * s011
+                    2.0 * (qperpy * qperpy * s001 + qperpz * qperpz * s001 - qperpx * qperpy * s011
                         + qperpw * qperpz * s011
                         - qperpw * qperpy * s021
                         - qperpx * qperpz * s021
@@ -460,8 +416,7 @@ impl AnimatedTransform {
                         + qperpx * qperpz * s121
                         + q1z * (-(q1w * s011) + q1x * s021 + q1w * s111 - q1x * s121))
                         * theta,
-                    2.0 * (qperpy * qperpy * s002 + qperpz * qperpz * s002
-                        - qperpx * qperpy * s012
+                    2.0 * (qperpy * qperpy * s002 + qperpz * qperpz * s002 - qperpx * qperpy * s012
                         + qperpw * qperpz * s012
                         - qperpw * qperpy * s022
                         - qperpx * qperpz * s022
@@ -562,13 +517,11 @@ impl AnimatedTransform {
                         + 2.0 * q1z * qperpy * s020 * theta
                         + 2.0 * q1y * qperpz * s020 * theta
                         + q1x
-                            * (q1w * s020 + q1y * (-s000 + s100) - q1w * s120
-                                + 2.0 * qperpy * s000 * theta
+                            * (q1w * s020 + q1y * (-s000 + s100) - q1w * s120 + 2.0 * qperpy * s000 * theta
                                 - 4.0 * qperpx * s010 * theta
                                 - 2.0 * qperpw * s020 * theta)
                         + q1w
-                            * (-(q1z * s000) + q1z * s100 + 2.0 * qperpz * s000 * theta
-                                - 2.0 * qperpx * s020 * theta),
+                            * (-(q1z * s000) + q1z * s100 + 2.0 * qperpz * s000 * theta - 2.0 * qperpx * s020 * theta),
                     qperpx * qperpy * s001 + qperpw * qperpz * s001 + q1z * q1z * s011
                         - qperpx * qperpx * s011
                         - qperpz * qperpz * s011
@@ -590,13 +543,11 @@ impl AnimatedTransform {
                         + 2.0 * q1z * qperpy * s021 * theta
                         + 2.0 * q1y * qperpz * s021 * theta
                         + q1x
-                            * (q1w * s021 + q1y * (-s001 + s101) - q1w * s121
-                                + 2.0 * qperpy * s001 * theta
+                            * (q1w * s021 + q1y * (-s001 + s101) - q1w * s121 + 2.0 * qperpy * s001 * theta
                                 - 4.0 * qperpx * s011 * theta
                                 - 2.0 * qperpw * s021 * theta)
                         + q1w
-                            * (-(q1z * s001) + q1z * s101 + 2.0 * qperpz * s001 * theta
-                                - 2.0 * qperpx * s021 * theta),
+                            * (-(q1z * s001) + q1z * s101 + 2.0 * qperpz * s001 * theta - 2.0 * qperpx * s021 * theta),
                     qperpx * qperpy * s002 + qperpw * qperpz * s002 + q1z * q1z * s012
                         - qperpx * qperpx * s012
                         - qperpz * qperpz * s012
@@ -618,13 +569,11 @@ impl AnimatedTransform {
                         + 2.0 * q1z * qperpy * s022 * theta
                         + 2.0 * q1y * qperpz * s022 * theta
                         + q1x
-                            * (q1w * s022 + q1y * (-s002 + s102) - q1w * s122
-                                + 2.0 * qperpy * s002 * theta
+                            * (q1w * s022 + q1y * (-s002 + s102) - q1w * s122 + 2.0 * qperpy * s002 * theta
                                 - 4.0 * qperpx * s012 * theta
                                 - 2.0 * qperpw * s022 * theta)
                         + q1w
-                            * (-(q1z * s002) + q1z * s102 + 2.0 * qperpz * s002 * theta
-                                - 2.0 * qperpx * s022 * theta),
+                            * (-(q1z * s002) + q1z * s102 + 2.0 * qperpz * s002 * theta - 2.0 * qperpx * s022 * theta),
                 );
 
                 c3[1] = derivative_term(
@@ -639,8 +588,7 @@ impl AnimatedTransform {
                         - q1x * qperpw * s120
                         - q1w * qperpx * s120
                         + q1z
-                            * (2.0 * qperpz * s010 - qperpy * s020 + qperpw * (-s000 + s100)
-                                - 2.0 * qperpz * s110
+                            * (2.0 * qperpz * s010 - qperpy * s020 + qperpw * (-s000 + s100) - 2.0 * qperpz * s110
                                 + qperpy * s120)
                         + q1y * (-(qperpx * s000) - qperpz * s020 + qperpx * s100 + qperpz * s120))
                         * theta,
@@ -654,8 +602,7 @@ impl AnimatedTransform {
                         - q1x * qperpw * s121
                         - q1w * qperpx * s121
                         + q1z
-                            * (2.0 * qperpz * s011 - qperpy * s021 + qperpw * (-s001 + s101)
-                                - 2.0 * qperpz * s111
+                            * (2.0 * qperpz * s011 - qperpy * s021 + qperpw * (-s001 + s101) - 2.0 * qperpz * s111
                                 + qperpy * s121)
                         + q1y * (-(qperpx * s001) - qperpz * s021 + qperpx * s101 + qperpz * s121))
                         * theta,
@@ -669,8 +616,7 @@ impl AnimatedTransform {
                         - q1x * qperpw * s122
                         - q1w * qperpx * s122
                         + q1z
-                            * (2.0 * qperpz * s012 - qperpy * s022 + qperpw * (-s002 + s102)
-                                - 2.0 * qperpz * s112
+                            * (2.0 * qperpz * s012 - qperpy * s022 + qperpw * (-s002 + s102) - 2.0 * qperpz * s112
                                 + qperpy * s122)
                         + q1y * (-(qperpx * s002) - qperpz * s022 + qperpx * s102 + qperpz * s122))
                         * theta,
@@ -700,8 +646,7 @@ impl AnimatedTransform {
                             * (-(qperpx * s000) - qperpz * s020 + qperpx * s100 + qperpz * s120
                                 - 2.0 * q1x * s000 * theta)
                         + q1z
-                            * (2.0 * qperpz * s010 - qperpy * s020 + qperpw * (-s000 + s100)
-                                - 2.0 * qperpz * s110
+                            * (2.0 * qperpz * s010 - qperpy * s020 + qperpw * (-s000 + s100) - 2.0 * qperpz * s110
                                 + qperpy * s120
                                 - 2.0 * q1w * s000 * theta
                                 - 2.0 * q1y * s020 * theta),
@@ -727,8 +672,7 @@ impl AnimatedTransform {
                             * (-(qperpx * s001) - qperpz * s021 + qperpx * s101 + qperpz * s121
                                 - 2.0 * q1x * s001 * theta)
                         + q1z
-                            * (2.0 * qperpz * s011 - qperpy * s021 + qperpw * (-s001 + s101)
-                                - 2.0 * qperpz * s111
+                            * (2.0 * qperpz * s011 - qperpy * s021 + qperpw * (-s001 + s101) - 2.0 * qperpz * s111
                                 + qperpy * s121
                                 - 2.0 * q1w * s001 * theta
                                 - 2.0 * q1y * s021 * theta),
@@ -754,8 +698,7 @@ impl AnimatedTransform {
                             * (-(qperpx * s002) - qperpz * s022 + qperpx * s102 + qperpz * s122
                                 - 2.0 * q1x * s002 * theta)
                         + q1z
-                            * (2.0 * qperpz * s012 - qperpy * s022 + qperpw * (-s002 + s102)
-                                - 2.0 * qperpz * s112
+                            * (2.0 * qperpz * s012 - qperpy * s022 + qperpw * (-s002 + s102) - 2.0 * qperpz * s112
                                 + qperpy * s122
                                 - 2.0 * q1w * s002 * theta
                                 - 2.0 * q1y * s022 * theta),
@@ -888,8 +831,7 @@ impl AnimatedTransform {
 
                 c2[2] = derivative_term(
                     0.0,
-                    q1w * q1y * s000 - q1x * q1z * s000 - qperpw * qperpy * s000
-                        + qperpx * qperpz * s000
+                    q1w * q1y * s000 - q1x * q1z * s000 - qperpw * qperpy * s000 + qperpx * qperpz * s000
                         - q1w * q1x * s010
                         - q1y * q1z * s010
                         + qperpw * qperpx * s010
@@ -920,8 +862,7 @@ impl AnimatedTransform {
                         + 2.0 * q1y * qperpz * s010 * theta
                         - 4.0 * q1x * qperpx * s020 * theta
                         - 4.0 * q1y * qperpy * s020 * theta,
-                    q1w * q1y * s001 - q1x * q1z * s001 - qperpw * qperpy * s001
-                        + qperpx * qperpz * s001
+                    q1w * q1y * s001 - q1x * q1z * s001 - qperpw * qperpy * s001 + qperpx * qperpz * s001
                         - q1w * q1x * s011
                         - q1y * q1z * s011
                         + qperpw * qperpx * s011
@@ -952,8 +893,7 @@ impl AnimatedTransform {
                         + 2.0 * q1y * qperpz * s011 * theta
                         - 4.0 * q1x * qperpx * s021 * theta
                         - 4.0 * q1y * qperpy * s021 * theta,
-                    q1w * q1y * s002 - q1x * q1z * s002 - qperpw * qperpy * s002
-                        + qperpx * qperpz * s002
+                    q1w * q1y * s002 - q1x * q1z * s002 - qperpw * qperpy * s002 + qperpx * qperpz * s002
                         - q1w * q1x * s012
                         - q1y * q1z * s012
                         + qperpw * qperpx * s012
@@ -988,10 +928,7 @@ impl AnimatedTransform {
 
                 c3[2] = derivative_term(
                     0.0,
-                    -2.0 * (-(q1w * qperpy * s000)
-                        + q1x * qperpz * s000
-                        + q1x * qperpw * s010
-                        + q1w * qperpx * s010
+                    -2.0 * (-(q1w * qperpy * s000) + q1x * qperpz * s000 + q1x * qperpw * s010 + q1w * qperpx * s010
                         - 2.0 * q1x * qperpx * s020
                         + q1w * qperpy * s100
                         - q1x * qperpz * s100
@@ -1000,14 +937,10 @@ impl AnimatedTransform {
                         + q1z * (qperpx * s000 + qperpy * s010 - qperpx * s100 - qperpy * s110)
                         + 2.0 * q1x * qperpx * s120
                         + q1y
-                            * (qperpz * s010 - 2.0 * qperpy * s020 + qperpw * (-s000 + s100)
-                                - qperpz * s110
+                            * (qperpz * s010 - 2.0 * qperpy * s020 + qperpw * (-s000 + s100) - qperpz * s110
                                 + 2.0 * qperpy * s120))
                         * theta,
-                    -2.0 * (-(q1w * qperpy * s001)
-                        + q1x * qperpz * s001
-                        + q1x * qperpw * s011
-                        + q1w * qperpx * s011
+                    -2.0 * (-(q1w * qperpy * s001) + q1x * qperpz * s001 + q1x * qperpw * s011 + q1w * qperpx * s011
                         - 2.0 * q1x * qperpx * s021
                         + q1w * qperpy * s101
                         - q1x * qperpz * s101
@@ -1016,14 +949,10 @@ impl AnimatedTransform {
                         + q1z * (qperpx * s001 + qperpy * s011 - qperpx * s101 - qperpy * s111)
                         + 2.0 * q1x * qperpx * s121
                         + q1y
-                            * (qperpz * s011 - 2.0 * qperpy * s021 + qperpw * (-s001 + s101)
-                                - qperpz * s111
+                            * (qperpz * s011 - 2.0 * qperpy * s021 + qperpw * (-s001 + s101) - qperpz * s111
                                 + 2.0 * qperpy * s121))
                         * theta,
-                    -2.0 * (-(q1w * qperpy * s002)
-                        + q1x * qperpz * s002
-                        + q1x * qperpw * s012
-                        + q1w * qperpx * s012
+                    -2.0 * (-(q1w * qperpy * s002) + q1x * qperpz * s002 + q1x * qperpw * s012 + q1w * qperpx * s012
                         - 2.0 * q1x * qperpx * s022
                         + q1w * qperpy * s102
                         - q1x * qperpz * s102
@@ -1032,18 +961,14 @@ impl AnimatedTransform {
                         + q1z * (qperpx * s002 + qperpy * s012 - qperpx * s102 - qperpy * s112)
                         + 2.0 * q1x * qperpx * s122
                         + q1y
-                            * (qperpz * s012 - 2.0 * qperpy * s022 + qperpw * (-s002 + s102)
-                                - qperpz * s112
+                            * (qperpz * s012 - 2.0 * qperpy * s022 + qperpw * (-s002 + s102) - qperpz * s112
                                 + 2.0 * qperpy * s122))
                         * theta,
                 );
 
                 c4[2] = derivative_term(
                     0.0,
-                    q1w * qperpy * s000
-                        - q1x * qperpz * s000
-                        - q1x * qperpw * s010
-                        - q1w * qperpx * s010
+                    q1w * qperpy * s000 - q1x * qperpz * s000 - q1x * qperpw * s010 - q1w * qperpx * s010
                         + 2.0 * q1x * qperpx * s020
                         - q1w * qperpy * s100
                         + q1x * qperpz * s100
@@ -1063,17 +988,11 @@ impl AnimatedTransform {
                             * (-(qperpx * s000) - qperpy * s010 + qperpx * s100 + qperpy * s110
                                 - 2.0 * q1x * s000 * theta)
                         + q1y
-                            * (-(qperpz * s010)
-                                + 2.0 * qperpy * s020
-                                + qperpw * (s000 - s100)
-                                + qperpz * s110
+                            * (-(qperpz * s010) + 2.0 * qperpy * s020 + qperpw * (s000 - s100) + qperpz * s110
                                 - 2.0 * qperpy * s120
                                 + 2.0 * q1w * s000 * theta
                                 - 2.0 * q1z * s010 * theta),
-                    q1w * qperpy * s001
-                        - q1x * qperpz * s001
-                        - q1x * qperpw * s011
-                        - q1w * qperpx * s011
+                    q1w * qperpy * s001 - q1x * qperpz * s001 - q1x * qperpw * s011 - q1w * qperpx * s011
                         + 2.0 * q1x * qperpx * s021
                         - q1w * qperpy * s101
                         + q1x * qperpz * s101
@@ -1093,17 +1012,11 @@ impl AnimatedTransform {
                             * (-(qperpx * s001) - qperpy * s011 + qperpx * s101 + qperpy * s111
                                 - 2.0 * q1x * s001 * theta)
                         + q1y
-                            * (-(qperpz * s011)
-                                + 2.0 * qperpy * s021
-                                + qperpw * (s001 - s101)
-                                + qperpz * s111
+                            * (-(qperpz * s011) + 2.0 * qperpy * s021 + qperpw * (s001 - s101) + qperpz * s111
                                 - 2.0 * qperpy * s121
                                 + 2.0 * q1w * s001 * theta
                                 - 2.0 * q1z * s011 * theta),
-                    q1w * qperpy * s002
-                        - q1x * qperpz * s002
-                        - q1x * qperpw * s012
-                        - q1w * qperpx * s012
+                    q1w * qperpy * s002 - q1x * qperpz * s002 - q1x * qperpw * s012 - q1w * qperpx * s012
                         + 2.0 * q1x * qperpx * s022
                         - q1w * qperpy * s102
                         + q1x * qperpz * s102
@@ -1123,10 +1036,7 @@ impl AnimatedTransform {
                             * (-(qperpx * s002) - qperpy * s012 + qperpx * s102 + qperpy * s112
                                 - 2.0 * q1x * s002 * theta)
                         + q1y
-                            * (-(qperpz * s012)
-                                + 2.0 * qperpy * s022
-                                + qperpw * (s002 - s102)
-                                + qperpz * s112
+                            * (-(qperpz * s012) + 2.0 * qperpy * s022 + qperpw * (s002 - s102) + qperpz * s112
                                 - 2.0 * qperpy * s122
                                 + 2.0 * q1w * s002 * theta
                                 - 2.0 * q1z * s012 * theta),
@@ -1287,8 +1197,7 @@ impl AnimatedTransform {
         t.transform_vector(v)
     }
 
-    /// Compute a bounding box that encompasses all of its motion over the
-    /// animation time period.
+    /// Compute a bounding box that encompasses all of its motion over the animation time period.
     ///
     /// * `b` - The bounding box.
     pub fn motion_bounds(&self, b: &Bounds3f) -> Bounds3f {
@@ -1308,8 +1217,7 @@ impl AnimatedTransform {
         })
     }
 
-    /// Use the coefficients `ki`, based on the keyframe matrices to compute
-    /// a robust bound of the motion of point `p`.
+    /// Use the coefficients `ki`, based on the keyframe matrices to compute a robust bound of the motion of point `p`.
     ///
     /// * `p` - The point.
     pub fn bound_point_motion(&self, p: &Point3f) -> Bounds3f {
@@ -1340,7 +1248,7 @@ impl AnimatedTransform {
                 8, // zeros.len()
             );
 
-            // Expand bounding box for any motion derivative zeros found
+            // Expand bounding box for any motion derivative zeros found.
             bounds = (0..n_zeros).fold(bounds, |b, i| {
                 let pz = self.transform_point(lerp(zeros[i], self.start_time, self.end_time), p);
                 b.union(&pz)
@@ -1351,8 +1259,7 @@ impl AnimatedTransform {
     }
 }
 
-/// Decomposes a transformation matrix into its translation, rotation and
-/// scaling components.
+/// Decomposes a transformation matrix into its translation, rotation and scaling components.
 ///
 /// The transformation decomposition is: M = TRS.
 ///
@@ -1364,7 +1271,7 @@ fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut M
     // Extract translation T from transformation matrix
     *t = Vector3f::new(m[0][3], m[1][3], m[2][3]);
 
-    // Compute new transformation matrix M without translation
+    // Compute new transformation matrix M without translation.
     let mut m1 = *m;
     for i in 0..3 {
         m1.m[i][3] = 0.0;
@@ -1372,12 +1279,12 @@ fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut M
     }
     m1.m[3][3] = 1.0;
 
-    // Extract rotation R from transformation matrix
+    // Extract rotation R from transformation matrix.
     let mut r = m1;
     let mut norm = 0.0;
     let mut count = 0;
     loop {
-        // Compute the next matrix R_next in series
+        // Compute the next matrix R_next in series.
         let mut r_next = Matrix4x4::IDENTITY;
         let r_it = r.transpose().inverse();
         for i in 0..4 {
@@ -1386,11 +1293,9 @@ fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut M
             }
         }
 
-        // Compute norm of difference between R and R_next
+        // Compute norm of difference between R and R_next.
         for i in 0..3 {
-            let n = abs(r[i][0] - r_next[i][0])
-                + abs(r[i][1] - r_next[i][1])
-                + abs(r[i][2] - r_next[i][2]);
+            let n = abs(r[i][0] - r_next[i][0]) + abs(r[i][1] - r_next[i][1]) + abs(r[i][2] - r_next[i][2]);
             norm = max(norm, n);
         }
 
@@ -1407,8 +1312,7 @@ fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut M
     *s = r.inverse() * m;
 }
 
-/// DerivativeTerm encapsulates the coefficients `ki` to bound the motion of a
-/// point `p`.
+/// DerivativeTerm encapsulates the coefficients `ki` to bound the motion of a point `p`.
 #[derive(Copy, Clone, Debug, Default)]
 struct DerivativeTerm {
     pub kc: Float,

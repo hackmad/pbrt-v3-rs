@@ -1,7 +1,5 @@
 //! Fresnel-Modulated Specular Reflection and Transmission
 
-#![allow(dead_code)]
-
 use super::*;
 use crate::material::*;
 use std::fmt;
@@ -34,17 +32,12 @@ impl FresnelSpecular {
     /// * `fresnel` - Fresnel interface for dielectrics and conductors.
     /// * `r`       - Spectrum used to scale the reflected colour.
     /// * `t`       - Spectrum used to scale the transmitted colour.
-    /// * `eta_a`   - Index of refraction above the surface (same side as surface
-    ///               normal).
-    /// * `eta_b`   - Index of refraction below the surface (opposite side as surface
-    ///               normal).
-    /// * `mode`    - Indicates whether incident ray started from a light source
-    ///               or from camera.
+    /// * `eta_a`   - Index of refraction above the surface (same side as surface normal).
+    /// * `eta_b`   - Index of refraction below the surface (opposite side as surface normal).
+    /// * `mode`    - Indicates whether incident ray started from a light source or from camera.
     pub fn new(r: Spectrum, t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> BxDF {
         let model = Self {
-            bxdf_type: BxDFType::BSDF_REFLECTION
-                | BxDFType::BSDF_TRANSMISSION
-                | BxDFType::BSDF_SPECULAR,
+            bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_SPECULAR,
             r,
             t,
             eta_a,
@@ -59,8 +52,7 @@ impl FresnelSpecular {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -70,7 +62,6 @@ impl FresnelSpecular {
     }
 
     /// Returns the value of the BxDF given the outgpoing direction.
-    /// directions.
     ///
     /// * `wo`           - Outgoing direction.
     /// * `u`            - The 2D uniform random values.
@@ -93,11 +84,7 @@ impl FresnelSpecular {
 
             // Compute ray direction for specular transmission.
             let sampled_type = BxDFType::BSDF_SPECULAR | BxDFType::BSDF_TRANSMISSION;
-            if let Some(wi) = refract(
-                wo,
-                &Normal3f::new(0.0, 0.0, 1.0).face_forward(wo),
-                eta_i / eta_t,
-            ) {
+            if let Some(wi) = refract(wo, &Normal3f::new(0.0, 0.0, 1.0).face_forward(wo), eta_i / eta_t) {
                 let mut ft = self.t * (1.0 - f);
 
                 // Account for non-symmetry with transmission to different medium
@@ -113,8 +100,8 @@ impl FresnelSpecular {
         }
     }
 
-    /// Evaluates the PDF for the sampling method. Default is based on the
-    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    /// Evaluates the PDF for the sampling method. Default is based on the cosine-weighted sampling in `BxDF::sample_f()`
+    /// default implementation.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.

@@ -1,6 +1,5 @@
 //! Torrance-Sparrow Microfacet Reflection Model
 
-#![allow(dead_code)]
 use super::*;
 use crate::microfacet::*;
 use std::fmt;
@@ -14,8 +13,7 @@ pub struct MicrofacetReflection {
     /// Fresnel interface for dielectrics and conductors.
     fresnel: Fresnel,
 
-    /// Reflectance spectrum which gives the fraction of incident light that
-    /// is scattered.
+    /// Reflectance spectrum which gives the fraction of incident light that is scattered.
     r: Spectrum,
 
     /// The microfacet distribution model.
@@ -25,8 +23,7 @@ pub struct MicrofacetReflection {
 impl MicrofacetReflection {
     /// Creates a new instance of `MicrofacetReflection`.
     ///
-    /// * `r`            - Reflectance spectrum which gives the fraction of incident
-    ///                    light that is scattered.
+    /// * `r`            - Reflectance spectrum which gives the fraction of incident light that is scattered.
     /// * `distribution` - Microfacet distribution.
     /// * `fresnel`      - Fresnel interface for dielectrics and conductors.
     pub fn new(r: Spectrum, distribution: MicrofacetDistribution, fresnel: Fresnel) -> BxDF {
@@ -44,8 +41,7 @@ impl MicrofacetReflection {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -55,25 +51,22 @@ impl MicrofacetReflection {
         let wh = wi + wo;
 
         // Handle degenerate cases for microfacet reflection.
-        if (cos_theta_i == 0.0 || cos_theta_o == 0.0) || (wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0)
-        {
+        if (cos_theta_i == 0.0 || cos_theta_o == 0.0) || (wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0) {
             Spectrum::ZERO
         } else {
             let wh = wh.normalize();
 
-            // For the Fresnel call, make sure that wh is in the same hemisphere
-            // as the surface normal, so that TIR is handled correctly.
+            // For the Fresnel call, make sure that wh is in the same hemisphere as the surface normal, so that TIR is
+            // handled correctly.
             let f = self
                 .fresnel
                 .evaluate(wi.dot(&wh.face_forward(&Vector3f::new(0.0, 0.0, 1.0))));
 
-            self.r * self.distribution.d(&wh) * self.distribution.g(wo, wi) * f
-                / (4.0 * cos_theta_i * cos_theta_o)
+            self.r * self.distribution.d(&wh) * self.distribution.g(wo, wi) * f / (4.0 * cos_theta_i * cos_theta_o)
         }
     }
 
-    /// Returns the value of the BxDF given the outgpoing direction.
-    /// directions.
+    /// Returns the value of the BxDF given the outgpoing direction. directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
@@ -99,8 +92,11 @@ impl MicrofacetReflection {
         }
     }
 
-    /// Evaluates the PDF for the sampling method. Default is based on the
-    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    /// Evaluates the PDF for the sampling method. Default is based on the cosine-weighted sampling in `BxDF::sample_f()`
+    /// default implementation.
+    ///
+    /// * `wo` - Outgoing direction.
+    /// * `wi` - Incident direction.
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if same_hemisphere(wo, wi) {
             let wh = (wo + wi).normalize();

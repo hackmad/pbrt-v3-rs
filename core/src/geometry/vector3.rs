@@ -1,15 +1,12 @@
 //! 3-D Vectors
 
-#![allow(dead_code)]
 use super::common::*;
 use crate::geometry::*;
 use crate::pbrt::*;
 use std::fmt;
 
 use num_traits::{Num, Zero};
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
-};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// A 3-D vector containing numeric values.
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -28,11 +25,7 @@ pub struct Vector3<T> {
 pub type Vector3f = Vector3<Float>;
 impl Vector3f {
     /// Zero vector.
-    pub const ZERO: Self = Self {
-        x: 0.0,
-        y: 0.0,
-        z: 0.0,
-    };
+    pub const ZERO: Self = Self { x: 0.0, y: 0.0, z: 0.0 };
 }
 
 /// 3-D vector containing `Int` values.
@@ -161,11 +154,7 @@ impl<T: Num> Vector3<T> {
     where
         T: PartialOrd + Copy,
     {
-        Self::new(
-            min(self.x, other.x),
-            min(self.y, other.y),
-            min(self.z, other.z),
-        )
+        Self::new(min(self.x, other.x), min(self.y, other.y), min(self.z, other.z))
     }
 
     /// Return the component-wise maximum coordinate values with another vector.
@@ -175,11 +164,7 @@ impl<T: Num> Vector3<T> {
     where
         T: PartialOrd + Copy,
     {
-        Self::new(
-            max(self.x, other.x),
-            max(self.y, other.y),
-            max(self.z, other.z),
-        )
+        Self::new(max(self.x, other.x), max(self.y, other.y), max(self.z, other.z))
     }
 
     /// Returns a new vector with permuted coordinates according to given axes.
@@ -247,8 +232,7 @@ impl<T: Num + Copy> Cross<Normal3<T>> for Vector3<T> {
     }
 }
 
-/// Implement FaceForward trait which allows pointing vectors in the same
-/// hemisphere as another normal/vector.
+/// Implement FaceForward trait which allows pointing vectors in the same hemisphere as another normal/vector.
 impl<T: Num + Neg<Output = T> + PartialOrd + Copy> FaceForward<T, Vector3<T>> for Vector3<T> {}
 
 impl<T: Num> Add for Vector3<T> {
@@ -516,11 +500,7 @@ impl<T> From<Point3<T>> for Vector3<T> {
     ///
     /// * `p` -  3-D point.
     fn from(p: Point3<T>) -> Self {
-        Self {
-            x: p.x,
-            y: p.y,
-            z: p.z,
-        }
+        Self { x: p.x, y: p.y, z: p.z }
     }
 }
 
@@ -529,11 +509,7 @@ impl<T> From<Normal3<T>> for Vector3<T> {
     ///
     /// * `n` -  3-D normal.
     fn from(n: Normal3<T>) -> Self {
-        Self {
-            x: n.x,
-            y: n.y,
-            z: n.z,
-        }
+        Self { x: n.x, y: n.y, z: n.z }
     }
 }
 
@@ -542,11 +518,7 @@ impl<T: Copy> From<&Point3<T>> for Vector3<T> {
     ///
     /// * `p` -  3-D point.
     fn from(p: &Point3<T>) -> Self {
-        Self {
-            x: p.x,
-            y: p.y,
-            z: p.z,
-        }
+        Self { x: p.x, y: p.y, z: p.z }
     }
 }
 
@@ -555,11 +527,7 @@ impl<T: Copy> From<&Normal3<T>> for Vector3<T> {
     ///
     /// * `n` -  3-D normal.
     fn from(n: &Normal3<T>) -> Self {
-        Self {
-            x: n.x,
-            y: n.y,
-            z: n.z,
-        }
+        Self { x: n.x, y: n.y, z: n.z }
     }
 }
 
@@ -643,13 +611,7 @@ mod tests {
     prop_non_zero_range!(non_zero_f32, f32, -100.0..100.0f32);
 
     prop_vector3!(vector3_i32, i32, -100..100i32, -100..100i32, -100..100i32);
-    prop_vector3!(
-        vector3_f32,
-        f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32
-    );
+    prop_vector3!(vector3_f32, f32, -100.0..100.0f32, -100.0..100.0f32, -100.0..100.0f32);
 
     proptest! {
         #[test]

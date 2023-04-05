@@ -1,6 +1,5 @@
 //! Interactions
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::medium::*;
 use crate::pbrt::*;
@@ -115,8 +114,7 @@ pub struct Hit {
     /// Floating point error for ray intersection points.
     pub p_error: Vector3f,
 
-    /// The negative ray direction (outgoing direction used when computing
-    /// lighting at points).
+    /// The negative ray direction (outgoing direction used when computing lighting at points).
     pub wo: Vector3f,
 
     /// Surface normal at the point `p`.
@@ -126,21 +124,16 @@ pub struct Hit {
     pub medium_interface: Option<MediumInterface>,
 }
 
-/// Atomic reference counted `Hit`.
-type ArcHit = Arc<Hit>;
-
 impl Hit {
     /// Create a new hit.
     ///
-    /// NOTE: If you need to contruct a new `Hit` without `wo`, `n` and `p_error`
-    /// use `Hit::new_minimal()`. This function calls `wo.normalize()` and will
-    /// generate weird values for zero vectors.
+    /// NOTE: If you need to contruct a new `Hit` without `wo`, `n` and `p_error` use `Hit::new_minimal()`. This
+    /// function calls `wo.normalize()` and will generate weird values for zero vectors.
     ///
     /// `p`                - Point of interaction.
     /// `time`             - Time when interaction occurred.
     /// `p_error`          - Floating point error for ray intersection points.
-    /// `wo`               - The negative ray direction (outgoing direction used
-    ///                      when computing lighting at points).
+    /// `wo`               - The negative ray direction (outgoing direction used when computing lighting at points).
     /// `n`                - Surface normal at the point `p`.
     /// `medium_interface` - The medium interface used for scattering media.
     pub fn new(

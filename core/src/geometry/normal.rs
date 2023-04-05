@@ -1,14 +1,11 @@
 //! 3-D normals
 
-#![allow(dead_code)]
 use super::common::*;
 use crate::geometry::*;
 use crate::pbrt::*;
 use num_traits::{Num, Zero};
 use std::fmt;
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
-};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// A 3-D normal containing numeric values.
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -27,11 +24,7 @@ pub struct Normal3<T> {
 pub type Normal3f = Normal3<Float>;
 impl Normal3f {
     /// Zero normal.
-    pub const ZERO: Self = Self {
-        x: 0.0,
-        y: 0.0,
-        z: 0.0,
-    };
+    pub const ZERO: Self = Self { x: 0.0, y: 0.0, z: 0.0 };
 }
 
 impl<T: Num> Normal3<T> {
@@ -382,11 +375,7 @@ impl<T> From<Vector3<T>> for Normal3<T> {
     ///
     /// * `v` - 3-D vector.
     fn from(v: Vector3<T>) -> Self {
-        Self {
-            x: v.x,
-            y: v.y,
-            z: v.z,
-        }
+        Self { x: v.x, y: v.y, z: v.z }
     }
 }
 
@@ -395,11 +384,7 @@ impl<T: Copy> From<&Vector3<T>> for Normal3<T> {
     ///
     /// * `v` - 3-D vector.
     fn from(v: &Vector3<T>) -> Self {
-        Self {
-            x: v.x,
-            y: v.y,
-            z: v.z,
-        }
+        Self { x: v.x, y: v.y, z: v.z }
     }
 }
 
@@ -469,13 +454,7 @@ mod tests {
     prop_non_zero_range!(non_zero_f32, f32, -100.0..100.0f32);
 
     prop_normal3!(normal3_i32, i32, -100..100i32, -100..100i32, -100..100i32);
-    prop_normal3!(
-        normal3_f32,
-        f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32,
-        -100.0..100.0f32
-    );
+    prop_normal3!(normal3_f32, f32, -100.0..100.0f32, -100.0..100.0f32, -100.0..100.0f32);
 
     proptest! {
         #[test]

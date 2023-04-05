@@ -1,7 +1,5 @@
 //! Loop Subdivision Surfaces.
 
-#![allow(dead_code)]
-
 use super::TriangleMesh;
 use core::geometry::*;
 use core::paramset::*;
@@ -12,9 +10,8 @@ use std::sync::Arc;
 
 /// Subdivision surface vertex.
 ///
-/// NOTE: We use i64 and -1 to indicate no value instead of using Option<usize>
-/// to make the algorithm a little bit cleaner and clearer to implement following
-/// the original PBRT implementation.
+/// NOTE: We use i64 and -1 to indicate no value instead of using Option<usize> to make the algorithm a little bit
+/// cleaner and clearer to implement following the original PBRT implementation.
 #[derive(Clone)]
 struct SDVertex {
     /// Vertex position.
@@ -26,9 +23,8 @@ struct SDVertex {
     /// First vertex in next level of subdivision.
     pub child: i64,
 
-    /// Indicates regular or extraordinary vertex. Interior vertices with valence
-    /// other than six, or boundary vertices with valence other than four, are
-    /// called extraordinary vertices; otherwise, they are called regular.
+    /// Indicates regular or extraordinary vertex. Interior vertices with valence other than six, or boundary vertices
+    /// with valence other than four, are called extraordinary vertices; otherwise, they are called regular.
     pub regular: bool,
 
     /// Indicates vertex is on the boundary of the mesh.
@@ -95,12 +91,7 @@ impl SDVertex {
     /// * `vi`    - The vertex index.
     /// * `verts` - The list of vertices.
     /// * `faces` - The of faces.
-    pub fn one_ring(
-        &self,
-        vi: i64,
-        verts: &[Arc<SDVertex>],
-        faces: &[Arc<SDFace>],
-    ) -> Vec<Point3f> {
+    pub fn one_ring(&self, vi: i64, verts: &[Arc<SDVertex>], faces: &[Arc<SDFace>]) -> Vec<Point3f> {
         let mut p: Vec<Point3f> = vec![];
         if !self.boundary {
             let mut f = self.start_face;
@@ -160,9 +151,8 @@ impl PartialEq for SDVertex {
 
 // Subdivision surface edge.
 ///
-/// NOTE: We use i64 and -1 to indicate no value instead of using Option<usize>
-/// to make the algorithm a little bit cleaner and clearer to implement following
-/// the original PBRT implementation.
+/// NOTE: We use i64 and -1 to indicate no value instead of using Option<usize> to make the algorithm a little bit
+/// cleaner and clearer to implement following the original PBRT implementation.
 #[derive(Clone, Eq)]
 struct SDEdge {
     /// Vertex indices for the endpoints of the edge.
@@ -221,9 +211,8 @@ impl Hash for SDEdge {
 
 /// Subdivision surface face.
 ///
-/// NOTE: We use i64 and -1 to indicate no value instead of using Option<usize>
-/// to make the algorithm a little bit cleaner and clearer to implement following
-/// the original PBRT implementation.
+/// NOTE: We use i64 and -1 to indicate no value instead of using Option<usize> to make the algorithm a little bit
+/// cleaner and clearer to implement following the original PBRT implementation.
 #[derive(Clone)]
 struct SDFace {
     /// Index of vertices of the face.
@@ -325,8 +314,7 @@ impl LoopSubDiv {
     /// Subdivide a triangle mesh using loop subdivision.
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
     /// * `n_levels`            - Number of subdivision levels.
     /// * `vertex_indices`      - Vertex indices.
     /// * `p`                   - Vertex positions.
@@ -339,12 +327,10 @@ impl LoopSubDiv {
         p: Vec<Point3f>,
     ) -> Vec<ArcShape> {
         // Allocate `LoopSubDiv` vertices and faces.
-        let mut verts: Vec<Arc<SDVertex>> =
-            p.iter().map(|&pos| Arc::new(SDVertex::new(pos))).collect();
+        let mut verts: Vec<Arc<SDVertex>> = p.iter().map(|&pos| Arc::new(SDVertex::new(pos))).collect();
 
         let n_faces = vertex_indices.len() / 3;
-        let mut faces: Vec<Arc<SDFace>> =
-            (0..n_faces).map(|_| Arc::new(SDFace::default())).collect();
+        let mut faces: Vec<Arc<SDFace>> = (0..n_faces).map(|_| Arc::new(SDFace::default())).collect();
 
         // Set face to vertex pointers.
         for i in 0..n_faces {
@@ -446,13 +432,7 @@ impl LoopSubDiv {
                     if !verts[vi].boundary {
                         // Apply one-ring rule for even vertex.
                         if verts[vi].regular {
-                            child.p = weight_one_ring(
-                                Arc::clone(&verts[vi]),
-                                1.0 / 16.0,
-                                vi as i64,
-                                &verts,
-                                &faces,
-                            );
+                            child.p = weight_one_ring(Arc::clone(&verts[vi]), 1.0 / 16.0, vi as i64, &verts, &faces);
                         } else {
                             child.p = weight_one_ring(
                                 Arc::clone(&verts[vi]),
@@ -464,13 +444,7 @@ impl LoopSubDiv {
                         }
                     } else {
                         // Apply boundary rule for even vertex.
-                        child.p = weight_boundary(
-                            Arc::clone(&verts[vi]),
-                            1.0 / 8.0,
-                            vi as i64,
-                            &verts,
-                            &faces,
-                        );
+                        child.p = weight_boundary(Arc::clone(&verts[vi]), 1.0 / 8.0, vi as i64, &verts, &faces);
                     }
                 }
             }
@@ -496,16 +470,10 @@ impl LoopSubDiv {
                         if vert.boundary {
                             vert.p = 0.5 * v0.p + 0.5 * v1.p;
                         } else {
-                            let ov = Arc::clone(
-                                &verts[faces[i].other_vert(edge.v[0], edge.v[1]) as usize],
-                            );
+                            let ov = Arc::clone(&verts[faces[i].other_vert(edge.v[0], edge.v[1]) as usize]);
                             let fk = Arc::clone(&faces[faces[i].f[k] as usize]);
-                            let fk_ov =
-                                Arc::clone(&verts[fk.other_vert(edge.v[0], edge.v[1]) as usize]);
-                            vert.p = 3.0 / 8.0 * v0.p
-                                + 3.0 / 8.0 * v1.p
-                                + 1.0 / 8.0 * ov.p
-                                + 1.0 / 8.0 * fk_ov.p;
+                            let fk_ov = Arc::clone(&verts[fk.other_vert(edge.v[0], edge.v[1]) as usize]);
+                            vert.p = 3.0 / 8.0 * v0.p + 3.0 / 8.0 * v1.p + 1.0 / 8.0 * ov.p + 1.0 / 8.0 * fk_ov.p;
                         }
                         edge_verts.insert(edge, new_vi as i64);
 
@@ -690,25 +658,18 @@ impl LoopSubDiv {
         )
     }
 
-    /// Create `LoopSubDiv` from given parameter set, object to world transform,
-    /// world to object transform and whether or not surface normal orientation
-    /// is reversed.
+    /// Create `LoopSubDiv` from given parameter set, object to world transform, world to object transform and whether
+    /// or not surface normal orientation is reversed.
     ///
-    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot
-    /// implement this as `From` trait :(
+    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
     ///
-    /// * `p` - A tuple containing the parameter set, object to world transform,
-    ///         world to object transform and whether or not surface normal
-    ///         orientation is reversed.
+    /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform and whether
+    ///         or not surface normal orientation is reversed.
     pub fn from_props(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Vec<ArcShape> {
         let (params, o2w, w2o, reverse_orientation) = p;
 
         let n_levels = params.find_one_int("nlevels", 3) as usize;
-        let vertex_indices: Vec<usize> = params
-            .find_int("indices")
-            .iter()
-            .map(|i| *i as usize)
-            .collect();
+        let vertex_indices: Vec<usize> = params.find_int("indices").iter().map(|i| *i as usize).collect();
         let p = params.find_point3f("P");
         if vertex_indices.len() == 0 {
             panic!("Vertex indices 'indices' not provided for LoopSubDiv shape.");
@@ -746,8 +707,7 @@ fn loop_gamma(valence: usize) -> Float {
     1.0 / (valence as Float + 3.0 / (8.0 * beta(valence)))
 }
 
-/// Applies given weight to the one-ring of adjacent vertices and returns a
-/// new position.
+/// Applies given weight to the one-ring of adjacent vertices and returns a new position.
 ///
 /// * `vert`  - The vertex.
 /// * `beta`  - The weight.

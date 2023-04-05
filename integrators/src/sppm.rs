@@ -1,7 +1,5 @@
 //! SPPM Integrator
 
-#![allow(dead_code)]
-
 use core::app::OPTIONS;
 use core::camera::*;
 use core::geometry::*;
@@ -54,8 +52,7 @@ impl SPPMIntegrator {
     /// * `initial_search_radius` - Initial search radius for photons.
     /// * `n_iterations`          - Number of iterations of integrations to perform.
     /// * `max_depth`             - Maximum recursion depth.
-    /// * `photons_per_iteration` - The total number of photons to be traced for
-    ///                             the current iteration.
+    /// * `photons_per_iteration` - The total number of photons to be traced for the current iteration.
     /// * `write_frequency`       - How often SPPM image is stored in film.
     pub fn new(
         camera: ArcCamera,
@@ -230,8 +227,8 @@ impl From<(&ParamSet, ArcCamera)> for SPPMIntegrator {
 struct SPPMPixel {
     /// Search radius for photons.
     radius: Float,
-    /// Estimated average radiance visible over the extent of the pixel including time when
-    /// shutter is open to account for depth-of-field.
+    /// Estimated average radiance visible over the extent of the pixel including time when shutter is open to account
+    /// for depth-of-field.
     ld: Spectrum,
     /// Geometric informtion for the visible point.
     vp: VisiblePoint,
@@ -257,10 +254,10 @@ impl SPPMPixel {
     }
 }
 
-/// Stores a list of visible points in the grid. Note that this is using a mutex with VecDeque
-/// rather than using a linked list with atomic data types as in the original PBRT implementation.
-/// It avoids having to deal with memory ordering for prepending a node to the list. Might be an
-/// excercise in the future to implement it that way as I couldn't get it to work properly.
+/// Stores a list of visible points in the grid. Note that this is using a mutex with VecDeque rather than using a
+/// linked list with atomic data types as in the original PBRT implementation. It avoids having to deal with memory
+/// ordering for prepending a node to the list. Might be an excercise in the future to implement it that way as I
+/// couldn't get it to work properly.
 type SPPMPixelList<'p> = Arc<Mutex<VecDeque<&'p SPPMPixel>>>;
 
 #[derive(Default, Clone)]

@@ -1,6 +1,5 @@
 //! 4x4 Matrix
 
-#![allow(dead_code)]
 use crate::pbrt::*;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -62,8 +61,7 @@ impl Matrix4x4 {
         )
     }
 
-    /// Returns the inverse of the matrix using numerically stable Gauss-Jordan
-    /// elimination.
+    /// Returns the inverse of the matrix using numerically stable Gauss-Jordan elimination.
     ///
     /// The function will panic if the matrix is singular.
     pub fn inverse(&self) -> Self {
@@ -99,7 +97,7 @@ impl Matrix4x4 {
 
             ipiv[icol] += 1;
 
-            // Swap rows _irow_ and _icol_ for pivot
+            // Swap rows `irow` and `icol` for pivot.
             if irow != icol {
                 for k in 0..4 {
                     let tmp = minv[irow][k];
@@ -114,14 +112,14 @@ impl Matrix4x4 {
                 panic!("Singular matrix in MatrixInvert");
             }
 
-            // Set $m[icol][icol]$ to one by scaling row _icol_ appropriately
+            // Set `m[icol][icol]` to one by scaling row `icol` appropriately.
             let pivinv = 1.0 / minv[icol][icol];
             minv[icol][icol] = 1.0;
             for j in 0..4 {
                 minv[icol][j] *= pivinv;
             }
 
-            // Subtract this row from others to zero out their columns
+            // Subtract this row from others to zero out their columns.
             for j in 0..4 {
                 if j != icol {
                     let save = minv[j][icol];
@@ -132,7 +130,7 @@ impl Matrix4x4 {
                 }
             }
         }
-        // Swap columns to reflect permutation
+        // Swap columns to reflect permutation.
         for j in (0..4).rev() {
             if indxr[j] != indxc[j] {
                 for minv_k in &mut minv {
@@ -271,8 +269,7 @@ impl Mul<Matrix4x4> for &Matrix4x4 {
 impl Index<usize> for Matrix4x4 {
     type Output = [Float; 4];
 
-    /// Index the matrix row. The column can be further indexed from the
-    /// returned result.
+    /// Index the matrix row. The column can be further indexed from the returned result.
     ///
     /// * `row` - Row
     fn index(&self, row: usize) -> &Self::Output {
@@ -295,8 +292,7 @@ impl Hash for Matrix4x4 {
 }
 
 impl PartialEq for Matrix4x4 {
-    /// This method tests for `self` and `other` values to be equal, and is used
-    /// by `==`.
+    /// This method tests for `self` and `other` values to be equal, and is used by `==`.
     fn eq(&self, other: &Self) -> bool {
         self.m == other.m
     }

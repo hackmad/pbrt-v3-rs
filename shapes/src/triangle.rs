@@ -1,6 +1,5 @@
 //! Triangles and triangle meshes
 
-#![allow(dead_code)]
 use core::geometry::*;
 use core::interaction::*;
 use core::paramset::*;
@@ -21,9 +20,8 @@ pub struct TriangleMesh {
     /// The number of triangles.
     pub num_triangles: usize,
 
-    /// Vertex indices. For the ith triangle, its three vertex positions are
-    /// p[vertex_indices[3 * i]], p[vertex_indices[3 * i + 1]], and
-    /// p[vertex_indices[3 * i + 2]]
+    /// Vertex indices. For the ith triangle, its three vertex positions are:
+    /// p[vertex_indices[3 * i]], p[vertex_indices[3 * i + 1]] and p[vertex_indices[3 * i + 2]]
     pub vertex_indices: Vec<usize>,
 
     /// Vertex positions.
@@ -53,18 +51,14 @@ impl TriangleMesh {
     /// Create a new triangle mesh.
     ///
     /// * `object_to_world`     - The object to world transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
-    /// * `vertex_indices`      - Vertex indices for triangles. For the ith triangle,
-    ///                           its three vertex positions are p[vertex_indices[3 * i]],
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
+    /// * `vertex_indices`      - Vertex indices for triangles. For the ith triangle, its three vertex positions are
+    ///                           p[vertex_indices[3 * i]], p[vertex_indices[3 * i + 1]], and p[vertex_indices[3 * i + 2]].
     /// * `p`                   - Vertex positions.
-    ///                           p[vertex_indices[3 * i + 1]], and
-    ///                           p[vertex_indices[3 * i + 2]]
     /// * `n`                   - Vertex normals.
     /// * `s`                   - Tangent vectors per vertex.
     /// * `uv`                  - Paramteric uv-coordinates.
-    /// * `alpha_mask`          - Optional alpha mask texture, which can be used to
-    ///                           cut away parts of triangle surfaces
+    /// * `alpha_mask`          - Optional alpha mask texture, which can be used to cut away parts of triangle surfaces.
     /// * `shadow_alpha_mask`   - Optional shadow alpha mask texture.
     /// * `face_indices`        - Face indices.
     pub fn new(
@@ -101,33 +95,23 @@ impl TriangleMesh {
             alpha_mask,
             shadow_alpha_mask,
             face_indices,
-            data: Arc::new(ShapeData::new(
-                Arc::clone(&object_to_world),
-                None,
-                reverse_orientation,
-            )),
+            data: Arc::new(ShapeData::new(Arc::clone(&object_to_world), None, reverse_orientation)),
         }
     }
 
-    /// Create a triangle mesh from vertex positions, normals, tangents, uv-coordinates
-    /// and alpha mask.
+    /// Create a triangle mesh from vertex positions, normals, tangents, uv-coordinates and alpha mask.
     ///
-    /// Returns a list of triangle data referencing it. Useful for shapes that
-    /// convert to triangles.
+    /// Returns a list of triangle data referencing it. Useful for shapes that convert to triangles.
     ///
     /// * `object_to_world`     - The object to world transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
-    /// * `vertex_indices`      - Vertex indices for triangles. For the ith triangle,
-    ///                           its three vertex positions are p[vertex_indices[3 * i]],
-    ///                           p[vertex_indices[3 * i + 1]], and
-    ///                           p[vertex_indices[3 * i + 2]]
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
+    /// * `vertex_indices`      - Vertex indices for triangles. For the ith triangle, its three vertex positions are
+    ///                           p[vertex_indices[3 * i]], p[vertex_indices[3 * i + 1]], and p[vertex_indices[3 * i + 2]].
     /// * `p`                   - Vertex positions.
     /// * `n`                   - Vertex normals.
     /// * `s`                   - Tangent vectors per vertex.
     /// * `uv`                  - Paramteric uv-coordinates.
-    /// * `alpha_mask`          - Optional alpha mask texture, which can be used to
-    ///                           cut away parts of triangle surfaces
+    /// * `alpha_mask`          - Optional alpha mask texture, which can be used to cut away parts of triangle surfaces
     /// * `ehadow_alpha_mask`   - Optional shadow alpha mask texture.
     /// * `face_indices`        - Face indices.
     pub fn create(
@@ -176,16 +160,13 @@ impl TriangleMesh {
         tris
     }
 
-    /// Create a triangle mesh from given parameter set, object to world transform,
-    /// world to object transform and whether or not surface normal orientation
-    /// is reversed.
+    /// Create a triangle mesh from given parameter set, object to world transform, world to object transform and
+    /// whether or not surface normal orientation is reversed.
     ///
-    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot
-    /// implement this as `From` trait :(
+    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
     ///
-    /// * `p`              - A tuple containing the parameter set, object to
-    ///                      world transform, world to object transform and
-    ///                      whether or not surface normal orientation is reversed.
+    /// * `p`              - A tuple containing the parameter set, object to world transform, world to object transform
+    ///                      and whether or not surface normal orientation is reversed.
     /// * `float_textures` - Float textures.
     pub fn from_props(
         p: (&ParamSet, ArcTransform, ArcTransform, bool),
@@ -193,11 +174,7 @@ impl TriangleMesh {
     ) -> Vec<ArcShape> {
         let (params, o2w, w2o, reverse_orientation) = p;
 
-        let vi: Vec<usize> = params
-            .find_int("indices")
-            .iter()
-            .map(|i| *i as usize)
-            .collect();
+        let vi: Vec<usize> = params.find_int("indices").iter().map(|i| *i as usize).collect();
         let nvi = vi.len();
 
         let p = params.find_point3f("P");
@@ -274,11 +251,7 @@ impl TriangleMesh {
             }
         }
 
-        let mut face_indices: Vec<usize> = params
-            .find_int("faceIndices")
-            .iter()
-            .map(|i| *i as usize)
-            .collect();
+        let mut face_indices: Vec<usize> = params.find_int("faceIndices").iter().map(|i| *i as usize).collect();
         let nfi = face_indices.len();
         if nfi > 0 && nfi != nvi / 3 {
             error!(
@@ -351,8 +324,7 @@ pub struct Triangle {
     /// The mesh.
     pub mesh: Arc<TriangleMesh>,
 
-    /// The index of the first vertex in the triangle. The other two are
-    /// calculated as v + 1 and v + 2.
+    /// The index of the first vertex in the triangle. The other two are calculated as v + 1 and v + 2.
     pub v: usize,
 
     /// Face index to which this vertex belongs.
@@ -364,8 +336,7 @@ impl Triangle {
     ///
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
     /// * `mesh`                - The triangle mesh.
     /// * `triangle_index`      - The index of the triangle.
     pub fn new(
@@ -393,8 +364,8 @@ impl Triangle {
         }
     }
 
-    /// Returns the uv-coordinates for the triangle. If there are no uv
-    /// coordinates, then default ones [(0,0), (1,0), (1,1)] are returned.
+    /// Returns the uv-coordinates for the triangle. If there are no uv coordinates, then default ones
+    /// [(0,0), (1,0), (1,1)] are returned.
     fn get_uvs(&self) -> [Point2f; 3] {
         if self.mesh.uv.len() > 0 {
             [
@@ -403,18 +374,13 @@ impl Triangle {
                 self.mesh.uv[self.mesh.vertex_indices[self.v + 2]],
             ]
         } else {
-            [
-                Point2f::new(0.0, 0.0),
-                Point2f::new(1.0, 0.0),
-                Point2f::new(1.0, 1.0),
-            ]
+            [Point2f::new(0.0, 0.0), Point2f::new(1.0, 0.0), Point2f::new(1.0, 1.0)]
         }
     }
 }
 
 impl Shape for Triangle {
-    /// Returns the shape type. Usually these are behind ArcShape and harder to
-    /// debug. So this will be helpful.
+    /// Returns the shape type. Usually these are behind ArcShape and harder to debug. So this will be helpful.
     fn get_type(&self) -> &'static str {
         "triangle"
     }
@@ -426,8 +392,8 @@ impl Shape for Triangle {
 
     /// Returns a bounding box in the shapes object space.
     fn object_bound(&self) -> Bounds3f {
-        // We can unwrap safely because the factory methods guarantee world_to_object
-        // is passed. If it is constructed without that, then tough luck!
+        // We can unwrap safely because the factory methods guarantee world_to_object is passed. If it is constructed
+        // without that, then tough luck!
         let world_to_object = self.data.world_to_object.clone().unwrap();
 
         let p0 = &self.mesh.p[self.mesh.vertex_indices[self.v]];
@@ -441,16 +407,16 @@ impl Shape for Triangle {
 
     /// Returns a bounding box in the world space.
     ///
-    /// Default is to transform the object bounds with the object-to0world
-    /// transformation. Override for tighter bounds implementation.
+    /// Default is to transform the object bounds with the object-to0world transformation. Override for tighter bounds
+    /// implementation.
     fn world_bound(&self) -> Bounds3f {
         Bounds3f::from(self.mesh.p[self.mesh.vertex_indices[self.v]])
             .union(&self.mesh.p[self.mesh.vertex_indices[self.v + 1]])
             .union(&self.mesh.p[self.mesh.vertex_indices[self.v + 2]])
     }
 
-    /// Returns geometric details if a ray intersects the shape intersection.
-    /// If there is no intersection, `None` is returned.
+    /// Returns geometric details if a ray intersects the shape intersection. If there is no intersection, `None` is
+    /// returned.
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests.
@@ -556,9 +522,7 @@ impl Shape for Triangle {
 
         // Compute `delta_t` term for triangle `t` error bounds and check `t`.
         let max_e = Vector3::new(e0, e1, e2).abs().max_component();
-        let delta_t = 3.0
-            * (gamma(3) * max_e * max_z_t + delta_e * max_z_t + delta_z * max_e)
-            * inv_det.abs();
+        let delta_t = 3.0 * (gamma(3) * max_e * max_z_t + delta_e * max_z_t + delta_z * max_e) * inv_det.abs();
         if t <= delta_t {
             return None;
         }
@@ -710,12 +674,10 @@ impl Shape for Triangle {
                 let determinant = duv02[0] * duv12[1] - duv02[1] * duv12[0];
                 let degenerate_uv = determinant.abs() < 1e-8;
                 if degenerate_uv {
-                    // We can still compute `dndu` and `dndv`, with respect to the
-                    // same arbitrary coordinate system we use to compute `dpdu`
-                    // and `dpdv` when this happens. It's important to do this
-                    // (rather than giving up) so that ray differentials for
-                    // rays reflected from triangles with degenerate
-                    // parameterizations are still reasonable.
+                    // We can still compute `dndu` and `dndv`, with respect to the same arbitrary coordinate system we
+                    // use to compute `dpdu` and `dpdv` when this happens. It's important to do this (rather than giving
+                    // up) so that ray differentials for rays reflected from triangles with degenerate parameterizations
+                    // are still reasonable.
                     let dn = (n2 - n0).cross(&(n1 - n0));
                     if dn.length_squared() == 0.0 {
                         (Normal3f::ZERO, Normal3f::ZERO)
@@ -849,17 +811,13 @@ impl Shape for Triangle {
 
         // Compute `delta_t` term for triangle `t` error bounds and check `t`.
         let max_e = Vector3::new(e0, e1, e2).abs().max_component();
-        let delta_t = 3.0
-            * (gamma(3) * max_e * max_z_t + delta_e * max_z_t + delta_z * max_e)
-            * inv_det.abs();
+        let delta_t = 3.0 * (gamma(3) * max_e * max_z_t + delta_e * max_z_t + delta_z * max_e) * inv_det.abs();
         if t <= delta_t {
             return false;
         }
 
         // Test intersection against alpha texture, if present.
-        if test_alpha_texture
-            && (self.mesh.alpha_mask.is_some() || self.mesh.shadow_alpha_mask.is_some())
-        {
+        if test_alpha_texture && (self.mesh.alpha_mask.is_some() || self.mesh.shadow_alpha_mask.is_some()) {
             // Compute triangle partial derivatives.
             let uv = self.get_uvs();
 
@@ -931,8 +889,7 @@ impl Shape for Triangle {
         0.5 * (p1 - p0).cross(&(p2 - p0)).length()
     }
 
-    /// Sample a point on the surface and return the PDF with respect to area on
-    /// the surface.
+    /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
@@ -970,14 +927,11 @@ impl Shape for Triangle {
         (it, pdf)
     }
 
-    /// Returns the solid angle subtended by the shape w.r.t. the reference
-    /// point p, given in world space. Some shapes compute this value in
-    /// closed-form, while the default implementation uses Monte Carlo
-    /// integration.
+    /// Returns the solid angle subtended by the shape w.r.t. the reference point p, given in world space. Some shapes
+    /// compute this value in closed-form, while the default implementation uses Monte Carlo integration.
     ///
     /// * `p`         - The reference point.
-    /// * `n_samples` - The number of samples to use for Monte-Carlo integration.
-    ///                 Default to 512.
+    /// * `n_samples` - The number of samples to use for Monte-Carlo integration. Default to 512.
     fn solid_angle(&self, p: &Point3f, _n_samples: usize) -> Float {
         // Project the vertices into the unit sphere around p.
         let p_sphere = [
@@ -986,13 +940,11 @@ impl Shape for Triangle {
             (self.mesh.p[self.mesh.vertex_indices[self.v + 2]] - p).normalize(),
         ];
 
-        // http://math.stackexchange.com/questions/9819/area-of-a-spherical-triangle
-        // Girard's theorem: surface area of a spherical triangle on a unit
-        // sphere is the 'excess angle' alpha+beta+gamma-pi, where
-        // alpha/beta/gamma are the interior angles at the vertices.
+        // http://math.stackexchange.com/questions/9819/area-of-a-spherical-triangle Girard's theorem: surface area of
+        // a spherical triangle on a unit sphere is the 'excess angle' alpha+beta+gamma-pi, where alpha/beta/gamma are
+        // the interior angles at the vertices.
         //
-        // Given three vertices on the sphere, a, b, c, then we can compute,
-        // for example, the angle c->a->b by
+        // Given three vertices on the sphere, a, b, c, then we can compute, for example, the angle c->a->b by
         //
         // cos theta =  Dot(Cross(c, a), Cross(b, a)) /
         //              (Length(Cross(c, a)) * Length(Cross(b, a))).
@@ -1001,9 +953,8 @@ impl Shape for Triangle {
         let mut cross12 = p_sphere[1].cross(&p_sphere[2]);
         let mut cross20 = p_sphere[2].cross(&p_sphere[0]);
 
-        // Some of these vectors may be degenerate. In this case, we don't want
-        // to normalize them so that we don't hit an assert. This is fine,
-        // since the corresponding dot products below will be zero.
+        // Some of these vectors may be degenerate. In this case, we don't want to normalize them so that we don't hit
+        // an assert. This is fine, since the corresponding dot products below will be zero.
         if cross01.length_squared() > 0.0 {
             cross01 = cross01.normalize();
         }
@@ -1014,9 +965,8 @@ impl Shape for Triangle {
             cross20 = cross20.normalize();
         }
 
-        // We only need to do three cross products to evaluate the angles at
-        // all three vertices, though, since we can take advantage of the fact
-        // that Cross(a, b) = -Cross(b, a).
+        // We only need to do three cross products to evaluate the angles at all three vertices, though, since we can
+        // take advantage of the fact that Cross(a, b) = -Cross(b, a).
         abs(acos(clamp(cross01.dot(&-cross12), -1.0, 1.0))
             + acos(clamp(cross12.dot(&-cross20), -1.0, 1.0))
             + acos(clamp(cross20.dot(&-cross01), -1.0, 1.0))

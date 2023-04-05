@@ -1,6 +1,5 @@
 //! Curves
 
-#![allow(dead_code)]
 use core::geometry::*;
 use core::interaction::*;
 use core::paramset::*;
@@ -16,8 +15,7 @@ pub enum CurveType {
     /// Cylinder curve has normal shading and appears cylinderical.
     Cylinder,
 
-    /// Ribbon curve has fixed orientation at start and end points;
-    /// intermediate orientations are smoothly interpolated.
+    /// Ribbon curve has fixed orientation at start and end points; intermediate orientations are smoothly interpolated.
     Ribbon,
 }
 
@@ -43,8 +41,7 @@ impl Curve {
     ///
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
     /// * `u_min`               - Minimum u-parameter for the curve.
     /// * `u_max`               - Maximum u-parameter for the curve.
     pub fn new(
@@ -71,8 +68,7 @@ impl Curve {
     ///
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
     /// * `curve_type`          - Curve type.
     /// * `c`                   - Object space control points.
     /// * `width`               - The width of the curve at the start and end points.
@@ -111,16 +107,13 @@ impl Curve {
         segments
     }
 
-    /// Create `Curve`s from given parameter set, object to world transform,
-    /// world to object transform and whether or not surface normal orientation
-    /// is reversed.
+    /// Create `Curve`s from given parameter set, object to world transform, world to object transform and whether or
+    /// not surface normal orientation is reversed.
     ///
-    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot
-    /// implement this as `From` trait :(
+    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
     ///
-    /// * `p` - A tuple containing the parameter set, object to world transform,
-    ///         world to object transform and whether or not surface normal
-    ///         orientation is reversed.
+    /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform and whether
+    ///         or not surface normal orientation is reversed.
     pub fn from_props(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Vec<ArcShape> {
         let (params, o2w, w2o, reverse_orientation) = p;
 
@@ -130,27 +123,20 @@ impl Curve {
 
         let degree = params.find_one_int("degree", 3_i32) as usize;
         if degree != 2 && degree != 3 {
-            panic!(
-                "Invalid degree {}: only degree 2 and 3 curves are supported.",
-                degree
-            );
+            panic!("Invalid degree {}: only degree 2 and 3 curves are supported.", degree);
         }
 
         let basis = params.find_one_string("basis", String::from("bezier"));
         if basis != "bezier" && basis != "bspline" {
-            panic!(
-                "Invalid basis '{}': only ''bezier' and 'bspline' are supported.",
-                basis
-            );
+            panic!("Invalid basis '{}': only ''bezier' and 'bspline' are supported.", basis);
         }
 
         let cp = params.find_point3f("P");
         let ncp = cp.len();
         let n_segments: usize;
         if basis == "bezier" {
-            // After the first segment, which uses degree+1 control points,
-            // subsequent segments reuse the last control point of the previous
-            // one and then use degree more control points.
+            // After the first segment, which uses degree+1 control points, subsequent segments reuse the last control
+            // point of the previous one and then use degree more control points.
             if ((ncp - 1 - degree) % degree) != 0 {
                 panic!(
                     "Invalid number of control points {}: for the degree {} 
@@ -209,17 +195,15 @@ impl Curve {
         let sd = params.find_one_int("splitdepth", split_depth);
 
         let mut curves: Vec<ArcShape> = vec![];
-        // Pointer to the first control point for the current segment. This is
-        // updated after each loop iteration depending on the current basis.
+        // Pointer to the first control point for the current segment. This is updated after each loop iteration
+        // depending on the current basis.
         let mut cp_base = 0;
         for seg in 0..n_segments {
             let mut seg_cp_bezier = [Point3f::ZERO; 4];
 
-            // First, compute the cubic Bezier control points for the current
-            // segment and store them in segCpBezier. (It is admittedly
-            // wasteful storage-wise to turn b-splines into Bezier segments and
-            // wasteful computationally to turn quadratic curves into cubics,
-            // but yolo.)
+            // First, compute the cubic Bezier control points for the current segment and store them in segCpBezier.
+            // (It is admittedly wasteful storage-wise to turn b-splines into Bezier segments and wasteful computationally
+            // to turn quadratic curves into cubics, but yolo.)
             if basis == "bezier" {
                 if degree == 2 {
                     // Elevate to degree 3.
@@ -237,11 +221,9 @@ impl Curve {
             } else {
                 // Uniform b-spline.
                 if degree == 2 {
-                    // First compute equivalent Bezier control points via some
-                    // blossiming.  We have three control points and a uniform
-                    // knot vector; we'll label the points p01, p12, and p23.
-                    // We want the Bezier control points of the equivalent
-                    // curve, which are p11, p12, and p22.
+                    // First compute equivalent Bezier control points via some blossiming. We have three control points
+                    // and a uniform knot vector; we'll label the points p01, p12, and p23. We want the Bezier control
+                    // points of the equivalent curve, which are p11, p12, and p22.
                     let p01 = cp[cp_base + 0];
                     let p12 = cp[cp_base + 1];
                     let p23 = cp[cp_base + 2];
@@ -256,8 +238,8 @@ impl Curve {
                     seg_cp_bezier[2] = lerp(1.0 / 3.0, p12, p22);
                     seg_cp_bezier[3] = p22;
                 } else {
-                    // Otherwise we will blossom from p011, p123, p234, and p345
-                    // to the Bezier control points p222, p223, p233, and p333.
+                    // Otherwise we will blossom from p011, p123, p234, and p345 to the Bezier control points p222, p223,
+                    // p233, and p333.
                     // https://people.eecs.berkeley.edu/~sequin/CS284/IMGS/cubicbsplinepoints.gif
                     let p012 = cp[cp_base + 0];
                     let p123 = cp[cp_base + 1];
@@ -291,11 +273,7 @@ impl Curve {
                 curve_type,
                 seg_cp_bezier,
                 width,
-                if n.len() > 0 {
-                    Some(&n[seg..seg + 2])
-                } else {
-                    None
-                },
+                if n.len() > 0 { Some(&n[seg..seg + 2]) } else { None },
                 sd,
             );
             curves.extend(c);
@@ -318,9 +296,8 @@ impl Curve {
     ///
     /// * `ray`           - The ray.
     /// * `cp`            - The control points.
-    /// * `ray_to_object` - Transform to bring things out of the coordinate system
-    ///                     centered at a ray's origin with the ray's direction
-    ///                     as +z axis. Generally created with look_at transform.
+    /// * `ray_to_object` - Transform to bring things out of the coordinate system centered at a ray's origin with the
+    ///                     ray's direction as +z axis. Generally created with look_at transform.
     /// * `u0`            - The starting u-parameter.
     /// * `u1`            - The ending u-parameter.
     /// * `depth`         - The recursion depth.
@@ -341,23 +318,21 @@ impl Curve {
             // Split curve segment into sub-segments and test for intersection.
             let cp_split = subdivide_bezier(cp);
 
-            // For each of the two segments, see if the ray's bounding box
-            // overlaps the segment before recursively checking for
-            // intersection with it.
+            // For each of the two segments, see if the ray's bounding box overlaps the segment before recursively
+            // checking for intersection with it.
             let u = [u0, (u0 + u1) / 2.0, u1];
             let mut hit: Option<Intersection<'scene>> = None;
             let mut cps = 0;
             for seg in 0..2 {
                 // Splice containing the 4 control poitns for the current segment.
-                //let cps = &cp_split[seg * 3..seg * 3 + 4];
+                // let cps = &cp_split[seg * 3..seg * 3 + 4];
 
                 let max_width = max(
                     lerp(u[seg], self.common.width[0], self.common.width[1]),
                     lerp(u[seg + 1], self.common.width[0], self.common.width[1]),
                 );
 
-                // As above, check y first, since it most commonly lets us exit
-                // out early.
+                // As above, check y first, since it most commonly lets us exit out early.
                 if max(
                     max(cp_split[cps + 0].y, cp_split[cps + 1].y),
                     max(cp_split[cps + 2].y, cp_split[cps + 3].y),
@@ -416,8 +391,7 @@ impl Curve {
                     is_shadow_ray,
                 );
 
-                // If we found an intersection and this is a shadow ray,
-                // we can exit out immediately.
+                // If we found an intersection and this is a shadow ray, we can exit out immediately.
                 if hit.is_some() && is_shadow_ray {
                     return hit;
                 }
@@ -456,8 +430,7 @@ impl Curve {
             let mut n_hit = Normal3f::ZERO;
             if self.common.curve_type == CurveType::Ribbon {
                 // Scale hit_width based on ribbon orientation.
-                let sin0 =
-                    sin((1.0 - u) * self.common.normal_angle) * self.common.inv_sin_normal_angle;
+                let sin0 = sin((1.0 - u) * self.common.normal_angle) * self.common.inv_sin_normal_angle;
                 let sin1 = sin(u * self.common.normal_angle) * self.common.inv_sin_normal_angle;
                 n_hit = sin0 * self.common.n[0] + sin1 * self.common.n[1];
                 hit_width *= n_hit.abs_dot(&ray.d) / ray_length;
@@ -491,20 +464,14 @@ impl Curve {
 
             // Compute dpdu and dpdv for curve intersection.
             let (_, dpdu) = eval_bezier(&self.common.cp_obj, u);
-            assert!(
-                dpdu != Vector3f::ZERO,
-                "u={}, cp=[{:?}]",
-                u,
-                self.common.cp_obj
-            );
+            assert!(dpdu != Vector3f::ZERO, "u={}, cp=[{:?}]", u, self.common.cp_obj);
 
             let dpdv = if self.common.curve_type == CurveType::Ribbon {
                 Vector3::from(n_hit).cross(&dpdu).normalize() * hit_width
             } else {
                 // Compute curve dpdv for flat and cylinder curves.
                 let dpdu_plane = ray_to_object.inverse().transform_vector(&dpdu);
-                let mut dpdv_plane =
-                    Vector3::new(-dpdu_plane.y, dpdu_plane.x, 0.0).normalize() * hit_width;
+                let mut dpdv_plane = Vector3::new(-dpdu_plane.y, dpdu_plane.x, 0.0).normalize() * hit_width;
                 if self.common.curve_type == CurveType::Cylinder {
                     // Rotate dpdv_plane to give cylindrical appearance.
                     let theta = lerp(v, -90.0, 90.0);
@@ -527,24 +494,22 @@ impl Curve {
                 Some(Arc::clone(&self.data)),
                 0,
             );
-            self.data
-                .object_to_world
-                .transform_surface_interaction(&mut si);
+            self.data.object_to_world.transform_surface_interaction(&mut si);
 
             Some(Intersection::new(t_hit, si))
         }
     }
 
-    /// Returns geometric details if a ray intersects the shape intersection.
-    /// If there is no intersection, `None` is returned.
+    /// Returns geometric details if a ray intersects the shape intersection. If there is no intersection, `None` is
+    /// returned.
     ///
     /// * `r`             - The ray.
     /// * `is_shadow_ray` - Used to terminate recursion on first hit for shadow rays.
     fn intersect<'scene>(&self, r: &Ray, is_shadow_ray: bool) -> Option<Intersection<'scene>> {
         // Transform ray to object space.
         //
-        // We could just use transform_ray() but there is minor adjustment in
-        // it that adjusts t_max which is not in transform_ray_with_error().
+        // We could just use transform_ray() but there is minor adjustment in it that adjusts t_max which is not in
+        // transform_ray_with_error().
         let (ray, _o_err, _d_err) = self
             .data
             .world_to_object
@@ -557,20 +522,17 @@ impl Curve {
 
         // Project curve control points to plane perpendicular to ray.
 
-        // Be careful to set the "up" direction passed to LookAt() to equal the
-        // vector from the first to the last control points.  In turn, this
-        // helps orient the curve to be roughly parallel to the x axis in the
-        // ray coordinate system.
+        // Be careful to set the "up" direction passed to LookAt() to equal the vector from the first to the last
+        // control points. In turn, this helps orient the curve to be roughly parallel to the x axis in the ray
+        // coordinate system.
         //
-        // In turn (especially for curves that are approaching stright lines),
-        // we get curve bounds with minimal extent in y, which in turn lets us
-        // early out more quickly in recursiveIntersect().
+        // In turn (especially for curves that are approaching stright lines), we get curve bounds with minimal extent
+        // in y, which in turn lets us early out more quickly in recursiveIntersect().
         let mut dx = ray.d.cross(&(cp_obj[3] - cp_obj[0]));
         if dx.length_squared() == 0.0 {
-            // If the ray and the vector between the first and last control
-            // points are parallel, dx will be zero.  Generate an arbitrary xy
-            // orientation for the ray coordinate system so that intersection
-            // tests can proceeed in this unusual case.
+            // If the ray and the vector between the first and last control points are parallel, dx will be zero.
+            // Generate an arbitrary xy orientation for the ray coordinate system so that intersection tests can
+            // proceeed in this unusual case.
             let (dx_new, _dy) = coordinate_system(&ray.d);
             dx = dx_new;
         }
@@ -583,10 +545,9 @@ impl Curve {
             object_to_ray.transform_point(&cp_obj[3]),
         ];
 
-        // Before going any further, see if the ray's bounding box intersects
-        // the curve's bounding box. We start with the y dimension, since the y
-        // extent is generally the smallest (and is often tiny) due to our
-        // careful orientation of the ray coordinate ysstem above.
+        // Before going any further, see if the ray's bounding box intersects the curve's bounding box. We start with
+        // the y dimension, since the y extent is generally the smallest (and is often tiny) due to our careful
+        // orientation of the ray coordinate ysstem above.
         let max_width = max(
             lerp(self.u_min, self.common.width[0], self.common.width[1]),
             lerp(self.u_max, self.common.width[0], self.common.width[1]),
@@ -646,8 +607,7 @@ impl Curve {
 }
 
 impl Shape for Curve {
-    /// Returns the shape type. Usually these are behind ArcShape and harder to
-    /// debug. So this will be helpful.
+    /// Returns the shape type. Usually these are behind ArcShape and harder to debug. So this will be helpful.
     fn get_type(&self) -> &'static str {
         "curve"
     }
@@ -662,9 +622,8 @@ impl Shape for Curve {
         // Compute object-space control points for curve segment, cp_obj
         let cp_obj = self.blossom_bezier();
 
-        // Using the convex hull property; i.e. the curve lies within the convex
-        // hull of its control points. Then expand the bounds by half the maximum
-        // width over the entire parameteric extent of the curve.
+        // Using the convex hull property; i.e. the curve lies within the convex hull of its control points. Then
+        // expand the bounds by half the maximum width over the entire parameteric extent of the curve.
         let width = [
             lerp(self.u_min, self.common.width[0], self.common.width[1]),
             lerp(self.u_max, self.common.width[0], self.common.width[1]),
@@ -675,16 +634,12 @@ impl Shape for Curve {
             .expand(max(width[0], width[1]) * 0.5)
     }
 
-    /// Returns geometric details if a ray intersects the shape intersection.
-    /// If there is no intersection, `None` is returned.
+    /// Returns geometric details if a ray intersects the shape intersection. If there is no intersection, `None` is
+    /// returned.
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect<'scene>(
-        &self,
-        r: &Ray,
-        _test_alpha_texture: bool,
-    ) -> Option<Intersection<'scene>> {
+    fn intersect<'scene>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'scene>> {
         Self::intersect(self, r, false)
     }
 
@@ -707,8 +662,7 @@ impl Shape for Curve {
         approx_length * avg_width
     }
 
-    /// Sample a point on the surface and return the PDF with respect to area on
-    /// the surface.
+    /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
@@ -748,12 +702,7 @@ impl CurveData {
     /// * `c`          - Object space control points.
     /// * `width`      - The width of the curve at the start and end points.
     /// * `norm`       - Surface normal at the start and end points.
-    pub fn new(
-        curve_type: CurveType,
-        c: [Point3f; 4],
-        width: [Float; 2],
-        norm: Option<&[Normal3f]>,
-    ) -> Self {
+    pub fn new(curve_type: CurveType, c: [Point3f; 4], width: [Float; 2], norm: Option<&[Normal3f]>) -> Self {
         let n = match norm {
             Some([n1, n2]) => [n1.normalize(), n2.normalize()],
             _ => [Normal3f::ZERO, Normal3f::ZERO],
@@ -780,18 +729,13 @@ impl CurveData {
 /// * `u1` - The second u-extent.
 /// * `u2` - The third u-extent.
 fn blossom_bezier(p: &[Point3f; 4], u0: Float, u1: Float, u2: Float) -> Point3f {
-    let a = [
-        lerp(u0, p[0], p[1]),
-        lerp(u0, p[1], p[2]),
-        lerp(u0, p[2], p[3]),
-    ];
+    let a = [lerp(u0, p[0], p[1]), lerp(u0, p[1], p[2]), lerp(u0, p[2], p[3])];
     let b = [lerp(u1, a[0], a[1]), lerp(u1, a[1], a[2])];
     lerp(u2, b[0], b[1])
 }
 
-/// Subdivides a Bézier curve and returns 7-control points; points 0 - 3 are
-/// control points for first half of the split curve and points 3 - 6 for the
-/// second half of the curve.
+/// Subdivides a Bézier curve and returns 7-control points; points 0 - 3 are control points for first half of the split
+/// curve and points 3 - 6 for the second half of the curve.
 ///
 /// * `cp` - The control points.
 fn subdivide_bezier(cp: &[Point3f; 4]) -> [Point3f; 7] {
@@ -806,28 +750,21 @@ fn subdivide_bezier(cp: &[Point3f; 4]) -> [Point3f; 7] {
     ]
 }
 
-/// Evaluate a Bézier curve at given parameter and return the point and derivative
-/// at the point.
+/// Evaluate a Bézier curve at given parameter and return the point and derivative at the point.
 ///
 /// * `cp` - The control points.
 /// * `u`  - The parameter to evaluate.
 fn eval_bezier(cp: &[Point3f; 4], u: Float) -> (Point3f, Vector3f) {
-    let cp1 = [
-        lerp(u, cp[0], cp[1]),
-        lerp(u, cp[1], cp[2]),
-        lerp(u, cp[2], cp[3]),
-    ];
+    let cp1 = [lerp(u, cp[0], cp[1]), lerp(u, cp[1], cp[2]), lerp(u, cp[2], cp[3])];
     let cp2 = [lerp(u, cp1[0], cp1[1]), lerp(u, cp1[1], cp1[2])];
 
     let deriv = if (cp2[1] - cp2[0]).length_squared() > 0.0 {
         3.0 * (cp2[1] - cp2[0])
     } else {
-        // For a cubic Bezier, if the first three control points (say) are
-        // coincident, then the derivative of the curve is legitimately (0,0,0)
-        // at u=0. This is problematic for us, though, since we'd like to be
-        // able to compute a surface normal there. In that case, just punt and
-        // take the difference between the first and last control points, which
-        // ain't great, but will hopefully do.
+        // For a cubic Bezier, if the first three control points (say) are coincident, then the derivative of the curve
+        // is legitimately (0,0,0) at u=0. This is problematic for us, though, since we'd like to be able to compute a
+        // surface normal there. In that case, just punt and take the difference between the first and last control
+        // points, which ain't great, but will hopefully do.
         cp[3] - cp[0]
     };
 

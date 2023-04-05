@@ -1,7 +1,5 @@
 //! Whitted Integrator
 
-#![allow(dead_code)]
-
 use core::camera::*;
 use core::geometry::*;
 use core::integrator::*;

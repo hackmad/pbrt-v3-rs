@@ -1,6 +1,5 @@
 //! Common
 
-#![allow(dead_code)]
 use core::geometry::*;
 use core::interaction::*;
 use core::material::*;

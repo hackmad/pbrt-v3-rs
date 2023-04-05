@@ -1,6 +1,5 @@
 //! Interval of real numbers
 
-#![allow(dead_code)]
 use crate::pbrt::*;
 use std::fmt;
 use std::mem::swap;
@@ -28,13 +27,9 @@ impl Interval {
         }
     }
 
-    /// Return the interval used for sine function assuming this interval fits
-    /// inside [0, 2π].
+    /// Return the interval used for sine function assuming this interval fits inside [0, 2π].
     pub fn sin(&self) -> Interval {
-        assert!(
-            self.low >= 0.0,
-            "interval low < 0 not allowed for sine function"
-        );
+        assert!(self.low >= 0.0, "interval low < 0 not allowed for sine function");
         assert!(
             self.high <= 2.0001 * PI,
             "interval high > 2π not allowed for sine function"
@@ -58,13 +53,9 @@ impl Interval {
         Interval::new(sin_low, sin_high)
     }
 
-    /// Return the interval used for cosine function assuming this interval fits
-    /// inside [0, 2π].
+    /// Return the interval used for cosine function assuming this interval fits inside [0, 2π].
     pub fn cos(&self) -> Interval {
-        assert!(
-            self.low >= 0.0,
-            "interval low < 0 not allowed for cosine function"
-        );
+        assert!(self.low >= 0.0, "interval low < 0 not allowed for cosine function");
         assert!(
             self.high <= 2.0001 * PI,
             "interval high > 2π not allowed for cosine function"
@@ -86,7 +77,7 @@ impl Interval {
 
     /// Find the values of any zero crossings of the equation:
     ///
-    /// d/dt(a_M,p(t)) = c1 + (c2 + c3 * t) * cos(2θ * t) + (c4 + c5 * t) * sin(2θ * t)
+    ///   d/dt(a_M,p(t)) = c1 + (c2 + c3 * t) * cos(2θ * t) + (c4 + c5 * t) * sin(2θ * t)
     ///
     /// over the interval.
     ///
@@ -113,10 +104,8 @@ impl Interval {
     ) {
         // Evaluate motion derivative in interval form, return if no zeros
         let range = Interval::from(c1)
-            + (Interval::from(c2) + Interval::from(c3) * *self)
-                * (Interval::from(2.0 * theta) * *self).cos()
-            + (Interval::from(c4) + Interval::from(c5) * *self)
-                * (Interval::from(2.0 * theta) * *self).sin();
+            + (Interval::from(c2) + Interval::from(c3) * *self) * (Interval::from(2.0 * theta) * *self).cos()
+            + (Interval::from(c4) + Interval::from(c5) * *self) * (Interval::from(2.0 * theta) * *self).sin();
 
         if range.low > 0.0 || range.high < 0.0 || range.low == range.high {
             return;
@@ -126,29 +115,9 @@ impl Interval {
             // Split self and check both resulting intervals
             let mid = (self.low + self.high) * 0.5;
 
-            Interval::new(self.low, mid).find_zeros(
-                c1,
-                c2,
-                c3,
-                c4,
-                c5,
-                theta,
-                zeros,
-                zero_count,
-                depth - 1,
-            );
+            Interval::new(self.low, mid).find_zeros(c1, c2, c3, c4, c5, theta, zeros, zero_count, depth - 1);
 
-            Interval::new(mid, self.high).find_zeros(
-                c1,
-                c2,
-                c3,
-                c4,
-                c5,
-                theta,
-                zeros,
-                zero_count,
-                depth - 1,
-            );
+            Interval::new(mid, self.high).find_zeros(c1, c2, c3, c4, c5, theta, zeros, zero_count, depth - 1);
         } else {
             // Use Newton's method to refine zero
             let mut t_newton = (self.low + self.high) * 0.5;
@@ -157,8 +126,7 @@ impl Interval {
                     + (c2 + c3 * t_newton) * (2.0 * theta * t_newton).cos()
                     + (c4 + c5 * t_newton) * (2.0 * theta * t_newton).sin();
 
-                let f_prime_newton = (c3 + 2.0 * (c4 + c5 * t_newton) * theta)
-                    * (2.0 * t_newton * theta).cos()
+                let f_prime_newton = (c3 + 2.0 * (c4 + c5 * t_newton) * theta) * (2.0 * t_newton * theta).cos()
                     + (c5 - 2.0 * (c2 + c3 * t_newton) * theta) * (2.0 * t_newton * theta).sin();
 
                 if f_newton == 0.0 || f_prime_newton == 0.0 {
@@ -213,11 +181,9 @@ impl Mul for Interval {
     ///
     /// * `i` -  The interval to multiply.
     fn mul(self, i: Self) -> Self::Output {
-        // The sides of each interval which determine the minimum and maximum
-        // values of the result interval depend on the signs of the respective
-        // values. Multiplying the various possibilities and taking the
-        // overall minimum and maximum is easier than working through which ones
-        // to use and multiplying these.
+        // The sides of each interval which determine the minimum and maximum values of the result interval depend on
+        // the signs of the respective values. Multiplying the various possibilities and taking the overall minimum and
+        // maximum is easier than working through which ones to use and multiplying these.
         Self::new(
             min(
                 min(self.low * i.low, self.high * i.low),

@@ -1,14 +1,11 @@
 //! 2-D Vectors
 
-#![allow(dead_code)]
 use super::common::*;
 use crate::geometry::*;
 use crate::pbrt::*;
 use num_traits::{Num, Zero};
 use std::fmt;
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
-};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// A 2-D vector containing numeric values.
 #[derive(Copy, Clone, Debug, Default, PartialEq)]

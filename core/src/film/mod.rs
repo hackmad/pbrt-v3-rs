@@ -1,6 +1,5 @@
 //! Film
 
-#![allow(dead_code)]
 use crate::app::OPTIONS;
 use crate::filter::*;
 use crate::geometry::*;
@@ -28,24 +27,20 @@ pub const INV_FILTER_TABLE_WIDTH: Float = 1.0 / (FILTER_TABLE_WIDTH as Float);
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct Pixel {
-    /// Stores the running weighted sums of spectral pixel contributions using
-    /// XYZ colors.
+    /// Stores the running weighted sums of spectral pixel contributions using XYZ colors.
     pub xyz: [Float; 3],
 
-    /// Holds the sum of filter weight values for the sample contributions to
-    /// the pixel.
+    /// Holds the sum of filter weight values for the sample contributions to the pixel.
     pub filter_weight_sum: Float,
 
     /// Holds an unweighted sum of sample splats.
     pub splat_xyz: [Float; 3],
 
-    /// Used to pad this struct to the 32-bit/64-bit. This will work for both
-    /// `Float` => `f32` and `Float` => `f64`.
+    /// Used to pad this struct to the 32-bit/64-bit. This will work for both `Float` => `f32` and `Float` => `f64`.
     pad: Float,
 }
 
-/// Models the sensing device in a simulated camera. It stores all of the sample
-/// values needed to specify a camera ray.
+/// Models the sensing device in a simulated camera. It stores all of the sample values needed to specify a camera ray.
 pub struct Film {
     /// The overall image resolution in pixels.
     pub full_resolution: Point2i,
@@ -80,15 +75,11 @@ impl Film {
     ///
     /// * `resolution`           - The overall image resolution in pixels.
     /// * `crop_window`          - Crop window of the subset of the image to render.
-    /// * `filter`               - Filter function to use for image reconstruction
-    ///                            from samples.
-    /// * `diagonal`             - The diaogonal of the film's physical area in
-    //                             millimeters.
+    /// * `filter`               - Filter function to use for image reconstruction from samples.
+    /// * `diagonal`             - The diaogonal of the film's physical area in millimeters.
     /// * `filename`             - Filename of output image.
-    /// * `scale`                - Optional scale factor for pixel values. If
-    ///                            None specified, sets to 1.0.
-    /// * `max_sample_luminance` - Optional maximum sample luminence to use use.
-    ///                            Defaults to `INFINITY`.
+    /// * `scale`                - Optional scale factor for pixel values. If None specified, sets to 1.0.
+    /// * `max_sample_luminance` - Optional maximum sample luminence to use use. Defaults to `INFINITY`.
     pub fn new(
         resolution: &Point2i,
         crop_window: &Bounds2f,
@@ -145,16 +136,14 @@ impl Film {
         }
     }
 
-    /// Returns the sample bounds accounting for the half-pixel offsets when
-    /// converting from discrete to continuous pixel coordinates.
+    /// Returns the sample bounds accounting for the half-pixel offsets when converting from discrete to continuous
+    /// pixel coordinates.
     pub fn get_sample_bounds(&self) -> Bounds2i {
         let filter_data = self.filter.get_data();
         let half_pixel = Vector2f::new(0.5, 0.5);
 
-        let p0 = (Point2f::from(self.cropped_pixel_bounds.p_min) + half_pixel - filter_data.radius)
-            .floor();
-        let p1 = (Point2f::from(self.cropped_pixel_bounds.p_max) - half_pixel + filter_data.radius)
-            .ceil();
+        let p0 = (Point2f::from(self.cropped_pixel_bounds.p_min) + half_pixel - filter_data.radius).floor();
+        let p1 = (Point2f::from(self.cropped_pixel_bounds.p_max) - half_pixel + filter_data.radius).ceil();
         let float_bounds = Bounds2f::new(p0, p1);
 
         Bounds2i::from(float_bounds)
@@ -165,10 +154,7 @@ impl Film {
         let aspect = self.full_resolution.y as Float / self.full_resolution.x as Float;
         let x = (self.diagonal * self.diagonal / (1.0 + aspect * aspect)).sqrt();
         let y = aspect * x;
-        Bounds2f::new(
-            Point2f::new(-x / 2.0, -y / 2.0),
-            Point2f::new(x / 2.0, y / 2.0),
-        )
+        Bounds2f::new(Point2f::new(-x / 2.0, -y / 2.0), Point2f::new(x / 2.0, y / 2.0))
     }
 
     /// Gets the pixel given its coordinates in the overall image.
@@ -177,13 +163,11 @@ impl Film {
     pub fn get_pixel_offset(&self, p: &Point2i) -> usize {
         assert!(self.cropped_pixel_bounds.contains_exclusive(p));
         let width = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
-        let offset = (p.x - self.cropped_pixel_bounds.p_min.x)
-            + (p.y - self.cropped_pixel_bounds.p_min.y) * width;
+        let offset = (p.x - self.cropped_pixel_bounds.p_min.x) + (p.y - self.cropped_pixel_bounds.p_min.y) * width;
         offset as usize
     }
 
-    /// Returns a `FilmTile` that stores the contributions for pixels in
-    /// the specified region of the image.
+    /// Returns a `FilmTile` that stores the contributions for pixels in the specified region of the image.
     ///
     /// * `sample_bounds` - Tile region in the overall image.
     pub fn get_film_tile(&self, sample_bounds: Bounds2i) -> FilmTile {
@@ -193,8 +177,7 @@ impl Film {
         // Bound image pixels that samples in `sample_bounds` contribute to.
         let float_bounds = Bounds2f::from(sample_bounds);
         let p0 = Point2i::from((float_bounds.p_min - half_pixel - filter_data.radius).ceil());
-        let p1 = Point2i::from((float_bounds.p_max - half_pixel + filter_data.radius).floor())
-            + Point2i::new(1, 1);
+        let p1 = Point2i::from((float_bounds.p_max - half_pixel + filter_data.radius).floor()) + Point2i::new(1, 1);
         let tile_pixel_bounds = Bounds2i::new(p0, p1).intersect(&self.cropped_pixel_bounds);
 
         FilmTile::new(
@@ -217,15 +200,14 @@ impl Film {
 
     /// Merge the `FilmTile`'s pixel contribution into the image.
     ///
-    /// This is same as merge_film_tile_old() to reduce all but one call to
-    /// tile.get_pixel_offset() and self.get_pixel_offset().
+    /// This is same as merge_film_tile_old() to reduce all but one call to tile.get_pixel_offset() and
+    /// self.get_pixel_offset().
     ///
     /// * `tile` - The `FilmTile` to merge.
     pub fn merge_film_tile(&self, tile: &FilmTile) {
         let mut pixels = self.pixels.write().unwrap();
 
-        let cropped_pixel_width =
-            (self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x) as usize;
+        let cropped_pixel_width = (self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x) as usize;
 
         let tile_pixel_bounds = tile.get_pixel_bounds();
         let tile_width = (tile_pixel_bounds.p_max.x - tile_pixel_bounds.p_min.x) as usize;
@@ -257,6 +239,7 @@ impl Film {
     /// Merge the `FilmTile`'s pixel contribution into the image.
     ///
     /// * `tile` - The `FilmTile` to merge.
+    #[allow(unused)]
     fn merge_film_tile_old(&self, tile: &FilmTile) {
         let mut pixels = self.pixels.write().unwrap();
         for pixel in tile.get_pixel_bounds() {
@@ -289,10 +272,7 @@ impl Film {
     /// * `v` - `Splat` contribution to add to the pixel.
     pub fn add_splat(&self, p: &Point2f, v: &Spectrum) {
         if v.has_nans() {
-            warn!(
-                "Ignoring splatted spectrum with NaN values at ({}, {})",
-                p.x, p.y
-            );
+            warn!("Ignoring splatted spectrum with NaN values at ({}, {})", p.x, p.y);
             return;
         }
 

@@ -1,6 +1,5 @@
 //! Light
 
-#![allow(dead_code)]
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::pbrt::*;
@@ -53,8 +52,7 @@ pub struct Le {
     /// Surface normal at the point on the light source.
     pub n_light: Normal3f,
 
-    /// The ray origin's probability density with respect to surface area on the
-    /// light.
+    /// The ray origin's probability density with respect to surface area on the light.
     pub pdf_pos: Float,
 
     /// The ray directions's probability density with respect to solid angle.

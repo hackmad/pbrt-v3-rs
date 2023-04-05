@@ -1,6 +1,5 @@
 //! Paraboloids
 
-#![allow(dead_code)]
 use core::efloat::*;
 use core::geometry::*;
 use core::interaction::*;
@@ -32,8 +31,7 @@ impl Paraboloid {
     ///
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions
-    ///                           should be reversed from the default
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
     /// * `radius`              - Radius of paraboloid.
     /// * `z_min`               - Minimum z-value to truncate paraboloid.
     /// * `z_max`               - Maximum z-value to truncate paraboloid.
@@ -62,8 +60,7 @@ impl Paraboloid {
 }
 
 impl Shape for Paraboloid {
-    /// Returns the shape type. Usually these are behind ArcShape and harder to
-    /// debug. So this will be helpful.
+    /// Returns the shape type. Usually these are behind ArcShape and harder to debug. So this will be helpful.
     fn get_type(&self) -> &'static str {
         "paraboloid"
     }
@@ -81,16 +78,12 @@ impl Shape for Paraboloid {
         )
     }
 
-    /// Returns geometric details if a ray intersects the shape intersection.
-    /// If there is no intersection, `None` is returned.
+    /// Returns geometric details if a ray intersects the shape intersection. If there is no intersection, `None` is
+    /// returned.
     ///
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
-    fn intersect<'scene>(
-        &self,
-        r: &Ray,
-        _test_alpha_texture: bool,
-    ) -> Option<Intersection<'scene>> {
+    fn intersect<'scene>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'scene>> {
         // Transform ray to object space
         let (ray, o_err, d_err) = self
             .data
@@ -171,8 +164,7 @@ impl Shape for Paraboloid {
 
         // Compute paraboloid dpdu and dpdv.
         let dpdu = Vector3::new(-self.phi_max * p_hit.y, self.phi_max * p_hit.x, 0.0);
-        let dpdv = (self.z_max - self.z_min)
-            * Vector3::new(p_hit.x / (2.0 * p_hit.z), p_hit.y / (2.0 * p_hit.z), 1.0);
+        let dpdv = (self.z_max - self.z_min) * Vector3::new(p_hit.x / (2.0 * p_hit.z), p_hit.y / (2.0 * p_hit.z), 1.0);
 
         // Compute paraboloid dndu and dndv.
         let d2p_duu = -self.phi_max * self.phi_max * Vector3::new(p_hit.x, p_hit.y, 0.0);
@@ -202,12 +194,8 @@ impl Shape for Paraboloid {
 
         // Compute dndu and dndv from fundamental form coefficients.
         let inv_e1g1f1_2 = 1.0 / (e1 * g1 - f1 * f1);
-        let dndu = Normal3::from(
-            (f2 * f1 - e2 * g1) * inv_e1g1f1_2 * dpdu + (e2 * f1 - f2 * e1) * inv_e1g1f1_2 * dpdv,
-        );
-        let dndv = Normal3::from(
-            (g2 * f1 - f2 * g1) * inv_e1g1f1_2 * dpdu + (f2 * f1 - g2 * e1) * inv_e1g1f1_2 * dpdv,
-        );
+        let dndu = Normal3::from((f2 * f1 - e2 * g1) * inv_e1g1f1_2 * dpdu + (e2 * f1 - f2 * e1) * inv_e1g1f1_2 * dpdv);
+        let dndv = Normal3::from((g2 * f1 - f2 * g1) * inv_e1g1f1_2 * dpdu + (f2 * f1 - g2 * e1) * inv_e1g1f1_2 * dpdv);
 
         // Compute error bounds for paraboloid intersection.
 
@@ -237,9 +225,7 @@ impl Shape for Paraboloid {
         );
 
         // Create hit.
-        self.data
-            .object_to_world
-            .transform_surface_interaction(&mut si);
+        self.data.object_to_world.transform_surface_interaction(&mut si);
 
         Some(Intersection::new(Float::from(t_shape_hit), si))
     }
@@ -338,8 +324,7 @@ impl Shape for Paraboloid {
             * ((k * self.z_max + 1.0).powf(1.5) - (k * self.z_min + 1.0).powf(1.5))
     }
 
-    /// Sample a point on the surface and return the PDF with respect to area on
-    /// the surface.
+    /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
     /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
@@ -350,13 +335,11 @@ impl Shape for Paraboloid {
 }
 
 impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Paraboloid {
-    /// Create a `Paraboloid` from given parameter set, object to world transform,
-    /// world to object transform and whether or not surface normal orientation
-    /// is reversed.
+    /// Create a `Paraboloid` from given parameter set, object to world transform, world to object transform and whether
+    /// or not surface normal orientation is reversed.
     ///
-    /// * `p` - A tuple containing the parameter set, object to world transform,
-    ///         world to object transform and whether or not surface normal
-    ///         orientation is reversed.
+    /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform and whether
+    ///         or not surface normal orientation is reversed.
     fn from(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
         let (params, o2w, w2o, reverse_orientation) = p;
 

@@ -1,7 +1,5 @@
 //! Fresnel Dielectrics and Conductors
 
-#![allow(dead_code)]
-
 use super::*;
 use std::fmt;
 use std::mem::swap;
@@ -17,8 +15,7 @@ pub enum Fresnel {
 impl Fresnel {
     /// Returns the amount of light reflected by the surface.
     ///
-    /// * `cos_thata_i` - Cosine of the angle made by incident direction and
-    ///                   surface normal.
+    /// * `cos_thata_i` - Cosine of the angle made by incident direction and surface normal.
     pub fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         match self {
             Self::NoOp(f) => f.evaluate(cos_theta_i),
@@ -61,8 +58,7 @@ impl FresnelDielectric {
 
     /// Returns the amount of light reflected by the surface.
     ///
-    /// * `cos_thata_i` - Cosine of the angle made by incident direction and
-    ///                   surface normal.
+    /// * `cos_thata_i` - Cosine of the angle made by incident direction and surface normal.
     pub fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         Spectrum::new(fr_dielectric(cos_theta_i, self.eta_i, self.eta_t))
     }
@@ -105,11 +101,9 @@ impl FresnelConductor {
 
     /// Returns the amount of light reflected by the surface.
     ///
-    /// * `cos_thata_i` - Cosine of the angle made by incident direction and
-    ///                   surface normal.
+    /// * `cos_thata_i` - Cosine of the angle made by incident direction and surface normal.
     pub fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
-        // Need to take abs(cos_theta_i)) so angle is measured on same side as
-        // normal.
+        // Need to take abs(cos_theta_i)) so angle is measured on same side as normal.
         fr_conductor(abs(cos_theta_i), self.eta_i, self.eta_t, self.k)
     }
 }
@@ -137,8 +131,7 @@ impl FresnelNoOp {
 
     /// Returns the amount of light reflected by the surface.
     ///
-    /// * `cos_thata_i` - Cosine of the angle made by incident direction and
-    ///                   surface normal.
+    /// * `cos_thata_i` - Cosine of the angle made by incident direction and surface normal.
     pub fn evaluate(&self, _cos_theta_i: Float) -> Spectrum {
         Spectrum::ONE
     }
@@ -153,8 +146,7 @@ impl fmt::Display for FresnelNoOp {
 
 /// Returns the fresnel reflection for dielectric materials and unpolarized light.
 ///
-/// * `cos_theta_i` - cos(θi) for angle between incident direction and geometric
-///                   surface normal.
+/// * `cos_theta_i` - cos(θi) for angle between incident direction and geometric surface normal.
 /// * `eta_i`       - index of refraction for medium that incident ray is in.
 /// * `eta_t`       - index of refraction for medium that incident ray is entering.
 pub fn fr_dielectric(cos_theta_i: Float, eta_i: Float, eta_t: Float) -> Float {
@@ -178,10 +170,8 @@ pub fn fr_dielectric(cos_theta_i: Float, eta_i: Float, eta_t: Float) -> Float {
         1.0
     } else {
         let cos_theta_t = (0.0 as Float).max(1.0 - sin_theta_t * sin_theta_t).sqrt();
-        let r_parl = ((eta_t * cos_theta_i) - (eta_i * cos_theta_t))
-            / ((eta_t * cos_theta_i) + (eta_i * cos_theta_t));
-        let r_perp = ((eta_i * cos_theta_i) - (eta_t * cos_theta_t))
-            / ((eta_i * cos_theta_i) + (eta_t * cos_theta_t));
+        let r_parl = ((eta_t * cos_theta_i) - (eta_i * cos_theta_t)) / ((eta_t * cos_theta_i) + (eta_i * cos_theta_t));
+        let r_perp = ((eta_i * cos_theta_i) - (eta_t * cos_theta_t)) / ((eta_i * cos_theta_i) + (eta_t * cos_theta_t));
         (r_parl * r_parl + r_perp * r_perp) / 2.0
     }
 }
@@ -189,8 +179,8 @@ pub fn fr_dielectric(cos_theta_i: Float, eta_i: Float, eta_t: Float) -> Float {
 /// Returns the Fresnel reflection at the boundary between a conductor and
 /// dielectric medium for unpolarized light.
 ///
-/// * `cos_theta_i` - cos(θi) for angle between incident direction and geometric
-///                   surface normal on the same side as incident direction `wi`.
+/// * `cos_theta_i` - cos(θi) for angle between incident direction and geometric surface normal on the same side as
+///                   incident direction `wi`.
 /// * `eta_i`       - Index of refraction for medium that incident ray is in.
 /// * `eta_t`       - Index of refraction for medium that incident ray is entering.
 /// * `k`           - The absorption coefficient.
