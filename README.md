@@ -108,11 +108,15 @@ pngquant --ext .png --force renders/shapes/*.png
 
 <a title="Instances" href="renders/objects/instances.png"><img src="renders/objects/instances.png" style="height: 100px"/></a>
 
-### Integrators
+### pbrt-v3-scenes
 
 <a title="SPPM 10 iterations caustic-glass" href="renders/integrators/sppm/f16-9a.png"><img src="renders/integrators/sppm/f16-9a.png" style="height: 200px"/></a>
 <a title="SPPM 100 iterations caustic-glass" href="renders/integrators/sppm/f16-9b.png"><img src="renders/integrators/sppm/f16-9b.png" style="height: 200px"/></a>
+<a title="bunny-fur" href="renders/pbrt-v3-scenes/bunny-fur/f3-15.png"><img src="renders/pbrt-v3-scenes/bunny-fur/f3-15.png" style="height: 200px"/></a>
 <a title="BDPT breakfast" href="renders/integrators/bdpt/breakfast.png"><img src="renders/integrators/bdpt/breakfast.png" style="height: 200px"/></a>
+<a title="barcelona-pavilion" href="renders/pbrt-v3-scenes/barcelona-pavilion/pavilion-day.png"><img src="renders/pbrt-v3-scenes/barcelona-pavilion/pavilion-day.png" style="height: 200px"/></a>
+<a title="head" href="renders/pbrt-v3-scenes/head/head.png"><img src="renders/pbrt-v3-scenes/head/head.png" style="height: 200px"/></a>
+
 
 ## Building
 
