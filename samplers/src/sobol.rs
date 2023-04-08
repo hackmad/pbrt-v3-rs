@@ -21,8 +21,7 @@ pub struct SobolSampler {
     /// sample bounds.
     sample_bounds: Bounds2i,
 
-    /// Stores the next power of two based on maximum extend in x or y direction
-    /// of `sample_bounds`.
+    /// Stores the next power of two based on maximum extend in x or y direction of `sample_bounds`.
     resolution: i32,
 
     /// Log base 2 of `resolution`.
@@ -60,8 +59,8 @@ impl SobolSampler {
 }
 
 impl SobolSampler {
-    /// Performs the inverse mapping from the current pixel and given sample
-    /// index to a global index into the overall set of sample vectors.
+    /// Performs the inverse mapping from the current pixel and given sample index to a global index into the overall
+    /// set of sample vectors.
     ///
     /// * `sample_num` - The sample number.
     fn get_index_for_sample(&mut self, sample_num: usize) -> u64 {
@@ -72,8 +71,7 @@ impl SobolSampler {
         )
     }
 
-    /// Returns the sample value for the given dimension of the index^th sample
-    /// vector in the sequence.
+    /// Returns the sample value for the given dimension of the index^th sample vector in the sequence.
     ///
     /// * `index` - Index of the sample.
     /// * `dim`   - Dimension.
@@ -107,16 +105,14 @@ impl Sampler for SobolSampler {
         &mut self.data
     }
 
-    /// Generates a new instance of an initial `Sampler` for use by a rendering
-    /// thread.
+    /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (ignored).
     fn clone(&self, _seed: u64) -> ArcSampler {
         Arc::new(Self::new(self.data.samples_per_pixel, self.sample_bounds))
     }
 
-    /// This should be called when the rendering algorithm is ready to start
-    /// working on a given pixel.
+    /// This should be called when the rendering algorithm is ready to start working on a given pixel.
     ///
     /// * `p` - The pixel.
     fn start_pixel(&mut self, p: &Point2i) {
@@ -156,8 +152,7 @@ impl Sampler for SobolSampler {
         assert!(self.gdata.array_end_dim == dim);
     }
 
-    /// Returns the sample value for the next dimension of the current sample
-    /// vector.
+    /// Returns the sample value for the next dimension of the current sample vector.
     fn get_1d(&mut self) -> Float {
         if self.gdata.dimension >= self.gdata.array_start_dim && self.gdata.dimension < self.gdata.array_end_dim {
             self.gdata.dimension = self.gdata.array_end_dim;
@@ -168,8 +163,7 @@ impl Sampler for SobolSampler {
         p
     }
 
-    /// Returns the sample value for the next two dimensions of the current
-    /// sample vector.
+    /// Returns the sample value for the next two dimensions of the current sample vector.
     fn get_2d(&mut self) -> Point2f {
         if self.gdata.dimension + 1 >= self.gdata.array_start_dim && self.gdata.dimension < self.gdata.array_end_dim {
             self.gdata.dimension = self.gdata.array_end_dim;
@@ -186,17 +180,16 @@ impl Sampler for SobolSampler {
         p
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if
-    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
+    /// otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.gdata.dimension = 0;
         self.gdata.interval_sample_index = self.get_index_for_sample(self.data.current_pixel_sample_index + 1);
         self.data.start_next_sample()
     }
 
-    /// Set the index of the sample in the current pixel to generate next.
-    /// Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
-    /// otherwise `false`.
+    /// Set the index of the sample in the current pixel to generate next. Returns `true` if
+    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
     ///
     /// * `sample_num` - The sample number.
     fn set_sample_number(&mut self, sample_num: usize) -> bool {

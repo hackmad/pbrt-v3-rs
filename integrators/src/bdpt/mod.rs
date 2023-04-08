@@ -25,8 +25,8 @@ use std::thread;
 mod common;
 mod vertex;
 
-use common::*;
-use vertex::*;
+pub(crate) use common::*;
+pub(crate) use vertex::*;
 
 /// Implements bi-directional path tracing integrator.
 pub struct BDPTIntegrator {
@@ -117,7 +117,8 @@ impl BDPTIntegrator {
         let camera_data = self.camera.get_data();
 
         // Get sampler instance for tile.
-        let mut tile_sampler = Sampler::clone(&*self.sampler, tile_idx as u64);
+        let mut ts = Sampler::clone(&*self.sampler, tile_idx as u64);
+        let tile_sampler = Arc::get_mut(&mut ts).unwrap();
 
         // Compute sample bounds for tile.
         let tile_size = OPTIONS.tile_size as i32;
@@ -133,7 +134,7 @@ impl BDPTIntegrator {
 
         // Loop over pixels in tile to render them.
         for pixel in tile_bounds {
-            Arc::get_mut(&mut tile_sampler).unwrap().start_pixel(&pixel);
+            tile_sampler.start_pixel(&pixel);
 
             if !self.pixel_bounds.contains_exclusive(&pixel) {
                 continue;
@@ -141,33 +142,30 @@ impl BDPTIntegrator {
 
             loop {
                 // Generate a single sample using BDPT.
-                let p_film = {
-                    let sampler = Arc::get_mut(&mut tile_sampler).unwrap();
-                    Point2f::from(pixel) + sampler.get_2d()
-                };
+                let p_film = Point2f::from(pixel) + tile_sampler.get_2d();
 
                 // Trace the camera subpath.
                 let mut camera_vertices: Vec<Vertex> = vec![Vertex::default(); self.max_depth + 2];
                 let mut light_vertices: Vec<Vertex> = vec![Vertex::default(); self.max_depth + 1];
                 let n_camera = generate_camera_subpath(
                     scene,
-                    &mut tile_sampler,
+                    tile_sampler,
                     self.max_depth + 2,
                     &self.camera,
                     &p_film,
                     &mut camera_vertices,
                 );
 
-                // Get a distribution for sampling the light at the start of the light subpath. Because
-                // the light path follows multiple bounces, basing the sampling distribution on any of
-                // the vertices of the camera path is unlikely to be a good strategy. We use the
-                // PowerLightDistribution by default here, which doesn't use the point passed to it.
+                // Get a distribution for sampling the light at the start of the light subpath. Because the light path
+                // follows multiple bounces, basing the sampling distribution on any of the vertices of the camera path
+                // is unlikely to be a good strategy. We use the PowerLightDistribution by default here, which doesn't
+                // use the point passed to it.
                 let light_distr = light_distr.lookup(&camera_vertices[0].it.p()).unwrap();
 
                 // Now trace the light subpath
                 let n_light = generate_light_subpath(
                     scene,
-                    &mut tile_sampler,
+                    tile_sampler,
                     self.max_depth + 1,
                     camera_vertices[0].it.time(),
                     Arc::clone(&light_distr),
@@ -194,7 +192,7 @@ impl BDPTIntegrator {
                             Arc::clone(&light_distr),
                             Arc::clone(&light_to_index),
                             &self.camera,
-                            &mut tile_sampler,
+                            tile_sampler,
                         );
 
                         info!("Connect bdpt s: {s}, t: {t}, l_path: {l_path}, mis_weight: {mis_wt}");
@@ -224,11 +222,8 @@ impl BDPTIntegrator {
                 info!("Add film sample pFilm: {p_film}, L: {l}, (y: {})", l.y());
                 film_tile.add_sample(p_film, l, 1.0);
 
-                {
-                    let sampler = Arc::get_mut(&mut tile_sampler).unwrap();
-                    if !sampler.start_next_sample() {
-                        break;
-                    }
+                if !tile_sampler.start_next_sample() {
+                    break;
                 }
             }
         }
@@ -249,9 +244,9 @@ impl Integrator for BDPTIntegrator {
     fn render(&self, scene: &Scene) {
         let light_distribution = create_light_sample_distribution(self.light_sample_strategy, scene);
 
-        // Compute a reverse mapping from light pointers to offsets into the scene lights vector (and,
-        // equivalently, offsets into light_distr). Added after book text was finalized; this is critical
-        // to reasonable performance with 100s+ of light sources.
+        // Compute a reverse mapping from light pointers to offsets into the scene lights vector (and, equivalently,
+        // offsets into light_distr). Added after book text was finalized; this is critical to reasonable performance
+        // with 100s+ of light sources.
         let mut light_to_index = HashMap::new();
         for (i, light) in scene.lights.iter().enumerate() {
             light_to_index.insert(light.get_id(), i);
@@ -375,7 +370,7 @@ impl Integrator for BDPTIntegrator {
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
-    fn li(&self, _ray: &mut Ray, _scene: &Scene, _sampler: &mut ArcSampler, _depth: usize) -> Spectrum {
+    fn li(&self, _ray: &mut Ray, _scene: &Scene, _sampler: &mut dyn Sampler, _depth: usize) -> Spectrum {
         Spectrum::ZERO
     }
 }
@@ -433,9 +428,9 @@ impl From<(&ParamSet, ArcSampler, ArcCamera)> for BDPTIntegrator {
 /// * `max_depth` - The maximum path depth.
 /// * `p_film`    - The point on camera film.
 /// * `path`      - The path.
-fn generate_camera_subpath<'scene>(
+pub(crate) fn generate_camera_subpath<'scene>(
     scene: &'scene Scene,
-    sampler: &mut ArcSampler,
+    sampler: &mut dyn Sampler,
     max_depth: usize,
     camera: &ArcCamera,
     p_film: &Point2f,
@@ -447,7 +442,6 @@ fn generate_camera_subpath<'scene>(
 
     // Sample initial ray for camera subpath.
     let (camera_sample, samples_per_pixel) = {
-        let sampler = Arc::get_mut(sampler).unwrap();
         let time = sampler.get_1d();
         let p_lens = sampler.get_2d();
         (
@@ -492,9 +486,9 @@ fn generate_camera_subpath<'scene>(
 /// * `light_distr`          - Light probabilities.
 /// * `light_to_distr_index` - Map of light distribution indices.
 /// * `path`                 - The path.
-fn generate_light_subpath<'scene>(
+pub(crate) fn generate_light_subpath<'scene>(
     scene: &'scene Scene,
-    sampler: &mut ArcSampler,
+    sampler: &mut dyn Sampler,
     max_depth: usize,
     time: Float,
     light_distr: Arc<Distribution1D>,
@@ -507,7 +501,6 @@ fn generate_light_subpath<'scene>(
 
     // Sample initial ray for light subpath.
     let (light, light_pdf, sample) = {
-        let sampler = Arc::get_mut(sampler).unwrap();
         let (light_num, light_pdf, _u_remapped) = light_distr.sample_discrete(sampler.get_1d());
         let light = &scene.lights[light_num];
         let sample = light.sample_le(&sampler.get_2d(), &sampler.get_2d(), time);
@@ -559,9 +552,8 @@ fn generate_light_subpath<'scene>(
     n_vertices + 1
 }
 
-/// Generates the vertices in a camera/light subpath starting at index 1. It returns the number of
-/// vertices generated (this does not include `path[0]` which is generated by either
-/// `generate_light_subpath()` or `generate_camera_subpath()`).
+/// Generates the vertices in a camera/light subpath starting at index 1. It returns the number of vertices generated
+/// (this does not include `path[0]` which is generated by either `generate_light_subpath()` or `generate_camera_subpath()`).
 ///
 /// * `scene`     - The scene.
 /// * `ray`       - The ray containing the position and outgoing direction previously sampled.
@@ -574,7 +566,7 @@ fn generate_light_subpath<'scene>(
 fn random_walk<'scene>(
     scene: &'scene Scene,
     ray: &mut Ray,
-    sampler: &mut ArcSampler,
+    sampler: &mut dyn Sampler,
     mut beta: Spectrum,
     pdf: Float,
     max_depth: usize,
@@ -628,7 +620,6 @@ fn random_walk<'scene>(
                 _ => unreachable!(),
             };
 
-            let sampler = Arc::get_mut(sampler).unwrap();
             let (pdf, wi) = mi.phase.sample_p(&-ray.d, &sampler.get_2d());
             pdf_fwd = pdf;
             pdf_rev = pdf;
@@ -672,7 +663,6 @@ fn random_walk<'scene>(
             // Sample BSDF at current vertex and compute reverse probability.
             let wo = isect.hit.wo;
 
-            let sampler = Arc::get_mut(sampler).unwrap();
             let BxDFSample { f, pdf, wi, bxdf_type } = bsdf.sample_f(&wo, &sampler.get_2d(), BxDFType::all());
             pdf_fwd = pdf;
 
@@ -708,7 +698,7 @@ fn random_walk<'scene>(
 /// * `sampler` - The sampler.
 /// * `v0`      - First vertex.
 /// * `v1`      - Second vertex.
-fn g<'scene>(scene: &'scene Scene, sampler: &mut ArcSampler, v0: &Vertex<'scene>, v1: &Vertex<'scene>) -> Spectrum {
+fn g<'scene>(scene: &'scene Scene, sampler: &mut dyn Sampler, v0: &Vertex<'scene>, v1: &Vertex<'scene>) -> Spectrum {
     let mut d = v0.it.p() - v1.it.p();
 
     let mut g1 = 1.0 / d.length_squared();
@@ -725,8 +715,8 @@ fn g<'scene>(scene: &'scene Scene, sampler: &mut ArcSampler, v0: &Vertex<'scene>
     g1 * vis.tr(scene, sampler)
 }
 
-// Define helper function `remap0` that deals with Dirac delta functions. Used to handle special case
-// of Dirac delta functions in the path which have a continuous density of 0 which ar emapped to 1.
+// Define helper function `remap0` that deals with Dirac delta functions. Used to handle special case of Dirac delta
+// functions in the path which have a continuous density of 0 which ar emapped to 1.
 //
 // * `f` - The value to remap.
 fn remap0(f: Float) -> Float {
@@ -737,9 +727,9 @@ fn remap0(f: Float) -> Float {
     }
 }
 
-/// Calculates the multiple importance sampling weights. It attempts to produce a complete path
-/// by iterating over all alternative strategies that could hypothetically have generated the same
-/// input path but with an earlier or later crossover point between the light and camera subpaths.
+/// Calculates the multiple importance sampling weights. It attempts to produce a complete path by iterating over all
+/// alternative strategies that could hypothetically have generated the same input path but with an earlier or later
+/// crossover point between the light and camera subpaths.
 ///
 /// * `scene`           - The scene.
 /// * `light_vertices`  - The vertices in the light subpath.
@@ -772,12 +762,11 @@ fn mis_weight<'scene>(
     let qs_minus = qs - 1;
     let pt_minus = pt - 1;
 
-    // The original implementation uses ScopedAssignment which backs up a value and restores
-    // that when the variable goes out of scope. This could be done here by storing a &mut T where
-    // T is Clone. However, it also using ScopedAssignement on fields of such T's. Taking a mutable
-    // reference to the fields of T will make it so that the original T cannot be accessed until the
-    // second one is dropped. So we resort to backing up values ourselves we need and restoring them
-    // when we are done.
+    // The original implementation uses ScopedAssignment which backs up a value and restores that when the variable
+    // goes out of scope. This could be done here by storing a &mut T where T is Clone. However, it also using 
+    // ScopedAssignement on fields of such T's. Taking a mutable reference to the fields of T will make it so that the
+    // original T cannot be accessed until the second one is dropped. So we resort to backing up values ourselves we
+    // need and restoring them when we are done.
 
     // Update sampled vertex for `s=1` and `t=1` strategy.
     let mut backup_qs: Option<Vertex> = None;
@@ -901,8 +890,8 @@ fn mis_weight<'scene>(
     1.0 / (1.0 + sum_ri)
 }
 
-/// Attempts to connect 2 subpaths with the given number of vertices and returns the weighted
-/// contribution of radiance carried along the resulting subpath.
+/// Attempts to connect 2 subpaths with the given number of vertices and returns the weighted contribution of radiance
+/// carried along the resulting subpath.
 ///
 /// * `scene`           - The scene.
 /// * `light_vertices`  - The vertices in the light subpath.
@@ -913,7 +902,7 @@ fn mis_weight<'scene>(
 /// * `light_to_index`  - Map of light distribution indices.
 /// * `camera`          - The camera.
 /// * `sampler`         - The sampler.
-fn connect_bdpt<'scene>(
+pub(crate) fn connect_bdpt<'scene>(
     scene: &'scene Scene,
     light_vertices: &mut [Vertex<'scene>],
     camera_vertices: &mut [Vertex<'scene>],
@@ -922,7 +911,7 @@ fn connect_bdpt<'scene>(
     light_distr: Arc<Distribution1D>,
     light_to_index: Arc<HashMap<usize, usize>>,
     camera: &ArcCamera,
-    sampler: &mut ArcSampler,
+    sampler: &mut dyn Sampler,
 ) -> (Spectrum, Option<Point2f>, Float) {
     let mut l = Spectrum::ZERO;
     let mut p_raster: Option<Point2f> = None;
@@ -953,10 +942,7 @@ fn connect_bdpt<'scene>(
                 pdf,
                 p_raster: pr,
                 vis,
-            } = {
-                let sampler = Arc::get_mut(sampler).unwrap();
-                camera.sample_wi(&qs.it, &sampler.get_2d())
-            };
+            } = { camera.sample_wi(&qs.it, &sampler.get_2d()) };
 
             p_raster = pr;
 
@@ -982,8 +968,6 @@ fn connect_bdpt<'scene>(
         let pt = &camera_vertices[t - 1];
         if pt.is_connectible() {
             let (light, light_pdf, wi, pdf, vis, light_weight) = {
-                let sampler = Arc::get_mut(sampler).unwrap();
-
                 let (light_num, light_pdf, _u_remapped) = light_distr.sample_discrete(sampler.get_1d());
                 let light = &scene.lights[light_num];
 

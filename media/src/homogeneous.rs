@@ -7,7 +7,6 @@ use core::medium::Medium;
 use core::pbrt::*;
 use core::sampler::*;
 use core::spectrum::*;
-use std::sync::Arc;
 
 /// Implements a homogeneous medium representing a region of space with constant
 /// σa and σs values throughout its extent.
@@ -51,7 +50,7 @@ impl Medium for HomogeneousMedium {
     ///
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
-    fn tr(&self, ray: &Ray, _sampler: &mut ArcSampler) -> Spectrum {
+    fn tr(&self, ray: &Ray, _sampler: &mut dyn Sampler) -> Spectrum {
         (-self.sigma_t * min(ray.t_max * ray.d.length(), Float::MAX)).exp()
     }
 
@@ -66,9 +65,8 @@ impl Medium for HomogeneousMedium {
     ///
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
-    fn sample(&self, ray: &Ray, sampler: &mut ArcSampler) -> (Spectrum, Option<MediumInteraction>) {
+    fn sample(&self, ray: &Ray, sampler: &mut dyn Sampler) -> (Spectrum, Option<MediumInteraction>) {
         // Sample a channel and distance along the ray.
-        let sampler = Arc::get_mut(sampler).unwrap();
         let channel = min(
             (sampler.get_1d() * SPECTRUM_SAMPLES as Float) as usize,
             SPECTRUM_SAMPLES - 1,

@@ -8,9 +8,8 @@ use core::sampler::*;
 use core::sampling::*;
 use std::sync::Arc;
 
-// Implements a stratified sampler that subdivides pixel areas into non-overlapping
-/// rectangular regions, called strata, and geenrates a single sample inside each
-/// region.
+// Implements a stratified sampler that subdivides pixel areas into non-overlapping rectangular regions, called strata,
+// and geenrates a single sample inside each region.
 pub struct StratifiedSampler {
     /// Use a pixel sampler.
     sampler: PixelSampler,
@@ -21,9 +20,8 @@ pub struct StratifiedSampler {
     /// Number of samples in vertical direction.
     y_pixel_samples: usize,
 
-    /// Indicates whether or not to jitter each sample's center point.
-    /// In unjittered mode is is uniform sampling and is not useful for
-    /// high quality rendering but mostly for comparing sampling techniques.
+    /// Indicates whether or not to jitter each sample's center point. In unjittered mode is is uniform sampling and is
+    /// not useful for high quality rendering but mostly for comparing sampling techniques.
     jitter_samples: bool,
 }
 
@@ -32,8 +30,7 @@ impl StratifiedSampler {
     ///
     /// * `x_pixel_samples`      - Number of samples in horizontal direction.
     /// * `y_pixel_samples`      - Number of samples in vertical direction.
-    /// * `jitter_samples`       - Indicates whether or not to jitter each
-    ///                            sample's center point.
+    /// * `jitter_samples`       - Indicates whether or not to jitter each sample's center point.
     /// * `n_sampled_dimensions` - Number of dimensions for sampling.
     /// * `seed`                 - Optional seed for the random number generator.
     pub fn new(
@@ -64,8 +61,7 @@ impl Sampler for StratifiedSampler {
         &mut self.sampler.data
     }
 
-    /// Generates a new instance of an initial `Sampler` for use by a rendering
-    /// thread.
+    /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (if any).
     fn clone(&self, seed: u64) -> ArcSampler {
@@ -78,8 +74,7 @@ impl Sampler for StratifiedSampler {
         ))
     }
 
-    /// This should be called when the rendering algorithm is ready to start
-    /// working on a given pixel.
+    /// This should be called when the rendering algorithm is ready to start working on a given pixel.
     ///
     /// * `p` - The pixel.
     fn start_pixel(&mut self, p: &Point2i) {
@@ -132,27 +127,24 @@ impl Sampler for StratifiedSampler {
         self.get_data_mut().start_pixel(p);
     }
 
-    /// Returns the sample value for the next dimension of the current sample
-    /// vector.
+    /// Returns the sample value for the next dimension of the current sample vector.
     fn get_1d(&mut self) -> Float {
         self.sampler.get_1d()
     }
 
-    /// Returns the sample value for the next two dimensions of the current
-    /// sample vector.
+    /// Returns the sample value for the next two dimensions of the current sample vector.
     fn get_2d(&mut self) -> Point2f {
         self.sampler.get_2d()
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if
-    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
+    /// otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.sampler.start_next_sample()
     }
 
-    /// Set the index of the sample in the current pixel to generate next.
-    /// Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
-    /// otherwise `false`.
+    /// Set the index of the sample in the current pixel to generate next. Returns `true` if
+    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
     ///
     /// * `sample_num` - The sample number.
     fn set_sample_number(&mut self, sample_num: usize) -> bool {

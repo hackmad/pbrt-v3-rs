@@ -102,7 +102,7 @@ impl Integrator for DirectLightingIntegrator {
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
-    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ArcSampler, depth: usize) -> Spectrum {
+    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut dyn Sampler, depth: usize) -> Spectrum {
         let mut l = Spectrum::ZERO;
 
         // Find closest ray intersection or return background radiance.

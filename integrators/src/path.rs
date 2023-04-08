@@ -83,7 +83,7 @@ impl Integrator for PathIntegrator {
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
-    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ArcSampler, _depth: usize) -> Spectrum {
+    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut dyn Sampler, _depth: usize) -> Spectrum {
         let mut l = Spectrum::ZERO;
         let mut beta = Spectrum::ONE;
         let mut specular_bounce = false;
@@ -151,10 +151,7 @@ impl Integrator for PathIntegrator {
             }
 
             // Sample BSDF to get new path direction.
-            let sample_2d = {
-                let sampler = Arc::get_mut(sampler).unwrap();
-                sampler.get_2d()
-            };
+            let sample_2d = sampler.get_2d();
             let wo = -ray.d;
             let BxDFSample {
                 f,
@@ -197,7 +194,6 @@ impl Integrator for PathIntegrator {
                     BxDF::TabulatedBSSRDF(bxdf) => {
                         // Importance sample the BSSRDF.
                         let (sample_1d, sample_2d) = {
-                            let sampler = Arc::get_mut(sampler).unwrap();
                             let sample_1d = sampler.get_1d();
                             let sample_2d = sampler.get_2d();
                             (sample_1d, sample_2d)
@@ -223,10 +219,7 @@ impl Integrator for PathIntegrator {
                         l += beta * uniform_sample_one_light(&pi, bsdf.as_ref(), scene, sampler, false, pi_light_pdf);
 
                         // Account for the indirect subsurface scattering component.
-                        let sample_2d = {
-                            let sampler = Arc::get_mut(sampler).unwrap();
-                            sampler.get_2d()
-                        };
+                        let sample_2d = sampler.get_2d();
                         let BxDFSample {
                             f,
                             pdf,
@@ -252,7 +245,6 @@ impl Integrator for PathIntegrator {
             if rr_beta.max_component_value() < self.rr_threshold && bounces > 3 {
                 let q = max(0.05, 1.0 - rr_beta.max_component_value());
 
-                let sampler = Arc::get_mut(sampler).unwrap();
                 if sampler.get_1d() < q {
                     break;
                 };

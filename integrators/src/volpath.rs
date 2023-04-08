@@ -84,7 +84,7 @@ impl Integrator for VolPathIntegrator {
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
-    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ArcSampler, _depth: usize) -> Spectrum {
+    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut dyn Sampler, _depth: usize) -> Spectrum {
         let mut l = Spectrum::ZERO;
         let mut beta = Spectrum::ONE;
         let mut specular_bounce = false;
@@ -134,10 +134,7 @@ impl Integrator for VolPathIntegrator {
                 let l_sample = uniform_sample_one_light(&it, None, scene, sampler, true, distrib);
                 l += beta * l_sample;
 
-                let sample_2d = {
-                    let sampler = Arc::get_mut(sampler).unwrap();
-                    sampler.get_2d()
-                };
+                let sample_2d = sampler.get_2d();
                 let wo = -ray.d;
 
                 match it {
@@ -199,10 +196,7 @@ impl Integrator for VolPathIntegrator {
                 l += ld;
 
                 // Sample BSDF to get new path direction.
-                let sample_2d = {
-                    let sampler = Arc::get_mut(sampler).unwrap();
-                    sampler.get_2d()
-                };
+                let sample_2d = sampler.get_2d();
                 let wo = -ray.d;
                 let BxDFSample {
                     f,
@@ -245,7 +239,6 @@ impl Integrator for VolPathIntegrator {
                         BxDF::TabulatedBSSRDF(bxdf) => {
                             // Importance sample the BSSRDF.
                             let (sample_1d, sample_2d) = {
-                                let sampler = Arc::get_mut(sampler).unwrap();
                                 let sample_1d = sampler.get_1d();
                                 let sample_2d = sampler.get_2d();
                                 (sample_1d, sample_2d)
@@ -272,10 +265,7 @@ impl Integrator for VolPathIntegrator {
                                 beta * uniform_sample_one_light(&pi, bsdf.as_ref(), scene, sampler, true, pi_light_pdf);
 
                             // Account for the indirect subsurface scattering component.
-                            let sample_2d = {
-                                let sampler = Arc::get_mut(sampler).unwrap();
-                                sampler.get_2d()
-                            };
+                            let sample_2d = sampler.get_2d();
                             let BxDFSample {
                                 f,
                                 pdf,
@@ -301,7 +291,6 @@ impl Integrator for VolPathIntegrator {
             if rr_beta.max_component_value() < self.rr_threshold && bounces > 3 {
                 let q = max(0.05, 1.0 - rr_beta.max_component_value());
 
-                let sampler = Arc::get_mut(sampler).unwrap();
                 if sampler.get_1d() < q {
                     break;
                 };

@@ -23,8 +23,7 @@ pub struct Scene {
     /// The bounding box of the scene geometry.
     pub world_bound: Bounds3f,
 
-    /// Maps light indices by the Light ID field so we can correctly index into the `lights` vector
-    /// given a light ID.
+    /// Maps light indices by the Light ID field so we can correctly index into the `lights` vector given a light ID.
     light_id_to_index: HashMap<usize, usize>,
 }
 
@@ -66,29 +65,26 @@ impl Scene {
         index.map(|i| &self.lights[*i])
     }
 
-    /// Traces the ray into the scene and returns the `SurfaceInteraction` if
-    /// an intersection occurred.
+    /// Traces the ray into the scene and returns the `SurfaceInteraction` if an intersection occurred.
     ///
     /// * `ray` - The ray to trace.
     pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
         self.aggregate.intersect(ray)
     }
 
-    /// Traces the ray into the scene and returns whether or not an intersection
-    /// occurred.
+    /// Traces the ray into the scene and returns whether or not an intersection occurred.
     ///
     /// * `ray` - The ray to trace.
     pub fn intersect_p(&self, ray: &Ray) -> bool {
         self.aggregate.intersect_p(ray)
     }
 
-    /// Traces the ray into the scene and returns the first intersection with a
-    /// light scattering surface along the given ray as the beam transmittance
-    /// up to that point.
+    /// Traces the ray into the scene and returns the first intersection with a light scattering surface along the given
+    /// ray as the beam transmittance up to that point.
     ///
     /// * `ray`     - The ray to trace.
     /// * `sampler` - Sampler.
-    pub fn intersect_tr(&self, ray: &mut Ray, sampler: &mut ArcSampler) -> (Option<SurfaceInteraction>, Spectrum) {
+    pub fn intersect_tr(&self, ray: &mut Ray, sampler: &mut dyn Sampler) -> (Option<SurfaceInteraction>, Spectrum) {
         let mut tr = Spectrum::ONE;
 
         loop {

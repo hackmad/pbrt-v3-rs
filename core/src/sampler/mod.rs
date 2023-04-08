@@ -21,26 +21,22 @@ pub trait Sampler {
     /// Returns a mutable reference to underlying `SamplerData`.
     fn get_data_mut(&mut self) -> &mut SamplerData;
 
-    /// Generates a new instance of an initial `Sampler` for use by a rendering
-    /// thread.
+    /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (if any).
     fn clone(&self, seed: u64) -> ArcSampler;
 
-    /// This should be called when the rendering algorithm is ready to start
-    /// working on a given pixel.
+    /// This should be called when the rendering algorithm is ready to start working on a given pixel.
     ///
     /// * `p` - The pixel.
     fn start_pixel(&mut self, p: &Point2i) {
         self.get_data_mut().start_pixel(p);
     }
 
-    /// Returns the sample value for the next dimension of the current sample
-    /// vector.
+    /// Returns the sample value for the next dimension of the current sample vector.
     fn get_1d(&mut self) -> Float;
 
-    /// Returns the sample value for the next two dimensions of the current
-    /// sample vector.
+    /// Returns the sample value for the next two dimensions of the current sample vector.
     fn get_2d(&mut self) -> Point2f;
 
     /// Returns an initialized `CameraSample` for a given pixel.
@@ -56,8 +52,7 @@ pub trait Sampler {
         CameraSample::new(p_film, p_lens, time)
     }
 
-    /// This should be called before rendering begins when an array of 1D
-    /// samples is required.
+    /// This should be called before rendering begins when an array of 1D samples is required.
     ///
     /// * `n` - The number of samples.
     fn request_1d_array(&mut self, n: usize) {
@@ -65,8 +60,7 @@ pub trait Sampler {
         self.get_data_mut().request_1d_array(n);
     }
 
-    /// This should be called before rendering begins when an array of 1D
-    /// samples is required.
+    /// This should be called before rendering begins when an array of 1D samples is required.
     ///
     /// * `n` - The number of samples.
     fn request_2d_array(&mut self, n: usize) {
@@ -74,8 +68,8 @@ pub trait Sampler {
         self.get_data_mut().request_2d_array(n);
     }
 
-    /// Returns nearest interger based on some criteria (e.g. nearest power of
-    /// two). The default implementation simply returns the given value.
+    /// Returns nearest interger based on some criteria (e.g. nearest power of two). The default implementation simply
+    /// returns the given value.
     ///
     /// * `n` - The integer value to round.
     fn round_count(&self, n: usize) -> usize {
@@ -96,15 +90,14 @@ pub trait Sampler {
         self.get_data_mut().get_2d_array(n)
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if
-    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
+    /// otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.get_data_mut().start_next_sample()
     }
 
-    /// Set the index of the sample in the current pixel to generate next.
-    /// Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
-    /// otherwise `false`.
+    /// Set the index of the sample in the current pixel to generate next. Returns `true` if
+    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
     ///
     /// * `sample_num` - The sample number.
     fn set_sample_number(&mut self, sample_num: usize) -> bool {
