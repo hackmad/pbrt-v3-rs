@@ -57,8 +57,7 @@ pub enum FilteringMethod {
     Ewa,
 }
 
-/// Implements methods for efficient texture filtering with spatially varying
-/// filter widths.
+/// Implements methods for efficient texture filtering with spatially varying filter widths.
 #[derive(Clone)]
 pub struct MIPMap<T> {
     /// MIP-Map method to use.
@@ -70,15 +69,13 @@ pub struct MIPMap<T> {
     /// Image resolution.
     resolution: Point2<usize>,
 
-    /// Stores the image pyramid of increasingly lower resolution prefiltered
-    /// versions of the original image.
+    /// Stores the image pyramid of increasingly lower resolution prefiltered versions of the original image.
     pyramid: Vec<BlockedArray<T, 2>>,
 
     /// Precomputed lookup table of Gaussian filter function values.
     weight_lut: [Float; WEIGHT_LUT_SIZE],
 
-    /// Used to clamp the ellipse eccentricity (EWA).
-    /// Set to 0 if EWA is not being used.
+    /// Used to clamp the ellipse eccentricity (EWA). Set to 0 if EWA is not being used.
     max_anisotropy: Float,
 }
 
@@ -104,10 +101,9 @@ where
     ///
     /// * `resolution`       - Image resolution.
     /// * `img`              - Image data.
-    /// * `filtering_method` - MIPMap filtering method to use.
+    /// * `filtering_method` - MIPMap filtering method to use. Default to EWA.
     /// * `wrap_mode`        - Determines how to handle out-of-bounds texels.
-    /// * `max_anisotropy`   - Used to clamp the ellipse eccentricity (EWA).
-    ///                        Set to 0 if EWA is not being used.
+    /// * `max_anisotropy`   - Used to clamp the ellipse eccentricity (EWA). Set to 8.0 for EWA; otherwise 0.0.
     pub fn new(
         resolution: &Point2<usize>,
         img: &[T],
@@ -187,8 +183,7 @@ where
         self.pyramid.len()
     }
 
-    /// Applies the appropriate filter method based on `method` over the texture
-    /// samples to remove high frequencies.
+    /// Applies the appropriate filter method based on `method` over the texture samples to remove high frequencies.
     ///
     /// * `st`   - The sample point coordinates (s, t).
     /// * `dst0` - Length of first elliptical axis.
@@ -203,15 +198,14 @@ where
         }
     }
 
-    /// Uses a triangle filter over the texture samples to remove high
-    /// frequencies.
+    /// Uses a triangle filter over the texture samples to remove high frequencies.
     ///
     /// * `st`    - The sample point coordinates (s, t).
     /// * `width` - Filter width (default to 0).
     pub fn lookup_triangle(&self, st: &Point2f, width: Float) -> T {
         // Compute MIPMap level for trilinear filtering.
         let levels = self.levels();
-        let level = (levels - 1) as Float + max(width, 1e-8).log2();
+        let level = levels as Float - 1.0 + max(width, 1e-8).log2();
 
         // Perform trilinear interpolation at appropriate MIPMap level.
         if level < 0.0 {
@@ -219,8 +213,8 @@ where
         } else if level >= (levels - 1) as Float {
             texel(&self.pyramid, self.wrap_mode, levels - 1, 0, 0)
         } else {
-            // Do lerp() manually to avoid adding trait bound on T such that
-            // `Float: Mul<T, Output=T>` and messing up Float multiplications.
+            // Do lerp() manually to avoid adding trait bound on T such that `Float: Mul<T, Output=T>` and messing up
+            // Float multiplications.
             let i_level = level.floor() as usize;
             let delta = level - i_level as Float;
             self.triangle(i_level, st) * (1.0 - delta) + self.triangle(i_level + 1, st) * delta
@@ -258,18 +252,16 @@ where
         let lod = max(0.0, self.levels() as Float - 1.0 + minor_length.log2());
         let i_lod = lod.floor() as usize;
 
-        // NOTE: If we add a bound on T like this `Float: Mul<T, Output=T>`
-        // in order to use `lerp()`, the Rust compiler gets confused and won't
-        // allow the multiplication between Float values and code in the earlier
-        // part of this function will fail to compile.
+        // NOTE: If we add a bound on T like this `Float: Mul<T, Output=T>` in order to use `lerp()`, the Rust compiler
+        // gets confused and won't allow the multiplication between Float values and code in the earlier part of this
+        // function will fail to compile.
         //
         // So we do lerp manually :(
         let t = lod - i_lod as Float;
         self.ewa(i_lod, st, &dst0, &dst1) * (1.0 - t) + self.ewa(i_lod + 1, st, &dst0, &dst1) * t
     }
 
-    /// Interpolates using a triangle filter between 4 texels that surround
-    /// a given sample point.
+    /// Interpolates using a triangle filter between 4 texels that surround a given sample point.
     ///
     /// * `level` - The MIPMap level.
     /// * `st`    - The sample point coordinates (s, t).
@@ -293,9 +285,7 @@ where
         tx0 * (1.0 - ds) * (1.0 - dt) + tx1 * (1.0 - ds) * dt + tx2 * ds * (1.0 - dt) + tx3 * ds * dt
     }
 
-    /// Interpolates using EWA filter between 4 texels that surround a given
-    /// sample point.
-    ///
+    /// Interpolates using EWA filter between 4 texels that surround a given sample point.
     ///
     /// * `level` - The MIPMap level.
     /// * `st`    - The sample point coordinates (s, t).
@@ -355,14 +345,13 @@ where
     }
 }
 
-/// Resample the image so the width and height are scaled up to the next
-/// power of two.
+/// Resample the image so the width and height are scaled up to the next power of two.
 ///
 /// NOTE: If image has weird aspect ratio it will cause stretching/squashing.
 ///
-/// * `resolution`       - Image resolution.
-/// * `img`              - Image data.
-/// * `wrap_mode`        - Determines how to handle out-of-bounds texels.
+/// * `resolution` - Image resolution.
+/// * `img`        - Image data.
+/// * `wrap_mode`  - Determines how to handle out-of-bounds texels.
 fn resample_image<T>(resolution: &Point2<usize>, img: &[T], wrap_mode: ImageWrap) -> (Vec<T>, Point2<usize>)
 where
     T: Copy
@@ -459,8 +448,7 @@ where
             let t_weights = &t_weights;
             scope.spawn(move || {
                 for work in rxc.iter() {
-                    // Lock for duration of work. Otherwise work_data will
-                    // get muddled up between threads.
+                    // Lock for duration of work. Otherwise work_data will get muddled up between threads.
                     let mut work_data = work_data.write().unwrap();
 
                     let (_vi, vs): (usize, Vec<usize>) = work;
@@ -474,8 +462,8 @@ where
                         {
                             let pixels = r_img.read().unwrap();
                             for t in 0..res_pow2[1] {
-                                // Initialize to zero since work_data is shared and we
-                                // don't want old values from previous iteration or thread.
+                                // Initialize to zero since work_data is shared and we don't want old values from
+                                // previous iteration or thread.
                                 (*work_data)[t] = T::default();
 
                                 for j in 0..4 {
@@ -538,7 +526,7 @@ fn resample_weights(old_res: usize, new_res: usize) -> Vec<ResampleWeight> {
             wti.weight[j] = lanczos((pos - center) / filterwidth, 2.0);
         }
 
-        // Normalize filter weights for texel resampling
+        // Normalize filter weights for texel resampling.
         let inv_sum_wts = 1.0 / (wti.weight[0] + wti.weight[1] + wti.weight[2] + wti.weight[3]);
         for j in 0..4 {
             wti.weight[j] *= inv_sum_wts;
@@ -554,7 +542,7 @@ fn resample_weights(old_res: usize, new_res: usize) -> Vec<ResampleWeight> {
 /// * `level`     - MIPMap Level.
 /// * `s`         - s-index.
 /// * `t`         - t-index.
-fn texel<T>(pyramid: &[BlockedArray<T, 2>], wrap_mode: ImageWrap, level: usize, s: isize, t: isize) -> T
+fn texel<T>(pyramid: &[BlockedArray<T, 2>], wrap_mode: ImageWrap, level: usize, mut s: isize, mut t: isize) -> T
 where
     T: Copy + Default,
 {
@@ -566,14 +554,20 @@ where
 
     // Compute texel `(s, t)` accounting for boundary conditions.
     match wrap_mode {
-        ImageWrap::Repeat => l[(rem(s, u_size) as usize, rem(t, v_size) as usize)],
-        ImageWrap::Clamp => l[(clamp(s, 0, u_size - 1) as usize, clamp(t, 0, v_size - 1) as usize)],
+        ImageWrap::Repeat => {
+            s = rem(s, u_size);
+            t = rem(t, v_size);
+        }
+        ImageWrap::Clamp => {
+            s = clamp(s, 0, u_size - 1);
+            t = clamp(t, 0, v_size - 1);
+        }
         ImageWrap::Black => {
-            if s >= u_size || t >= v_size {
-                T::default()
-            } else {
-                l[(s as usize, t as usize)]
+            if s < 0 || s >= u_size || t < 0 || t >= v_size {
+                return T::default();
             }
         }
     }
+
+    l[(s as usize, t as usize)]
 }

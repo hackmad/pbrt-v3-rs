@@ -1,27 +1,13 @@
 //! BSDF Reader
 
+use crate::pbrt::IS_BIG_ENDIAN;
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 use std::fs::File;
 use std::io::Read;
-use std::{mem, slice, str};
+use std::str;
 
-/// The first 8 byetes of BSDF file are the header `SCATFUN` terminated with
-/// char `0x01`.
+/// The first 8 byetes of BSDF file are the header `SCATFUN` terminated with char `0x01`.
 const EXPECTED_HEADER: [u8; 8] = [b'S', b'C', b'A', b'T', b'F', b'U', b'N', b'\x01'];
-
-lazy_static! {
-    /// Determines system is big endian or little endian.
-    static ref IS_BIG_ENDIAN: bool = is_big_endian();
-}
-
-/// Returns `true` if the system is using Big Endian to store integers.
-fn is_big_endian() -> bool {
-    let i: u64 = 0x01020304;
-    let ip: *const u64 = &i;
-    let bp: *const u8 = ip as *const _;
-    let bs: &[u8] = unsafe { slice::from_raw_parts(bp, mem::size_of::<u64>()) };
-    bs[0] == 1_u8
-}
 
 /// Opens a file for reading or returns an error if unable to do so.
 ///
@@ -33,13 +19,12 @@ pub fn open_file(path: &str) -> Result<File, String> {
     }
 }
 
-/// Interface to add custom helpers for reading BSDF files that supports
-/// little and big endian integer format of the system.
+/// Interface to add custom helpers for reading BSDF files that supports little and big endian integer format of the
+/// system.
 ///
 /// NOTE: This is just a convenience way to add helpers to `File`.
 pub trait BSDFReader {
-    /// Reads the header bytes and compares them to the expected
-    /// header.
+    /// Reads the header bytes and compares them to the expected header.
     fn check_header(&mut self) -> Result<(), String>;
 
     /// Reads one 32-bit unsigned value.
@@ -60,8 +45,7 @@ pub trait BSDFReader {
 }
 
 impl BSDFReader for File {
-    /// Reads the header bytes and compares them to the expected
-    /// header.
+    /// Reads the header bytes and compares them to the expected header.
     fn check_header(&mut self) -> Result<(), String> {
         let mut header = [0_u8; 8];
         match self.read_exact(&mut header) {

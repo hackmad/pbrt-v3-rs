@@ -66,7 +66,6 @@ impl InfiniteAreaLight {
 
         // Read texel data from texmap and initialize `l_map`.
         let (texels, resolution) = match texmap {
-            None => (vec![lrgb], Point2::new(1_usize, 1_usize)),
             Some(texmap) => match read_image(texmap) {
                 Ok(RGBImage { pixels, resolution }) => {
                     let texels = pixels.iter().map(|texel| *texel * lrgb).collect();
@@ -77,9 +76,10 @@ impl InfiniteAreaLight {
                     (vec![lrgb], Point2::new(1_usize, 1_usize))
                 }
             },
+            None => (vec![lrgb], Point2::new(1_usize, 1_usize)),
         };
 
-        let l_map = MIPMap::new(&resolution, &texels, FilteringMethod::Trilinear, ImageWrap::Repeat, 0.0);
+        let l_map = MIPMap::new(&resolution, &texels, FilteringMethod::Ewa, ImageWrap::Repeat, 8.0);
 
         // Initialize sampling PDFs for infinite area light.
 
@@ -289,7 +289,8 @@ impl Light for InfiniteAreaLight {
 }
 
 impl From<(&ParamSet, ArcTransform, &str, usize)> for InfiniteAreaLight {
-    /// Create a `InfiniteAreaLight` from given parameter set and, light to world transform, current working directory and id.
+    /// Create a `InfiniteAreaLight` from given parameter set and, light to world transform, current working directory
+    /// and id.
     ///
     /// * `p` - A tuple containing the parameter set and light to world transform, current working directory and id.
     fn from(p: (&ParamSet, ArcTransform, &str, usize)) -> Self {
