@@ -6,7 +6,6 @@ use core::paramset::*;
 use core::pbrt::*;
 use core::sampler::*;
 use core::sampling::*;
-use std::sync::Arc;
 
 // Implements a stratified sampler that subdivides pixel areas into non-overlapping rectangular regions, called strata,
 // and geenrates a single sample inside each region.
@@ -64,8 +63,8 @@ impl Sampler for StratifiedSampler {
     /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (if any).
-    fn clone(&self, seed: u64) -> ArcSampler {
-        Arc::new(Self::new(
+    fn clone_sampler(&self, seed: u64) -> Box<dyn Sampler> {
+        Box::new(Self::new(
             self.x_pixel_samples,
             self.y_pixel_samples,
             self.jitter_samples,
@@ -137,8 +136,8 @@ impl Sampler for StratifiedSampler {
         self.sampler.get_2d()
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
-    /// otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` <
+    /// `samples_per_pixel`; otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.sampler.start_next_sample()
     }

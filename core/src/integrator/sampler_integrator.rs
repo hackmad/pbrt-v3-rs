@@ -300,8 +300,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         let camera_data = camera.get_data();
 
         // Get sampler instance for tile.
-        let mut ts = Sampler::clone(&*data.sampler, tile_idx as u64);
-        let tile_sampler = Arc::get_mut(&mut ts).unwrap();
+        let mut tile_sampler = data.sampler.clone_sampler(tile_idx as u64);
 
         let samples_per_pixel = {
             let tile_sampler_data = tile_sampler.get_data();
@@ -324,8 +323,8 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         for pixel in tile_bounds {
             tile_sampler.start_pixel(&pixel);
 
-            // Do this check after the StartPixel() call; this keeps the usage of RNG values from (most) Samplers that use
-            // RNGs consistent, which improves reproducability / debugging.
+            // Do this check after the StartPixel() call; this keeps the usage of RNG values from (most) Samplers that
+            // use RNGs consistent, which improves reproducability / debugging.
             if !data.pixel_bounds.contains_exclusive(&pixel) {
                 continue;
             }
@@ -341,7 +340,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                 // Evaluate radiance along camera ray.
                 let mut l = Spectrum::new(0.0);
                 if ray_weight > 0.0 {
-                    l = self.li(&mut ray, scene, tile_sampler, 0);
+                    l = self.li(&mut ray, scene, &mut tile_sampler, 0);
                 }
 
                 // Issue warning if unexpected radiance value returned.

@@ -8,7 +8,6 @@ use core::pbrt::*;
 use core::rng::*;
 use core::sampler::*;
 use core::sobol_matrices::*;
-use std::sync::Arc;
 
 /// Implements the Sobol Sampler.
 pub struct SobolSampler {
@@ -108,8 +107,8 @@ impl Sampler for SobolSampler {
     /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (ignored).
-    fn clone(&self, _seed: u64) -> ArcSampler {
-        Arc::new(Self::new(self.data.samples_per_pixel, self.sample_bounds))
+    fn clone_sampler(&self, _seed: u64) -> Box<dyn Sampler> {
+        Box::new(Self::new(self.data.samples_per_pixel, self.sample_bounds))
     }
 
     /// This should be called when the rendering algorithm is ready to start working on a given pixel.
@@ -180,8 +179,8 @@ impl Sampler for SobolSampler {
         p
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
-    /// otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` <
+    /// `samples_per_pixel`; otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.gdata.dimension = 0;
         self.gdata.interval_sample_index = self.get_index_for_sample(self.data.current_pixel_sample_index + 1);

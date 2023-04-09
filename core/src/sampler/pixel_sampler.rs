@@ -1,7 +1,6 @@
 //! Pixel Sampler.
 
 use super::*;
-use std::sync::Arc;
 
 /// Implementation for generating all sample values for all sample vectors of a pixel at a time.
 ///
@@ -77,8 +76,8 @@ impl Sampler for PixelSampler {
     /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (if any).
-    fn clone(&self, seed: u64) -> ArcSampler {
-        Arc::new(Self::new(
+    fn clone_sampler(&self, seed: u64) -> Box<dyn Sampler> {
+        Box::new(Self::new(
             self.data.samples_per_pixel,
             self.samples_1d.len(),
             Some(seed),
@@ -109,8 +108,8 @@ impl Sampler for PixelSampler {
         }
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
-    /// otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` <
+    /// `samples_per_pixel`; otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.current_1d_dimension = 0;
         self.current_2d_dimension = 0;

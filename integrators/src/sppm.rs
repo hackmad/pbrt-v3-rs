@@ -368,8 +368,7 @@ fn generate_visible_points(
                     let tile_y = tile_idx / n_tiles.x;
 
                     // Get sampler instance for tile.
-                    let mut ts = Sampler::clone(sampler, tile_idx as u64);
-                    let tile_sampler = Arc::get_mut(&mut ts).unwrap();
+                    let mut tile_sampler = sampler.clone_sampler(tile_idx as u64);
 
                     // Compute `tile_bounds` for SPPM tile.
                     let tile_bounds = get_tile_bounds(tile_x, tile_y, tile_size, &pixel_bounds);
@@ -383,7 +382,7 @@ fn generate_visible_points(
                             iter,
                             &p_pixel,
                             scene,
-                            tile_sampler,
+                            &mut tile_sampler,
                             inv_sqrt_spp,
                             max_depth,
                             Arc::clone(camera),

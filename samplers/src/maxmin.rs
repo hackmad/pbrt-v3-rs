@@ -6,10 +6,8 @@ use core::low_discrepency::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::sampler::*;
-use std::sync::Arc;
 
-/// Implements a sampler that can generate (0, 2)-sequences but also maximizes
-/// the distance between samples.
+/// Implements a sampler that can generate (0, 2)-sequences but also maximizes the distance between samples.
 pub struct MaxMinDistSampler {
     /// Use a pixel sampler.
     sampler: PixelSampler,
@@ -69,20 +67,18 @@ impl Sampler for MaxMinDistSampler {
         &mut self.sampler.data
     }
 
-    /// Generates a new instance of an initial `Sampler` for use by a rendering
-    /// thread.
+    /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (if any).
-    fn clone(&self, seed: u64) -> ArcSampler {
-        Arc::new(Self::new(
+    fn clone_sampler(&self, seed: u64) -> Box<dyn Sampler> {
+        Box::new(Self::new(
             self.sampler.data.samples_per_pixel,
             self.sampler.samples_1d.len(),
             Some(seed),
         ))
     }
 
-    /// This should be called when the rendering algorithm is ready to start
-    /// working on a given pixel.
+    /// This should be called when the rendering algorithm is ready to start working on a given pixel.
     ///
     /// * `p` - The pixel.
     fn start_pixel(&mut self, p: &Point2i) {
@@ -144,14 +140,12 @@ impl Sampler for MaxMinDistSampler {
         self.get_data_mut().start_pixel(p);
     }
 
-    /// Returns the sample value for the next dimension of the current sample
-    /// vector.
+    /// Returns the sample value for the next dimension of the current sample vector.
     fn get_1d(&mut self) -> Float {
         self.sampler.get_1d()
     }
 
-    /// Returns the sample value for the next two dimensions of the current
-    /// sample vector.
+    /// Returns the sample value for the next two dimensions of the current sample vector.
     fn get_2d(&mut self) -> Point2f {
         self.sampler.get_2d()
     }
@@ -163,15 +157,14 @@ impl Sampler for MaxMinDistSampler {
         n.next_power_of_two()
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if
-    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` <
+    /// `samples_per_pixel`; otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.sampler.start_next_sample()
     }
 
-    /// Set the index of the sample in the current pixel to generate next.
-    /// Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
-    /// otherwise `false`.
+    /// Set the index of the sample in the current pixel to generate next. Returns `true` if
+    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
     ///
     /// * `sample_num` - The sample number.
     fn set_sample_number(&mut self, sample_num: usize) -> bool {

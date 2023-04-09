@@ -6,7 +6,6 @@ use core::low_discrepency::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::sampler::*;
-use std::sync::Arc;
 
 /// Implements a (0-2)-squence sampler.
 pub struct ZeroTwoSequenceSampler {
@@ -52,8 +51,8 @@ impl Sampler for ZeroTwoSequenceSampler {
     /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (if any).
-    fn clone(&self, seed: u64) -> ArcSampler {
-        Arc::new(Self::new(
+    fn clone_sampler(&self, seed: u64) -> Box<dyn Sampler> {
+        Box::new(Self::new(
             self.sampler.data.samples_per_pixel,
             self.sampler.samples_1d.len(),
             Some(seed),
@@ -128,8 +127,8 @@ impl Sampler for ZeroTwoSequenceSampler {
         n.next_power_of_two()
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
-    /// otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` <
+    /// `samples_per_pixel`; otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.sampler.start_next_sample()
     }

@@ -24,7 +24,7 @@ pub trait Sampler {
     /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (if any).
-    fn clone(&self, seed: u64) -> ArcSampler;
+    fn clone_sampler(&self, seed: u64) -> Box<dyn Sampler>;
 
     /// This should be called when the rendering algorithm is ready to start working on a given pixel.
     ///
@@ -90,8 +90,8 @@ pub trait Sampler {
         self.get_data_mut().get_2d_array(n)
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
-    /// otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` <
+    /// `samples_per_pixel`; otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.get_data_mut().start_next_sample()
     }
@@ -102,6 +102,81 @@ pub trait Sampler {
     /// * `sample_num` - The sample number.
     fn set_sample_number(&mut self, sample_num: usize) -> bool {
         self.get_data_mut().set_sample_number(sample_num)
+    }
+}
+
+// Implement `Sampler` so `Box<dyn Sampler>` can be passed around where `&dyn Sampler` or `&mut dyn Sampler` can be
+// used. This is necessary because we are forced to return heap allocated `Sampler` trait objects from
+// `Sampler::clone_sampler()`; at least until a better way is found to clone samplers and pass them around.
+impl<S: Sampler + ?Sized> Sampler for Box<S> {
+    #[inline]
+    fn get_data(&self) -> &SamplerData {
+        (**self).get_data()
+    }
+
+    #[inline]
+    fn get_data_mut(&mut self) -> &mut SamplerData {
+        (**self).get_data_mut()
+    }
+
+    #[inline]
+    fn clone_sampler(&self, seed: u64) -> Box<dyn Sampler> {
+        (**self).clone_sampler(seed)
+    }
+
+    #[inline]
+    fn get_1d(&mut self) -> Float {
+        (**self).get_1d()
+    }
+
+    #[inline]
+    fn get_2d(&mut self) -> Point2f {
+        (**self).get_2d()
+    }
+
+    #[inline]
+    fn start_pixel(&mut self, p: &Point2i) {
+        (**self).start_pixel(p);
+    }
+
+    #[inline]
+    fn get_camera_sample(&mut self, p_raster: &Point2i) -> CameraSample {
+        (**self).get_camera_sample(p_raster)
+    }
+
+    #[inline]
+    fn request_1d_array(&mut self, n: usize) {
+        (**self).request_1d_array(n);
+    }
+
+    #[inline]
+    fn request_2d_array(&mut self, n: usize) {
+        (**self).request_2d_array(n);
+    }
+
+    #[inline]
+    fn round_count(&self, n: usize) -> usize {
+        (**self).round_count(n)
+    }
+
+    #[inline]
+    fn get_1d_array(&mut self, n: usize) -> Vec<Float> {
+        (**self).get_1d_array(n)
+    }
+
+    #[inline]
+    fn get_2d_array(&mut self, n: usize) -> Vec<Point2f> {
+        (**self).get_2d_array(n)
+    }
+
+    #[inline]
+    fn start_next_sample(&mut self) -> bool {
+        (**self).start_next_sample()
+    }
+
+    #[inline]
+    fn set_sample_number(&mut self, sample_num: usize) -> bool {
+        (**self).set_sample_number(sample_num)
     }
 }
 
