@@ -20,7 +20,8 @@ mod mlt_sampler;
 
 use mlt_sampler::*;
 
-/// Implements Metropolis sampling and Multiplexed MLT to render images, using the bidirectional path tracer.
+/// Implements Multiplexed Metropolis Light Transport with Primary Sample Space Sampler to render images and
+/// Bidirectional Path Tracing.
 pub struct MLTIntegrator {
     /// The camera.
     camera: ArcCamera,

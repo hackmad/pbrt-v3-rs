@@ -14,8 +14,8 @@ pub const LIGHT_STREAM_INDEX: usize = 1;
 /// connection step
 pub const CONNECTION_STREAM_INDEX: usize = 2;
 
-/// Implements a sampler responsible for managing primary sample space state vectors, mutations, and acceptance and
-/// rejection steps.
+/// Implements a Primary Sample Space Sampler. It is responsible for managing primary sample space state vectors,
+/// mutations, and acceptance and rejection steps.
 pub struct MLTSampler {
     /// The sampler data.
     data: SamplerData,
