@@ -375,9 +375,9 @@ impl Integrator for BDPTIntegrator {
 }
 
 impl From<(&ParamSet, ArcSampler, ArcCamera)> for BDPTIntegrator {
-    /// Create a `PathIntegrator` from given parameter set and camera.
+    /// Create a `BDPTIntegrator` from given parameter set, sampler and camera.
     ///
-    /// * `p` - A tuple containing parameter set and camera.
+    /// * `p` - A tuple containing parameter set, sampler and camera.
     fn from(p: (&ParamSet, ArcSampler, ArcCamera)) -> Self {
         let (params, sampler, camera) = p;
 
