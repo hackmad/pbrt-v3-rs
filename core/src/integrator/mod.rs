@@ -30,13 +30,7 @@ pub trait Integrator {
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
-    fn li(
-        &self,
-        _ray: &mut Ray,
-        _scene: &Scene,
-        _sampler: &mut ArcSampler,
-        _depth: usize,
-    ) -> Spectrum {
+    fn li(&self, _ray: &mut Ray, _scene: &Scene, _sampler: &mut dyn Sampler, _depth: usize) -> Spectrum {
         Spectrum::ZERO
     }
 }

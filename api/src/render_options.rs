@@ -130,6 +130,10 @@ impl RenderOptions {
                 let p = (&self.integrator_params, sampler, camera);
                 Ok(Box::new(DirectLightingIntegrator::from(p)))
             }
+            "mlt" => {
+                let p = (&self.integrator_params, camera);
+                Ok(Box::new(MLTIntegrator::from(p)))
+            }
             "path" => {
                 let p = (&self.integrator_params, sampler, camera);
                 Ok(Box::new(PathIntegrator::from(p)))

@@ -83,7 +83,7 @@ pub struct Options {
 impl Options {
     /// Returns the number of threads to use.
     pub fn threads(&self) -> usize {
-        let max_threads = num_cpus::get();
+        let max_threads = std::thread::available_parallelism().map_or(1, |n| n.get());
         match self.n_threads {
             0 => {
                 warn!("Invalid nthreads");

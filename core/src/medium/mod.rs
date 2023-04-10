@@ -21,7 +21,7 @@ pub trait Medium {
     ///
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
-    fn tr(&self, ray: &Ray, sampler: &mut ArcSampler) -> Spectrum;
+    fn tr(&self, ray: &Ray, sampler: &mut dyn Sampler) -> Spectrum;
 
     /// Samples a medium scattering interaction along a world-space ray.
     ///
@@ -32,7 +32,7 @@ pub trait Medium {
     ///
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
-    fn sample(&self, ray: &Ray, sampler: &mut ArcSampler) -> (Spectrum, Option<MediumInteraction>);
+    fn sample(&self, ray: &Ray, sampler: &mut dyn Sampler) -> (Spectrum, Option<MediumInteraction>);
 }
 
 /// Atomic reference counted `Medium`.

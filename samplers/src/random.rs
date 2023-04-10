@@ -5,7 +5,6 @@ use core::paramset::*;
 use core::pbrt::*;
 use core::rng::*;
 use core::sampler::*;
-use std::sync::Arc;
 
 /// Implements a sampler that uses a PRNG to generate uniformly random samples.
 pub struct RandomSampler {
@@ -43,16 +42,14 @@ impl Sampler for RandomSampler {
         &mut self.data
     }
 
-    /// Generates a new instance of an initial `Sampler` for use by a rendering
-    /// thread.
+    /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (if any).
-    fn clone(&self, seed: u64) -> ArcSampler {
-        Arc::new(Self::new(self.data.samples_per_pixel, Some(seed)))
+    fn clone_sampler(&self, seed: u64) -> Box<dyn Sampler> {
+        Box::new(Self::new(self.data.samples_per_pixel, Some(seed)))
     }
 
-    /// This should be called when the rendering algorithm is ready to start
-    /// working on a given pixel.
+    /// This should be called when the rendering algorithm is ready to start working on a given pixel.
     ///
     /// * `p` - The pixel.
     fn start_pixel(&mut self, p: &Point2i) {
@@ -73,14 +70,12 @@ impl Sampler for RandomSampler {
         self.get_data_mut().start_pixel(p);
     }
 
-    /// Returns the sample value for the next dimension of the current sample
-    /// vector.
+    /// Returns the sample value for the next dimension of the current sample vector.
     fn get_1d(&mut self) -> Float {
         self.rng.uniform_float()
     }
 
-    /// Returns the sample value for the next two dimensions of the current
-    /// sample vector.
+    /// Returns the sample value for the next two dimensions of the current sample vector.
     fn get_2d(&mut self) -> Point2f {
         Point2f::new(self.rng.uniform_float(), self.rng.uniform_float())
     }

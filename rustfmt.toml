@@ -1,2 +1,3 @@
-# Maximum width of each line.
 max_width = 120
+wrap_comments = true
+comment_width = 120

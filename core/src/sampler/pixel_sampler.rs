@@ -1,16 +1,13 @@
 //! Pixel Sampler.
 
 use super::*;
-use std::sync::Arc;
 
-/// Implementation for generating all sample values for all sample vectors of
-/// a pixel at a time.
+/// Implementation for generating all sample values for all sample vectors of a pixel at a time.
 ///
-/// If you use this in your own sampler which implements `Sampler` interface,
-/// make sure to call functions in this implementation if you do not wish to
-/// implement them youself. Since this implements `Sampler` interface, it will
-/// forward the call up to default implementation if its not implemented here
-/// preserving the inheritence structure of the original PBRT implementation.
+/// If you use this in your own sampler which implements `Sampler` interface, make sure to call functions in this
+/// implementation if you do not wish to implement them youself. Since this implements `Sampler` interface, it will
+/// forward the call up to default implementation if its not implemented here preserving the inheritence structure of
+/// the original PBRT implementation.
 #[derive(Clone)]
 pub struct PixelSampler {
     /// The common sampler data.
@@ -22,12 +19,12 @@ pub struct PixelSampler {
     /// Vector of 2D sample values.
     pub samples_2d: Vec<Vec<Point2f>>,
 
-    /// Offset into the `samples_1d` array for the current pixel sample. It must
-    /// be reset to 0 at the start of each new sample.
+    /// Offset into the `samples_1d` array for the current pixel sample. It must be reset to 0 at the start of each new
+    /// sample.
     pub current_1d_dimension: usize,
 
-    /// Offset into the `samples_2d` array for the current pixel sample. It must
-    /// be reset to 0 at the start of each new sample.
+    /// Offset into the `samples_2d` array for the current pixel sample. It must be reset to 0 at the start of each new
+    /// sample.
     pub current_2d_dimension: usize,
 
     /// The random number generator.
@@ -76,20 +73,18 @@ impl Sampler for PixelSampler {
         &mut self.data
     }
 
-    /// Generates a new instance of an initial `Sampler` for use by a rendering
-    /// thread.
+    /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (if any).
-    fn clone(&self, seed: u64) -> ArcSampler {
-        Arc::new(Self::new(
+    fn clone_sampler(&self, seed: u64) -> Box<dyn Sampler> {
+        Box::new(Self::new(
             self.data.samples_per_pixel,
             self.samples_1d.len(),
             Some(seed),
         ))
     }
 
-    /// Returns the sample value for the next dimension of the current sample
-    /// vector.
+    /// Returns the sample value for the next dimension of the current sample vector.
     fn get_1d(&mut self) -> Float {
         assert!(self.data.current_pixel_sample_index < self.data.samples_per_pixel);
         if self.current_1d_dimension < self.samples_1d.len() {
@@ -101,8 +96,7 @@ impl Sampler for PixelSampler {
         }
     }
 
-    /// Returns the sample value for the next two dimensions of the current
-    /// sample vector.
+    /// Returns the sample value for the next two dimensions of the current sample vector.
     fn get_2d(&mut self) -> Point2f {
         assert!(self.data.current_pixel_sample_index < self.data.samples_per_pixel);
         if self.current_2d_dimension < self.samples_2d.len() {
@@ -114,16 +108,16 @@ impl Sampler for PixelSampler {
         }
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if
-    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` <
+    /// `samples_per_pixel`; otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.current_1d_dimension = 0;
         self.current_2d_dimension = 0;
         self.data.start_next_sample()
     }
 
-    /// Set the index of the sample in the current pixel to generate next.
-    /// Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
+    /// Set the index of the sample in the current pixel to generate next. Returns `true` if
+    /// `current_pixel_sample_index` < `samples_per_pixel`;
     /// otherwise `false`.
     ///
     /// * `sample_num` - The sample number.

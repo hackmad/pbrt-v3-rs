@@ -188,7 +188,7 @@ impl Integrator for SPPMIntegrator {
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
-    fn li(&self, _ray: &mut Ray, _scene: &Scene, _sampler: &mut ArcSampler, _depth: usize) -> Spectrum {
+    fn li(&self, _ray: &mut Ray, _scene: &Scene, _sampler: &mut dyn Sampler, _depth: usize) -> Spectrum {
         Spectrum::ZERO
     }
 }
@@ -368,7 +368,7 @@ fn generate_visible_points(
                     let tile_y = tile_idx / n_tiles.x;
 
                     // Get sampler instance for tile.
-                    let mut tile_sampler = Sampler::clone(sampler, tile_idx as u64);
+                    let mut tile_sampler = sampler.clone_sampler(tile_idx as u64);
 
                     // Compute `tile_bounds` for SPPM tile.
                     let tile_bounds = get_tile_bounds(tile_x, tile_y, tile_size, &pixel_bounds);
@@ -408,14 +408,13 @@ fn generate_visible_point(
     iter: usize,
     p_pixel: &Point2i,
     scene: &Scene,
-    tile_sampler: &mut ArcSampler,
+    tile_sampler: &mut dyn Sampler,
     inv_sqrt_spp: Float,
     max_depth: usize,
     camera: ArcCamera,
 ) -> Option<(Spectrum, Option<VisiblePoint>)> {
     let camera_sample = {
         // Prepare `tile_sampler` for `p_pixel`.
-        let tile_sampler = Arc::get_mut(tile_sampler).unwrap();
         tile_sampler.start_pixel(&p_pixel);
         tile_sampler.set_sample_number(iter);
 
@@ -491,7 +490,6 @@ fn generate_visible_point(
 
         // Spawn ray from SPPM camera path vertex.
         if depth < max_depth - 1 {
-            let tile_sampler = Arc::get_mut(tile_sampler).unwrap();
             let BxDFSample { f, pdf, wi, bxdf_type } = bsdf.sample_f(&wo, &tile_sampler.get_2d(), BxDFType::all());
             if pdf == 0.0 || f.is_black() {
                 break;

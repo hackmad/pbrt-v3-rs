@@ -7,7 +7,6 @@ use core::paramset::*;
 use core::pbrt::*;
 use core::rng::*;
 use core::sampler::*;
-use std::sync::Arc;
 
 /// Maximum resolution for sampling first 2 dimensions.
 const K_MAX_RESOLUTION: Int = 128;
@@ -31,15 +30,14 @@ pub struct HaltonSampler {
     /// Sample bounds.
     sample_bounds: Bounds2i,
 
-    /// The scale factor, either `2^j` or `3^k` for corresponding exponents `j`
-    /// and `k` stored in `base_exponents`.
+    /// The scale factor, either `2^j` or `3^k` for corresponding exponents `j` and `k` stored in `base_exponents`.
     base_scales: Point2<u64>,
 
     /// The exponents `j` and `k` used to compute the scale factors in `base_scales`.
     base_exponents: Point2<u64>,
 
-    /// Stores the product `2^j * 3^k`. Any particular pixel in the range
-    /// (0, 0) -> (2^j - 1, 3^k - 1) will be visited once per `sample_stride`.
+    /// Stores the product `2^j * 3^k`. Any particular pixel in the range (0, 0) -> (2^j - 1, 3^k - 1) will be visited
+    /// once per `sample_stride`.
     sample_stride: u64,
 
     /// Multiplicative inverses for `base_scales`.
@@ -60,8 +58,7 @@ impl HaltonSampler {
     ///
     /// * `samples_per_pixel` - Number of samples per pixel.
     /// * `sample_bounds`     - Sample bounds.
-    /// * `sample_at_center`  - Indicates whether or not to jitter each sample's
-    ///                         center point (default to false).
+    /// * `sample_at_center`  - Indicates whether or not to jitter each sample's center point (default to false).
     pub fn new(samples_per_pixel: usize, sample_bounds: Bounds2i, sample_at_center: bool) -> Self {
         // Find radical inverse, base scales and exponents that cover sampling area.
         let res = sample_bounds.p_max - sample_bounds.p_min;
@@ -115,8 +112,8 @@ impl HaltonSampler {
         &RADICAL_INVERSE_PERMUTATIONS[PRIME_SUMS[dim as usize]..]
     }
 
-    /// Performs the inverse mapping from the current pixel and given sample
-    /// index to a global index into the overall set of sample vectors.
+    /// Performs the inverse mapping from the current pixel and given sample index to a global index into the overall
+    /// set of sample vectors.
     ///
     /// * `sample_num` - The sample number.
     fn get_index_for_sample(&mut self, sample_num: usize) -> u64 {
@@ -147,8 +144,7 @@ impl HaltonSampler {
         (self.offset_for_current_pixel + sample_num * self.sample_stride as usize) as u64
     }
 
-    /// Returns the sample value for the given dimension of the index^th sample
-    /// vector in the sequence.
+    /// Returns the sample value for the given dimension of the index^th sample vector in the sequence.
     ///
     /// * `index` - Index of the sample.
     /// * `dim`   - Dimension.
@@ -176,20 +172,18 @@ impl Sampler for HaltonSampler {
         &mut self.data
     }
 
-    /// Generates a new instance of an initial `Sampler` for use by a rendering
-    /// thread.
+    /// Generates a new instance of an initial `Sampler` for use by a rendering thread.
     ///
     /// * `seed` - The seed for the random number generator (ignored).
-    fn clone(&self, _seed: u64) -> ArcSampler {
-        Arc::new(Self::new(
+    fn clone_sampler(&self, _seed: u64) -> Box<dyn Sampler> {
+        Box::new(Self::new(
             self.data.samples_per_pixel,
             self.sample_bounds,
             self.sample_at_pixel_center,
         ))
     }
 
-    /// This should be called when the rendering algorithm is ready to start
-    /// working on a given pixel.
+    /// This should be called when the rendering algorithm is ready to start working on a given pixel.
     ///
     /// * `p` - The pixel.
     fn start_pixel(&mut self, p: &Point2i) {
@@ -229,8 +223,7 @@ impl Sampler for HaltonSampler {
         assert!(self.gdata.array_end_dim == dim);
     }
 
-    /// Returns the sample value for the next dimension of the current sample
-    /// vector.
+    /// Returns the sample value for the next dimension of the current sample vector.
     fn get_1d(&mut self) -> Float {
         if self.gdata.dimension >= self.gdata.array_start_dim && self.gdata.dimension < self.gdata.array_end_dim {
             self.gdata.dimension = self.gdata.array_end_dim;
@@ -241,8 +234,7 @@ impl Sampler for HaltonSampler {
         p
     }
 
-    /// Returns the sample value for the next two dimensions of the current
-    /// sample vector.
+    /// Returns the sample value for the next two dimensions of the current sample vector.
     fn get_2d(&mut self) -> Point2f {
         if self.gdata.dimension + 1 >= self.gdata.array_start_dim && self.gdata.dimension < self.gdata.array_end_dim {
             self.gdata.dimension = self.gdata.array_end_dim;
@@ -259,17 +251,16 @@ impl Sampler for HaltonSampler {
         p
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if
-    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` <
+    /// `samples_per_pixel`; otherwise `false`.
     fn start_next_sample(&mut self) -> bool {
         self.gdata.dimension = 0;
         self.gdata.interval_sample_index = self.get_index_for_sample(self.data.current_pixel_sample_index + 1);
         self.data.start_next_sample()
     }
 
-    /// Set the index of the sample in the current pixel to generate next.
-    /// Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
-    /// otherwise `false`.
+    /// Set the index of the sample in the current pixel to generate next. Returns `true` if
+    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
     ///
     /// * `sample_num` - The sample number.
     fn set_sample_number(&mut self, sample_num: usize) -> bool {
@@ -311,8 +302,7 @@ fn extended_gcd(a: u64, b: u64) -> (i64, i64) {
     }
 }
 
-/// Calculate the multiplicative inverse `b` of `a` with respect to modulus `n`
-/// such that `(a * b) mod n = 1`.
+/// Calculate the multiplicative inverse `b` of `a` with respect to modulus `n` such that `(a * b) mod n = 1`.
 ///
 /// * `a` - Number.
 /// * `n` - Modulus.

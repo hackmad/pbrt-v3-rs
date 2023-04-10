@@ -57,7 +57,7 @@ impl Integrator for WhittedIntegrator {
     /// * `scene`   - The scene.
     /// * `sampler` - The sampler.
     /// * `depth`   - The recursion depth.
-    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ArcSampler, depth: usize) -> Spectrum {
+    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut dyn Sampler, depth: usize) -> Spectrum {
         let mut l = Spectrum::ZERO;
 
         // Find closest ray intersection or return background radiance.
@@ -82,7 +82,7 @@ impl Integrator for WhittedIntegrator {
 
             // Add contribution of each light source.
             for light in scene.lights.iter() {
-                let sample = Arc::get_mut(sampler).unwrap().get_2d();
+                let sample = sampler.get_2d();
                 let li = light.sample_li(&isect.hit, &sample);
                 if li.is_none() {
                     // Same as li.value.is_black()

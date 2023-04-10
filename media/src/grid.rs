@@ -7,7 +7,6 @@ use core::medium::Medium;
 use core::pbrt::*;
 use core::sampler::*;
 use core::spectrum::*;
-use std::sync::Arc;
 
 /// Implements medium densities at a regular 3D grid of positions, similar to the
 /// way that the ImageTexture represents images with a 2D grid of samples. These
@@ -150,21 +149,13 @@ impl Medium for GridDensityMedium {
     ///
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
-    fn tr(&self, ray: &Ray, sampler: &mut ArcSampler) -> Spectrum {
-        let r = Ray::new(
-            ray.o,
-            ray.d.normalize(),
-            ray.t_max * ray.d.length(),
-            0.0,
-            None,
-        );
+    fn tr(&self, ray: &Ray, sampler: &mut dyn Sampler) -> Spectrum {
+        let r = Ray::new(ray.o, ray.d.normalize(), ray.t_max * ray.d.length(), 0.0, None);
         let ray_medium = self.world_to_medium.transform_ray(&r);
 
         // Compute [t_min, t_max] interval of `ray`'s overlap with medium bounds.
         let b = Bounds3f::new(Point3f::ZERO, Point3f::new(1.0, 1.0, 1.0));
         if let Some((t_min, t_max)) = b.intersect_p(&ray_medium) {
-            let sampler = Arc::get_mut(sampler).unwrap();
-
             // Perform ratio tracking to estimate the transmittance value.
             let mut tr_val = 1.0;
             let mut t = t_min;
@@ -208,21 +199,14 @@ impl Medium for GridDensityMedium {
     ///
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
-    fn sample(&self, ray: &Ray, sampler: &mut ArcSampler) -> (Spectrum, Option<MediumInteraction>) {
-        let r = Ray::new(
-            ray.o,
-            ray.d.normalize(),
-            ray.t_max * ray.d.length(),
-            0.0,
-            None,
-        );
+    fn sample(&self, ray: &Ray, sampler: &mut dyn Sampler) -> (Spectrum, Option<MediumInteraction>) {
+        let r = Ray::new(ray.o, ray.d.normalize(), ray.t_max * ray.d.length(), 0.0, None);
         let ray_medium = self.world_to_medium.transform_ray(&r);
 
         // Compute [t_min, t_max] interval of `ray`'s overlap with medium bounds.
         let b = Bounds3f::new(Point3f::ZERO, Point3f::new(1.0, 1.0, 1.0));
         if let Some((t_min, t_max)) = b.intersect_p(&ray_medium) {
             // Run delta-tracking iterations to sample a medium interaction.
-            let sampler = Arc::get_mut(sampler).unwrap();
             let mut t = t_min;
             loop {
                 t -= (1.0 - sampler.get_1d()).ln() * self.inv_max_density / self.sigma_t;

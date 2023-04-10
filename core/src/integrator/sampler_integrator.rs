@@ -16,8 +16,8 @@ use std::thread;
 
 /// Common data for sampler integrators.
 pub struct SamplerIntegratorData {
-    /// Sampler responsible for choosing points on the image plane from which  to trace rays and for
-    /// supplying sample positions used by integrators.
+    /// Sampler responsible for choosing points on the image plane from which  to trace rays and for supplying sample
+    /// positions used by integrators.
     pub sampler: ArcSampler,
 
     /// The camera.
@@ -67,14 +67,14 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         isect: &SurfaceInteraction,
         bsdf: &Option<BSDF>,
         scene: &Scene,
-        sampler: &mut ArcSampler,
+        sampler: &mut dyn Sampler,
         depth: usize,
     ) -> Spectrum {
         if let Some(bsdf) = bsdf.as_ref() {
             // Compute specular reflection direction `wi` and BSDF value.
             let wo = isect.hit.wo;
 
-            let sample = Arc::get_mut(sampler).unwrap().get_2d();
+            let sample = sampler.get_2d();
             let bxdf_type = BxDFType::BSDF_REFLECTION | BxDFType::BSDF_SPECULAR;
             let BxDFSample {
                 f,
@@ -125,14 +125,14 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         isect: &SurfaceInteraction,
         bsdf: &Option<BSDF>,
         scene: &Scene,
-        sampler: &mut ArcSampler,
+        sampler: &mut dyn Sampler,
         depth: usize,
     ) -> Spectrum {
         if let Some(bsdf) = bsdf.as_ref() {
             let wo = isect.hit.wo;
             let p = isect.hit.p;
 
-            let sample = Arc::get_mut(sampler).unwrap().get_2d();
+            let sample = sampler.get_2d();
             let bxdf_type = BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_SPECULAR;
             let BxDFSample {
                 f,
@@ -177,8 +177,8 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                       - Now let's take the partial derivative. We get:
                             -eta * d/dx(omega_o) + mu * d/dx(N) + d/dx(mu) * N.
 
-                      - We have the values of all of these except for d/dx(mu) (using bits from the derivation of specularly
-                        reflected ray deifferentials).
+                      - We have the values of all of these except for d/dx(mu) (using bits from the derivation of
+                        specularly reflected ray deifferentials).
 
                       - The first term of d/dx(mu) is easy: eta d/dx(wo dot N). We already have d/dx(wo dot N).
 
@@ -300,10 +300,10 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         let camera_data = camera.get_data();
 
         // Get sampler instance for tile.
-        let mut tile_sampler = Sampler::clone(&*data.sampler, tile_idx as u64);
+        let mut tile_sampler = data.sampler.clone_sampler(tile_idx as u64);
 
         let samples_per_pixel = {
-            let tile_sampler_data = Arc::get_mut(&mut tile_sampler).unwrap().get_data();
+            let tile_sampler_data = tile_sampler.get_data();
             tile_sampler_data.samples_per_pixel
         };
 
@@ -321,17 +321,17 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
         // Loop over pixels in tile to render them.
         for pixel in tile_bounds {
-            Arc::get_mut(&mut tile_sampler).unwrap().start_pixel(&pixel);
+            tile_sampler.start_pixel(&pixel);
 
-            // Do this check after the StartPixel() call; this keeps the usage of RNG values from (most) Samplers that use
-            // RNGs consistent, which improves reproducability / debugging.
+            // Do this check after the StartPixel() call; this keeps the usage of RNG values from (most) Samplers that
+            // use RNGs consistent, which improves reproducability / debugging.
             if !data.pixel_bounds.contains_exclusive(&pixel) {
                 continue;
             }
 
             loop {
                 // Initialize `CameraSample` for current sample.
-                let camera_sample = Arc::get_mut(&mut tile_sampler).unwrap().get_camera_sample(&pixel);
+                let camera_sample = tile_sampler.get_camera_sample(&pixel);
 
                 // Generate camera ray for current sample.
                 let (mut ray, ray_weight) = { camera.generate_ray_differential(&camera_sample) };
@@ -344,8 +344,11 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                 }
 
                 // Issue warning if unexpected radiance value returned.
-                let tile_sampler_data = Arc::get_mut(&mut tile_sampler).unwrap().get_data();
-                let current_sample_number = tile_sampler_data.current_sample_number();
+                let current_sample_number = {
+                    let tile_sampler_data = tile_sampler.get_data();
+                    tile_sampler_data.current_sample_number()
+                };
+
                 if l.has_nans() {
                     error!(
                         "Not-a-number radiance value returned for pixel
@@ -379,7 +382,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                 // Add camera ray's contribution to image.
                 film_tile.add_sample(camera_sample.p_film, l, ray_weight);
 
-                if !Arc::get_mut(&mut tile_sampler).unwrap().start_next_sample() {
+                if !tile_sampler.start_next_sample() {
                     break;
                 }
             }

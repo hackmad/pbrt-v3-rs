@@ -24,28 +24,26 @@ pub fn uniform_sample_all_lights(
     it: &Interaction,
     bsdf: Option<&BSDF>,
     scene: &Scene,
-    sampler: &mut ArcSampler,
+    sampler: &mut dyn Sampler,
     n_light_samples: &[usize],
     handle_media: bool,
 ) -> Spectrum {
     let mut l = Spectrum::ZERO;
 
     for (j, light) in scene.lights.iter().enumerate() {
-        let sampler_mut = Arc::get_mut(sampler).unwrap();
-
         // Accumulate contribution of j^th light to `l`.
         let n_samples = n_light_samples[j];
 
-        let u_light_array = sampler_mut.get_2d_array(n_samples);
-        let u_scattering_array = sampler_mut.get_2d_array(n_samples);
+        let u_light_array = sampler.get_2d_array(n_samples);
+        let u_scattering_array = sampler.get_2d_array(n_samples);
 
         let nl = u_light_array.len();
         let sl = u_scattering_array.len();
 
         if nl == 0 || sl == 0 {
             // Use a single sample for illumination from `light`.
-            let u_light = sampler_mut.get_2d();
-            let u_scattering = sampler_mut.get_2d();
+            let u_light = sampler.get_2d();
+            let u_scattering = sampler.get_2d();
 
             l += estimate_direct(
                 it,
@@ -80,21 +78,19 @@ pub fn uniform_sample_all_lights(
     l
 }
 
-/// Uniformly sample from one random light in the scene for direct lighting and
-/// multiply result by number of lights to compensate.
+/// Uniformly sample from one random light in the scene for direct lighting and multiply result by number of lights to compensate.
 ///
 /// * `it`            - The intersection information.
 /// * `bsdf`          - The BSDF at the intersection.
 /// * `scene`         - The scene.
 /// * `sampler`       - The sampler.
-/// * `handle_media`  - Indicates whether effects of volumetric attenuation
-///                     should be considered (default to false).
+/// * `handle_media`  - Indicates whether effects of volumetric attenuation should be considered (default to false).
 /// * `light_distrib` - PDF for the light's distribution. (default to None).
 pub fn uniform_sample_one_light(
     it: &Interaction,
     bsdf: Option<&BSDF>,
     scene: &Scene,
-    sampler: &mut ArcSampler,
+    sampler: &mut dyn Sampler,
     handle_media: bool,
     light_distrib: Option<Arc<Distribution1D>>,
 ) -> Spectrum {
@@ -104,25 +100,23 @@ pub fn uniform_sample_one_light(
         return Spectrum::ZERO;
     }
 
-    let sampler_mut = Arc::get_mut(sampler).unwrap();
-
     let (light_num, light_pdf) = if let Some(ld) = light_distrib {
-        let sample = sampler_mut.get_1d();
+        let sample = sampler.get_1d();
         let (ln, pdf, _) = ld.sample_discrete(sample);
         if pdf == 0.0 {
             return Spectrum::ZERO;
         }
         (ln, pdf)
     } else {
-        let sample = sampler_mut.get_1d();
+        let sample = sampler.get_1d();
         let ln = min(sample * n_lights as Float, n_lights as Float - 1.0) as usize;
         let pdf = 1.0 / n_lights as Float;
         (ln, pdf)
     };
 
     let light = Arc::clone(&scene.lights[light_num]);
-    let u_light = sampler_mut.get_2d();
-    let u_scattering = sampler_mut.get_2d();
+    let u_light = sampler.get_2d();
+    let u_scattering = sampler.get_2d();
 
     let estimate = estimate_direct(
         it,
@@ -138,8 +132,7 @@ pub fn uniform_sample_one_light(
     estimate / light_pdf
 }
 
-/// Compute a direct lighting estimate for a light source sample by applying
-/// multiple importance sampling.
+/// Compute a direct lighting estimate for a light source sample by applying multiple importance sampling.
 ///
 /// * `it`           - The intersection information.
 /// * `bsdf`         - The BSDF at the intersection.
@@ -148,10 +141,8 @@ pub fn uniform_sample_one_light(
 /// * `u_light`      - Light sample.
 /// * `scene`        - The scene.
 /// * `sampler`      - The sampler.
-/// * `handle_media` - Indicates whether effects of volumetric attenuation
-///                    should be considered (default to false).
-/// * `specular`     - Indicates whether perfectly specular lobes should be
-///                    considered (default to false).
+/// * `handle_media` - Indicates whether effects of volumetric attenuation should be considered (default to false).
+/// * `specular`     - Indicates whether perfectly specular lobes should be considered (default to false).
 pub fn estimate_direct(
     it: &Interaction,
     bsdf: Option<&BSDF>,
@@ -159,7 +150,7 @@ pub fn estimate_direct(
     light: ArcLight,
     u_light: &Point2f,
     scene: &Scene,
-    sampler: &mut ArcSampler,
+    sampler: &mut dyn Sampler,
     handle_media: bool,
     specular: bool,
 ) -> Spectrum {
