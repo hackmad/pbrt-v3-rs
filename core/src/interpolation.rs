@@ -40,8 +40,7 @@ pub fn catmull_rom(nodes: &[Float], values: &[Float], x: Float) -> Float {
 
 /// Returns the weights and the index offset for Catmull-Rom spline.
 ///
-/// NOTE: The offset can cause out-of-bounds access. It should be added only when
-/// weight != 0.0.
+/// *NOTE*: The offset can cause out-of-bounds access. It should be added only when weight != 0.0.
 ///
 /// * `nodes` - Interpolations nodes.
 /// * `x`     - Variable to interpolate.
@@ -184,11 +183,9 @@ pub fn sample_catmull_rom(x: &[Float], f: &[Float], F: &[Float], u: Float) -> (F
 ///
 /// * `nodes1` - Locations x0, ..., xn where the function `f` is evaluated.
 /// * `nodes2` - Locations y0, ..., yn where the function `f` is evaluated.
-/// * `values` - Matrix of values in row-major order of the function at each
-///              point (`xi`, `yi`).
-/// * `cdf`    - Matrix in row-major order of discrete CDFs where each row is
-///              computed via `integrate_catmull_rom()` on corresponding row
-///              of `values`.
+/// * `values` - Matrix of values in row-major order of the function at each point (`xi`, `yi`).
+/// * `cdf`    - Matrix in row-major order of discrete CDFs where each row is computed via `integrate_catmull_rom()` on
+///              corresponding row of `values`.
 /// * `u`      - Uniform random variate ξ.
 #[allow(non_snake_case)]
 pub fn sample_catmull_rom_2d(
@@ -333,8 +330,7 @@ pub fn integrate_catmull_rom(x: &[Float], values: &[Float]) -> (Vec<Float>, Floa
     (cdf, sum)
 }
 
-/// Inverts the Catmull-Rom spline function (as opposed to the definite
-/// integral).
+/// Inverts the Catmull-Rom spline function (as opposed to the definite integral).
 ///
 /// * `x`      - Samples values.
 /// * `values` - Value of the function.

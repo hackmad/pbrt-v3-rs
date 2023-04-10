@@ -26,9 +26,8 @@ const MORTON_SCALE: Float = (1 << MORTON_BITS) as Float;
 /// * `max_prims_in_node` - Maximum number of primitives in the node.
 /// * `primitive_info`    - Primitive information.
 /// * `total_nodes`       - Used to return total number of nodes.
-/// * `ordered_prims`     - Used to return a list of primitives ordered such that
-///                         primitives in leaf nodes occupy contiguous ranges in
-///                         the vector.
+/// * `ordered_prims`     - Used to return a list of primitives ordered such that primitives in leaf nodes occupy
+///                         contiguous ranges in the vector.
 pub fn build(
     arena: &SharedArena<BVHBuildNode>,
     primitives: &[ArcPrimitive],
@@ -71,8 +70,7 @@ pub fn build(
     let atomic_total = AtomicUsize::new(0);
     let ordered_prims_offset = AtomicUsize::new(0);
 
-    // Need to pre-allocate ordered_prims so just clone reference to first
-    // primitive to use as default.
+    // Need to pre-allocate ordered_prims so just clone reference to first primitive to use as default.
     {
         let mut prims = ordered_prims.lock().expect("Unable to lock ordered_prims");
         prims.resize_with(primitives.len(), || Arc::clone(&primitives[0]));
@@ -143,9 +141,8 @@ fn compute_morton_primitives(primitive_info: &Vec<BVHPrimitiveInfo>, bounds: &Bo
 /// * `max_prims_in_node`    - Maximum number of primitives in the node.
 /// * `primitive_info`       - Primitive information.
 /// * `morton_prims`         - Morton primitives.
-/// * `ordered_prims`        - Used to return a list of primitives ordered such that
-///                            primitives in leaf nodes occupy contiguous ranges in
-///                            the vector.
+/// * `ordered_prims`        - Used to return a list of primitives ordered such that primitives in leaf nodes occupy
+///                            contiguous ranges in the vector.
 /// * `ordered_prims_offset  - Index in `ordered_prims` for start of this node.
 /// * `atomic_total`         - Used to return total of nodes created.
 fn build_treelets(
@@ -209,9 +206,8 @@ fn build_treelets(
     tl.values().map(ArenaArc::clone).collect_vec()
 }
 
-/// Builds a treelet by taking primitives with centroids in some region of space
-/// and successively partitions them with splitting planes that divide the current
-/// region of space into two halves along the center of the region along one of
+/// Builds a treelet by taking primitives with centroids in some region of space and successively partitions them with
+/// splitting planes that divide the current region of space into two halves along the center of the region along one of
 /// the three axes.
 ///
 /// * `arena`                - Shared arena for memory allocations.
@@ -221,10 +217,9 @@ fn build_treelets(
 /// * `morton_prims`         - Morton codes for primitives.
 /// * `n_primitives`         - Number of primitives.
 /// * `total_nodes`          - Total number of nodes.
-/// * `ordered_prims`        - Used to return a list of primitives ordered such that
-///                            primitives in leaf nodes occupy contiguous ranges in
-///                            the vector.
-/// * `ordered_prims_offset  - Index in `ordered_prims` for start of this node.
+/// * `ordered_prims`        - Used to return a list of primitives ordered such that primitives in leaf nodes occupy
+///                            contiguous ranges in the vector.
+/// * `ordered_prims_offset` - Index in `ordered_prims` for start of this node.
 /// * `bit_index`            - The bit index.
 fn emit_lbvh(
     arena: &SharedArena<BVHBuildNode>,
@@ -352,7 +347,7 @@ fn build_upper_sah(
         return ArenaArc::clone(&treelet_roots[start]);
     }
 
-    // Compute bounds of all nodes under this HLBVH node
+    // Compute bounds of all nodes under this HLBVH node.
     let mut bounds = Bounds3f::EMPTY;
     for i in start..end {
         bounds = bounds.union(&treelet_roots[i].bounds);
@@ -367,14 +362,13 @@ fn build_upper_sah(
 
     let dim = centroid_bounds.maximum_extent();
 
-    // FIXME: if this hits, what do we need to do?
-    // Make sure the SAH split below does something... ?
+    // FIXME: if this hits, what do we need to do? Make sure the SAH split below does something... ?
     assert_ne!(centroid_bounds.p_max[dim], centroid_bounds.p_min[dim]);
 
     // Allocate BucketInfo for SAH partition buckets
     let mut buckets = [BucketInfo::default(); N_BUCKETS];
 
-    // Initialize BucketInfo for HLBVH SAH partition buckets
+    // Initialize BucketInfo for HLBVH SAH partition buckets.
     for i in start..end {
         let centroid = (treelet_roots[i].bounds.p_min[dim] + treelet_roots[i].bounds.p_max[dim]) * 0.5;
 
@@ -390,7 +384,7 @@ fn build_upper_sah(
         buckets[b].bounds = buckets[b].bounds.union(&treelet_roots[i].bounds);
     }
 
-    // Compute costs for splitting after each bucket
+    // Compute costs for splitting after each bucket.
     let mut cost = [0.0; N_BUCKETS - 1];
     for (i, cost_i) in cost.iter_mut().enumerate().take(N_BUCKETS - 1) {
         let (mut b0, mut b1) = (Bounds3f::EMPTY, Bounds3f::EMPTY);
@@ -410,7 +404,7 @@ fn build_upper_sah(
             0.125 + (count0 as Float * b0.surface_area() + count1 as Float * b1.surface_area()) / bounds.surface_area();
     }
 
-    // Find bucket to split at that minimizes SAH metric
+    // Find bucket to split at that minimizes SAH metric.
     let mut min_cost = cost[0];
     let mut min_cost_split_bucket = 0;
     for (i, cost_i) in cost.iter().enumerate().take(N_BUCKETS - 1).skip(1) {
@@ -420,7 +414,7 @@ fn build_upper_sah(
         }
     }
 
-    // Split nodes and create interior HLBVH SAH node
+    // Split nodes and create interior HLBVH SAH node.
     let roots = treelet_roots[start..end].iter_mut();
     let split = itertools::partition(roots, |node| {
         let centroid = (node.bounds.p_min[dim] + node.bounds.p_max[dim]) * 0.5;

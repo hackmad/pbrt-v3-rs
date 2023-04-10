@@ -72,10 +72,9 @@ pub fn latin_hypercube(rng: &mut RNG, n_samples: usize, n_dim: usize) -> Vec<Flo
     samples
 }
 
-/// Sample points inside a unit circle by sampling a square of length 2 and
-/// rejecting points outside the circle.
+/// Sample points inside a unit circle by sampling a square of length 2 and rejecting points outside the circle.
 ///
-/// * `rng`       - Random number generator.
+/// * `rng` - Random number generator.
 pub fn rejection_sample_disk(rng: &mut RNG) -> Point2f {
     loop {
         let rx = rng.uniform_float();
@@ -132,9 +131,8 @@ pub fn uniform_sample_disk(u: &Point2f) -> Point2f {
     Point2f::new(r * cos(theta), r * sin(theta))
 }
 
-/// Sample a point on a unit disk by mapping from a unit square to the unit
-/// circle. The concentric mapping takes points in [-1, 1]^2 to unit disk by
-/// uniformly mapping concentric squares to concentric circles.
+/// Sample a point on a unit disk by mapping from a unit square to the unit circle. The concentric mapping takes points
+/// in [-1, 1]^2 to unit disk by uniformly mapping concentric squares to concentric circles.
 ///
 /// * `u` - The random sample point.
 pub fn concentric_sample_disk(u: &Point2f) -> Point2f {
@@ -150,17 +148,13 @@ pub fn concentric_sample_disk(u: &Point2f) -> Point2f {
     let (r, theta) = if abs(u_offset.x) > abs(u_offset.y) {
         (u_offset.x, PI_OVER_FOUR * (u_offset.y / u_offset.x))
     } else {
-        (
-            u_offset.y,
-            PI_OVER_TWO - PI_OVER_FOUR * (u_offset.x / u_offset.y),
-        )
+        (u_offset.y, PI_OVER_TWO - PI_OVER_FOUR * (u_offset.x / u_offset.y))
     };
 
     r * Point2f::new(cos(theta), sin(theta))
 }
 
-/// Uniformly sample a direction from a cone of directions about the `(0, 0, 1)`
-/// axis.
+/// Uniformly sample a direction from a cone of directions about the `(0, 0, 1)` axis.
 ///
 /// * `u`             - The random sample point.
 /// * `cos_theta_max` - Cosine of the maximum angle of the beam.

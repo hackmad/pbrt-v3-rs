@@ -120,9 +120,8 @@ impl GraphicsState {
     pub fn get_material_for_shape(&self, geom_params: &ParamSet) -> Option<ArcMaterial> {
         if let Some(current_material) = self.current_material.as_ref() {
             if self.shape_may_set_material_parameters(geom_params) {
-                // Only create a unique material for the shape if the shape's
-                // parameters are (apparently) going to provide values for some of
-                // the material parameters.
+                // Only create a unique material for the shape if the shape's parameters are (apparently) going to
+                // provide values for some of the material parameters.
                 let mp = TextureParams::new(
                     geom_params.clone(),
                     current_material.params.clone(),
@@ -138,15 +137,14 @@ impl GraphicsState {
         }
     }
 
-    /// Attempt to determine if the ParamSet for a shape may provide a value for its material's parameters. Unfortunately,
-    /// materials don't provide an explicit representation of their parameters that we can query and / cross-reference
-    /// with the parameter values available from the shape.
+    /// Attempt to determine if the ParamSet for a shape may provide a value for its material's parameters.
+    /// Unfortunately, materials don't provide an explicit representation of their parameters that we can query and /
+    /// cross-reference with the parameter values available from the shape.
     ///
     /// Therefore, we'll apply some "heuristics".
     fn shape_may_set_material_parameters(&self, ps: &ParamSet) -> bool {
         for name in ps.textures.keys() {
-            // Any texture other than one for an alpha mask is almost certainly
-            // for a Material (or is unused!).
+            // Any texture other than one for an alpha mask is almost certainly for a Material (or is unused!).
             if name != "alpha" && name != "shadowalpha" {
                 return true;
             }
@@ -159,18 +157,15 @@ impl GraphicsState {
             }
         }
 
-        // Extra special case strings, since plymesh uses "filename", curve "type",
-        // and loopsubdiv "scheme".
+        // Extra special case strings, since plymesh uses "filename", curve "type", and loopsubdiv "scheme".
         for (name, param) in ps.strings.iter() {
             if param.values.len() == 1 && name != "filename" && name != "type" && name != "scheme" {
                 return true;
             }
         }
 
-        // For all other parameter types, if there is a single value of the
-        // parameter, assume it may be for the material. This should be valid
-        // (if conservative), since no materials currently take array
-        // parameters.
+        // For all other parameter types, if there is a single value of the parameter, assume it may be for the
+        // material. This should be valid (if conservative), since no materials currently take array parameters.
         for param in ps.bools.values() {
             if param.values.len() == 1 {
                 return true;
@@ -526,7 +521,7 @@ impl GraphicsState {
 
     /// Creates an area light.
     ///
-    /// NOTE: Upcasting from AreaLight -> Light is not possible. So we return / Result<ArcLight, String>.
+    /// *NOTE*: Upcasting from `AreaLight` -> `Light` is not possible. So we return `Result<ArcLight, String>`.
     ///
     /// * `name`             - Name.
     /// * `light2world`      - Light to world space transform.

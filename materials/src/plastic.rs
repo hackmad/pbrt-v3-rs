@@ -12,9 +12,8 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements plastic material as a mixture of a diffuse and glossy scattering
-/// function with parameters controlling the particular colors and specular
-/// highlight size.
+/// Implements plastic material as a mixture of a diffuse and glossy scattering function with parameters controlling the
+/// particular colors and specular highlight size.
 pub struct PlasticMaterial {
     /// Spectral diffuse reflection.
     kd: ArcTexture<Spectrum>,
@@ -28,9 +27,8 @@ pub struct PlasticMaterial {
     /// Bump map.
     bump_map: Option<ArcTexture<Float>>,
 
-    /// Remap roughness value to [0, 1] where higher values represent larger
-    /// highlights. If this is `false`, use the microfacet distributions `alpha`
-    /// parameter.
+    /// Remap roughness value to [0, 1] where higher values represent larger highlights. If this is `false`, use the
+    /// microfacet distributions `alpha` parameter.
     remap_roughness: bool,
 }
 
@@ -40,9 +38,8 @@ impl PlasticMaterial {
     /// * `kd`              - Spectral diffuse reflection.
     /// * `ks`              - Spectral specular reflection.
     /// * `roughness`       - Roughness.
-    /// * `remap_roughness` - Remap roughness value to [0, 1] where higher values
-    ///                       represent larger highlights. If this is `false`,
-    ///                       use the microfacet distributions `alpha` parameter.
+    /// * `remap_roughness` - Remap roughness value to [0, 1] where higher values represent larger highlights. If this
+    ///                       is `false`, use the microfacet distributions `alpha` parameter.
     /// * `bump_map`        - Optional bump map.
     pub fn new(
         kd: ArcTexture<Spectrum>,
@@ -62,15 +59,13 @@ impl PlasticMaterial {
 }
 
 impl Material for PlasticMaterial {
-    /// Initializes representations of the light-scattering properties of the
-    /// material at the intersection point on the surface.
+    /// Initializes representations of the light-scattering properties of the material at the intersection point on the
+    /// surface.
     ///
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
-    /// * `allow_multiple_lobes` - Indicates whether the material should use
-    ///                            BxDFs that aggregate multiple types of
-    ///                            scattering into a single BxDF when such BxDFs
-    ///                            are available (ignored).
+    /// * `allow_multiple_lobes` - Indicates whether the material should use BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene>(
@@ -118,16 +113,11 @@ impl From<&TextureParams> for PlasticMaterial {
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
-        let kd = tp.get_spectrum_texture_or_else("Kd", Spectrum::new(0.25), |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
+        let kd = tp.get_spectrum_texture_or_else("Kd", Spectrum::new(0.25), |v| Arc::new(ConstantTexture::new(v)));
 
-        let ks = tp.get_spectrum_texture_or_else("Ks", Spectrum::new(0.25), |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
+        let ks = tp.get_spectrum_texture_or_else("Ks", Spectrum::new(0.25), |v| Arc::new(ConstantTexture::new(v)));
 
-        let roughness =
-            tp.get_float_texture_or_else("roughness", 0.1, |v| Arc::new(ConstantTexture::new(v)));
+        let roughness = tp.get_float_texture_or_else("roughness", 0.1, |v| Arc::new(ConstantTexture::new(v)));
 
         let bump_map = tp.get_float_texture_or_none("bumpmap");
         let remap_roughness = tp.find_bool("remaproughness", true);

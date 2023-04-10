@@ -6,8 +6,7 @@ use std::collections::HashSet;
 use std::mem::MaybeUninit;
 use std::sync::Arc;
 
-/// Allocates and stores a single `Transform` reference for each unique
-/// transformation.
+/// Allocates and stores a single `Transform` reference for each unique transformation.
 pub struct TransformCache {
     /// Caches the transformations.
     transforms: HashSet<ArcTransform>,
@@ -25,8 +24,8 @@ impl TransformCache {
         }
     }
 
-    /// Lookup a reference to a `Transform`. If it is cached, return a
-    /// reference to it. Otherwise, insert it and return the cloned reference.
+    /// Lookup a reference to a `Transform`. If it is cached, return a reference to it. Otherwise, insert it and return
+    /// the cloned reference.
     ///
     /// * `t` - Reference to a transform to lookup.
     pub fn lookup(&mut self, t: &Transform) -> ArcTransform {
@@ -52,12 +51,9 @@ impl TransformCache {
 ///
 /// * `uninit` - Uninitialized Transform.
 /// * `source` - Transform to use for initialization.
-fn initialize_data<'a>(
-    uninit: &'a mut MaybeUninit<Transform>,
-    source: &Transform,
-) -> &'a Transform {
-    // SAFETY: uninit contains Transform and source points to Transform; so same size.
-    //         Memory arena allocated space for a Transform.
+fn initialize_data<'a>(uninit: &'a mut MaybeUninit<Transform>, source: &Transform) -> &'a Transform {
+    // SAFETY: `uninit` contains `Transform` and source points to `Transform`; so same size.
+    //         Memory arena allocated space for a `Transform`.
     unsafe {
         let ptr = uninit.as_mut_ptr();
         std::ptr::copy(source, ptr, 1);

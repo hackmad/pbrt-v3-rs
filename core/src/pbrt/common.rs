@@ -161,7 +161,8 @@ pub fn inv_gamma_correct(value: Float) -> Float {
     }
 }
 
-/// Linearly interpolate between two points for parameters in [0, 1] and extrapolate for parameters outside that interval.
+/// Linearly interpolate between two points for parameters in [0, 1] and extrapolate for parameters outside that
+/// interval.
 ///
 /// * `t` - Parameter.
 /// * `p0` - Point at t=0.
@@ -175,7 +176,8 @@ where
     (1.0 - t) * p0 + t * p1
 }
 
-/// Convert a 32-bit floating point value to its constituent bits and return the representation as 32-bit unsigned integer.
+/// Convert a 32-bit floating point value to its constituent bits and return the representation as 32-bit unsigned
+/// integer.
 ///
 /// * `f` - The 32-bit floating point number.
 pub fn float_to_bits(f: f32) -> u32 {

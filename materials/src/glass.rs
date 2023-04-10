@@ -12,8 +12,8 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements perfect or glossy specular reflection and transmission, weighted
-/// by Fresnel terms for accurate angular-dependent variation.
+/// Implements perfect or glossy specular reflection and transmission, weighted by Fresnel terms for accurate
+/// angular-dependent variation.
 pub struct GlassMaterial {
     /// Reflectivity of the surface.
     kr: ArcTexture<Spectrum>,
@@ -29,18 +29,16 @@ pub struct GlassMaterial {
     /// reflection is modeled.
     v_roughness: ArcTexture<Float>,
 
-    /// The index of refraction of the inside of the object.
-    /// Implicitly assumes that the exterior of objects is a vacuum, with IOR of 1.
+    /// The index of refraction of the inside of the object. Implicitly assumes that the exterior of objects is a
+    /// vacuum, with IOR of 1.
     index: ArcTexture<Float>,
 
     /// Bump map.
     bump_map: Option<ArcTexture<Float>>,
 
-    /// If true, roughness values are expected to be in the range [0,1], and are
-    /// remapped to microfacet distribution function parameter values that range
-    /// from near-perfect-specular at 0 to very rough at 1. Otherwise the
-    /// roughness parameters are used directly for the alpha parameters of the
-    /// microfacet distribution function.
+    /// If true, roughness values are expected to be in the range [0,1], and are remapped to microfacet distribution
+    /// function parameter values that range from near-perfect-specular at 0 to very rough at 1. Otherwise the roughness
+    /// parameters are used directly for the alpha parameters of the microfacet distribution function.
     remap_roughness: bool,
 }
 
@@ -49,19 +47,14 @@ impl GlassMaterial {
     ///
     /// * `kr`              - Reflectivity of the surface.
     /// * `kt`              - Transmissibity of the surface.
-    /// * `u_roughness`     - Microfacet roughness in the u direction. If zero,
-    ///                       perfect specular reflection is modeled.
-    /// * `v_roughness`     - Microfacet roughness in the u direction. If zero,
-    ///                       perfect specular reflection is modeled.
+    /// * `u_roughness`     - Microfacet roughness in the u direction. If zero, perfect specular reflection is modeled.
+    /// * `v_roughness`     - Microfacet roughness in the u direction. If zero, perfect specular reflection is modeled.
     /// * `index`           - Bump map.
     /// * `bump_map`        - Optional bump map.
-    /// * `remap_roughness` - If true, roughness values are expected to be in
-    ///                       the range [0,1], and are remapped to microfacet
-    ///                       distribution function parameter values that range
-    ///                       from near-perfect-specular at 0 to very rough at 1.
-    ///                       Otherwise the roughness parameters are used directly
-    ///                       for the alpha parameters of the microfacet
-    ///                       distribution function.
+    /// * `remap_roughness` - If true, roughness values are expected to be in the range [0,1], and are remapped to
+    ///                       microfacet distribution function parameter values that range from near-perfect-specular at
+    ///                       0 to very rough at 1. Otherwise the roughness parameters are used directly for the alpha
+    ///                       parameters of the microfacet distribution function.
     pub fn new(
         kr: ArcTexture<Spectrum>,
         kt: ArcTexture<Spectrum>,
@@ -84,15 +77,13 @@ impl GlassMaterial {
 }
 
 impl Material for GlassMaterial {
-    /// Initializes representations of the light-scattering properties of the
-    /// material at the intersection point on the surface.
+    /// Initializes representations of the light-scattering properties of the material at the intersection point on the
+    /// surface.
     ///
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
-    /// * `allow_multiple_lobes` - Indicates whether the material should use
-    ///                            BxDFs that aggregate multiple types of
-    ///                            scattering into a single BxDF when such BxDFs
-    ///                            are available (ignored).
+    /// * `allow_multiple_lobes` - Indicates whether the material should use BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene>(
@@ -160,38 +151,22 @@ impl From<&TextureParams> for GlassMaterial {
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
-        let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::ONE, |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
+        let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::ONE, |v| Arc::new(ConstantTexture::new(v)));
 
-        let kt = tp.get_spectrum_texture_or_else("Kt", Spectrum::ONE, |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
+        let kt = tp.get_spectrum_texture_or_else("Kt", Spectrum::ONE, |v| Arc::new(ConstantTexture::new(v)));
 
         let eta = match tp.get_float_texture("eta") {
-            None => {
-                tp.get_float_texture_or_else("index", 1.5, |v| Arc::new(ConstantTexture::new(v)))
-            }
+            None => tp.get_float_texture_or_else("index", 1.5, |v| Arc::new(ConstantTexture::new(v))),
             Some(tex) => tex,
         };
 
-        let u_roughness =
-            tp.get_float_texture_or_else("uroughness", 0.0, |v| Arc::new(ConstantTexture::new(v)));
+        let u_roughness = tp.get_float_texture_or_else("uroughness", 0.0, |v| Arc::new(ConstantTexture::new(v)));
 
-        let v_roughness =
-            tp.get_float_texture_or_else("vroughness", 0.0, |v| Arc::new(ConstantTexture::new(v)));
+        let v_roughness = tp.get_float_texture_or_else("vroughness", 0.0, |v| Arc::new(ConstantTexture::new(v)));
 
         let bump_map = tp.get_float_texture_or_none("bumpmap");
         let remap_roughness = tp.find_bool("remaproughness", true);
 
-        Self::new(
-            kr,
-            kt,
-            u_roughness,
-            v_roughness,
-            eta,
-            bump_map,
-            remap_roughness,
-        )
+        Self::new(kr, kt, u_roughness, v_roughness, eta, bump_map, remap_roughness)
     }
 }

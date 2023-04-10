@@ -8,20 +8,17 @@ use core::pbrt::*;
 use core::sampler::*;
 use core::spectrum::*;
 
-/// Implements a homogeneous medium representing a region of space with constant
-/// σa and σs values throughout its extent.
+/// Implements a homogeneous medium representing a region of space with constant σa and σs values throughout its extent.
 pub struct HomogeneousMedium {
-    /// Absorption cross section `σa` is the probability density that light is
-    /// absorbed per unit distance traveled in the medium
+    /// Absorption cross section `σa` is the probability density that light is absorbed per unit distance traveled in
+    /// the medium
     _sigma_a: Spectrum,
 
-    /// Scattering coefficient `σs` is the probability of an out-scattering
-    /// event occurring per unit distance
+    /// Scattering coefficient `σs` is the probability of an out-scattering event occurring per unit distance
     sigma_s: Spectrum,
 
-    /// Total reduction in radiance due to absorption and out-scattering
-    /// `σt = σs + σa`. This combined effect of absorption and out-scattering is
-    /// called attenuation or extinction.
+    /// Total reduction in radiance due to absorption and out-scattering `σt = σs + σa`. This combined effect of
+    /// absorption and out-scattering is called attenuation or extinction.
     sigma_t: Spectrum,
 
     /// The asymmetry parameter for Henyey-Greenstein phase function.
@@ -33,8 +30,7 @@ impl HomogeneousMedium {
     ///
     /// * `sigma_a` - Absorption cross section `σa`.
     /// * `sigma_s` - Scattering coefficient `σs`.
-    /// * `g`       - The asymmetry parameter for Henyey-Greenstein phase
-    ///               function.
+    /// * `g`       - The asymmetry parameter for Henyey-Greenstein phase function.
     pub fn new(sigma_a: Spectrum, sigma_s: Spectrum, g: Float) -> Self {
         Self {
             _sigma_a: sigma_a,
@@ -56,12 +52,11 @@ impl Medium for HomogeneousMedium {
 
     /// Samples a medium scattering interaction along a world-space ray.
     ///
-    /// The ray will generally have been intersected against the scene geometry;
-    /// thus, implementations of this method shouldn’t ever sample a medium
-    /// interaction at a point on the ray beyond its `t_max` value.
+    /// The ray will generally have been intersected against the scene geometry; thus, implementations of this method
+    /// shouldn’t ever sample a medium interaction at a point on the ray beyond its `t_max` value.
     ///
-    /// NOTE: Calling code will need to assign this medium as we cannot pass
-    /// back and `ArcMedium` out of here for `Self`.
+    /// *NOTE*: Calling code will need to assign this medium as we cannot pass back and `ArcMedium` out of here for
+    /// `Self`.
     ///
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
@@ -88,10 +83,10 @@ impl Medium for HomogeneousMedium {
             None
         };
 
-        // Compute the transmittance and sampling density
+        // Compute the transmittance and sampling density.
         let tr = (-self.sigma_t * min(t, Float::MAX) * ray.d.length()).exp();
 
-        // Return weighting factor for scattering from homogeneous medium
+        // Return weighting factor for scattering from homogeneous medium.
         let density = if sampled_medium { self.sigma_t * tr } else { tr };
 
         let mut pdf = 0.0;

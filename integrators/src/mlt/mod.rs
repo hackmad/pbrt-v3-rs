@@ -52,7 +52,7 @@ impl MLTIntegrator {
     /// * `camera`                 - The camera.
     /// * `max_depth`              - Maximum path depth.
     /// * `n_bootstrap`            - Sets the number of bootstrapping samples to use to seed the iterations and compute
-    ///   the integral of the scalar contribution function.
+    ///                              the integral of the scalar contribution function.
     /// * `n_chains`               - Number of parallel Markov chains.
     /// * `mutations_per_pixel`    - Number of iterations that MLT (on average!) spends in each pixel.
     /// * `sigma`                  - Controls the size of “small step” mutations.
@@ -83,8 +83,8 @@ impl MLTIntegrator {
     /// * `scene` - The scene.
     /// * `light_distr`          - Light probabilities.
     /// * `light_to_distr_index` - Map of light distribution indices.
-    /// * `sampler`              - The `MLTSampler`.
-    /// * `depth`                - The path depth.
+    /// * `sampler`              - Primary Sample Space Sampler.
+    /// * `depth`                - Path depth.
     fn l(
         &self,
         scene: &Scene,

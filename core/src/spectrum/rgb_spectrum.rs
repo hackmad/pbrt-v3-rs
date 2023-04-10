@@ -4,15 +4,12 @@ use super::*;
 use crate::pbrt::*;
 use std::convert::TryInto;
 use std::fmt;
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
-};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// Number of spectral samples to use for `RGBSpectrum`.
 pub const RGB_SAMPLES: usize = 3;
 
-/// RGBSpectrum represents an spectral power distribution (SPD) with
-/// a weighted sum of red, green and blue components.
+/// RGBSpectrum represents an spectral power distribution (SPD) with a weighted sum of red, green and blue components.
 #[derive(Copy, Clone, PartialEq)]
 pub struct RGBSpectrum {
     /// The sampled spectral values.
@@ -20,14 +17,11 @@ pub struct RGBSpectrum {
 }
 
 impl RGBSpectrum {
-    /// Create a new `RGBSpectrum` with a constant value across all
-    /// wavelengths.
+    /// Create a new `RGBSpectrum` with a constant value across all wavelengths.
     ///
     /// * `v` - Constant value.
     pub fn new(v: Float) -> Self {
-        let ret = Self {
-            c: [v; RGB_SAMPLES],
-        };
+        let ret = Self { c: [v; RGB_SAMPLES] };
         assert!(!ret.has_nans());
         ret
     }
@@ -47,8 +41,7 @@ impl Default for RGBSpectrum {
 }
 
 impl From<Float> for RGBSpectrum {
-    /// Create a new `RGBSpectrum` with a constant value across all
-    /// wavelengths.
+    /// Create a new `RGBSpectrum` with a constant value across all wavelengths.
     ///
     /// * `v` - Constant value.
     fn from(v: Float) -> Self {
@@ -63,11 +56,7 @@ impl From<Vec<Float>> for RGBSpectrum {
     fn from(c: Vec<Float>) -> Self {
         let ret = Self {
             c: c.try_into().unwrap_or_else(|v: Vec<Float>| {
-                panic!(
-                    "Expected a Vec of length {} but it was {}",
-                    RGB_SAMPLES,
-                    v.len()
-                )
+                panic!("Expected a Vec of length {} but it was {}", RGB_SAMPLES, v.len())
             }),
         };
         assert!(!ret.has_nans());
@@ -105,8 +94,7 @@ impl From<&Vec<Sample>> for RGBSpectrum {
             xyz[2] += val * CIE_Z[i];
         }
 
-        let scale =
-            (CIE_LAMBDA_END - CIE_LAMBDA_START) as Float / (CIE_Y_INTEGRAL * CIE_SAMPLES as Float);
+        let scale = (CIE_LAMBDA_END - CIE_LAMBDA_START) as Float / (CIE_Y_INTEGRAL * CIE_SAMPLES as Float);
         xyz[0] *= scale;
         xyz[1] *= scale;
         xyz[2] *= scale;
@@ -129,8 +117,7 @@ impl CoefficientSpectrum for RGBSpectrum {
     /// Converts XYZ values to a full SPD.
     ///
     /// * `xyz`           - XYZ colour value.
-    /// * `spectrum_type` - Indicates type of colour value. If `None`,
-    ///                     defaults to `SpectrumType::Reflectance`.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`. Defaults to `SpectrumType::Reflectance`.
     fn from_xyz(xyz: &[Float; 3], _spectrum_type: Option<SpectrumType>) -> Self {
         Self { c: xyz_to_rgb(xyz) }
     }
@@ -148,8 +135,7 @@ impl CoefficientSpectrum for RGBSpectrum {
     /// Converts RGB values to a full SPD.
     ///
     /// * `rgb`           - RGB colour value.
-    /// * `spectrum_type` - Indicates type of colour value. If `None`,
-    ///                     defaults to `SpectrumType::Reflectance`.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`. Defaults to `SpectrumType::Reflectance`.
     fn from_rgb(rgb: &[Float; 3], _spectrum_type: Option<SpectrumType>) -> Self {
         Self {
             c: [rgb[0], rgb[1], rgb[2]],
@@ -330,8 +316,7 @@ impl MulAssign<Float> for RGBSpectrum {
 impl Div for RGBSpectrum {
     type Output = Self;
 
-    /// Divides the corresponding sample values from another
-    /// `RGBSpectrum`.
+    /// Divides the corresponding sample values from another `RGBSpectrum`.
     ///
     /// * `other` - The other `RGBSpectrum`.
     fn div(self, other: Self) -> Self::Output {

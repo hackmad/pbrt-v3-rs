@@ -18,8 +18,7 @@ pub struct EnvironmentCamera {
 impl EnvironmentCamera {
     /// Create a new environment camera.
     ///
-    /// * `camera_to_world` - Animated transformation describing the camera's
-    ///                       motion in the scene.
+    /// * `camera_to_world` - Animated transformation describing the camera's motion in the scene.
     /// * `shutter_open`    - Time when shutter is open.
     /// * `shutter_close`   - Time when shutter is closed.
     /// * `film`            - The film to capture the rendered image.
@@ -43,9 +42,8 @@ impl Camera for EnvironmentCamera {
         &self.data
     }
 
-    /// Returns a ray corresponding to a given sample. It also returns, a floating
-    /// point value that affects how much the radiance arriving at the film plane
-    /// will contribute to final image.
+    /// Returns a ray corresponding to a given sample. It also returns, a floating point value that affects how much the
+    /// radiance arriving at the film plane will contribute to final image.
     ///
     /// * `sample` - The sample.
     fn generate_ray(&self, sample: &CameraSample) -> (Ray, Float) {
@@ -65,8 +63,7 @@ impl Camera for EnvironmentCamera {
         (self.data.camera_to_world.transform_ray(&ray), 1.0)
     }
 
-    /// Return the spatial and directional PDFs, as a tuple, for sampling a
-    /// particular ray leaving the camera.
+    /// Return the spatial and directional PDFs, as a tuple, for sampling a particular ray leaving the camera.
     ///
     /// * `ray` - The ray.
     fn pdf_we(&self, _ray: &Ray) -> PDFResult {
@@ -75,11 +72,9 @@ impl Camera for EnvironmentCamera {
 }
 
 impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for EnvironmentCamera {
-    /// Create a `EnvironmentCamera` from given parameter set, animated transform,
-    /// film and medium.
+    /// Create a `EnvironmentCamera` from given parameter set, animated transform, film and medium.
     ///
-    /// * `p` - A tuple containing  parameter set, animated transform, film and
-    ///         medium.
+    /// * `p` - A tuple containing  parameter set, animated transform, film and medium.
     fn from(p: (&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)) -> Self {
         let (params, cam2world, film, medium) = p;
 

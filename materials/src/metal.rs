@@ -12,8 +12,7 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements metal material, based on the Fresnel equations for conductors and
-/// the Torrance–Sparrow model.
+/// Implements metal material, based on the Fresnel equations for conductors and the Torrance–Sparrow model.
 pub struct MetalMaterial {
     /// Index of refraction to use in computing the material's reflectance.
     index: ArcTexture<Spectrum>,
@@ -24,19 +23,15 @@ pub struct MetalMaterial {
     /// Roughness of the surface.
     roughness: ArcTexture<Float>,
 
-    /// Optional microfacet roughness in the u direction. If zero, perfect
-    /// specular reflection is modeled.
+    /// Optional microfacet roughness in the u direction. If zero, perfect specular reflection is modeled.
     u_roughness: Option<ArcTexture<Float>>,
 
-    /// Optional microfacet roughness in the v direction. If zero, perfect
-    /// specular reflection is modeled.
+    /// Optional microfacet roughness in the v direction. If zero, perfect specular reflection is modeled.
     v_roughness: Option<ArcTexture<Float>>,
 
-    /// If true, roughness values are expected to be in the range [0,1], and are
-    /// remapped to microfacet distribution function parameter values that range
-    /// from near-perfect-specular at 0 to very rough at 1. Otherwise the
-    /// roughness parameters are used directly for the alpha parameters of the
-    /// microfacet distribution function.
+    /// If true, roughness values are expected to be in the range [0,1], and are remapped to microfacet distribution
+    /// function parameter values that range from near-perfect-specular at 0 to very rough at 1. Otherwise the roughness
+    /// parameters are used directly for the alpha parameters of the microfacet distribution function.
     remap_roughness: bool,
 
     /// Bump map.
@@ -46,20 +41,16 @@ pub struct MetalMaterial {
 impl MetalMaterial {
     /// Create a new `MetalMaterial`.
     ///
-    /// `index`           - Index of refraction to use in computing the material's
-    ///                     reflectance.
-    /// `k`               - Absorption coefficient to use in computing the material's
-    ///                     reflectance.
+    /// `index`           - Index of refraction to use in computing the material's reflectance.
+    /// `k`               - Absorption coefficient to use in computing the material's reflectance.
     /// `roughness`       - Roughness of the surface.
-    /// `u_roughness`     - Optional microfacet roughness in the u direction. If
-    ///                     zero, perfect specular reflection is modeled.
-    /// `v_roughness`     - Optional microfacet roughness in the v direction. If
-    ///                     zero, perfect specular reflection is modeled.
-    /// `remap_roughness` - If true, roughness values are expected to be in the
-    ///                     range [0,1], and are remapped to microfacet distribution
-    ///                     function parameter values that range from
-    ///                     near-perfect-specular at 0 to very rough at 1. Otherwise
-    ///                     the roughness parameters are used directly for the alpha
+    /// `u_roughness`     - Optional microfacet roughness in the u direction. If zero, perfect specular reflection is
+    ///                     modeled.
+    /// `v_roughness`     - Optional microfacet roughness in the v direction. If zero, perfect specular reflection is
+    ///                     modeled.
+    /// `remap_roughness` - If true, roughness values are expected to be in the range [0,1], and are remapped to
+    ///                     microfacet distribution function parameter values that range from near-perfect-specular at
+    ///                     0 to very rough at 1. Otherwise the roughness parameters are used directly for the alpha
     ///                     parameters of the microfacet distribution function.
     /// * `bump_map`      - Optional bump map.
     pub fn new(
@@ -89,10 +80,8 @@ impl Material for MetalMaterial {
     ///
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
-    /// * `allow_multiple_lobes` - Indicates whether the material should use
-    ///                            BxDFs that aggregate multiple types of
-    ///                            scattering into a single BxDF when such BxDFs
-    ///                            are available (ignored).
+    /// * `allow_multiple_lobes` - Indicates whether the material should use BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene>(
@@ -148,33 +137,22 @@ impl From<&TextureParams> for MetalMaterial {
             .map(|i| Sample::new(COPPER_WAVE_LENGTHS[i], COPPER_N[i]))
             .collect();
         let copper_n = Spectrum::from(&copper_n_samples);
-        let eta =
-            tp.get_spectrum_texture_or_else("eta", copper_n, |v| Arc::new(ConstantTexture::new(v)));
+        let eta = tp.get_spectrum_texture_or_else("eta", copper_n, |v| Arc::new(ConstantTexture::new(v)));
 
         let copper_k_samples = (0..COPPER_SAMPLES)
             .map(|i| Sample::new(COPPER_WAVE_LENGTHS[i], COPPER_K[i]))
             .collect();
         let copper_k = Spectrum::from(&copper_k_samples);
-        let k =
-            tp.get_spectrum_texture_or_else("k", copper_k, |v| Arc::new(ConstantTexture::new(v)));
+        let k = tp.get_spectrum_texture_or_else("k", copper_k, |v| Arc::new(ConstantTexture::new(v)));
 
-        let roughness =
-            tp.get_float_texture_or_else("roughness", 0.01, |v| Arc::new(ConstantTexture::new(v)));
+        let roughness = tp.get_float_texture_or_else("roughness", 0.01, |v| Arc::new(ConstantTexture::new(v)));
         let u_roughness = tp.get_float_texture_or_none("uroughness");
         let v_roughness = tp.get_float_texture_or_none("vroughness");
 
         let bump_map = tp.get_float_texture_or_none("bumpmap");
         let remap_roughness = tp.find_bool("remaproughness", true);
 
-        Self::new(
-            eta,
-            k,
-            roughness,
-            u_roughness,
-            v_roughness,
-            remap_roughness,
-            bump_map,
-        )
+        Self::new(eta, k, roughness, u_roughness, v_roughness, remap_roughness, bump_map)
     }
 }
 

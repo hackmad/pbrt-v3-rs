@@ -53,7 +53,7 @@ impl Ray {
     /// * `t_max`         - Maximum extent of the ray.
     /// * `time`          - Time value.
     /// * `differentials` - Auxilliary rays offset by one sample in x and y direction.
-    /// * `medium` - Medium containing origin `o`.
+    /// * `medium`        - Medium containing origin `o`.
     pub fn new_with_differentials(
         o: Point3f,
         d: Vector3f,

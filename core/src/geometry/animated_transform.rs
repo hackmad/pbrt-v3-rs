@@ -113,7 +113,7 @@ impl AnimatedTransform {
                 let s121 = s[1].m[2][1];
                 let s122 = s[1].m[2][2];
 
-                c1[0] = derivative_term(
+                c1[0] = DerivativeTerm::new(
                     -t0x + t1x,
                     (-1.0 + q1y * q1y + q1z * q1z + qperpy * qperpy + qperpz * qperpz) * s000 + q1w * q1z * s010
                         - qperpx * qperpy * s010
@@ -171,7 +171,7 @@ impl AnimatedTransform {
                         + q1x * (-(q1y * s012) - q1z * s022 + q1y * s112 + q1z * s122),
                 );
 
-                c2[0] = derivative_term(
+                c2[0] = DerivativeTerm::new(
                     0.0,
                     -(qperpy * qperpy * s000) - qperpz * qperpz * s000 + qperpx * qperpy * s010
                         - qperpw * qperpz * s010
@@ -244,7 +244,7 @@ impl AnimatedTransform {
                                 - 2.0 * (2.0 * qperpz * s002 + qperpw * s012 - qperpx * s022) * theta),
                 );
 
-                c3[0] = derivative_term(
+                c3[0] = DerivativeTerm::new(
                     0.0,
                     -2.0 * (q1x * qperpy * s010 - q1w * qperpz * s010 + q1w * qperpy * s020 + q1x * qperpz * s020
                         - q1x * qperpy * s110
@@ -296,7 +296,7 @@ impl AnimatedTransform {
                         * theta,
                 );
 
-                c4[0] = derivative_term(
+                c4[0] = DerivativeTerm::new(
                     0.0,
                     -(q1x * qperpy * s010) + q1w * qperpz * s010 - q1w * qperpy * s020 - q1x * qperpz * s020
                         + q1x * qperpy * s110
@@ -384,7 +384,7 @@ impl AnimatedTransform {
                                 - 2.0 * q1x * s022 * theta),
                 );
 
-                c5[0] = derivative_term(
+                c5[0] = DerivativeTerm::new(
                     0.0,
                     2.0 * (qperpy * qperpy * s000 + qperpz * qperpz * s000 - qperpx * qperpy * s010
                         + qperpw * qperpz * s010
@@ -433,7 +433,7 @@ impl AnimatedTransform {
                         * theta,
                 );
 
-                c1[1] = derivative_term(
+                c1[1] = DerivativeTerm::new(
                     -t0y + t1y,
                     -(qperpx * qperpy * s000) - qperpw * qperpz * s000 - s010
                         + q1z * q1z * s010
@@ -494,7 +494,7 @@ impl AnimatedTransform {
                         + qperpy * qperpz * s122,
                 );
 
-                c2[1] = derivative_term(
+                c2[1] = DerivativeTerm::new(
                     0.0,
                     qperpx * qperpy * s000 + qperpw * qperpz * s000 + q1z * q1z * s010
                         - qperpx * qperpx * s010
@@ -576,7 +576,7 @@ impl AnimatedTransform {
                             * (-(q1z * s002) + q1z * s102 + 2.0 * qperpz * s002 * theta - 2.0 * qperpx * s022 * theta),
                 );
 
-                c3[1] = derivative_term(
+                c3[1] = DerivativeTerm::new(
                     0.0,
                     2.0 * (-(q1x * qperpy * s000) - q1w * qperpz * s000
                         + 2.0 * q1x * qperpx * s010
@@ -622,7 +622,7 @@ impl AnimatedTransform {
                         * theta,
                 );
 
-                c4[1] = derivative_term(
+                c4[1] = DerivativeTerm::new(
                     0.0,
                     -(q1x * qperpy * s000) - q1w * qperpz * s000
                         + 2.0 * q1x * qperpx * s010
@@ -704,7 +704,7 @@ impl AnimatedTransform {
                                 - 2.0 * q1y * s022 * theta),
                 );
 
-                c5[1] = derivative_term(
+                c5[1] = DerivativeTerm::new(
                     0.0,
                     -2.0 * (qperpx * qperpy * s000 + qperpw * qperpz * s000 + q1z * q1z * s010
                         - qperpx * qperpx * s010
@@ -762,7 +762,7 @@ impl AnimatedTransform {
                         * theta,
                 );
 
-                c1[2] = derivative_term(
+                c1[2] = DerivativeTerm::new(
                     -t0z + t1z,
                     qperpw * qperpy * s000
                         - qperpx * qperpz * s000
@@ -829,7 +829,7 @@ impl AnimatedTransform {
                         - qperpy * qperpy * s122,
                 );
 
-                c2[2] = derivative_term(
+                c2[2] = DerivativeTerm::new(
                     0.0,
                     q1w * q1y * s000 - q1x * q1z * s000 - qperpw * qperpy * s000 + qperpx * qperpz * s000
                         - q1w * q1x * s010
@@ -926,7 +926,7 @@ impl AnimatedTransform {
                         - 4.0 * q1y * qperpy * s022 * theta,
                 );
 
-                c3[2] = derivative_term(
+                c3[2] = DerivativeTerm::new(
                     0.0,
                     -2.0 * (-(q1w * qperpy * s000) + q1x * qperpz * s000 + q1x * qperpw * s010 + q1w * qperpx * s010
                         - 2.0 * q1x * qperpx * s020
@@ -966,7 +966,7 @@ impl AnimatedTransform {
                         * theta,
                 );
 
-                c4[2] = derivative_term(
+                c4[2] = DerivativeTerm::new(
                     0.0,
                     q1w * qperpy * s000 - q1x * qperpz * s000 - q1x * qperpw * s010 - q1w * qperpx * s010
                         + 2.0 * q1x * qperpx * s020
@@ -1042,7 +1042,7 @@ impl AnimatedTransform {
                                 - 2.0 * q1z * s012 * theta),
                 );
 
-                c5[2] = derivative_term(
+                c5[2] = DerivativeTerm::new(
                     0.0,
                     2.0 * (qperpw * qperpy * s000 - qperpx * qperpz * s000 + q1y * q1z * s010
                         - qperpw * qperpx * s010
@@ -1271,7 +1271,7 @@ fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut M
     // Extract translation T from transformation matrix
     *t = Vector3f::new(m[0][3], m[1][3], m[2][3]);
 
-    // Compute new transformation matrix M without translation.
+    // Compute new transformation matrix `M` without translation.
     let mut m1 = *m;
     for i in 0..3 {
         m1.m[i][3] = 0.0;
@@ -1293,7 +1293,7 @@ fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut M
             }
         }
 
-        // Compute norm of difference between R and R_next.
+        // Compute norm of difference between `R` and `R_next`.
         for i in 0..3 {
             let n = abs(r[i][0] - r_next[i][0]) + abs(r[i][1] - r_next[i][1]) + abs(r[i][2] - r_next[i][2]);
             norm = max(norm, n);
@@ -1312,7 +1312,7 @@ fn decompose(m: &Matrix4x4, t: &mut Vector3f, r_quat: &mut Quaternion, s: &mut M
     *s = r.inverse() * m;
 }
 
-/// DerivativeTerm encapsulates the coefficients `ki` to bound the motion of a point `p`.
+/// `DerivativeTerm` encapsulates the coefficients `ki` to bound the motion of a point `p`.
 #[derive(Copy, Clone, Debug, Default)]
 struct DerivativeTerm {
     pub kc: Float,
@@ -1321,16 +1321,16 @@ struct DerivativeTerm {
     pub kz: Float,
 }
 
-/// Returns a new derivative term with given coefficients `ki`.
-fn derivative_term(kc: Float, kx: Float, ky: Float, kz: Float) -> DerivativeTerm {
-    DerivativeTerm { kc, kx, ky, kz }
-}
-
 impl DerivativeTerm {
+    /// Returns a new `DerivativeTerm` with given coefficients `ki`.
+    fn new(kc: Float, kx: Float, ky: Float, kz: Float) -> DerivativeTerm {
+        DerivativeTerm { kc, kx, ky, kz }
+    }
+
     /// Return the coefficient `ci` to bound the motion of a point `p`.
     ///
     /// * `p` - The point.
-    pub fn eval(&self, p: &Point3f) -> Float {
+    fn eval(&self, p: &Point3f) -> Float {
         self.kc + self.kx * p.x + self.ky * p.y + self.kz * p.z
     }
 }

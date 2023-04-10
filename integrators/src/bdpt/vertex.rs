@@ -257,7 +257,7 @@ impl<'scene> Vertex<'scene> {
 
     /// Evaluates the portion of the path-space measurement equation associated with a vertex.
     ///
-    /// NOTE: This is only handled surface and medium interactions.
+    /// *NOTE*: This is only handled surface and medium interactions.
     ///
     /// * `next` - The next vertex in the path.
     /// * `mode` - The light transport mode.

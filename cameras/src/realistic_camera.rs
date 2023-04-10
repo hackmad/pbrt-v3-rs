@@ -18,41 +18,33 @@ use std::thread;
 /// Number of samples for exit pupil bounds.
 const N_SAMPLES: usize = 64_usize;
 
-/// Realistic camera implements a camera consisting of multiple lens
-/// elements.
+/// Realistic camera implements a camera consisting of multiple lens elements.
 pub struct RealisticCamera {
     /// Common camera parameters.
     pub data: CameraData,
 
-    /// If true, a modified version of weighting camera ray that only accounts
-    /// for cos^4(θ) term is used.
+    /// If true, a modified version of weighting camera ray that only accounts for cos^4(θ) term is used.
     pub simple_weighting: bool,
 
     /// The lens element interfaces from left to right.
     pub element_interfaces: Vec<LensElementInterface>,
 
-    /// Bounds of the exit pupil (the set of points on the rear element that do
-    /// carry light through the lens system).
+    /// Bounds of the exit pupil (the set of points on the rear element that do carry light through the lens system).
     pub exit_pupil_bounds: Vec<Bounds2f>,
 }
 
 impl RealisticCamera {
     /// Create a new realistic camera.
     ///
-    /// * `camera_to_world`   - Animated transformation describing the camera's
-    ///                         motion in the scene.
+    /// * `camera_to_world`   - Animated transformation describing the camera's motion in the scene.
     /// * `aperture_diameter` - Diameter of the aperture stop in millimiters.
     /// * `focus_distance`    - Distance to the desired plane of focus.
-    /// * `simple_weighting`  - If true, a modified version of weighting camera
-    ///                         ray that only accounts for cos^4(θ) term is used.
-    /// * `lens_data`         - A vector containing lens data as a flattened
-    ///                         list of lens interfaces from left to right, each
-    ///                         containing 4 properties: `curvature radius`,
-    ///                         `thickness`, `index of refraction`,
-    ///                         `aperture diameter`. These are related to the
-    ///                         `LensElementInterface` properties (note that
-    ///                         the data contains the aperture diameter as
-    ///                         opposed to aperture radius).
+    /// * `simple_weighting`  - If true, a modified version of weighting camera ray that only accounts for cos^4(θ) term
+    ///                         is used.
+    /// * `lens_data`         - A vector containing lens data as a flattened list of lens interfaces from left to right,
+    ///                         each containing 4 properties: `curvature radius`, `thickness`, `index of refraction`,
+    ///                         `aperture diameter`. These are related to the `LensElementInterface` properties (note
+    ///                         that the data contains the aperture diameter as opposed to aperture radius).
     /// * `shutter_open`      - Time when shutter is open.
     /// * `shutter_close`     - Time when shutter is closed.
     /// * `lens_radius`       - Radius of camera lens.
@@ -110,7 +102,7 @@ impl RealisticCamera {
             exit_pupil_bounds: Vec::<Bounds2f>::with_capacity(N_SAMPLES),
         };
 
-        // Compute lens-film distance for given focus distance
+        // Compute lens-film distance for given focus distance.
         let fb = camera.focus_binary_search(focus_distance);
         info!("Binary search focus: {} -> {}", fb, camera.focus_distance(fb));
 
@@ -160,16 +152,14 @@ impl RealisticCamera {
             .aperture_radius
     }
 
-    /// Computes intersections of a ray fom the film with each element in turn,
-    /// terminating it, and returning None if its path is blocked along the way
-    /// through the lens system. Otherwise it returns a `Ray` initialized with
-    /// the exiting ray in camera space.
+    /// Computes intersections of a ray fom the film with each element in turn, terminating it, and returning `None` if
+    /// its path is blocked along the way through the lens system. Otherwise it returns a `Ray` initialized with the
+    /// exiting ray in camera space.
     ///
     /// * `r_camera` - The camera ray to trace.
     fn trace_lenses_from_film(&self, r_camera: &Ray) -> Option<Ray> {
-        // During traversal, element_z tracks the intercept of the current lens
-        // element. Because the ray is starting from the film, the lenses are
-        // traversed in reverse order compared to how they are stored in
+        // During traversal, element_z tracks the intercept of the current lens element. Because the ray is starting
+        // from the film, the lenses are traversed in reverse order compared to how they are stored in
         // `element_interfaces`.
         let mut element_z = 0.0;
 
@@ -186,9 +176,8 @@ impl RealisticCamera {
             let mut n = Normal3f::ZERO;
             let is_stop = element.curvature_radius == 0.0;
             if is_stop {
-                // The reflected ray computed in the previous lens element
-                // interface may be pointed towards film plane(+z) in some
-                // extreme situations; in such cases; `t` becomes negative.
+                // The reflected ray computed in the previous lens element interface may be pointed towards film
+                // plane(+z) in some extreme situations; in such cases; `t` becomes negative.
                 if r_lens.d.z >= 0.0 {
                     return None;
                 } else {
@@ -235,16 +224,14 @@ impl RealisticCamera {
         Some(lens_to_camera.transform_ray(&r_lens))
     }
 
-    /// Computes intersections of a ray fom the scene with each element in turn,
-    /// terminating it, and returning None if its path is blocked along the way
-    /// through the lens system. Otherwise it returns a `Ray` initialized with
-    /// the exiting ray in camera space.
+    /// Computes intersections of a ray fom the scene with each element in turn, terminating it, and returning `None` if
+    /// its path is blocked along the way through the lens system. Otherwise it returns a `Ray` initialized with the
+    /// exiting ray in camera space.
     ///
     /// * `r_camera` - The camera ray to trace.
     fn trace_lenses_from_scene(&self, r_camera: &Ray) -> Option<Ray> {
-        // During traversal, element_z tracks the intercept of the current lens
-        // element. Because the ray is starting from the scene, the lenses are
-        // traversed in forward order as they are stored in `element_interfaces`.
+        // During traversal, element_z tracks the intercept of the current lens element. Because the ray is starting
+        // from the scene, the lenses are traversed in forward order as they are stored in `element_interfaces`.
         let mut element_z = -self.lens_front_z();
 
         // Transform `r_camera` from camera to lens system space.
@@ -305,15 +292,13 @@ impl RealisticCamera {
         Some(lens_to_camera.transform_ray(&r_lens))
     }
 
-    /// Computes both pairs of cardinal points ([pz0, pz1], [fz0, fz1]) for the
-    /// lens system where `pz0`, `pz1` are z-depths of the focal point and
-    /// `fz0`, `fz1` are the z-depths of the principal plane.
+    /// Computes both pairs of cardinal points ([pz0, pz1], [fz0, fz1]) for the lens system where `pz0`, `pz1` are
+    /// z-depths of the focal point and `fz0`, `fz1` are the z-depths of the principal plane.
     fn compute_thick_lens_approximation(&self) -> ([Float; 2], [Float; 2]) {
         // Find height `x` from optical axis for parallel rays.
         //
-        // Use a small fraction of the film's diagonal extent so that the rays
-        // we use don't get blocked by the aperture stop. This works well unless
-        // aperture stop is extremely small.
+        // Use a small fraction of the film's diagonal extent so that the rays we use don't get blocked by the aperture
+        // stop. This works well unless aperture stop is extremely small.
         let x = 0.001 * self.data.film.diagonal;
 
         // Compute cardinal points for film side of lens system.
@@ -354,8 +339,8 @@ impl RealisticCamera {
         ([pz0, pz1], [fz0, fz1])
     }
 
-    /// Focuses the lens system at a given depth and returns the offset along
-    /// the z-axis from the film where the lens system should be placed.
+    /// Focuses the lens system at a given depth and returns the offset along the z-axis from the film where the lens
+    /// system should be placed.
     ///
     /// * `focus_distance` - Focus distance.
     fn focus_thick_lens(&self, focus_distance: Float) -> Float {
@@ -416,9 +401,8 @@ impl RealisticCamera {
         let mut lu = 0.0;
         let mut ray: Option<Ray> = None;
 
-        // Try some different and decreasing scaling factor to find focus ray
-        // more quickly when `aperturediameter` is too small.
-        // (e.g. 2 [mm] for `aperturediameter` with wide.22mm.dat),
+        // Try some different and decreasing scaling factor to find focus ray more quickly when `aperturediameter` is
+        // too small. (e.g. 2 [mm] for `aperturediameter` with wide.22mm.dat),
         for scale in SCALE_FACTORS {
             lu = scale * bounds.p_max[Axis::X];
 
@@ -435,7 +419,7 @@ impl RealisticCamera {
             }
         }
 
-        // Compute distance _zFocus_ where ray intersects the principal axis
+        // Compute distance `zFocus` where ray intersects the principal axis.
         if let Some(r) = ray {
             let t_focus = -r.o.x / r.d.x;
             let z_focus = r.at(t_focus).z;
@@ -454,13 +438,11 @@ impl RealisticCamera {
         }
     }
 
-    /// Compute a 2-d bounding box of the exit pupil as seen from a point along
-    /// a segment on the film plane by tracing rays through the lens system at
-    /// a set of points on a plane tangent to the rear lens element.
+    /// Compute a 2-d bounding box of the exit pupil as seen from a point along a segment on the film plane by tracing
+    /// rays through the lens system at a set of points on a plane tangent to the rear lens element.
     ///
-    /// Only the x-axis coordinates are used for the segment because the lens
-    /// system is radially symmetric around the optical axis `z`. So the
-    /// exit pupil bounds will be radially symmetric as well.
+    /// Only the x-axis coordinates are used for the segment because the lens system is radially symmetric around the
+    /// optical axis `z`. So the exit pupil bounds will be radially symmetric as well.
     ///
     /// * `p_film_x0` - First point along x-axis of film plane.
     /// * `p_film_x1` - Second point along x-axis of film plane.
@@ -503,12 +485,10 @@ impl RealisticCamera {
             }
         }
 
-        // Return the entire element bounds if no rays made it through the
-        // lens system.
+        // Return the entire element bounds if no rays made it through the lens system.
         if n_exiting_rays == 0 {
-            // NOTE: This should happen a few times when called via
-            // focus_binary_search() -> focus_distance() -> bound_exit_pupil().
-            // Not when computing the actual exit pupil bounds.
+            // *NOTE*: This should happen a few times when called via focus_binary_search() -> focus_distance() ->
+            // bound_exit_pupil(). Not when computing the actual exit pupil bounds.
             warn!(
                 "Unable to find exit pupil in x = [{}, {}] on film.",
                 p_film_x0, p_film_x1
@@ -519,8 +499,7 @@ impl RealisticCamera {
         }
     }
 
-    /// Returns the bounds and area on the exit pupil for a given point on the
-    /// film plane.
+    /// Returns the bounds and area on the exit pupil for a given point on the film plane.
     ///
     /// * `p_film`      - Point on the film plane.
     /// * `lens_sample` - Point on the lens the ray passes through for given sample.
@@ -551,11 +530,10 @@ impl RealisticCamera {
 }
 
 impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>, &str)> for RealisticCamera {
-    /// Create a `RealisticCamera` from given parameter set, animated transform,
-    /// film, medium and current working directory.
+    /// Create a `RealisticCamera` from given parameter set, animated transform, film, medium and current working
+    /// directory.
     ///
-    /// * `p` - A tuple containing  parameter set, animated transform, film,
-    ///         medium and current working directory.
+    /// * `p` - A tuple containing  parameter set, animated transform, film, medium and current working directory.
     fn from(p: (&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>, &str)) -> Self {
         let (params, cam2world, film, medium, cwd) = p;
 
@@ -613,9 +591,8 @@ impl Camera for RealisticCamera {
         &self.data
     }
 
-    /// Returns a ray corresponding to a given sample. It also returns, a floating
-    /// point value that affects how much the radiance arriving at the film plane
-    /// will contribute to final image.
+    /// Returns a ray corresponding to a given sample. It also returns, a floating point value that affects how much the
+    /// radiance arriving at the film plane will contribute to final image.
     ///
     /// * `sample` - The sample.
     fn generate_ray(&self, sample: &CameraSample) -> (Ray, Float) {
@@ -659,8 +636,7 @@ impl Camera for RealisticCamera {
         }
     }
 
-    /// Return the spatial and directional PDFs, as a tuple, for sampling a
-    /// particular ray leaving the camera.
+    /// Return the spatial and directional PDFs, as a tuple, for sampling a particular ray leaving the camera.
     ///
     /// * `ray` - The ray.
     fn pdf_we(&self, _ray: &Ray) -> PDFResult {
@@ -668,8 +644,8 @@ impl Camera for RealisticCamera {
     }
 }
 
-/// Stores information about a single lens element interface.
-/// A lens interface intersects the optical axis at a position z.
+/// Stores information about a single lens element interface. A lens interface intersects the optical axis at a position
+/// `z`.
 #[derive(Copy, Clone, Default)]
 pub struct LensElementInterface {
     /// Radius of lens curvature:
@@ -678,16 +654,14 @@ pub struct LensElementInterface {
     /// * Zero:     aperture stop.
     pub curvature_radius: Float,
 
-    /// Lens thickness is the distance to the next interface to the right or
-    /// the distance to the film plane for the rearmost interface. This is in
-    /// meters.
+    /// Lens thickness is the distance to the next interface to the right or the distance to the film plane for the
+    /// rearmost interface. This is in meters.
     pub thickness: Float,
 
     /// Index of refraction.
     pub eta: Float,
 
-    /// Aperture radius describes the extent above and below the optical axis.
-    /// This is in meters.
+    /// Aperture radius describes the extent above and below the optical axis. This is in meters.
     pub aperture_radius: Float,
 }
 
@@ -698,12 +672,10 @@ impl LensElementInterface {
     ///                         * Positive: convex curvature
     ///                         * Negative: concave curvature.
     ///                         * Zero:     aperture stop.
-    /// * `thicknesst`        - Lens thickness is the distance to the next
-    ///                         interface to the right or the distance to the
+    /// * `thicknesst`        - Lens thickness is the distance to the next interface to the right or the distance to the
     ///                         film plane for the rearmost interface.
     /// * `eta`               - Index of refraction.
-    /// * `aperture_radius`   - Aperture radius describes the extent above and
-    ///                         below the optical axis.
+    /// * `aperture_radius`   - Aperture radius describes the extent above and below the optical axis.
     fn new(curvature_radius: Float, thickness: Float, eta: Float, aperture_radius: Float) -> Self {
         Self {
             curvature_radius,
@@ -716,9 +688,8 @@ impl LensElementInterface {
     /// Create a new lens element interface from 4 floating point values.
     ///
     /// * `aperture_diameter` - Diameter of the aperture stop in millimeters.
-    /// * `lens_data`         - An array [curvature_radius, thickness, index of
-    ///                         refraction, aperture_diameter]. The curvature_radius,
-    ///                         thickness and aperture_diameter are in millimiters.
+    /// * `lens_data`         - An array [curvature_radius, thickness, index of refraction, aperture_diameter]. The
+    ///                         curvature_radius, thickness and aperture_diameter are in millimiters.
     #[allow(unused)]
     fn from_lens_data(aperture_diameter: Float, lens_data: &[Float]) -> Self {
         let ad = if lens_data[0] == 0.0 {
@@ -745,8 +716,7 @@ impl LensElementInterface {
     }
 }
 
-/// Calculate the parametric `t` value along a ray where it intersects a spherical
-/// element's interface.
+/// Calculate the parametric `t` value along a ray where it intersects a spherical element's interface.
 ///
 /// * `radius`   - Radius of curvature.
 /// * `z_center` - Z-axis intercept.
@@ -777,9 +747,8 @@ fn intersect_spherical_element(radius: Float, z_center: Float, ray: &Ray) -> Opt
     }
 }
 
-/// Computes the z-depths of the focal point `pz` and of the principal plane `fz`
-/// for the given rays. Note that it assumes that the rays are in camera space
-/// but returns values along the optical axis in lens space.
+/// Computes the z-depths of the focal point `pz` and of the principal plane `fz` for the given rays. Note that it
+/// assumes that the rays are in camera space but returns values along the optical axis in lens space.
 ///
 /// * `r_in`  - Ray in.
 /// * `r_out` - Ray out.

@@ -8,22 +8,19 @@ use core::pbrt::*;
 use core::sampler::*;
 use core::spectrum::*;
 
-/// Implements medium densities at a regular 3D grid of positions, similar to the
-/// way that the ImageTexture represents images with a 2D grid of samples. These
-/// samples are interpolated to compute the density at positions between the sample
-/// points.
+/// Implements medium densities at a regular 3D grid of positions, similar to the way that the ImageTexture represents
+/// images with a 2D grid of samples. These samples are interpolated to compute the density at positions between the
+/// sample points.
 pub struct GridDensityMedium {
-    /// Absorption cross section `σa` is the probability density that light is
-    /// absorbed per unit distance traveled in the medium
+    /// Absorption cross section `σa` is the probability density that light is absorbed per unit distance traveled in
+    /// the medium
     _sigma_a: Spectrum,
 
-    /// Scattering coefficient `σs` is the probability of an out-scattering
-    /// event occurring per unit distance
+    /// Scattering coefficient `σs` is the probability of an out-scattering event occurring per unit distance
     sigma_s: Spectrum,
 
-    /// Total reduction in radiance due to absorption and out-scattering
-    /// `σt = σs + σa`. This combined effect of absorption and out-scattering is
-    /// called attenuation or extinction.
+    /// Total reduction in radiance due to absorption and out-scattering `σt = σs + σa`. This combined effect of
+    /// absorption and out-scattering is called attenuation or extinction.
     sigma_t: Float,
 
     /// The asymmetry parameter for Henyey-Greenstein phase function.
@@ -53,8 +50,7 @@ impl GridDensityMedium {
     ///
     /// * `sigma_a`         - Absorption cross section `σa`.
     /// * `sigma_s`         - Scattering coefficient `σs`.
-    /// * `g`               - The asymmetry parameter for Henyey-Greenstein phase
-    ///                       function.
+    /// * `g`               - The asymmetry parameter for Henyey-Greenstein phase function.
     /// * `nx`              - Grid size in x-direction.
     /// * `ny`              - Grid size in y-direction.
     /// * `nz`              - Grid size in z-direction.
@@ -168,8 +164,8 @@ impl Medium for GridDensityMedium {
                 let density = self.density(&ray_medium.at(t));
                 tr_val *= 1.0 - max(0.0, density * self.inv_max_density);
 
-                // Added after book publication: when transmittance gets low,
-                // start applying Russian roulette to terminate sampling.
+                // Added after book publication: when transmittance gets low, start applying Russian roulette to
+                // terminate sampling.
                 const RR_THRESHOLD: Float = 0.1;
                 if tr_val < RR_THRESHOLD {
                     let q = max(0.05, 1.0 - tr_val);
@@ -190,11 +186,10 @@ impl Medium for GridDensityMedium {
 
     /// Samples a medium scattering interaction along a world-space ray.
     ///
-    /// The ray will generally have been intersected against the scene geometry;
-    /// thus, implementations of this method shouldn’t ever sample a medium
-    /// interaction at a point on the ray beyond its `t_max` value.
+    /// The ray will generally have been intersected against the scene geometry; thus, implementations of this method
+    /// shouldn’t ever sample a medium interaction at a point on the ray beyond its `t_max` value.
     ///
-    /// NOTE: Calling code will need to assign this medium as we cannot pass
+    /// *NOTE*: Calling code will need to assign this medium as we cannot pass
     /// back and `ArcMedium` out of here for `Self`.
     ///
     /// * `ray`     - The ray.

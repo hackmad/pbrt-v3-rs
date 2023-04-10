@@ -22,8 +22,7 @@ pub enum LightSampleStategy {
     /// Samples light sources according to their emitted power.
     Power,
 
-    /// Compute light contributions in regions of the scene and samples from a
-    /// related distribution.
+    /// Compute light contributions in regions of the scene and samples from a related distribution.
     Spatial,
 }
 
@@ -35,21 +34,18 @@ impl From<&str> for LightSampleStategy {
             "power" => Self::Power,
             "spatial" => Self::Spatial,
             _ => {
-                error!(
-                    "Light sample distribution type '{}' unknown. Using 'spatial'.",
-                    name
-                );
+                error!("Light sample distribution type '{}' unknown. Using 'spatial'.", name);
                 Self::Spatial
             }
         }
     }
 }
 
-/// Interface of light distribution implementations that provide probability
-/// distributions for sampling light sources at a given point in space.
+/// Interface of light distribution implementations that provide probability distributions for sampling light sources at
+/// a given point in space.
 pub trait LightDistribution {
-    /// Given a point |p| in space, this method returns a (hopefully effective)
-    /// sampling distribution for light sources at that point.
+    /// Given a point |p| in space, this method returns a (hopefully effective) sampling distribution for light sources
+    /// at that point.
     fn lookup(&self, p: &Point3f) -> Option<Arc<Distribution1D>>;
 }
 
@@ -60,10 +56,7 @@ pub type ArcLightDistribution = Arc<dyn LightDistribution + Send + Sync>;
 ///
 /// * `strategy` - The strategy to use for light sampling.
 /// * `scene`    - The scene.
-pub fn create_light_sample_distribution(
-    strategy: LightSampleStategy,
-    scene: &Scene,
-) -> ArcLightDistribution {
+pub fn create_light_sample_distribution(strategy: LightSampleStategy, scene: &Scene) -> ArcLightDistribution {
     let strategy = if scene.lights.len() == 1 {
         LightSampleStategy::Uniform
     } else {

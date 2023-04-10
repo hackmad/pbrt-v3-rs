@@ -2,8 +2,7 @@
 
 use super::*;
 
-/// Returns the cosine of the angle θ measured from the given direction to the
-/// z-axis.
+/// Returns the cosine of the angle θ measured from the given direction to the z-axis.
 ///
 /// * `w` - The direction vector.
 #[inline]
@@ -11,8 +10,7 @@ pub fn cos_theta(w: &Vector3f) -> Float {
     w.z
 }
 
-/// Returns the square of the cosine of the angle θ measured from the given
-/// direction to the z-axis.
+/// Returns the square of the cosine of the angle θ measured from the given direction to the z-axis.
 ///
 /// * `w` - The direction vector.
 #[inline]
@@ -20,8 +18,7 @@ pub fn cos_2_theta(w: &Vector3f) -> Float {
     w.z * w.z
 }
 
-/// Returns the absolute value of the cosine of the angle θ measured from the
-/// given direction to the z-axis.
+/// Returns the absolute value of the cosine of the angle θ measured from the given direction to the z-axis.
 ///
 /// * `w` - The direction vector.
 #[inline]
@@ -29,8 +26,7 @@ pub fn abs_cos_theta(w: &Vector3f) -> Float {
     abs(w.z)
 }
 
-/// Returns the square of the sine of the angle θ measured from the given
-/// direction to the z-axis.
+/// Returns the square of the sine of the angle θ measured from the given direction to the z-axis.
 ///
 /// * `w` - The direction vector.
 #[inline]
@@ -38,8 +34,7 @@ pub fn sin_2_theta(w: &Vector3f) -> Float {
     max(0.0, 1.0 - cos_2_theta(w))
 }
 
-/// Returns the sine of the angle θ measured from the given direction to the
-/// z-axis.
+/// Returns the sine of the angle θ measured from the given direction to the z-axis.
 ///
 /// * `w` - The direction vector.
 #[inline]
@@ -47,8 +42,7 @@ pub fn sin_theta(w: &Vector3f) -> Float {
     sin_2_theta(w).sqrt()
 }
 
-/// Returns the tangent of the angle θ measured from the given direction to the
-/// z-axis.
+/// Returns the tangent of the angle θ measured from the given direction to the z-axis.
 ///
 /// * `w` - The direction vector.
 #[inline]
@@ -56,8 +50,7 @@ pub fn tan_theta(w: &Vector3f) -> Float {
     sin_theta(w) / cos_theta(w)
 }
 
-/// Returns the square of the tangent of the angle θ measured from the given
-/// direction to the z-axis.
+/// Returns the square of the tangent of the angle θ measured from the given direction to the z-axis.
 ///
 /// * `w` - The direction vector.
 #[inline]
@@ -65,8 +58,7 @@ pub fn tan_2_theta(w: &Vector3f) -> Float {
     sin_2_theta(w) / cos_2_theta(w)
 }
 
-/// Returns the cosine of the angle Φ measured from the given direction to the
-/// x-axis after projection to the xy plane.
+/// Returns the cosine of the angle Φ measured from the given direction to the x-axis after projection to the xy plane.
 ///
 /// * `w` - The direction vector.
 #[inline]
@@ -79,8 +71,8 @@ pub fn cos_phi(w: &Vector3f) -> Float {
     }
 }
 
-/// Returns the square of the cosine of the angle Φ measured from the given
-/// direction to the x-axis after projection to the xy plane.
+/// Returns the square of the cosine of the angle Φ measured from the given direction to the x-axis after projection to
+/// the xy plane.
 ///
 /// * `w` - The direction vector.
 #[inline]
@@ -89,8 +81,7 @@ pub fn cos_2_phi(w: &Vector3f) -> Float {
     c * c
 }
 
-/// Returns the sine of the angle Φ measured from the given direction to the
-/// x-axis after projection to the xy plane.
+/// Returns the sine of the angle Φ measured from the given direction to the x-axis after projection to the xy plane.
 ///
 /// * `w` - The direction vector.
 #[inline]
@@ -103,8 +94,8 @@ pub fn sin_phi(w: &Vector3f) -> Float {
     }
 }
 
-/// Returns the square of the sine of the angle Φ measured from the given
-/// direction to the x-axis after projection to the xy plane.
+/// Returns the square of the sine of the angle Φ measured from the given direction to the x-axis after projection to
+/// the xy plane.
 ///
 /// * `w` - The direction vector.
 #[inline]
@@ -113,8 +104,7 @@ pub fn sin_2_phi(w: &Vector3f) -> Float {
     c * c
 }
 
-/// Returns the cosine of the angle ΔΦ between two vector's Φ values in the
-/// shading coordinate system.
+/// Returns the cosine of the angle ΔΦ between two vector's Φ values in the shading coordinate system.
 ///
 /// * `wa` - First direction vector.
 /// * `wb` - Second direction vector.
@@ -124,11 +114,7 @@ pub fn cos_d_phi(wa: &Vector3f, wb: &Vector3f) -> Float {
     if waxy == 0.0 || wbxy == 0.0 {
         1.0
     } else {
-        clamp(
-            (wa.x * wb.x + wa.y * wb.y) / (waxy * wbxy).sqrt(),
-            -1.0,
-            1.0,
-        )
+        clamp((wa.x * wb.x + wa.y * wb.y) / (waxy * wbxy).sqrt(), -1.0, 1.0)
     }
 }
 
@@ -141,9 +127,8 @@ pub fn same_hemisphere(w: &Vector3f, wp: &Vector3f) -> bool {
     w.z * wp.z > 0.0
 }
 
-/// Computes the refracted direction, given incident direction `wi`, surface normal
-/// `n` in the same hemisphere as `wi` and `eta`. If there is total internal
-/// reflection, `None` is returned.
+/// Computes the refracted direction, given incident direction `wi`, surface normal `n` in the same hemisphere as `wi`
+/// and `eta`. If there is total internal reflection, `None` is returned.
 ///
 /// * `wi`  - Incident direction.
 /// * `n`   - Surface normal.

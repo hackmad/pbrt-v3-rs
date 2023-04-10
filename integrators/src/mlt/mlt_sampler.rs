@@ -36,7 +36,7 @@ pub struct MLTSampler {
     x: Vec<PrimarySample>,
 
     /// Keeps track of the current Metropolis-Hastings iteration index.
-    /// NOTE: Note that iterations with rejected proposals will be excluded from this count.
+    /// *NOTE*: Note that iterations with rejected proposals will be excluded from this count.
     current_iteration: usize,
 
     /// Indicates if a "large step" mutation is taken.

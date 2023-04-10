@@ -34,10 +34,8 @@ impl Material for MirrorMaterial {
     ///
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
-    /// * `allow_multiple_lobes` - Indicates whether the material should use
-    ///                            BxDFs that aggregate multiple types of
-    ///                            scattering into a single BxDF when such BxDFs
-    ///                            are available (ignored).
+    /// * `allow_multiple_lobes` - Indicates whether the material should use BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene>(
@@ -73,9 +71,7 @@ impl From<&TextureParams> for MirrorMaterial {
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
-        let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::new(0.9), |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
+        let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::new(0.9), |v| Arc::new(ConstantTexture::new(v)));
 
         let bump_map = tp.get_float_texture_or_none("bumpmap");
 

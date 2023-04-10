@@ -127,7 +127,7 @@ pub struct Hit {
 impl Hit {
     /// Create a new hit.
     ///
-    /// NOTE: If you need to contruct a new `Hit` without `wo`, `n` and `p_error` use `Hit::new_minimal()`. This
+    /// *NOTE*: If you need to contruct a new `Hit` without `wo`, `n` and `p_error` use `Hit::new_minimal()`. This
     /// function calls `wo.normalize()` and will generate weird values for zero vectors.
     ///
     /// `p`                - Point of interaction.

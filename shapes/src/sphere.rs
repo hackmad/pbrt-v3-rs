@@ -355,7 +355,7 @@ impl Shape for Sphere {
 
     /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
+    /// *NOTE*: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample(&self, u: &Point2f) -> (Hit, Float) {

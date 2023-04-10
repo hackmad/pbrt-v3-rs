@@ -2,9 +2,7 @@
 
 use crate::pbrt::*;
 use crate::spectrum::RGBSpectrum;
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
-};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// Determines if RGB value represents surface reflectance or illuminant.
 #[derive(Copy, Clone)]
@@ -52,8 +50,8 @@ impl Sample {
 
     /// Loads spectrum samples read from a data file.
     ///
-    /// * `value` - A list of (wavelength, value) pairs. If list does not
-    ///             contain even number of elements, the last one is ignored.
+    /// * `value` - A list of (wavelength, value) pairs. If list does not contain even number of elements, the last one
+    ///             is ignored.
     pub fn list(values: &[Float]) -> Vec<Self> {
         let n = values.len();
         if n % 2 > 0 {
@@ -128,8 +126,7 @@ pub trait CoefficientSpectrum:
     /// Converts XYZ values to a full SPD.
     ///
     /// * `xyz`           - XYZ colour value.
-    /// * `spectrum_type` - Indicates type of colour value. If `None`,
-    ///                     defaults to `SpectrumType::Reflectance`.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`. Defaults to `SpectrumType::Reflectance`.
     fn from_xyz(xyz: &[Float; 3], spectrum_type: Option<SpectrumType>) -> Self;
 
     /// Convert the SPD to XYZ cooefficients.
@@ -141,8 +138,7 @@ pub trait CoefficientSpectrum:
     /// Converts RGB values to a full SPD.
     ///
     /// * `rgb`           - RGB colour value.
-    /// * `spectrum_type` - Indicates type of colour value. If `None`,
-    ///                     defaults to `SpectrumType::Reflectance`.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`. Defaults to `SpectrumType::Reflectance`.
     fn from_rgb(rgb: &[Float; 3], spectrum_type: Option<SpectrumType>) -> Self;
 
     /// Convert the SPD to RGB cooefficients.
@@ -246,17 +242,12 @@ pub fn sort_spectrum_samples(samples: &mut [Sample]) {
     samples.sort_by(|s1, s2| s1.lambda.partial_cmp(&s2.lambda).unwrap());
 }
 
-/// Returns the average value across segments that are partially or fully
-/// within the range of wavelengths.
+/// Returns the average value across segments that are partially or fully within the range of wavelengths.
 ///
 /// * `samples`      - The sample values.
 /// * `lambda_start` - Starting wavelength.
 /// * `lambda_end`   - Ending wavelength.
-pub fn average_spectrum_samples(
-    samples: &[Sample],
-    lambda_start: Float,
-    lambda_end: Float,
-) -> Float {
+pub fn average_spectrum_samples(samples: &[Sample], lambda_start: Float, lambda_end: Float) -> Float {
     assert!(lambda_start < lambda_end);
 
     let n = samples.len();
@@ -309,18 +300,15 @@ pub fn average_spectrum_samples(
         let seg_lambda_start = max(lambda_start, samples[i].lambda);
         let seg_lambda_end = min(lambda_end, samples[i + 1].lambda);
 
-        sum += 0.5
-            * (interp(seg_lambda_start, i) + interp(seg_lambda_end, i))
-            * (seg_lambda_end - seg_lambda_start);
+        sum += 0.5 * (interp(seg_lambda_start, i) + interp(seg_lambda_end, i)) * (seg_lambda_end - seg_lambda_start);
 
         i += 1;
     }
     sum / (lambda_end - lambda_start)
 }
 
-/// Returns the value of an SPD at a given wavelength by interpolating a possibly
-/// irregularly sampled wavelengths/values by linearly interpolating between two
-/// sample values that bracket the given wavelength.
+/// Returns the value of an SPD at a given wavelength by interpolating a possibly irregularly sampled wavelengths/values
+/// by linearly interpolating between two sample values that bracket the given wavelength.
 ///
 /// * `samples` - The sample values.
 /// * `l`       - Wavelength at which to interpolate SPD.
@@ -342,8 +330,7 @@ pub fn interpolate_spectrum_samples(samples: &[Sample], l: Float) -> Float {
     lerp(t, samples[offset].value, samples[offset + 1].value)
 }
 
-/// Converts the given XYZ coefficients to RGB coefficients using RGB spectra
-/// defined for high-definition TVs.
+/// Converts the given XYZ coefficients to RGB coefficients using RGB spectra defined for high-definition TVs.
 ///
 /// * `xyz` - The XYZ coefficients.
 #[rustfmt::skip]
@@ -355,8 +342,7 @@ pub fn xyz_to_rgb(xyz: &[Float; 3]) -> [Float; 3] {
     ]
 }
 
-/// Converts the given RGB coefficients to XYZ coefficients using RGB spectra
-/// defined for high-definition TVs.
+/// Converts the given RGB coefficients to XYZ coefficients using RGB spectra defined for high-definition TVs.
 ///
 /// * `rgb` - The RGB coefficients.
 #[rustfmt::skip]
@@ -368,8 +354,7 @@ pub fn rgb_to_xyz(rgb: &[Float; 3]) -> [Float; 3] {
     ]
 }
 
-/// Returns the emitted radiance at a given temperature and wavelengths for a
-/// blackbody (perfect emitter).
+/// Returns the emitted radiance at a given temperature and wavelengths for a blackbody (perfect emitter).
 ///
 /// * `lambda` - Wavelengths in nanometers.
 /// * `t`      - Temperature in Kelvin.
@@ -394,8 +379,8 @@ pub fn blackbody(lambda: &[Float], t: Float) -> Vec<Float> {
     le
 }
 
-/// Returns the normalized emitted radiance at a given temperature and wavelengths
-/// for a blackbody (perfect emitter) based on maximum blackbody radiance.
+/// Returns the normalized emitted radiance at a given temperature and wavelengths for a blackbody (perfect emitter)
+/// based on maximum blackbody radiance.
 ///
 /// * `lambda` - Wavelengths in nanometers.
 /// * `t`      - Temperature in Kelvin.

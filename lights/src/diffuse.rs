@@ -70,8 +70,8 @@ impl DiffuseAreaLight {
         let world_to_light = Arc::new(light_to_world.inverse());
         let area = shape.area();
 
-        // Warn if light has transformation with non-uniform scale, though not
-        // for Triangles, since this doesn't matter for them.
+        // Warn if light has transformation with non-uniform scale, though not for Triangles, since this doesn't matter
+        // for them.
         if world_to_light.has_scale() && shape.get_type() != "triangle" {
             warn!(
                 "Scaling detected in world to light transformation! 

@@ -6,7 +6,7 @@ use num_traits::Float;
 
 /// Create a new coordinate system from a single unit vector `v1` and return the new vectors:
 /// * `v2` constructed from the first by zeroing one of the coordinates and swapping the remaining 2 and negating one of
-/// them. This vector is normalized.
+///   them. This vector is normalized.
 /// * `v3` Cross product of `v1 and `v2`. Since both these are normalized, this will be a unit vector.
 /// * `v1` - The first unit vector to form part of the coordinate system.
 pub fn coordinate_system<T: Float>(v1: &Vector3<T>) -> (Vector3<T>, Vector3<T>) {

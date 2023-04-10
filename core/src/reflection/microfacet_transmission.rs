@@ -63,8 +63,7 @@ impl MicrofacetTransmission {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.

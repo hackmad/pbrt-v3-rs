@@ -77,8 +77,8 @@ pub trait Camera {
         (ray, wt)
     }
 
-    /// Evaluate the importance emitted from the point on the camera in a / direction. The `include_raster_point` is true,
-    /// then a raster position associated with the ray on the film is returned as well.
+    /// Evaluate the importance emitted from the point on the camera in a / direction. The `include_raster_point` is
+    /// true, then a raster position associated with the ray on the film is returned as well.
     ///
     /// * `ray`                  - The ray.
     /// * `include_raster_point` - Indicates whether or not to return the raster position.
@@ -86,8 +86,7 @@ pub trait Camera {
         panic!("Camera::we() is not implemented");
     }
 
-    /// Return the spatial and directional PDFs, as a tuple, for sampling a
-    /// particular ray leaving the camera.
+    /// Return the spatial and directional PDFs, as a tuple, for sampling a particular ray leaving the camera.
     ///
     /// * `ray` - The ray.
     fn pdf_we(&self, ray: &Ray) -> PDFResult;

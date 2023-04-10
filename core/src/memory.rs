@@ -5,8 +5,7 @@ use std::ops::{Index, IndexMut};
 /// Stores 2D arrays in a blocked memory layout.
 ///
 /// * `T`              - Type of value to store.
-/// * `LOG_BLOCK_SIZE` - Use log base to ensure blocks are powers of this base.
-///                      Typically powers of 2 are used.
+/// * `LOG_BLOCK_SIZE` - Use log base to ensure blocks are powers of this base. Typically powers of 2 are used.
 #[derive(Clone)]
 pub struct BlockedArray<T, const LOG_BLOCK_SIZE: usize> {
     /// Array data.

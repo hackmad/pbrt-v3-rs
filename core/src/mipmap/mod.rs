@@ -252,9 +252,9 @@ where
         let lod = max(0.0, self.levels() as Float - 1.0 + minor_length.log2());
         let i_lod = lod.floor() as usize;
 
-        // NOTE: If we add a bound on T like this `Float: Mul<T, Output=T>` in order to use `lerp()`, the Rust compiler
-        // gets confused and won't allow the multiplication between Float values and code in the earlier part of this
-        // function will fail to compile.
+        // *NOTE*: If we add a bound on T like this `Float: Mul<T, Output=T>` in order to use `lerp()`, the Rust
+        // compiler gets confused and won't allow the multiplication between Float values and code in the earlier part
+        // of this function will fail to compile.
         //
         // So we do lerp manually :(
         let t = lod - i_lod as Float;
@@ -347,7 +347,7 @@ where
 
 /// Resample the image so the width and height are scaled up to the next power of two.
 ///
-/// NOTE: If image has weird aspect ratio it will cause stretching/squashing.
+/// *NOTE*: If image has weird aspect ratio it will cause stretching/squashing.
 ///
 /// * `resolution` - Image resolution.
 /// * `img`        - Image data.

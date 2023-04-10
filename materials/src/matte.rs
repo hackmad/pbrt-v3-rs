@@ -29,29 +29,19 @@ impl MatteMaterial {
     /// * `kd`       - Spectral diffuse reflection.
     /// * `sigma`    - Roughness.
     /// * `bump_map` - Optional bump map.
-    pub fn new(
-        kd: ArcTexture<Spectrum>,
-        sigma: ArcTexture<Float>,
-        bump_map: Option<ArcTexture<Float>>,
-    ) -> Self {
-        Self {
-            kd,
-            sigma,
-            bump_map,
-        }
+    pub fn new(kd: ArcTexture<Spectrum>, sigma: ArcTexture<Float>, bump_map: Option<ArcTexture<Float>>) -> Self {
+        Self { kd, sigma, bump_map }
     }
 }
 
 impl Material for MatteMaterial {
-    /// Initializes representations of the light-scattering properties of the
-    /// material at the intersection point on the surface.
+    /// Initializes representations of the light-scattering properties of the material at the intersection point on the
+    /// surface.
     ///
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
-    /// * `allow_multiple_lobes` - Indicates whether the material should use
-    ///                            BxDFs that aggregate multiple types of
-    ///                            scattering into a single BxDF when such BxDFs
-    ///                            are available (ignored).
+    /// * `allow_multiple_lobes` - Indicates whether the material should use BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene>(
@@ -91,12 +81,9 @@ impl From<&TextureParams> for MatteMaterial {
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
-        let kd = tp.get_spectrum_texture_or_else("Kd", Spectrum::new(0.5), |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
+        let kd = tp.get_spectrum_texture_or_else("Kd", Spectrum::new(0.5), |v| Arc::new(ConstantTexture::new(v)));
 
-        let sigma =
-            tp.get_float_texture_or_else("sigma", 0.0, |v| Arc::new(ConstantTexture::new(v)));
+        let sigma = tp.get_float_texture_or_else("sigma", 0.0, |v| Arc::new(ConstantTexture::new(v)));
 
         let bump_map = tp.get_float_texture_or_none("bumpmap");
 

@@ -30,12 +30,9 @@ impl SpecularTransmission {
     /// Creates a new instance of `SpecularTransmission`.
     ///
     /// * `t`      - Spectrum used to scale the transmitted colour.
-    /// * `eta_a`  - Index of refraction above the surface (same side as
-    ///              surface normal).
-    /// * `eta_b`  - Index of refraction below the surface (opposite side as
-    ///              surface normal).
-    /// * `mode`   - Indicates whether incident ray started from a light
-    ///              source or from camera.
+    /// * `eta_a`  - Index of refraction above the surface (same side as surface normal).
+    /// * `eta_b`  - Index of refraction below the surface (opposite side as surface normal).
+    /// * `mode`   - Indicates whether incident ray started from a light source or from camera.
     pub fn new(t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> BxDF {
         let fresnel = FresnelDielectric::new(eta_a, eta_b);
         let model = Self {
@@ -54,8 +51,7 @@ impl SpecularTransmission {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -65,7 +61,6 @@ impl SpecularTransmission {
     }
 
     /// Returns the value of the BxDF given the outgpoing direction.
-    /// directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
@@ -76,11 +71,7 @@ impl SpecularTransmission {
         let eta_t = if entering { self.eta_b } else { self.eta_a };
 
         // Compute ray direction for specular transmission
-        if let Some(wi) = refract(
-            wo,
-            &Normal3f::new(0.0, 0.0, 1.0).face_forward(wo),
-            eta_i / eta_t,
-        ) {
+        if let Some(wi) = refract(wo, &Normal3f::new(0.0, 0.0, 1.0).face_forward(wo), eta_i / eta_t) {
             let pdf = 1.0;
             let mut ft = self.t * (Spectrum::ONE - self.fresnel.evaluate(cos_theta(&wi)));
 
@@ -95,8 +86,8 @@ impl SpecularTransmission {
         }
     }
 
-    /// Evaluates the PDF for the sampling method. Default is based on the
-    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    /// Evaluates the PDF for the sampling method. Default is based on the cosine-weighted sampling in `BxDF::sample_f()`
+    /// default implementation.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.

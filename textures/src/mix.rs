@@ -8,8 +8,7 @@ use core::spectrum::*;
 use std::ops::{Add, Mul};
 use std::sync::Arc;
 
-/// Implements a texture that linearly interpolates between two textures with a
-/// third texture.
+/// Implements a texture that linearly interpolates between two textures with a third texture.
 #[derive(Clone)]
 pub struct MixTexture<T> {
     /// First texture.
@@ -54,25 +53,17 @@ where
 macro_rules! from_params {
     ($t: ty, $get_texture_or_else_func: ident) => {
         impl From<(&TextureParams, ArcTransform)> for MixTexture<$t> {
-            /// Create a `MixTexture<$t>` from given parameter set and
-            /// transformation from texture space to world space.
+            /// Create a `MixTexture<$t>` from given parameter set and transformation from texture space to world space.
             ///
-            /// * `p` - Tuple containing texture parameters and texture space
-            ///         to world space transform.
+            /// * `p` - Tuple containing texture parameters and texture space to world space transform.
             fn from(p: (&TextureParams, ArcTransform)) -> Self {
                 let (tp, _tex2world) = p;
 
-                let tex1 = tp.$get_texture_or_else_func("tex1", 0.0.into(), |v| {
-                    Arc::new(ConstantTexture::new(v))
-                });
+                let tex1 = tp.$get_texture_or_else_func("tex1", 0.0.into(), |v| Arc::new(ConstantTexture::new(v)));
 
-                let tex2 = tp.$get_texture_or_else_func("tex2", 1.0.into(), |v| {
-                    Arc::new(ConstantTexture::new(v))
-                });
+                let tex2 = tp.$get_texture_or_else_func("tex2", 1.0.into(), |v| Arc::new(ConstantTexture::new(v)));
 
-                let amt = tp.get_float_texture_or_else("amount", 0.5, |v| {
-                    Arc::new(ConstantTexture::new(v))
-                });
+                let amt = tp.get_float_texture_or_else("amount", 0.5, |v| Arc::new(ConstantTexture::new(v)));
 
                 Self::new(tex1, tex2, amt)
             }

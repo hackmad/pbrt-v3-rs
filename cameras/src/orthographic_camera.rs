@@ -28,8 +28,7 @@ pub struct OrthographicCamera {
 impl OrthographicCamera {
     /// Create a new orthographic camera.
     ///
-    /// * `camera_to_world` - Animated transformation describing the camera's
-    ///                       motion in the scene.
+    /// * `camera_to_world` - Animated transformation describing the camera's motion in the scene.
     /// * `screen_window`   - Bounds of screen space.
     /// * `shutter_open`    - Time when shutter is open.
     /// * `shutter_close`   - Time when shutter is closed.
@@ -79,9 +78,8 @@ impl Camera for OrthographicCamera {
         &self.data
     }
 
-    /// Returns a ray corresponding to a given sample. It also returns, a floating
-    /// point value that affects how much the radiance arriving at the film plane
-    /// will contribute to final image.
+    /// Returns a ray corresponding to a given sample. It also returns, a floating point value that affects how much the
+    /// radiance arriving at the film plane will contribute to final image.
     ///
     /// * `sample` - The sample.
     fn generate_ray(&self, sample: &CameraSample) -> (Ray, Float) {
@@ -115,10 +113,9 @@ impl Camera for OrthographicCamera {
         (self.data.camera_to_world.transform_ray(&ray), 1.0)
     }
 
-    /// Returns a main ray and rays shifted one pixel in x and y directions on
-    /// the film plane for corresponding to a given sample. It also returns a
-    /// floating point value that affects how much the radiance arriving at the
-    /// film plane will contribute to final image.
+    /// Returns a main ray and rays shifted one pixel in x and y directions on the film plane for corresponding to a
+    /// given sample. It also returns a floating point value that affects how much the radiance arriving at the film
+    /// plane will contribute to final image.
     ///
     /// * `sample` - The sample.
     fn generate_ray_differential(&self, sample: &CameraSample) -> (Ray, Float) {
@@ -180,8 +177,7 @@ impl Camera for OrthographicCamera {
         (self.data.camera_to_world.transform_ray(&ray), 1.0)
     }
 
-    /// Return the spatial and directional PDFs, as a tuple, for sampling a
-    /// particular ray leaving the camera.
+    /// Return the spatial and directional PDFs, as a tuple, for sampling a particular ray leaving the camera.
     ///
     /// * `ray` - The ray.
     fn pdf_we(&self, _ray: &Ray) -> PDFResult {
@@ -190,11 +186,9 @@ impl Camera for OrthographicCamera {
 }
 
 impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for OrthographicCamera {
-    /// Create a `OrthographicCamera` from given parameter set, animated transform,
-    /// film and medium.
+    /// Create a `OrthographicCamera` from given parameter set, animated transform, film and medium.
     ///
-    /// * `p` - A tuple containing  parameter set, animated transform, film and
-    ///         medium.
+    /// * `p` - A tuple containing  parameter set, animated transform, film and medium.
     fn from(p: (&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)) -> Self {
         let (params, cam2world, film, medium) = p;
 
@@ -220,10 +214,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Orthogra
         let mut screen = if frame > 1.0 {
             Bounds2::new(Point2::new(-frame, -1.0), Point2::new(frame, 1.0))
         } else {
-            Bounds2::new(
-                Point2::new(-1.0, -1.0 / frame),
-                Point2::new(1.0, 1.0 / frame),
-            )
+            Bounds2::new(Point2::new(-1.0, -1.0 / frame), Point2::new(1.0, 1.0 / frame))
         };
 
         let sw = params.find_float("screenwindow");

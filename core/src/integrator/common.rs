@@ -18,8 +18,7 @@ use std::sync::Arc;
 /// * `scene`           - The scene.
 /// * `sampler`         - The sampler.
 /// * `n_light_samples` - The number of samples to take for each light.
-/// * `handle_media`    - Indicates whether effects of volumetric attenuation
-///                       should be considered (default to false).
+/// * `handle_media`    - Indicates whether effects of volumetric attenuation should be considered (default to false).
 pub fn uniform_sample_all_lights(
     it: &Interaction,
     bsdf: Option<&BSDF>,
@@ -78,7 +77,8 @@ pub fn uniform_sample_all_lights(
     l
 }
 
-/// Uniformly sample from one random light in the scene for direct lighting and multiply result by number of lights to compensate.
+/// Uniformly sample from one random light in the scene for direct lighting and multiply result by number of lights to
+/// compensate.
 ///
 /// * `it`            - The intersection information.
 /// * `bsdf`          - The BSDF at the intersection.

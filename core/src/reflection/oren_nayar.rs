@@ -3,15 +3,13 @@
 use super::*;
 use std::fmt;
 
-/// BRDF for the Oren-Nayar model for modeling rough surfaces using a microfacet
-/// model.
+/// BRDF for the Oren-Nayar model for modeling rough surfaces using a microfacet model.
 #[derive(Clone)]
 pub struct OrenNayar {
     /// BxDF type.
     bxdf_type: BxDFType,
 
-    /// Reflectance spectrum which gives the fraction of incident light that
-    /// is scattered.
+    /// Reflectance spectrum which gives the fraction of incident light that is scattered.
     r: Spectrum,
 
     /// Precomputed parameter `A` where:
@@ -19,8 +17,7 @@ pub struct OrenNayar {
     /// A = 1 - ---------------
     ///          2(σ^2 + 0.33)
     ///
-    /// and σ is the Gaussian distribution parameter, the standard deviation of
-    /// the microfacet orientation angle.
+    /// and σ is the Gaussian distribution parameter, the standard deviation of the microfacet orientation angle.
     a: Float,
 
     /// Precomputed parameter `B` where:
@@ -33,10 +30,9 @@ pub struct OrenNayar {
 impl OrenNayar {
     /// Creates a new instance of `OrenNayar`.
     ///
-    /// * `r`     - Reflectance spectrum which gives the fraction of incident
-    ///             light that is scattered.
-    /// * `sigma` - The Gaussian distribution parameter, the standard deviation
-    ///             of the microfacet orientation angle (in degrees).
+    /// * `r`     - Reflectance spectrum which gives the fraction of incident light that is scattered.
+    /// * `sigma` - The Gaussian distribution parameter, the standard deviation of the microfacet orientation angle (in
+    ///             degrees).
     pub fn new(r: Spectrum, sigma: Float) -> BxDF {
         let sigma = sigma.to_radians();
         let sigma2 = sigma * sigma;
@@ -54,8 +50,7 @@ impl OrenNayar {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.

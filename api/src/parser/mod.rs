@@ -721,8 +721,7 @@ impl PbrtParser {
 /// * `abs_path` - The absolute path to scene file.
 /// * `api`      - The PBRT API interface.
 pub fn parse(abs_path: &str, api: &mut Api) -> std::result::Result<(), String> {
-    // Get path to scene file's folder for resolving relative paths to includes,
-    // images, etc.
+    // Get path to scene file's folder for resolving relative paths to includes, images, etc.
     let scene_path = parent_path(abs_path).unwrap();
 
     // Load input file.

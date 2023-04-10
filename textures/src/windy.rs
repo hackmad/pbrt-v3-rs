@@ -49,11 +49,9 @@ where
 }
 
 impl<T> From<(&TextureParams, ArcTransform)> for WindyTexture<T> {
-    /// Create a `WindyTexture<T>` from given parameter set and
-    /// transformation from texture space to world space.
+    /// Create a `WindyTexture<T>` from given parameter set and transformation from texture space to world space.
     ///
-    /// * `p` - Tuple containing texture parameters and texture space
-    ///         to world space transform.
+    /// * `p` - Tuple containing texture parameters and texture space to world space transform.
     fn from(p: (&TextureParams, ArcTransform)) -> Self {
         let (_tp, tex2world) = p;
         let map = Arc::new(IdentityMapping3D::new(tex2world));

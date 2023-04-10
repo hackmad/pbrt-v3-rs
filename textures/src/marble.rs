@@ -35,13 +35,7 @@ impl MarbleTexture {
     /// * `octaves`   - Maximum number of octaves of noise to use for the sum.
     /// * `scale`     - Scale factor.
     /// * `variation` - Modulates the magnitude of perturbation.
-    pub fn new(
-        mapping: ArcTextureMapping3D,
-        omega: Float,
-        octaves: usize,
-        scale: Float,
-        variation: Float,
-    ) -> Self {
+    pub fn new(mapping: ArcTextureMapping3D, omega: Float, octaves: usize, scale: Float, variation: Float) -> Self {
         Self {
             mapping,
             omega,
@@ -63,15 +57,8 @@ impl Texture<Spectrum> for MarbleTexture {
         let TextureMap3DResult { p, dpdx, dpdy } = self.mapping.map(hit, uv, der);
         let p = p * self.scale;
 
-        let marble = p.y
-            + self.variation
-                * fbm(
-                    &p,
-                    &(self.scale * dpdx),
-                    &(self.scale * dpdy),
-                    self.omega,
-                    self.octaves,
-                );
+        let marble =
+            p.y + self.variation * fbm(&p, &(self.scale * dpdx), &(self.scale * dpdy), self.omega, self.octaves);
         let t = 0.5 + 0.5 * sin(marble);
 
         // Evaluate marble spline at `t`.
@@ -97,11 +84,9 @@ impl Texture<Spectrum> for MarbleTexture {
 }
 
 impl From<(&TextureParams, ArcTransform)> for MarbleTexture {
-    /// Create a `MarbleTexture<T>` from given parameter set and
-    /// transformation from texture space to world space.
+    /// Create a `MarbleTexture<T>` from given parameter set and transformation from texture space to world space.
     ///
-    /// * `p` - Tuple containing texture parameters and texture space
-    ///         to world space transform.
+    /// * `p` - Tuple containing texture parameters and texture space to world space transform.
     fn from(p: (&TextureParams, ArcTransform)) -> Self {
         let (tp, tex2world) = p;
         let map = Arc::new(IdentityMapping3D::new(tex2world));

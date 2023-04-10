@@ -11,8 +11,8 @@ use std::sync::Arc;
 
 /// Used to encapsulate BSSRDF parameters.
 ///
-/// NOTE: Some implementations of corresponding `BxDF` need an `ArcMaterial`
-/// and this cannot be returned from within `Material::compute_scattering_functions()`.
+/// *NOTE*: Some implementations of corresponding `BxDF` need an `ArcMaterial` and this cannot be returned from within
+/// `Material::compute_scattering_functions()`.
 pub enum BSSRDF {
     /// Tabulated BSSRDF (Separable BSSRDF).
     Tabulated {
@@ -42,9 +42,7 @@ impl BSSRDF {
                 table,
             } => {
                 let mut bsdf = BSDF::new(&si.hit, &si.shading, Some(eta));
-                bsdf.add(TabulatedBSSRDF::new(
-                    si, eta, material, mode, sigma_a, sigma_s, table,
-                ));
+                bsdf.add(TabulatedBSSRDF::new(si, eta, material, mode, sigma_a, sigma_s, table));
                 bsdf
             }
         }
@@ -84,8 +82,7 @@ pub struct SeparableBSSRDF {
     /// Local coordinate frame: normal at hit point.
     pub ns: Normal3f,
 
-    /// Local coordinate frame: shading parametric partial derivative of the
-    /// point ∂p/∂u (normalized).
+    /// Local coordinate frame: shading parametric partial derivative of the point ∂p/∂u (normalized).
     pub ss: Vector3f,
 
     /// Local coordinate frame: cross product of `ns` x `ss`.
@@ -105,12 +102,7 @@ impl SeparableBSSRDF {
     /// * `eta`      - Index of refraction of the scattering medium.
     /// * `material` - The material.
     /// * `mode`     - Light transport mode.
-    pub fn new(
-        po: &SurfaceInteraction,
-        eta: Float,
-        material: ArcMaterial,
-        mode: TransportMode,
-    ) -> Self {
+    pub fn new(po: &SurfaceInteraction, eta: Float, material: ArcMaterial, mode: TransportMode) -> Self {
         let ns = po.shading.n;
         let ss = po.shading.dpdu.normalize();
         let ts = Vector3f::from(&ns.cross(&ss));
@@ -174,8 +166,7 @@ pub fn fresnel_moment_2(eta: Float) -> Float {
         let r_eta = 1.0 / eta;
         let r_eta2 = r_eta * r_eta;
         let r_eta3 = r_eta2 * r_eta;
-        -547.033 + 45.3087 * r_eta3 - 218.725 * r_eta2 + 458.843 * r_eta + 404.557 * eta
-            - 189.519 * eta2
+        -547.033 + 45.3087 * r_eta3 - 218.725 * r_eta2 + 458.843 * r_eta + 404.557 * eta - 189.519 * eta2
             + 54.9327 * eta3
             - 9.00603 * eta4
             + 0.63942 * eta5

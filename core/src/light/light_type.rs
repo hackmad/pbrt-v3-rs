@@ -20,8 +20,8 @@ impl LightType {
         self.bits & other.bits > 0
     }
 
-    /// Returns true if the light flags has the DELTA_POSITION_LIGHT or
-    /// DELTA_DIRECTION_LIGHT flag set.
+    /// Returns true if the light flags has the `LightType::DELTA_POSITION_LIGHT` or `LightType::DELTA_DIRECTION_LIGHT`
+    /// flag set.
     ///
     /// * `flags` - Light flags to check.
     pub fn is_delta_light(&self) -> bool {

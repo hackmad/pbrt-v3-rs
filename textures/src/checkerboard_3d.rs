@@ -26,11 +26,7 @@ impl<T> CheckerboardTexture3D<T> {
     /// * `tex2`      - The second texture.
     /// * `mapping`   - The 3D mapping.
     pub fn new(tex1: ArcTexture<T>, tex2: ArcTexture<T>, mapping: ArcTextureMapping3D) -> Self {
-        Self {
-            tex1,
-            tex2,
-            mapping,
-        }
+        Self { tex1, tex2, mapping }
     }
 }
 
@@ -57,11 +53,10 @@ where
 macro_rules! from_params {
     ($t: ty, $get_texture_or_else_func: ident) => {
         impl From<(&TextureParams, ArcTransform)> for CheckerboardTexture3D<$t> {
-            /// Create a `CheckerboardTexture3D<$t>` from given parameter set and
-            /// transformation from texture space to world space.
+            /// Create a `CheckerboardTexture3D<$t>` from given parameter set and transformation from texture space to
+            /// world space.
             ///
-            /// * `p` - Tuple containing texture parameters and texture space
-            ///         to world space transform.
+            /// * `p` - Tuple containing texture parameters and texture space to world space transform.
             fn from(p: (&TextureParams, ArcTransform)) -> Self {
                 let (tp, tex2world) = p;
 
@@ -71,13 +66,9 @@ macro_rules! from_params {
                     panic!("Cannot create CheckerboardTexture3D for dim = {}", dim);
                 }
                 // Get textures.
-                let tex1 = tp.$get_texture_or_else_func("tex1", 1.0.into(), |v| {
-                    Arc::new(ConstantTexture::new(v))
-                });
+                let tex1 = tp.$get_texture_or_else_func("tex1", 1.0.into(), |v| Arc::new(ConstantTexture::new(v)));
 
-                let tex2 = tp.$get_texture_or_else_func("tex2", 0.0.into(), |v| {
-                    Arc::new(ConstantTexture::new(v))
-                });
+                let tex2 = tp.$get_texture_or_else_func("tex2", 0.0.into(), |v| Arc::new(ConstantTexture::new(v)));
 
                 // Initialize 3D texture mapping `map` from `tex2world`.
                 let map = Arc::new(IdentityMapping3D::new(tex2world));

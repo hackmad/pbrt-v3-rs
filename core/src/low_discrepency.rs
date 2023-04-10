@@ -229,10 +229,8 @@ pub const PRIME_SUMS: [usize; PRIME_TABLE_SIZE] = [
 
 /// To convert matrices from the "(t, m, s)-Nets and Maximized Minimum
 /// Distance" paper:
-/// * Recall that each uint32_t represents a column of the matrix, so copy 
-///   columns of bits.
-/// * Reverse the bits in each column (so we don't need to reverse the result 
-///   after the matrix multiply.)
+/// * Recall that each uint32_t represents a column of the matrix, so copy columns of bits.
+/// * Reverse the bits in each column (so we don't need to reverse the result after the matrix multiply.)
 #[rustfmt::skip]
 pub const C_MAX_MIN_DIST: [[u32; 32]; 17] = [
     [
@@ -421,8 +419,8 @@ fn radical_inverse_specialized(base: u16, a: u64) -> Float {
     min(r, ONE_MINUS_EPSILON)
 }
 
-/// Returns the scrambled radical inverse of an integer in given prime base by
-/// putting each digit through a permutation table for the given base.
+/// Returns the scrambled radical inverse of an integer in given prime base by putting each digit through a permutation
+/// table for the given base.
 ///
 /// * `base` - The base is a prime number.
 /// * `a`    - The integer value.
@@ -465,8 +463,8 @@ pub fn radical_inverse(base_index: u16, a: u64) -> Float {
     }
 }
 
-/// Returns the scrambled radical inverse of an integer in given base by putting
-/// each digit through a permutation table for the given base.
+/// Returns the scrambled radical inverse of an integer in given base by putting each digit through a permutation table
+/// for the given base.
 ///
 /// * `base_index` - The base.
 /// * `a`          - The integer value.
@@ -475,8 +473,7 @@ pub fn scrambled_radical_inverse(base_index: u16, a: u64, perm: &[u16]) -> Float
     scrambled_radical_inverse_specialized(base_index_to_prime(base_index), a, perm)
 }
 
-/// Maps the integer base index to a prime number that can be used as the `base`
-/// for the radical inverse functions.
+/// Maps the integer base index to a prime number that can be used as the `base` for the radical inverse functions.
 ///
 /// * `base_index` - A 16-bit integer in [0, 1023].
 fn base_index_to_prime(base_index: u16) -> u16 {
@@ -1547,8 +1544,7 @@ pub fn inverse_radical_inverse(base: u16, inverse: u64, n_digits: u64) -> u64 {
     index
 }
 
-/// Computes matrix-vector product C[di(a)]^T for some n-digit number
-/// `a` and nxn matrix C.
+/// Computes matrix-vector product C[di(a)]^T for some n-digit number `a` and nxn matrix C.
 ///
 /// * `c` - An nxn generator matrix as a linear array of length n^2.
 /// * `a` - An n-digit number in some base.
@@ -1579,8 +1575,7 @@ pub fn multiply_generator(c: &[u32], a: u32) -> u32 {
 ///
 /// * `c`        - An nxn generator matrix as a linear array of length n^2.
 /// * `a`        - An n-digit number in some base.
-/// * `scramble` - Encodes the scrambling as bits of `u32` integeger.
-///                Default this to 0.
+/// * `scramble` - Encodes the scrambling as bits of `u32` integeger. Default this to 0.
 pub fn sample_generator_matrix(c: &[u32], a: u32, scramble: u32) -> Float {
     min(
         (multiply_generator(c, a) ^ scramble) as Float * hexf32!("0x1.0p-32") as Float,
@@ -1588,8 +1583,7 @@ pub fn sample_generator_matrix(c: &[u32], a: u32, scramble: u32) -> Float {
     )
 }
 
-/// Returns the n^th Gray code. Each value g(n) differs by just a single
-/// bit from the previous one g(n - 1).
+/// Returns the n^th Gray code. Each value g(n) differs by just a single bit from the previous one g(n - 1).
 ///
 /// * `n` - Gray code order.
 #[inline]
@@ -1672,11 +1666,10 @@ const C_VANDER_CORPUT: [u32; 32] = [
     0b1,
 ];
 
-/// Generate a number of scrambled 1D sample values using the Gray code-based
-/// sampling and the VanDerCorput generator matrix.
+/// Generate a number of scrambled 1D sample values using the Gray code-based sampling and the VanDerCorput generator
+/// matrix.
 ///
-/// * `n_samples_per_pixel_sample` - Number of samples to generate for every
-///                                  sample for a pixel.
+/// * `n_samples_per_pixel_sample` - Number of samples to generate for every sample for a pixel.
 /// * `n_pixel_samples`            - Number of samples for a pixel.
 /// * `samples`                    - Sample values to update.
 /// * `rng`                        - Random number generator.
@@ -1733,11 +1726,9 @@ const C_SOBOL: [[u32; 32]; 2] = [
     ]
 ];
 
-/// Generate a number of scrambled 2D sample values using the Gray code-based
-/// sampling and the Sobol generator matrices.
+/// Generate a number of scrambled 2D sample values using the Gray code-based sampling and the Sobol generator matrices.
 ///
-/// * `n_samples_per_pixel_sample` - Number of samples to generate for every
-///                                  sample for a pixel.
+/// * `n_samples_per_pixel_sample` - Number of samples to generate for every sample for a pixel.
 /// * `n_pixel_samples`            - Number of samples for a pixel.
 /// * `samples`                    - Sample values to update.
 /// * `rng`                        - Random number generator.
@@ -1799,7 +1790,7 @@ pub fn sobol_interval_to_index(m: u32, mut frame: u64, p: &Point2i) -> u64 {
     }
 
     // Flipped b
-    // NOTE: `p.x` and `p.y` have to be coverted to u32 and then u64 to match the C++ implementation.
+    // *NOTE*: `p.x` and `p.y` have to be coverted to u32 and then u64 to match the C++ implementation.
     // Otherwise negative values wrap around to extremely high values that result in an incorrect result for `index`.
     let mut b = ((((p.x as u32) as u64) << m) | ((p.y as u32) as u64)) ^ delta;
 
@@ -1822,9 +1813,8 @@ pub fn sobol_interval_to_index(m: u32, mut frame: u64, p: &Point2i) -> u64 {
 /// * `dimension` - Dimension.
 /// * `scramble`  - Encodes the scrambling as bits of `u32` integeger.
 pub fn sobol_sample(a: u64, dimension: u16, scramble: u64) -> Float {
-    // TODO: There is no way to use generics or traits to implement this
-    // function for both f32/f64. Maybe macros with compiler feature flags
-    // might be the way.
+    // TODO: There is no way to use generics or traits to implement this function for both f32/f64. Maybe macros with
+    // compiler feature flags might be the way.
     sobol_sample_f32(a, dimension, scramble as u32)
 }
 
@@ -1832,8 +1822,7 @@ pub fn sobol_sample(a: u64, dimension: u16, scramble: u64) -> Float {
 ///
 /// * `a`         - Sample index.
 /// * `dimension` - Dimension.
-/// * `scramble`  - Encodes the scrambling as bits of `u32` integeger.
-///                 Default to 0.
+/// * `scramble`  - Encodes the scrambling as bits of `u32` integeger. Default to 0.
 fn sobol_sample_f32(mut a: u64, dimension: u16, scramble: u32) -> f32 {
     assert!(
         (dimension as usize) < NUM_SOBOL_DIMENSIONS,
@@ -1862,8 +1851,7 @@ fn sobol_sample_f32(mut a: u64, dimension: u16, scramble: u32) -> f32 {
 ///
 /// * `a`         - Sample index.
 /// * `dimension` - Dimension.
-/// * `scramble`  - Encodes the scrambling as bits of `u32` integeger.
-///                 Default to 0.
+/// * `scramble`  - Encodes the scrambling as bits of `u32` integeger. Default to 0.
 #[allow(unused)]
 fn sobol_sample_f64(mut a: u64, dimension: u16, scramble: u64) -> f64 {
     assert!(

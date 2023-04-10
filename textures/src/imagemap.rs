@@ -53,23 +53,16 @@ macro_rules! new_image_texture {
                 gamma: bool,
                 max_anisotropy: Float,
             ) -> Self {
-                let tex_info = TexInfo::new(
-                    path,
-                    filtering_method,
-                    wrap_mode,
-                    scale,
-                    gamma,
-                    max_anisotropy,
-                );
+                let tex_info = TexInfo::new(path, filtering_method, wrap_mode, scale, gamma, max_anisotropy);
                 let mipmap = match MIPMapCache::get(tex_info) {
                     Ok(mipmap) => mipmap,
                     Err(err) => panic!("Unable to load MIPMap: {}", err),
                 };
 
                 // For debugging purposes write out mipmap levels to disk.
-                // NOTE: MIPMap images will be flipped upside down; texture
-                // coordinate space has (0,0) at the lower left corner.
-                // See crate::core::mipmap::cache:generate_mipmap().
+                //
+                // *NOTE*: MIPMap images will be flipped upside down; texture coordinate space has (0,0) at the lower
+                // left corner. See `crate::core::mipmap::cache:generate_mipmap()`.
                 if let Some(file_prefix) = &OPTIONS.mipmap_file_prefix {
                     mipmap.write_images(file_prefix);
                 }
@@ -82,11 +75,10 @@ macro_rules! new_image_texture {
 new_image_texture!(RGBSpectrum);
 new_image_texture!(Float);
 
-// Implement `Texture<Tresult>` for `ImageTexture<Tmemory>` where `Tresult` is
-// the output for texture evaluation to fit with the conventions of PBRT v3.
+// Implement `Texture<Tresult>` for `ImageTexture<Tmemory>` where `Tresult` is the output for texture evaluation to fit
+// with the conventions of PBRT v3.
 
-/// Implement `ImageTexture` stored in MIPMaps as `RGBSpectrum` and evaluate to
-/// `Spectrum`.
+/// Implement `ImageTexture` stored in MIPMaps as `RGBSpectrum` and evaluate to `Spectrum`.
 impl Texture<Spectrum> for ImageTexture<RGBSpectrum> {
     /// Evaluate the texture at surface interaction.
     ///
@@ -95,11 +87,7 @@ impl Texture<Spectrum> for ImageTexture<RGBSpectrum> {
     /// * `der` - Surface interaction derivatives.
     fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> Spectrum {
         // Get the (s, t) mapping for the intersection.
-        let TextureMap2DResult {
-            p: st,
-            dstdx,
-            dstdy,
-        } = self.mapping.map(hit, uv, der);
+        let TextureMap2DResult { p: st, dstdx, dstdy } = self.mapping.map(hit, uv, der);
 
         let mem = self.mipmap.lookup(&st, &dstdx, &dstdy);
 
@@ -119,11 +107,7 @@ impl Texture<Float> for ImageTexture<Float> {
     /// * `der` - Surface interaction derivatives.
     fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> Float {
         // Get the (s, t) mapping for the intersection.
-        let TextureMap2DResult {
-            p: st,
-            dstdx,
-            dstdy,
-        } = self.mapping.map(hit, uv, der);
+        let TextureMap2DResult { p: st, dstdx, dstdy } = self.mapping.map(hit, uv, der);
 
         // Convert out to `Float`.
         self.mipmap.lookup(&st, &dstdx, &dstdy)
@@ -133,12 +117,11 @@ impl Texture<Float> for ImageTexture<Float> {
 macro_rules! from_params {
     ($t: ty) => {
         impl From<(&TextureParams, ArcTransform, &str)> for ImageTexture<$t> {
-            /// Create a `ImageTexture<$t>` from given parameter set,
-            /// transformation from texture space to world space and current
-            /// working directory.
+            /// Create a `ImageTexture<$t>` from given parameter set, transformation from texture space to world space
+            /// and current working directory.
             ///
-            /// * `p` - Tuple containing texture parameters, texture space
-            ///         to world space transform and current working directory.
+            /// * `p` - Tuple containing texture parameters, texture space to world space transform and current working
+            ///         directory.
             fn from(p: (&TextureParams, ArcTransform, &str)) -> Self {
                 let (tp, tex2world, cwd) = p;
 

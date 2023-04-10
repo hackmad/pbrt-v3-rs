@@ -11,8 +11,7 @@ pub struct FourierBSDFTable {
     /// Relative index of refraction over the surface boundary between two media.
     pub eta: Float,
 
-    /// Maximum order `m` for any pair of μi, μj directions used to allocate
-    /// ak coefficients.
+    /// Maximum order `m` for any pair of μi, μj directions used to allocate ak coefficients.
     pub m_max: usize,
 
     /// Number of spectral channels available:
@@ -23,21 +22,19 @@ pub struct FourierBSDFTable {
     /// Zenith angles stored in sorted order from low to high.
     pub mu: Vec<Float>,
 
-    /// The order, m, of the Fourier representation bounded by `m_max` that
-    /// varies with respect to incident and outgoing zenith angle cosine μi, μo
-    /// Number of orders needed is determined by querying this mu.len() x mu.len()
-    // integer matrix.
+    /// The order, m, of the Fourier representation bounded by `m_max` that varies with respect to incident and outgoing
+    /// zenith angle cosine μi, μo Number of orders needed is determined by querying this mu.len() x mu.len() integer
+    /// matrix.
     pub m: Vec<usize>,
 
     /// The coefficients for all pairs of discretized direction `mu`.
     pub a: Vec<Float>,
 
-    /// Stores offsets into `a`. The `m` coefficients starting at `a[offset] give
-    // ak values for the corresponding pairs of directions.
+    /// Stores offsets into `a`. The `m` coefficients starting at `a[offset] give `ak` values for the corresponding
+    /// pairs of directions.
     ///
-    /// For the 3 color channel case, the first `m` coefficients after `a[offset]`
-    /// encode coefficients for luminance, the next `m` correspond to the red
-    /// channel, and then blue follows.
+    /// For the 3 color channel case, the first `m` coefficients after `a[offset]` encode coefficients for luminance,
+    /// the next `m` correspond to the red channel, and then blue follows.
     pub a_offset: Vec<usize>,
 
     /// First coefficient a0.
@@ -68,9 +65,8 @@ impl FourierBSDFTable {
         let eta = file.read_f32()?;
         let _unused = file.read_i32_vec(4)?;
 
-        // Only a subset of BSDF files are supported for simplicity. In particular
-        // monochromatic and RGB files with uniform (i.e. non-textured) material
-        // properties.
+        // Only a subset of BSDF files are supported for simplicity. In particular monochromatic and RGB files with
+        // uniform (i.e. non-textured) material properties.
         if flags != 1 || (n_channels != 1 && n_channels != 3) || n_bases != 1 {
             return Err(String::from("Unsupported BSDF file format"));
         }
@@ -109,8 +105,8 @@ impl FourierBSDFTable {
         })
     }
 
-    /// For offsets into the `mu` array for incident and outgoing direction cosines,
-    /// returns the order `m` of coefficients for them and their coefficients in `a`.
+    /// For offsets into the `mu` array for incident and outgoing direction cosines, returns the order `m` of
+    /// coefficients for them and their coefficients in `a`.
     ///
     /// * `offset_i` - Offset for incident direction.
     /// * `offset_o` - Offset for outgoing direction.
@@ -126,8 +122,7 @@ impl FourierBSDFTable {
 
     /// Returns Catmull-Rom weights and index offset for a given zenith angle.
     ///
-    /// NOTE: The offset can cause out-of-bounds access. It should be added only
-    /// when weight != 0.0.
+    /// *NOTE*: The offset can cause out-of-bounds access. It should be added only when weight != 0.0.
     ///
     /// * `cos_theta` - The zenith angle to interpolate from `mu`.
     pub fn get_weights_and_offset(&self, cos_theta: Float) -> Option<([Float; 4], isize)> {

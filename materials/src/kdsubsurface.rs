@@ -12,8 +12,8 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements subsurface scattering material that allows the scattering properties
-/// to vary as a function of the position on the surface.
+/// Implements subsurface scattering material that allows the scattering properties to vary as a function of the
+/// position on the surface.
 pub struct KdSubsurfaceMaterial {
     /// Scale factor for absorption and scattering coefficients.
     scale: Float,
@@ -30,19 +30,15 @@ pub struct KdSubsurfaceMaterial {
     /// Mean free path `1/σt`.
     mfp: ArcTexture<Spectrum>,
 
-    /// Optional microfacet roughness in the u direction. If zero, perfect
-    /// specular reflection is modeled.
+    /// Optional microfacet roughness in the u direction. If zero, perfect specular reflection is modeled.
     u_roughness: ArcTexture<Float>,
 
-    /// Optional microfacet roughness in the v direction. If zero, perfect
-    /// specular reflection is modeled.
+    /// Optional microfacet roughness in the v direction. If zero, perfect specular reflection is modeled.
     v_roughness: ArcTexture<Float>,
 
-    /// If true, roughness values are expected to be in the range [0,1], and are
-    /// remapped to microfacet distribution function parameter values that range
-    /// from near-perfect-specular at 0 to very rough at 1. Otherwise the
-    /// roughness parameters are used directly for the alpha parameters of the
-    /// microfacet distribution function.
+    /// If true, roughness values are expected to be in the range [0,1], and are remapped to microfacet distribution
+    /// function parameter values that range from near-perfect-specular at 0 to very rough at 1. Otherwise the roughness
+    /// parameters are used directly for the alpha parameters of the microfacet distribution function.
     remap_roughness: bool,
 
     /// Index of refraction of the scattering medium.
@@ -65,17 +61,14 @@ impl KdSubsurfaceMaterial {
     /// * `mfp`             - Mean free path `1/σt`.
     /// * `g`               - Asymmetry parameter for Henyey-Greenstein phase function.
     /// * `eta`             - Index of refraction of the scattering medium.
-    /// * `u_roughness`     - Optional microfacet roughness in the u direction.
-    ///                       If zero, perfect specular reflection is modeled.
-    /// * `v_roughness`     - Optional microfacet roughness in the v direction.
-    ///                       If zero, perfect specular reflection is modeled.
-    /// * `remap_roughness` - If true, roughness values are expected to be in
-    ///                       the range [0,1], and are remapped to microfacet
-    ///                       distribution function parameter values that range
-    ///                       from near-perfect-specular at 0 to very rough at 1.
-    ///                       Otherwise the roughness parameters are used directly
-    ///                       for the alpha parameters of the microfacet
-    ///                       distribution function.
+    /// * `u_roughness`     - Optional microfacet roughness in the u direction. If zero, perfect specular reflection is
+    ///                       modeled.
+    /// * `v_roughness`     - Optional microfacet roughness in the v direction. If zero, perfect specular reflection is
+    ///                       modeled.
+    /// * `remap_roughness` - If true, roughness values are expected to be in the range [0,1], and are remapped to
+    ///                       microfacet distribution function parameter values that range from near-perfect-specular at
+    ///                       0 to very rough at 1. Otherwise the roughness parameters are used directly for the alpha
+    ///                       parameters of the microfacet distribution function.
     /// * `bump_map`        - Optional bump map.
     pub fn new(
         scale: Float,
@@ -110,15 +103,13 @@ impl KdSubsurfaceMaterial {
 }
 
 impl Material for KdSubsurfaceMaterial {
-    /// Initializes representations of the light-scattering properties of the
-    /// material at the intersection point on the surface.
+    /// Initializes representations of the light-scattering properties of the material at the intersection point on the
+    /// surface.
     ///
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
-    /// * `allow_multiple_lobes` - Indicates whether the material should use
-    ///                            BxDFs that aggregate multiple types of
-    ///                            scattering into a single BxDF when such BxDFs
-    ///                            are available (ignored).
+    /// * `allow_multiple_lobes` - Indicates whether the material should use BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene>(
@@ -200,26 +191,16 @@ impl From<&TextureParams> for KdSubsurfaceMaterial {
         let scale = tp.find_float("scale", 1.0);
         let g = tp.find_float("g", 0.0);
 
-        let kd = tp.get_spectrum_texture_or_else(
-            "Kd",
-            RGBSpectrum::from_rgb(&[0.5, 0.5, 0.5], None),
-            |v| Arc::new(ConstantTexture::new(v)),
-        );
-        let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::ONE, |v| {
+        let kd = tp.get_spectrum_texture_or_else("Kd", RGBSpectrum::from_rgb(&[0.5, 0.5, 0.5], None), |v| {
             Arc::new(ConstantTexture::new(v))
         });
-        let kt = tp.get_spectrum_texture_or_else("Kt", Spectrum::ONE, |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
-        let mfp = tp.get_spectrum_texture_or_else("mfp", Spectrum::ONE, |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
+        let kr = tp.get_spectrum_texture_or_else("Kr", Spectrum::ONE, |v| Arc::new(ConstantTexture::new(v)));
+        let kt = tp.get_spectrum_texture_or_else("Kt", Spectrum::ONE, |v| Arc::new(ConstantTexture::new(v)));
+        let mfp = tp.get_spectrum_texture_or_else("mfp", Spectrum::ONE, |v| Arc::new(ConstantTexture::new(v)));
 
-        let u_roughness =
-            tp.get_float_texture_or_else("uroughness", 0.0, |v| Arc::new(ConstantTexture::new(v)));
+        let u_roughness = tp.get_float_texture_or_else("uroughness", 0.0, |v| Arc::new(ConstantTexture::new(v)));
 
-        let v_roughness =
-            tp.get_float_texture_or_else("vroughness", 0.0, |v| Arc::new(ConstantTexture::new(v)));
+        let v_roughness = tp.get_float_texture_or_else("vroughness", 0.0, |v| Arc::new(ConstantTexture::new(v)));
 
         let bump_map = tp.get_float_texture_or_none("bumpmap");
         let remap_roughness = tp.find_bool("remaproughness", true);

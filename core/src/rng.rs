@@ -79,8 +79,7 @@ impl RNG {
         r1 | r2
     }
 
-    /// Returns a uniformly distributed value over the closed interval containing
-    /// the given bounds.
+    /// Returns a uniformly distributed value over the closed interval containing the given bounds.
     ///
     /// * `lower_bound` - The upper bound.
     /// * `upper_bound` - The upper bound.
@@ -103,8 +102,7 @@ impl RNG {
         )
     }
 
-    /// Randomly permute a slice containing n-dimensional values in a linear
-    /// structure.
+    /// Randomly permute a slice containing n-dimensional values in a linear structure.
     ///
     /// * `v`            - The slice to shuffle.
     /// * `count`        - Number of n-dimensional values.

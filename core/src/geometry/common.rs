@@ -31,19 +31,16 @@ pub trait Cross<V> {
     fn cross(&self, other: &V) -> Self::Output;
 }
 
-/// FaceForward trait allows pointing vectors in the same hemisphere as
-/// another normal/vector.
+/// FaceForward trait allows pointing vectors in the same hemisphere as another normal/vector.
 ///
-/// NOTE:
-/// This is only used by Normal3, so its probably overkill but a nice
-/// example of type bounds and generics.
+/// *NOTE*: This is only used by Normal3, so its probably overkill but a nice example of type bounds and generics.
 pub trait FaceForward<T, V>
 where
     T: Num + Zero + Neg<Output = T> + PartialOrd + Copy,
     Self: Dot<V, Output = T> + Neg<Output = Self> + Sized + Copy,
 {
-    /// If the vector/normal is not in the same hemisphere as another,
-    /// return flipped vector/normal. Otherwise, return itself.
+    /// If the vector/normal is not in the same hemisphere as another, return flipped vector/normal. Otherwise, return
+    /// itself.
     ///
     /// * `other` - The other vector.
     fn face_forward(&self, other: &V) -> Self {

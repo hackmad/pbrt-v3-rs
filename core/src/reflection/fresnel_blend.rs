@@ -51,8 +51,7 @@ impl FresnelBlend {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -75,7 +74,6 @@ impl FresnelBlend {
     }
 
     /// Returns the value of the BxDF given the outgpoing direction.
-    /// directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
@@ -107,8 +105,8 @@ impl FresnelBlend {
         BxDFSample::new(self.f(wo, &wi), pdf, wi, self.bxdf_type)
     }
 
-    /// Evaluates the PDF for the sampling method. Default is based on the
-    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    /// Evaluates the PDF for the sampling method. Default is based on the cosine-weighted sampling in `BxDF::sample_f()`
+    /// default implementation.
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if !same_hemisphere(wo, wi) {
             0.0

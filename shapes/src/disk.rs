@@ -83,7 +83,7 @@ impl Shape for Disk {
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests (not supported).
     fn intersect<'scene>(&self, r: &Ray, _test_alpha_texture: bool) -> Option<Intersection<'scene>> {
-        // Transform ray to object space
+        // Transform ray to object space.
         //
         // We could just use transform_ray() but there is minor adjustment in it that adjusts t_max which is not in
         // transform_ray_with_error().
@@ -208,7 +208,7 @@ impl Shape for Disk {
 
     /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
+    /// *NOTE*: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample(&self, u: &Point2f) -> (Hit, Float) {

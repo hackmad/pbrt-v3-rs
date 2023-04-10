@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 /// Subdivision surface vertex.
 ///
-/// NOTE: We use i64 and -1 to indicate no value instead of using Option<usize> to make the algorithm a little bit
+/// *NOTE*: We use i64 and -1 to indicate no value instead of using Option<usize> to make the algorithm a little bit
 /// cleaner and clearer to implement following the original PBRT implementation.
 #[derive(Clone)]
 struct SDVertex {
@@ -151,7 +151,7 @@ impl PartialEq for SDVertex {
 
 // Subdivision surface edge.
 ///
-/// NOTE: We use i64 and -1 to indicate no value instead of using Option<usize> to make the algorithm a little bit
+/// *NOTE*: We use i64 and -1 to indicate no value instead of using Option<usize> to make the algorithm a little bit
 /// cleaner and clearer to implement following the original PBRT implementation.
 #[derive(Clone, Eq)]
 struct SDEdge {
@@ -211,7 +211,7 @@ impl Hash for SDEdge {
 
 /// Subdivision surface face.
 ///
-/// NOTE: We use i64 and -1 to indicate no value instead of using Option<usize> to make the algorithm a little bit
+/// *NOTE*: We use i64 and -1 to indicate no value instead of using Option<usize> to make the algorithm a little bit
 /// cleaner and clearer to implement following the original PBRT implementation.
 #[derive(Clone)]
 struct SDFace {
@@ -661,7 +661,7 @@ impl LoopSubDiv {
     /// Create `LoopSubDiv` from given parameter set, object to world transform, world to object transform and whether
     /// or not surface normal orientation is reversed.
     ///
-    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
+    /// *NOTE*: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
     ///
     /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform and whether
     ///         or not surface normal orientation is reversed.

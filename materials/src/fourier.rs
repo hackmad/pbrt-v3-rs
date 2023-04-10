@@ -15,8 +15,7 @@ lazy_static! {
     static ref BSDF_TABLES: Mutex<HashMap<String, Arc<FourierBSDFTable>>> = Mutex::new(HashMap::new());
 }
 
-/// Implements materials using measured or synthetic BSDF data that has been
-/// tabulated into the directional basis.
+/// Implements materials using measured or synthetic BSDF data that has been tabulated into the directional basis.
 pub struct FourierMaterial {
     /// Stores the measured Fourier BSDF data.
     bsdf_table: Arc<FourierBSDFTable>,
@@ -50,23 +49,17 @@ impl FourierMaterial {
             }
         };
 
-        Self {
-            bsdf_table,
-            bump_map,
-        }
+        Self { bsdf_table, bump_map }
     }
 }
 
 impl Material for FourierMaterial {
-    /// Initializes representations of the light-scattering properties of the
-    /// material at the intersection point on the surface.
+    /// Initializes representations of the light-scattering properties of the material at the intersection point on the surface.
     ///
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
-    /// * `allow_multiple_lobes` - Indicates whether the material should use
-    ///                            BxDFs that aggregate multiple types of
-    ///                            scattering into a single BxDF when such BxDFs
-    ///                            are available (ignored).
+    /// * `allow_multiple_lobes` - Indicates whether the material should use BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene>(
@@ -84,8 +77,8 @@ impl Material for FourierMaterial {
 
         let mut result = BSDF::new(&si.hit, &si.shading, None);
 
-        // Checking for zero channels works as a proxy for checking whether the
-        // table was successfully read from the file.
+        // Checking for zero channels works as a proxy for checking whether the table was successfully read from the
+        // file.
         if self.bsdf_table.n_channels > 0 {
             result.add(FourierBSDF::new(Arc::clone(&self.bsdf_table), mode));
         }
@@ -96,8 +89,7 @@ impl Material for FourierMaterial {
 }
 
 impl From<(&TextureParams, &str)> for FourierMaterial {
-    /// Create a Fourier material from given parameter set and current working
-    /// directory.
+    /// Create a Fourier material from given parameter set and current working directory.
     ///
     /// * `p` - Texture parameter set and current working directory.
     fn from(p: (&TextureParams, &str)) -> Self {

@@ -363,7 +363,7 @@ impl Integrator for BDPTIntegrator {
 
     /// Returns the incident radiance at the origin of a given ray.
     ///
-    /// NOTE: This is never called.
+    /// *NOTE*: This is never called.
     ///
     /// * `ray`     - The ray.
     /// * `scene`   - The scene.
@@ -763,10 +763,10 @@ fn mis_weight<'scene>(
     let pt_minus = pt - 1;
 
     // The original implementation uses ScopedAssignment which backs up a value and restores that when the variable
-    // goes out of scope. This could be done here by storing a &mut T where T is Clone. However, it also using 
-    // ScopedAssignement on fields of such T's. Taking a mutable reference to the fields of T will make it so that the
-    // original T cannot be accessed until the second one is dropped. So we resort to backing up values ourselves we
-    // need and restoring them when we are done.
+    // goes out of scope. This could be done here by storing a &mut `T` where `T` is Clone. However, it also using 
+    // ScopedAssignement on fields of such `T`'s. Taking a mutable reference to the fields of `T` will make it so that
+    // the original `T` cannot be accessed until the second one is dropped. So we resort to backing up values ourselves
+    // we need and restoring them when we are done.
 
     // Update sampled vertex for `s=1` and `t=1` strategy.
     let mut backup_qs: Option<Vertex> = None;
@@ -1019,7 +1019,7 @@ pub(crate) fn connect_bdpt<'scene>(
         }
     }
 
-    // Compute MIS weight for connection strategy
+    // Compute MIS weight for connection strategy.
     let mis_wt = if l.is_black() {
         0.0
     } else {

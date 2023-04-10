@@ -110,7 +110,7 @@ impl Curve {
     /// Create `Curve`s from given parameter set, object to world transform, world to object transform and whether or
     /// not surface normal orientation is reversed.
     ///
-    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
+    /// *NOTE*: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
     ///
     /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform and whether
     ///         or not surface normal orientation is reversed.
@@ -202,8 +202,8 @@ impl Curve {
             let mut seg_cp_bezier = [Point3f::ZERO; 4];
 
             // First, compute the cubic Bezier control points for the current segment and store them in segCpBezier.
-            // (It is admittedly wasteful storage-wise to turn b-splines into Bezier segments and wasteful computationally
-            // to turn quadratic curves into cubics, but yolo.)
+            // (It is admittedly wasteful storage-wise to turn b-splines into Bezier segments and wasteful
+            // computationally to turn quadratic curves into cubics, but yolo.)
             if basis == "bezier" {
                 if degree == 2 {
                     // Elevate to degree 3.
@@ -664,7 +664,7 @@ impl Shape for Curve {
 
     /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
+    /// *NOTE*: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample(&self, _u: &Point2f) -> (Hit, Float) {
@@ -697,7 +697,6 @@ pub struct CurveData {
 impl CurveData {
     /// Create common parameters for curve.
     ///
-    /// The curve type.
     /// * `curve_type` - Curve type.
     /// * `c`          - Object space control points.
     /// * `width`      - The width of the curve at the start and end points.

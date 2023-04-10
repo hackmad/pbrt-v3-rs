@@ -5,7 +5,7 @@ use std::ops::{Index, IndexMut};
 use std::sync::Arc;
 
 /// Number of transformations to store.
-/// NOTE: TransformCache assumes only two transforms. Don't change this.
+/// *NOTE*: `TransformCache` assumes only two transforms. Don't change this.
 pub const MAX_TRANSFORMS: usize = 2;
 
 /// Transformation for starting time.
@@ -34,8 +34,8 @@ impl TransformSet {
         t_inv
     }
 
-    /// Returns `true` if 2 successive transformations are not the same
-    /// indicating that this is storing animated transforms.
+    /// Returns `true` if 2 successive transformations are not the same indicating that this is storing animated
+    /// transforms.
     pub fn is_animated(&self) -> bool {
         for i in 0..self.t.len() - 1 {
             if self.t[i] != self.t[i + 1] {

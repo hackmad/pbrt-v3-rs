@@ -28,7 +28,8 @@ pub trait Medium {
     /// The ray will generally have been intersected against the scene geometry; thus, implementations of this method
     /// shouldn’t ever sample a medium interaction at a point on the ray beyond its `t_max` value.
     ///
-    /// NOTE: Calling code will need to assign this medium as we cannot pass back and `ArcMedium` out of here for `Self`.
+    /// *NOTE*: Calling code will need to assign this medium as we cannot pass back and `ArcMedium` out of here for
+    /// `Self`.
     ///
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.

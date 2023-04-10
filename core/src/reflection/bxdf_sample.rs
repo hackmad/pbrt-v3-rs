@@ -25,17 +25,11 @@ impl BxDFSample {
     /// * `wi`           - The sampled inbound direction in world-space.
     /// * `sampled_type` - The type of BxDF.
     pub fn new(f: Spectrum, pdf: Float, wi: Vector3f, bxdf_type: BxDFType) -> Self {
-        Self {
-            f,
-            pdf,
-            wi,
-            bxdf_type,
-        }
+        Self { f, pdf, wi, bxdf_type }
     }
 }
 impl From<BxDFType> for BxDFSample {
-    /// Create a `BxDFSample` with just the BxDF type and other fields set to
-    /// default.
+    /// Create a `BxDFSample` with just the BxDF type and other fields set to default.
     ///
     /// * `sampled_type` - The type of BxDF.
     fn from(sampled_type: BxDFType) -> Self {

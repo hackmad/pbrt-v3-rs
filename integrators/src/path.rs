@@ -240,7 +240,8 @@ impl Integrator for PathIntegrator {
                 }
             }
 
-            // Possibly terminate the path with Russian roulette. Factor out radiance scaling due to refraction in `rr_beta`.
+            // Possibly terminate the path with Russian roulette. Factor out radiance scaling due to refraction in
+            // `rr_beta`.
             let rr_beta = beta * eta_scale;
             if rr_beta.max_component_value() < self.rr_threshold && bounces > 3 {
                 let q = max(0.05, 1.0 - rr_beta.max_component_value());

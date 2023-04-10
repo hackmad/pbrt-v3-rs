@@ -35,8 +35,7 @@ impl ScaledBxDF {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -45,7 +44,6 @@ impl ScaledBxDF {
     }
 
     /// Returns the value of the BxDF given the outgpoing direction.
-    /// directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.

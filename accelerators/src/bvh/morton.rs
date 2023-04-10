@@ -28,11 +28,10 @@ impl MortonPrimitive {
     }
 }
 
-/// Take a 3D coordinate value where each component is a floating-point value
-/// between 0 and 2^10 and convert these values to integers and then computes the
-/// Morton code by expanding the three 10-bit quantized values so that their i^th
-/// bits are at position `3i`, then shifting the bits over one more, the z bits
-/// over two more, and ORing together the result.
+/// Take a 3D coordinate value where each component is a floating-point value between 0 and 2^10 and convert these
+/// values to integers and then computes the Morton code by expanding the three 10-bit quantized values so that their
+/// i^th bits are at position `3i`, then shifting the bits over one more, the z bits over two more, and ORing together
+/// the result.
 ///
 /// * `v` - The coordinate value.
 pub fn encode_morton_3(v: &Vector3f) -> u32 {
@@ -40,9 +39,7 @@ pub fn encode_morton_3(v: &Vector3f) -> u32 {
     debug_assert!(v.y > 0.0);
     debug_assert!(v.z > 0.0);
 
-    (left_shift_3(float_to_bits(v.z)) << 2)
-        | (left_shift_3(float_to_bits(v.y)) << 1)
-        | left_shift_3(float_to_bits(v.x))
+    (left_shift_3(float_to_bits(v.z)) << 2) | (left_shift_3(float_to_bits(v.y)) << 1) | left_shift_3(float_to_bits(v.x))
 }
 
 pub const N_BITS: usize = 30;
@@ -98,12 +95,10 @@ pub fn radix_sort(v: &mut RefCell<Vec<MortonPrimitive>>) {
     }
 }
 
-/// The bit shifts to compute the Morton code for each 3D coordinate are 
-/// performed in a series of shifts of power-of-two size. First, bits 8 and 9
-/// are shifted 16 places to the left. This places bit 8 in its final position. 
-/// Next bits 4 through 7 are shifted 8 places. After shifts of 4 and 2 places 
-/// (with appropriate masking so that each bit is shifted the right number of 
-/// places in the end), all bits are in the proper position. 
+/// The bit shifts to compute the Morton code for each 3D coordinate are performed in a series of shifts of power-of-two
+/// size. First, bits 8 and 9 are shifted 16 places to the left. This places bit 8 in its final position. Next bits 4
+/// through 7 are shifted 8 places. After shifts of 4 and 2 places (with appropriate masking so that each bit is shifted
+/// the right number of places in the end), all bits are in the proper position. 
 ///
 /// * `x` - The value.
 #[rustfmt::skip]

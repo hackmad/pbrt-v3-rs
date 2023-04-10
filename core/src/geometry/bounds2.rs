@@ -101,7 +101,8 @@ impl<T: Num + Copy> Bounds2<T> {
         }
     }
 
-    /// Returns true if the bounding box describes an empty box where any the components of any p_max are less than p_max.
+    /// Returns true if the bounding box describes an empty box where any the components of any `p_max` are less than
+    /// `p_max`.
     pub fn is_empty(&self) -> bool
     where
         T: PartialOrd,
@@ -320,8 +321,8 @@ impl<T: Num + fmt::Display> fmt::Display for Bounds2<T> {
     }
 }
 
-/// An iterator that can step through integer coordinates in a bounding box in a left-to-right (x-axis) and top-to-bottom
-/// (y-axis) scan order.
+/// An iterator that can step through integer coordinates in a bounding box in a left-to-right (x-axis) and
+/// top-to-bottom (y-axis) scan order.
 pub struct Bounds2iIterator {
     /// The iterator that will supply points.
     p: Product<Range<Int>, Range<Int>>,

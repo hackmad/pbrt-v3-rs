@@ -36,8 +36,7 @@ pub struct ParamSet {
     pub cached_spectra: HashMap<String, Spectrum>,
 }
 
-/// Define a macro that can be used to generate a function for adding/replacing
-/// parameter set item.
+/// Define a macro that can be used to generate a function for adding/replacing parameter set item.
 macro_rules! paramset_add {
     ($func: ident, $t: ty, $paramset: ident) => {
         pub fn $func(&mut self, name: &str, values: &[$t]) {
@@ -47,8 +46,7 @@ macro_rules! paramset_add {
     };
 }
 
-/// Define a macro that can be used to generate a function for removing
-/// parameter set item.
+/// Define a macro that can be used to generate a function for removing parameter set item.
 macro_rules! paramset_erase {
     ($func: ident, $paramset: ident) => {
         pub fn $func(&mut self, name: &str) -> bool {
@@ -58,8 +56,7 @@ macro_rules! paramset_erase {
     };
 }
 
-/// Define a macro that can be used to generate a function for finding
-/// parameter set item that is stored as a single item.
+/// Define a macro that can be used to generate a function for finding parameter set item that is stored as a single item.
 macro_rules! paramset_find_one {
     ($func: ident, $t: ty, $paramset: ident) => {
         pub fn $func(&self, name: &str, default: $t) -> $t {
@@ -78,8 +75,7 @@ macro_rules! paramset_find_one {
     };
 }
 
-/// Define a macro that can be used to generate a function for finding
-/// parameter set item that is stored as a list.
+/// Define a macro that can be used to generate a function for finding parameter set item that is stored as a list.
 macro_rules! paramset_find {
     ($func: ident, $t: ty, $paramset: ident) => {
         pub fn $func(&self, name: &str) -> Vec<$t> {
@@ -105,11 +101,7 @@ macro_rules! display_param {
 
                 let mut nc = 0;
                 for (i, v) in param.values.iter().enumerate() {
-                    let s = if i < n - 1 {
-                        format!("{} ", v)
-                    } else {
-                        format!("{}", v)
-                    };
+                    let s = if i < n - 1 { format!("{} ", v) } else { format!("{}", v) };
 
                     nc += s.len();
                     if nc > 80 {
@@ -251,16 +243,11 @@ impl ParamSet {
 
         for i in 0..n {
             let le = blackbody_normalized(&lambda, values[2 * i]);
-            let samples: Vec<Sample> = lambda
-                .iter()
-                .zip(le.iter())
-                .map(|(l, v)| Sample::new(*l, *v))
-                .collect();
+            let samples: Vec<Sample> = lambda.iter().zip(le.iter()).map(|(l, v)| Sample::new(*l, *v)).collect();
             spectra.push(values[2 * i + 1] * Spectrum::from(&samples));
         }
 
-        self.spectra
-            .insert(String::from(name), ParamSetItem::new(spectra));
+        self.spectra.insert(String::from(name), ParamSetItem::new(spectra));
     }
 
     /// Add/replace a sampled spectrum.
@@ -270,8 +257,7 @@ impl ParamSet {
     pub fn add_sampled_spectrum(&mut self, name: &str, values: &[Float]) {
         let samples = Sample::list(values);
         let spectra = vec![Spectrum::from(&samples)];
-        self.spectra
-            .insert(String::from(name), ParamSetItem::new(spectra));
+        self.spectra.insert(String::from(name), ParamSetItem::new(spectra));
     }
 
     /// Add/replace a spectra from files.
@@ -299,10 +285,7 @@ impl ParamSet {
                     let spectrum = match parse_float_file(&abs_path) {
                         Ok(vals) => {
                             if vals.len() % 2 > 0 {
-                                warn!(
-                                    "Extra value found in spectrum file '{}'. Ignoring it.",
-                                    path
-                                );
+                                warn!("Extra value found in spectrum file '{}'. Ignoring it.", path);
                             }
                             let mut samples: Vec<Sample> = Vec::with_capacity(vals.len() / 2);
                             for j in 0..vals.len() / 2 {
@@ -311,10 +294,7 @@ impl ParamSet {
                             Spectrum::from(&samples)
                         }
                         Err(e) => {
-                            warn!(
-                                "Unable to read SPD file '{}'. Using black distribution. {}",
-                                path, e
-                            );
+                            warn!("Unable to read SPD file '{}'. Using black distribution. {}", path, e);
                             Spectrum::ZERO
                         }
                     };
@@ -322,24 +302,20 @@ impl ParamSet {
                     spectra.push(spectrum);
                 }
                 Err(err) => {
-                    error!(
-                        "Error reading {}. Using black distribution.\n{}.",
-                        path, err
-                    );
+                    error!("Error reading {}. Using black distribution.\n{}.", path, err);
                     spectra.push(Spectrum::ZERO);
                 }
             }
         }
 
-        self.spectra
-            .insert(String::from(name), ParamSetItem::new(spectra));
+        self.spectra.insert(String::from(name), ParamSetItem::new(spectra));
     }
 
     /// Finds a filename and returns the absolute path to the file.
     ///
     /// * `name` - Parameter name.
-    /// * `cwd`  - Current working directory used for relative path handling. If
-    ///            it is None, assume path is relative to program path.
+    /// * `cwd`  - Current working directory used for relative path handling. If it is None, assume path is relative to
+    ///            program path.
     pub fn find_one_filename(&self, name: &str, cwd: Option<&str>) -> Option<String> {
         let mut filename = self.find_one_string(name, String::from(""));
         if filename.is_empty() {

@@ -26,12 +26,12 @@ pub struct SamplerData {
     /// Stores the `n` requested 2D samples for each pixel.
     pub sample_array_2d: Vec<Vec<Point2f>>,
 
-    /// Tracks index of the next element in 1D array. This is reset to 0 when
-    /// a new samplpixel starts or the sample number in current pixel changes.
+    /// Tracks index of the next element in 1D array. This is reset to 0 when a new samplpixel starts or the sample
+    /// number in current pixel changes.
     pub array_1d_offset: usize,
 
-    /// Tracks index of the next element in 2D array. This is reset to 0 when
-    /// a new samplpixel starts or the sample number in current pixel changes.
+    /// Tracks index of the next element in 2D array. This is reset to 0 when a new samplpixel starts or the sample
+    /// number in current pixel changes.
     pub array_2d_offset: usize,
 }
 
@@ -53,8 +53,7 @@ impl SamplerData {
         }
     }
 
-    /// This should be called when the rendering algorithm is ready to start
-    /// working on a given pixel.
+    /// This should be called when the rendering algorithm is ready to start working on a given pixel.
     ///
     /// * `p` - The pixel.
     pub fn start_pixel(&mut self, p: &Point2i) {
@@ -66,8 +65,7 @@ impl SamplerData {
         self.array_2d_offset = 0;
     }
 
-    /// This should be called before rendering begins when an array of 1D
-    /// samples is required.
+    /// This should be called before rendering begins when an array of 1D samples is required.
     ///
     /// * `n` - The number of samples.
     pub fn request_1d_array(&mut self, n: usize) {
@@ -76,8 +74,7 @@ impl SamplerData {
             .push(Vec::<Float>::with_capacity(n * self.samples_per_pixel));
     }
 
-    /// This should be called before rendering begins when an array of 1D
-    /// samples is required.
+    /// This should be called before rendering begins when an array of 1D samples is required.
     ///
     /// * `n` - The number of samples.
     pub fn request_2d_array(&mut self, n: usize) {
@@ -124,8 +121,8 @@ impl SamplerData {
         }
     }
 
-    /// Reset the current sample dimension counter. Returns `true` if
-    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
+    /// Reset the current sample dimension counter. Returns `true` if `current_pixel_sample_index` <
+    /// `samples_per_pixel`; otherwise `false`.
     pub fn start_next_sample(&mut self) -> bool {
         // Reset array offsets for next pixel sample.
         self.array_1d_offset = 0;
@@ -134,9 +131,8 @@ impl SamplerData {
         self.current_pixel_sample_index < self.samples_per_pixel
     }
 
-    /// Set the index of the sample in the current pixel to generate next.
-    /// Returns `true` if `current_pixel_sample_index` < `samples_per_pixel`;
-    /// otherwise `false`.
+    /// Set the index of the sample in the current pixel to generate next. Returns `true` if
+    /// `current_pixel_sample_index` < `samples_per_pixel`; otherwise `false`.
     ///
     /// * `sample_num` - The sample number.
     pub fn set_sample_number(&mut self, sample_num: usize) -> bool {
@@ -153,9 +149,8 @@ impl SamplerData {
     }
 }
 
-/// Stores the data for samplers that are not pixel based and can generate
-/// samples that are spread across the entire image. This can support samplers
-/// that can generate samples for image tiles.
+/// Stores the data for samplers that are not pixel based and can generate samples that are spread across the entire
+/// image. This can support samplers that can generate samples for image tiles.
 #[derive(Clone)]
 pub struct GlobalSamplerData {
     /// Sample dimension.
@@ -164,13 +159,11 @@ pub struct GlobalSamplerData {
     /// The index of the sample in the current pixel.
     pub interval_sample_index: u64,
 
-    /// The first dimensions up to this are devoted to regular 1D and 2D
-    /// samples. Subsequent dimensions are devoted to first 1D, then 2D
-    /// array samples up to and not included `array_end_dim`.
+    /// The first dimensions up to this are devoted to regular 1D and 2D samples. Subsequent dimensions are devoted to
+    /// first 1D, then 2D array samples up to and not included `array_end_dim`.
     pub array_start_dim: u16,
 
-    /// Higher dimension samples start here and are used for non-array 1D and
-    /// 2D samples.
+    /// Higher dimension samples start here and are used for non-array 1D and 2D samples.
     pub array_end_dim: u16,
 }
 

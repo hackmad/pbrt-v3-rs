@@ -35,8 +35,7 @@ impl SpecularReflection {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -46,7 +45,6 @@ impl SpecularReflection {
     }
 
     /// Returns the value of the BxDF given the outgpoing direction.
-    /// directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
@@ -58,8 +56,8 @@ impl SpecularReflection {
         BxDFSample::new(s, pdf, wi, self.bxdf_type)
     }
 
-    /// Evaluates the PDF for the sampling method. Default is based on the
-    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    /// Evaluates the PDF for the sampling method. Default is based on the cosine-weighted sampling in `BxDF::sample_f()`
+    /// default implementation.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.

@@ -99,8 +99,7 @@ impl Hyperboloid {
                 break;
             }
 
-            // Give up after 100,000 interations for fear of getting stuck in
-            // infinte loop :(
+            // Give up after 100,000 interations for fear of getting stuck in infinte loop :(
             count += 1;
             if count > 100000 {
                 panic!("Hyperboloid parameters possibly causing infinte loop.");
@@ -415,7 +414,7 @@ impl Shape for Hyperboloid {
 
     /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
+    /// *NOTE*: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample(&self, _u: &Point2f) -> (Hit, Float) {
@@ -424,15 +423,17 @@ impl Shape for Hyperboloid {
 }
 
 impl From<(&ParamSet, ArcTransform, ArcTransform, bool)> for Hyperboloid {
-    /// Create a `Hyperboloid` from given parameter set, object to world transform, world to object transform and whether
-    /// or not surface normal orientation is reversed.
+    /// Create a `Hyperboloid` from given parameter set, object to world transform, world to object transform and
+    /// whether or not surface normal orientation is reversed.
     ///
     /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform and whether
     ///         or not surface normal orientation is reversed.
     fn from(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Self {
         let (params, o2w, w2o, reverse_orientation) = p;
 
-        // NOTE: These are the original defaults in PBRT v2/v3 that cause the constructor to get stuck in an infinite loop.
+        // *NOTE*: These are the original defaults in PBRT v2/v3 that cause the constructor to get stuck in an infinite
+        // loop.
+        //
         //let p1 = params.find_one_point3f("p1", Point3f::new(0.0, 0.0, 0.0));
         //let p2 = params.find_one_point3f("p2", Point3f::new(1.0, 1.0, 1.0));
 

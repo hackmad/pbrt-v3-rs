@@ -26645,8 +26645,9 @@ pub const SOBOL_MATRICES_64: [u64; NUM_SOBOL_DIMENSIONS * SOBOL_MATRIX_SIZE] = [
 ];
 
 /// Sobol generators.
-/// NOTE: C++ intializer automatically fills zeroes if the inner array has fewer than
-/// SOBOL_MATRIX_SIZE elemnts. So we pad missing ones with `0`.
+///
+/// *NOTE*: C++ intializer automatically fills zeroes if the inner array has fewer than `SOBOL_MATRIX_SIZE` elemnts. So
+/// we pad missing ones with `0`.
 #[rustfmt::skip]
 pub const VD_C_SOBOL_MATRICES: [[u64; SOBOL_MATRIX_SIZE]; 25] = [
     [
@@ -26832,6 +26833,9 @@ pub const VD_C_SOBOL_MATRICES: [[u64; SOBOL_MATRIX_SIZE]; 25] = [
 ];
 
 /// Sobol generators for the inverse matrices.
+///
+/// *NOTE*: C++ intializer automatically fills zeroes if the inner array has fewer than `SOBOL_MATRIX_SIZE` elemnts. So
+/// we pad missing ones with `0`.
 #[rustfmt::skip]
 pub const VD_C_SOBOL_MATRICES_INV: [[u64; SOBOL_MATRIX_SIZE]; 26] = [
     [

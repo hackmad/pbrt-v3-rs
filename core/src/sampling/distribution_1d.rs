@@ -2,8 +2,7 @@
 
 use crate::pbrt::*;
 
-/// Represents a piecewise-constant 1D function’s PDF and CDF and provides
-/// methods to perform this sampling efficiently.
+/// Represents a piecewise-constant 1D function’s PDF and CDF and provides methods to perform this sampling efficiently.
 #[derive(Clone)]
 pub struct Distribution1D {
     /// Piecewise-constant function.
@@ -42,11 +41,7 @@ impl Distribution1D {
             }
         }
 
-        Self {
-            func: f,
-            cdf,
-            func_int,
-        }
+        Self { func: f, cdf, func_int }
     }
 
     /// Returns the number of sample points for the piecewise-constant function.
@@ -54,8 +49,7 @@ impl Distribution1D {
         self.func.len()
     }
 
-    /// Return a sample in [0, 1), PDF and offset from the distribution given
-    /// a random sample.
+    /// Return a sample in [0, 1), PDF and offset from the distribution given a random sample.
     ///
     /// - `u` - The random sample.
     pub fn sample_continuous(&self, u: Float) -> (Float, Float, usize) {

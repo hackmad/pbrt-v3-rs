@@ -2,8 +2,7 @@
 
 use super::*;
 
-/// Implements 3D identity mapping by simply transforming the hit point and
-/// partials from world space to texture space.
+/// Implements 3D identity mapping by simply transforming the hit point and partials from world space to texture space.
 pub struct IdentityMapping3D {
     /// Transformation from world space to texture space.
     world_to_texture: ArcTransform,

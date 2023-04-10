@@ -39,15 +39,13 @@ impl MixMaterial {
 }
 
 impl Material for MixMaterial {
-    /// Initializes representations of the light-scattering properties of the
-    /// material at the intersection point on the surface.
+    /// Initializes representations of the light-scattering properties of the material at the intersection point on the
+    /// surface.
     ///
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode.
-    /// * `allow_multiple_lobes` - Indicates whether the material should use
-    ///                            BxDFs that aggregate multiple types of
-    ///                            scattering into a single BxDF when such BxDFs
-    ///                            are available.
+    /// * `allow_multiple_lobes` - Indicates whether the material should use BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs are available.
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene>(
@@ -59,33 +57,20 @@ impl Material for MixMaterial {
         bssrdf: &mut Option<BSSRDF>,
     ) {
         // Compute weights and original BxDFs for mix material.
-        let s1 = self
-            .scale
-            .evaluate(&si.hit, &si.uv, &si.der)
-            .clamp_default();
+        let s1 = self.scale.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         let s2 = (Spectrum::ONE - s1).clamp_default();
 
         let mut si2 = si.clone();
 
         let mut si_bsdf: Option<BSDF> = None;
         let mut si_bssrdf: Option<BSSRDF> = None;
-        self.m1.compute_scattering_functions(
-            si,
-            mode,
-            allow_multiple_lobes,
-            &mut si_bsdf,
-            &mut si_bssrdf,
-        );
+        self.m1
+            .compute_scattering_functions(si, mode, allow_multiple_lobes, &mut si_bsdf, &mut si_bssrdf);
 
         let mut si2_bsdf: Option<BSDF> = None;
         let mut si2_bssrdf: Option<BSSRDF> = None;
-        self.m2.compute_scattering_functions(
-            &mut si2,
-            mode,
-            allow_multiple_lobes,
-            &mut si2_bsdf,
-            &mut si2_bssrdf,
-        );
+        self.m2
+            .compute_scattering_functions(&mut si2, mode, allow_multiple_lobes, &mut si2_bsdf, &mut si2_bssrdf);
 
         // Initialize `si.bsdf` with weighted mixture of BxDFs.
         let mut result = BSDF::new(&si.hit, &si.shading, None);
@@ -116,9 +101,8 @@ impl From<(&TextureParams, ArcMaterial, ArcMaterial)> for MixMaterial {
     fn from(props: (&TextureParams, ArcMaterial, ArcMaterial)) -> Self {
         let (tp, mat1, mat2) = props;
 
-        let scale = tp.get_spectrum_texture_or_else("amount", Spectrum::new(0.5), |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
+        let scale =
+            tp.get_spectrum_texture_or_else("amount", Spectrum::new(0.5), |v| Arc::new(ConstantTexture::new(v)));
 
         Self::new(Arc::clone(&mat1), Arc::clone(&mat2), scale)
     }

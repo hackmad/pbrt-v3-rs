@@ -44,7 +44,8 @@ pub struct GonioPhotometricLight {
     /// Intensity.
     pub intensity: Spectrum,
 
-    /// The MipMAP images of the goniophotometric diagram that scales the intensity based on the angular distribution of light.
+    /// The MipMAP images of the goniophotometric diagram that scales the intensity based on the angular distribution of
+    /// light.
     pub mipmap: Option<MIPMap<RGBSpectrum>>,
 }
 

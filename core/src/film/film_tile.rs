@@ -34,8 +34,7 @@ impl FilmTile {
     /// * `pixel_bounds`         - Bounds of the pixels in the final image.
     /// * `filter_radius`        - Filter radius.
     /// * `filter_table`         - Filter table.
-    /// * `max_sample_luminance` - Optional maximum sample luminence to use use.
-    ///                            Defaults to `INFINITY`.
+    /// * `max_sample_luminance` - Optional maximum sample luminence to use use. Defaults to `INFINITY`.
     pub fn new(
         pixel_bounds: Bounds2i,
         filter_radius: Vector2f,
@@ -55,8 +54,7 @@ impl FilmTile {
         }
     }
 
-    /// Add the radiance carried by a ray for a sample. This should be called by
-    /// integrators.
+    /// Add the radiance carried by a ray for a sample. This should be called by integrators.
     ///
     /// * `p_film`         - Point on film.
     /// * `l`              - Radiance value `L`.
@@ -72,29 +70,24 @@ impl FilmTile {
         // Compute sample's raster bounds.
         let p_film_discrete = p_film - Vector2f::new(0.5, 0.5);
         let mut p0 = Point2i::from((p_film_discrete - self.filter_radius).ceil());
-        let mut p1 =
-            Point2i::from((p_film_discrete + self.filter_radius).floor()) + Point2i::new(1, 1);
+        let mut p1 = Point2i::from((p_film_discrete + self.filter_radius).floor()) + Point2i::new(1, 1);
         p0 = p0.max(&self.pixel_bounds.p_min);
         p1 = p1.min(&self.pixel_bounds.p_max);
 
         // Loop over filter support and add sample to pixel arrays.
-        let filter_table_size = FILTER_TABLE_WIDTH; // NOTE: not the entire size of the filter table.
+        let filter_table_size = FILTER_TABLE_WIDTH; // *NOTE*: not the entire size of the filter table.
 
         // Precompute `x` and `y` filter table offsets.
         let ifx: Vec<usize> = (p0.x..p1.x)
             .map(|x| {
-                let fx = abs((x as Float - p_film_discrete.x)
-                    * self.inv_filter_radius.x
-                    * filter_table_size as Float);
+                let fx = abs((x as Float - p_film_discrete.x) * self.inv_filter_radius.x * filter_table_size as Float);
                 min(fx.floor(), filter_table_size as Float - 1.0) as usize
             })
             .collect();
 
         let ify: Vec<usize> = (p0.y..p1.y)
             .map(|y| {
-                let fy = abs((y as Float - p_film_discrete.y)
-                    * self.inv_filter_radius.y
-                    * filter_table_size as Float);
+                let fy = abs((y as Float - p_film_discrete.y) * self.inv_filter_radius.y * filter_table_size as Float);
                 min(fy.floor(), filter_table_size as Float - 1.0) as usize
             })
             .collect();
@@ -102,8 +95,7 @@ impl FilmTile {
         for y in p0.y..p1.y {
             for x in p0.x..p1.x {
                 // Evaluate filter value at `(x, y)` pixel.
-                let offset =
-                    ify[(y - p0.y) as usize] * filter_table_size + ifx[(x - p0.x) as usize];
+                let offset = ify[(y - p0.y) as usize] * filter_table_size + ifx[(x - p0.x) as usize];
                 let filter_weight = self.filter_table[offset];
 
                 // Update pixel values with filtered sample contribution.
@@ -115,8 +107,8 @@ impl FilmTile {
         }
     }
 
-    /// Converts pixel coordinates with respect to the overall image and to
-    /// coordinates in the film tile and returns the correspdoning pixel.
+    /// Converts pixel coordinates with respect to the overall image and to coordinates in the film tile and returns the
+    /// correspdoning pixel.
     ///
     /// * `p` - The pixel coordinates with respect to the overall image.
     pub fn get_pixel_offset(&self, p: &Point2i) -> usize {

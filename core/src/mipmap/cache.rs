@@ -13,8 +13,8 @@ use std::sync::{Arc, Mutex};
 
 /// Interface for caching and retrieving `MIPMap`s.
 pub trait MIPMapCacheProvider<Tmemory> {
-    /// Get the mipmap for a given `TexInfo` from cache; if it doesn't exist
-    /// load it from file, store it in cache and return a reference.
+    /// Get the mipmap for a given `TexInfo` from cache; if it doesn't exist load it from file, store it in cache and
+    /// return a reference.
     ///
     /// * `tex_info` - Texture information.
     fn get(info: TexInfo) -> MIPMapCacheResult<Tmemory>;
@@ -37,8 +37,8 @@ macro_rules! cache_provider {
         }
 
         impl MIPMapCacheProvider<$t> for MIPMapCache {
-            /// Get the mipmap for a given `TexInfo` from cache; if it doesn't exist
-            /// load it from file, store it in cache and return a reference.
+            /// Get the mipmap for a given `TexInfo` from cache; if it doesn't exist load it from file, store it in
+            /// cache and return a reference.
             ///
             /// * `tex_info` - Texture information.
             fn get(info: TexInfo) -> Result<ArcMIPMap<$t>, String> {
@@ -66,9 +66,7 @@ pub fn clear_mipmap_caches() {
         .expect("Unable to access RGB_SPECTRUM_MIPMAPS mutex");
     mipmaps.clear();
 
-    let mut mipmaps = FLOAT_MIPMAPS
-        .lock()
-        .expect("Unable to access FLOAT_MIPMAPS mutex");
+    let mut mipmaps = FLOAT_MIPMAPS.lock().expect("Unable to access FLOAT_MIPMAPS mutex");
     mipmaps.clear();
 }
 
@@ -99,8 +97,7 @@ where
         Err(err) => return Err(format!("Error reading texture {}, {:}.", info.path, err)),
     };
 
-    // Flip image in y; texture coordinate space has (0,0) at the lower
-    // left corner.
+    // Flip image in y; texture coordinate space has (0,0) at the lower left corner.
     for y in 0..resolution.y / 2 {
         for x in 0..resolution.x {
             let o1 = y * resolution.x + x;

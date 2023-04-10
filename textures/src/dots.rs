@@ -27,11 +27,7 @@ impl<T> DotsTexture<T> {
     /// * `outside_dot` - Texture for exterior of dot pattern.
     /// * `inside_dot`  - Texture for dot pattern.
     /// * `mapping`     - The 2D mapping.
-    pub fn new(
-        outside_dot: ArcTexture<T>,
-        inside_dot: ArcTexture<T>,
-        mapping: ArcTextureMapping2D,
-    ) -> Self {
+    pub fn new(outside_dot: ArcTexture<T>, inside_dot: ArcTexture<T>, mapping: ArcTextureMapping2D) -> Self {
         Self {
             outside_dot,
             inside_dot,
@@ -76,24 +72,19 @@ where
 macro_rules! from_params {
     ($t: ty, $get_texture_or_else_func: ident) => {
         impl From<(&TextureParams, ArcTransform)> for DotsTexture<$t> {
-            /// Create a `DotsTexture<$t>` from given parameter set and
-            /// transformation from texture space to world space.
+            /// Create a `DotsTexture<$t>` from given parameter set and transformation from texture space to world space.
             ///
-            /// * `p` - Tuple containing texture parameters and texture space
-            ///         to world space transform.
+            /// * `p` - Tuple containing texture parameters and texture space to world space transform.
             fn from(p: (&TextureParams, ArcTransform)) -> Self {
                 let (tp, tex2world) = p;
 
                 // Initialize 2D texture mapping `map` from `tp`.
                 let map = get_texture_mapping(tp, tex2world);
 
-                let inside = tp.$get_texture_or_else_func("inside", 1.0.into(), |v| {
-                    Arc::new(ConstantTexture::new(v))
-                });
+                let inside = tp.$get_texture_or_else_func("inside", 1.0.into(), |v| Arc::new(ConstantTexture::new(v)));
 
-                let outside = tp.$get_texture_or_else_func("outside", 0.0.into(), |v| {
-                    Arc::new(ConstantTexture::new(v))
-                });
+                let outside =
+                    tp.$get_texture_or_else_func("outside", 0.0.into(), |v| Arc::new(ConstantTexture::new(v)));
 
                 Self::new(inside, outside, map)
             }

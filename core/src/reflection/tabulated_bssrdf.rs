@@ -463,7 +463,7 @@ impl TabulatedBSSRDF {
             sr /= TWO_PI * r_optical;
         }
 
-        // NOTE: We want the IEEE-754 behaviour for handling NaN which happens when rho_eff == 0.0. So we use
+        // `NOTE`: We want the IEEE-754 behaviour for handling NaN which happens when rho_eff == 0.0. So we use
         // Float::max() rather than our generic pbrt::max().
         (0.0 as Float).max(sr * self.sigma_t[ch] * self.sigma_t[ch] / rho_eff)
     }
@@ -536,8 +536,7 @@ impl BSSRDFTable {
         self.profile[rho_index * self.n_radius_samples + radius_index]
     }
 
-    /// Returns a medium's scattering properties; absorption coefficient `σa` and
-    /// scattering coefficient `σs`.
+    /// Returns a medium's scattering properties; absorption coefficient `σa` and scattering coefficient `σs`.
     ///
     /// * `rho_eff` - Effective albedo.
     /// * `mfp`     - Mean free path.
@@ -596,8 +595,7 @@ impl BSSRDFTable {
 /// Number of samples to use for the photon beam diffusion integral estimates.
 const PBD_SAMPLES: usize = 100;
 
-/// Compute the photon beam diffusion (PBD) single-scattering profile using 100
-/// samples for the integral estimate.
+/// Compute the photon beam diffusion (PBD) single-scattering profile using 100 samples for the integral estimate.
 ///
 /// * `sigma_s` - Scattering coefficient `σs` is the probability of an out-scattering event occurring per unit distance.
 /// * `sigma_a` - Absorption cross section `σa` is the probability density that light is absorbed per unit distance

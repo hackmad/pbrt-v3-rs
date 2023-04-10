@@ -77,7 +77,7 @@ impl<T: Num + Copy> Bounds3<T> {
         }
     }
 
-    /// Returns true if the bounds describes an empty box where any the components of any p_max are less than p_max.
+    /// Returns true if the bounds describes an empty box where any the components of any `p_max` are less than `p_max`.
     pub fn is_empty(&self) -> bool
     where
         T: PartialOrd,

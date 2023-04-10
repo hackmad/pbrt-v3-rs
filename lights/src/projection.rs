@@ -20,8 +20,8 @@ const NEAR: Float = 1e-3;
 // Far plane of projection.
 const FAR: Float = 1e30;
 
-/// Implements a light source that acts like a slide projector; it takes an image map and projects its image out into the
-/// scene.
+/// Implements a light source that acts like a slide projector; it takes an image map and projects its image out into
+/// the scene.
 ///
 /// The light coordinate system to always be at position (0, 0, 0) and pointing down the +z axis.
 #[derive(Clone)]
@@ -59,7 +59,8 @@ pub struct ProjectionLight {
     pub screen_bounds: Bounds2f,
 
     /// The cosine of the angle between the +z axis and the vector to a corner of the screen window. This value is used
-    /// elsewhere to define the minimal cone of directions that encompasses the set of directions in which light is projected.
+    /// elsewhere to define the minimal cone of directions that encompasses the set of directions in which light is
+    /// projected.
     pub cos_total_width: Float,
 }
 
@@ -268,7 +269,8 @@ impl Light for ProjectionLight {
 }
 
 impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, &str, usize)> for ProjectionLight {
-    /// Create a `ProjectionLight` from given parameter set, light to world transform, medium, current working directory and id.
+    /// Create a `ProjectionLight` from given parameter set, light to world transform, medium, current working directory
+    /// and id.
     ///
     /// * `p` - A tuple containing the parameter set, light to world transform, medium, current working directory and id.
     fn from(p: (&ParamSet, ArcTransform, Option<ArcMedium>, &str, usize)) -> Self {

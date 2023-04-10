@@ -6,8 +6,8 @@ use crate::material::*;
 use std::fmt;
 use std::sync::Arc;
 
-/// BSDF for modeling materials like metals with smooth or rough coatings and
-/// fabrics which are often partially retro-reflective.
+/// BSDF for modeling materials like metals with smooth or rough coatings and fabrics which are often partially
+/// retro-reflective.
 #[derive(Clone)]
 pub struct FourierBSDF {
     /// BxDF type.
@@ -24,8 +24,7 @@ impl FourierBSDF {
     /// Creates a new instance of `FourierBSDF`.
     ///
     /// * `bsdf_table` - The BSDF data.
-    /// * `mode`       - Indicates whether incident ray started from a light source
-    ///                  or from camera.
+    /// * `mode`       - Indicates whether incident ray started from a light source or from camera.
     pub fn new(bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> BxDF {
         let model = Self {
             bxdf_type: BxDFType::BSDF_REFLECTION | BxDFType::BSDF_TRANSMISSION | BxDFType::BSDF_GLOSSY,
@@ -40,8 +39,7 @@ impl FourierBSDF {
         self.bxdf_type
     }
 
-    /// Returns the value of the distribution function for the given pair of
-    /// directions.
+    /// Returns the value of the distribution function for the given pair of directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `wi` - Incident direction.
@@ -120,7 +118,6 @@ impl FourierBSDF {
     }
 
     /// Returns the value of the BxDF given the outgpoing direction.
-    /// directions.
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.
@@ -191,14 +188,12 @@ impl FourierBSDF {
             mu_i,
         );
 
-        // Mathematically, `wi` will be normalized (if `wo` was). However, in
-        // practice, floating-point rounding error can cause some error to
-        // accumulate in the computed value of wi here. This can be catastrophic:
-        // if the ray intersects an object with the FourierBSDF again and the `wo`
-        // (based on such a `wi`) is nearly perpendicular to the surface, then the
-        // `wi` computed at the next intersection can end up being substantially
-        // (like 4x) longer than normalized, which leads to all sorts of errors,
-        // including negative spectral values. Therefore, we normalize again here.
+        // Mathematically, `wi` will be normalized (if `wo` was). However, in practice, floating-point rounding error
+        // can cause some error to accumulate in the computed value of wi here. This can be catastrophic: if the ray
+        // intersects an object with the FourierBSDF again and the `wo` (based on such a `wi`) is nearly perpendicular
+        // to the surface, then the `wi` computed at the next intersection can end up being substantially (like 4x)
+        // longer than normalized, which leads to all sorts of errors, including negative spectral values. Therefore,
+        // we normalize again here.
         wi = wi.normalize();
 
         // Evaluate remaining Fourier expansions for angle ϕ.
@@ -231,8 +226,8 @@ impl FourierBSDF {
         }
     }
 
-    /// Evaluates the PDF for the sampling method. Default is based on the
-    /// cosine-weighted sampling in `BxDF::sample_f()` default implementation.
+    /// Evaluates the PDF for the sampling method. Default is based on the cosine-weighted sampling in `BxDF::sample_f()`
+    /// default implementation.
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         // Find the zenith angle cosines and azimuth difference angle.
         let mu_i = cos_theta(&(-(wi)));

@@ -4,8 +4,7 @@ use crate::geometry::*;
 use crate::pbrt::*;
 use crate::sampling::Distribution1D;
 
-/// Represents a piecewise-constant 2D function’s PDF and CDF and provides
-/// methods to perform this sampling efficiently.
+/// Represents a piecewise-constant 2D function’s PDF and CDF and provides methods to perform this sampling efficiently.
 #[derive(Clone)]
 pub struct Distribution2D {
     /// 1D conditional sampling density `p[ũ|ṽ]` for each `nv`.
@@ -20,10 +19,7 @@ impl Distribution2D {
     ///
     /// - `func` - Piecewise-constant 2D function.
     pub fn new(func: Vec<Vec<Float>>) -> Self {
-        let p_conditional_v: Vec<Distribution1D> = func
-            .iter()
-            .map(|f| Distribution1D::new(f.clone()))
-            .collect();
+        let p_conditional_v: Vec<Distribution1D> = func.iter().map(|f| Distribution1D::new(f.clone())).collect();
         let marginal_func: Vec<Float> = p_conditional_v.iter().map(|pcv| pcv.func_int).collect();
         let p_marginal = Distribution1D::new(marginal_func);
         Self {

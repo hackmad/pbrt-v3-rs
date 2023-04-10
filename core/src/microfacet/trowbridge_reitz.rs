@@ -24,10 +24,10 @@ pub struct TrowbridgeReitzDistribution {
 impl TrowbridgeReitzDistribution {
     /// Creates a new `TrowbridgeReitzDistribution`.
     ///
-    /// * `alpha_x`             - For microfacets oriented perpendicular to the x-axis and where α = sqrt(2) * σ and σ 
-    ///                           is the RMS slope of microfacets.
-    /// * `alpha_y`             - For microfacets oriented perpendicular to the y-axis and where α = sqrt(2) * σ and σ
-    ///                           is the RMS slope of microfacets.
+    /// * `alpha_x`             - For microfacets oriented perpendicular to the x-axis and where:
+    ///                           α = sqrt(2) * σ and σ is the RMS slope of microfacets.
+    /// * `alpha_y`             - For microfacets oriented perpendicular to the y-axis and where:
+    ///                           α = sqrt(2) * σ and σ is the RMS slope of microfacets.
     /// * `sample_visible_area` - Indicates whether or not the visible area is sampled or not (default to `true`).
     pub fn new(alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> MicrofacetDistribution {
         let dist = Self {
@@ -142,7 +142,7 @@ impl fmt::Display for TrowbridgeReitzDistribution {
 /// * `u1`        - The uniform random value.
 /// * `u2`        - The uniform random value.
 fn trowbridge_reitz_sample_11(cos_theta: Float, u1: Float, u2: Float) -> (Float, Float) {
-    // special case (normal incidence)
+    // Special case (normal incidence).
     if cos_theta > 0.9999 {
         let r = (u1 / (1.0 - u1)).sqrt();
         let phi = TWO_PI * u2; // 6.28318530718 * u2
@@ -193,10 +193,10 @@ fn trowbridge_reitz_sample_11(cos_theta: Float, u1: Float, u2: Float) -> (Float,
 /// Helper function for sampling visible area of normals.
 ///
 /// * `wi`      - Incident direction.
-/// * `alpha_x` - For microfacets oriented perpendicular to the x-axis and where α = sqrt(2) * σ and σ is the RMS slope
-///               of microfacets.
-/// * `alpha_y` - For microfacets oriented perpendicular to the y-axis and where α = sqrt(2) * σ and σ is the RMS slope
-///               of microfacets.
+/// * `alpha_x` - For microfacets oriented perpendicular to the x-axis and where:
+///               α = sqrt(2) * σ and σ is the RMS slope of microfacets.
+/// * `alpha_y` - For microfacets oriented perpendicular to the y-axis and where:
+///               α = sqrt(2) * σ and σ is the RMS slope of microfacets.
 /// * `u1`      - The uniform random value.
 /// * `u2`      - The uniform random value.
 fn trowbridge_reitz_sample(wi: &Vector3f, alpha_x: Float, alpha_y: Float, u1: Float, u2: Float) -> Vector3f {

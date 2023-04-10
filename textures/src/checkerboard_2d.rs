@@ -38,12 +38,7 @@ impl<T> CheckerboardTexture2D<T> {
     /// * `tex2`      - The second texture.
     /// * `mapping`   - The 2D mapping.
     /// * `aa_method` - The antialiasing method.
-    pub fn new(
-        tex1: ArcTexture<T>,
-        tex2: ArcTexture<T>,
-        mapping: ArcTextureMapping2D,
-        aa_method: AAMethod,
-    ) -> Self {
+    pub fn new(tex1: ArcTexture<T>, tex2: ArcTexture<T>, mapping: ArcTextureMapping2D, aa_method: AAMethod) -> Self {
         Self {
             tex1,
             tex2,
@@ -64,11 +59,7 @@ where
     /// * `der` - Surface interaction derivatives.
     fn evaluate(&self, hit: &Hit, uv: &Point2f, der: &Derivatives) -> T {
         // Get the (s, t) mapping for the intersection.
-        let TextureMap2DResult {
-            p: st,
-            dstdx,
-            dstdy,
-        } = self.mapping.map(hit, uv, der);
+        let TextureMap2DResult { p: st, dstdx, dstdy } = self.mapping.map(hit, uv, der);
 
         if self.aa_method == AAMethod::None {
             // Point sample `Checkerboard2DTexture2D`.
@@ -102,8 +93,7 @@ where
             } else {
                 sint + tint - 2.0 * sint * tint
             };
-            self.tex1.evaluate(hit, uv, der) * (1.0 - area2)
-                + self.tex2.evaluate(hit, uv, der) * area2
+            self.tex1.evaluate(hit, uv, der) * (1.0 - area2) + self.tex2.evaluate(hit, uv, der) * area2
         }
     }
 }
@@ -115,11 +105,10 @@ fn bump_int(x: Float) -> Float {
 macro_rules! from_params {
     ($t: ty, $get_texture_or_else_func: ident) => {
         impl From<(&TextureParams, ArcTransform)> for CheckerboardTexture2D<$t> {
-            /// Create a `CheckerboardTexture2D<$t>` from given parameter set and
-            /// transformation from texture space to world space.
+            /// Create a `CheckerboardTexture2D<$t>` from given parameter set and transformation from texture space to
+            /// world space.
             ///
-            /// * `p` - Tuple containing texture parameters and texture space
-            ///         to world space transform.
+            /// * `p` - Tuple containing texture parameters and texture space to world space transform.
             fn from(p: (&TextureParams, ArcTransform)) -> Self {
                 let (tp, tex2world) = p;
 
@@ -142,7 +131,10 @@ macro_rules! from_params {
                     "none" => AAMethod::None,
                     "closedform" => AAMethod::ClosedForm,
                     aam => {
-                        warn!("Antialiasing mode '{}' not understood by Checkerboard2DTexture; using 'closedform'", aam);
+                        warn!(
+                            "Antialiasing mode '{}' not understood by Checkerboard2DTexture; using 'closedform'",
+                            aam
+                        );
                         AAMethod::ClosedForm
                     }
                 };

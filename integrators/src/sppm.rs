@@ -182,7 +182,7 @@ impl Integrator for SPPMIntegrator {
 
     /// Returns the incident radiance at the origin of a given ray.
     ///
-    /// NOTE: This is never called.
+    /// *NOTE*: This is never called.
     ///
     /// * `ray`     - The ray.
     /// * `scene`   - The scene.
@@ -227,17 +227,23 @@ impl From<(&ParamSet, ArcCamera)> for SPPMIntegrator {
 struct SPPMPixel {
     /// Search radius for photons.
     radius: Float,
+
     /// Estimated average radiance visible over the extent of the pixel including time when shutter is open to account
     /// for depth-of-field.
     ld: Spectrum,
+
     /// Geometric informtion for the visible point.
     vp: VisiblePoint,
+
     /// The sum of the product of BSDF values with particle weights
     phi: [AtomicFloat; SPECTRUM_SAMPLES],
+
     /// Number of photons that have contributed during current interation.
     m: AtomicI32,
+
     /// Number of photons that have contributed to the point after i^th iteration.
     n: Float,
+
     /// The sum of products of photons with BSDF values.
     tau: Spectrum,
 }
@@ -264,10 +270,13 @@ type SPPMPixelList<'p> = Arc<Mutex<VecDeque<&'p SPPMPixel>>>;
 struct VisiblePoint {
     /// Point along the camera path to look for nearby photons.
     p: Point3f,
+
     /// Outgoing direction used to compute reflected radiance.
     wo: Vector3f,
+
     /// The BSDF at the point used to compute reflected radiance.
     bsdf: Option<BSDF>,
+
     /// Throughput weight used to compute reflected radiance.
     beta: Spectrum,
 }

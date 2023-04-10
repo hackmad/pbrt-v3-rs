@@ -7,8 +7,7 @@ use core::paramset::*;
 use core::spectrum::*;
 use core::texture::*;
 
-/// Implements a texture that converts the surface's (u, v) coordinates
-/// into red and green components of a `Spectrum`.
+/// Implements a texture that converts the surface's (u, v) coordinates into red and green components of a `Spectrum`.
 #[derive(Clone)]
 pub struct UVTexture {
     /// 2D mapping.
@@ -40,11 +39,9 @@ impl Texture<Spectrum> for UVTexture {
 }
 
 impl From<(&TextureParams, ArcTransform)> for UVTexture {
-    /// Create a `UVTexture` from given parameter set and
-    /// transformation from texture space to world space.
+    /// Create a `UVTexture` from given parameter set and transformation from texture space to world space.
     ///
-    /// * `p` - Tuple containing texture parameters and texture space
-    ///         to world space transform.
+    /// * `p` - Tuple containing texture parameters and texture space to world space transform.
     fn from(p: (&TextureParams, ArcTransform)) -> Self {
         let (tp, tex2world) = p;
 

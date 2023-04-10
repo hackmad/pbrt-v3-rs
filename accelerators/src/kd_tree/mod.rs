@@ -49,8 +49,7 @@ impl KDTreeAccel {
     /// * `primitives`     - Pimitives.
     /// * `isect_cost`     - Intersection cost (default 80).
     /// * `traversal_cost` - Traversal cost (default 1).
-    /// * `empty_bonus`    - Bonus value used when one of the 2 regions along
-    ///                      split are empty (default 0.5).
+    /// * `empty_bonus`    - Bonus value used when one of the 2 regions along split are empty (default 0.5).
     /// * `max_prims`      - Maximum number of primitives in leaf (default 1).
     /// * `max_depth`      - Maximum depth of tree (default -1).
     pub fn new(
@@ -93,7 +92,7 @@ impl KDTreeAccel {
         // Initialize prim_nums for kd-tree construction.
         let prim_nums: Vec<usize> = (0..count).collect();
 
-        // Start recursive construction of kd-tree
+        // Start recursive construction of kd-tree.
         let mut kd_tree = Self {
             isect_cost,
             traversal_cost,
@@ -129,14 +128,11 @@ impl KDTreeAccel {
     /// * `prim_nums`       - Primitive indices.
     /// * `depth`           - Depth (decreases from max_depth to 0 from root to leaf).
     /// * `edges`           - Projections of bounding boxes along split axes.
-    ///                       NOTE: This could be statically allocated within the
-    ///                       function but it is being passed in to reduce those
-    ///                       allocations. Its use in each call does not affect
-    ///                       other branches of recursion.
+    ///                       *NOTE*: This could be statically allocated within the function but it is being passed in
+    ///                       to reduce those allocations. Its use in each call does not affect other branches of recursion.
     /// * `prims0`          - Primitives below split axis.
     /// * `prims1`          - Primitives above split axis.
-    /// * `bad_refines`     - Keeps track of how many bad splits have been made
-    ///                       so far above the current node of the tree.
+    /// * `bad_refines`     - Keeps track of how many bad splits have been made so far above the current node of the tree.
     fn build_tree(
         &mut self,
         node_num: usize,
@@ -210,12 +206,10 @@ impl KDTreeAccel {
                     let other_axis_1 = (axis + 2) % 3;
                     let below_sa = 2.0
                         * (d[other_axis_0] * d[other_axis_1]
-                            + (edge_t - node_bounds.p_min[axis])
-                                * (d[other_axis_0] + d[other_axis_1]));
+                            + (edge_t - node_bounds.p_min[axis]) * (d[other_axis_0] + d[other_axis_1]));
                     let above_sa = 2.0
                         * (d[other_axis_0] * d[other_axis_1]
-                            + (node_bounds.p_max[axis] - edge_t)
-                                * (d[other_axis_0] + d[other_axis_1]));
+                            + (node_bounds.p_max[axis] - edge_t) * (d[other_axis_0] + d[other_axis_1]));
                     let p_below = below_sa * inv_total_sa;
                     let p_above = above_sa * inv_total_sa;
                     let eb = if n_above == 0 || n_below == 0 {
@@ -255,10 +249,7 @@ impl KDTreeAccel {
             bad_refines += 1
         }
 
-        if (best_cost > 4.0 * old_cost && n_primitives < 16)
-            || best_axis.is_none()
-            || bad_refines == 3
-        {
+        if (best_cost > 4.0 * old_cost && n_primitives < 16) || best_axis.is_none() || bad_refines == 3 {
             self.nodes[node_num] = KdAccelNode::new_leaf(prim_nums, &mut self.primitive_indices);
             return;
         }
@@ -330,11 +321,10 @@ impl Primitive for KDTreeAccel {
         self.bounds
     }
 
-    /// Returns geometric details if a ray intersects the primitive and updates
-    /// the t_max parameter of the ray. If there is no intersection, `None` is
-    /// returned.
+    /// Returns geometric details if a ray intersects the primitive and updates the t_max parameter of the ray. If there
+    /// is no intersection, `None` is returned.
     ///
-    /// * `r`                  - The ray.
+    /// * `r` - The ray.
     fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
         if self.nodes.is_empty() {
             return None;
@@ -374,8 +364,8 @@ impl Primitive for KDTreeAccel {
                     let t_plane = (split_pos - r.o[split_axis]) * inv_dir[split_axis];
 
                     // Get node children pointers for ray.
-                    let below_first = (r.o[split_axis] < split_pos)
-                        || (r.o[split_axis] == split_pos && r.d[split_axis] <= 0.0);
+                    let below_first =
+                        (r.o[split_axis] < split_pos) || (r.o[split_axis] == split_pos && r.d[split_axis] <= 0.0);
 
                     let (first_child_idx, second_child_idx) = if below_first {
                         (node_idx + 1, above_child)
@@ -452,7 +442,7 @@ impl Primitive for KDTreeAccel {
 
     /// Returns `true` if a ray-primitive intersection succeeds; otherwise `false`.
     ///
-    /// * `r`                  - The ray.
+    /// * `r` - The ray.
     fn intersect_p(&self, r: &Ray) -> bool {
         if self.nodes.is_empty() {
             return false;
@@ -491,8 +481,7 @@ impl Primitive for KDTreeAccel {
                     let t_plane = (split_pos - r.o[axis]) * inv_dir[axis];
 
                     // Get node children pointers for ray.
-                    let below_first =
-                        (r.o[axis] < split_pos) || (r.o[axis] == split_pos && r.d[axis] <= 0.0);
+                    let below_first = (r.o[axis] < split_pos) || (r.o[axis] == split_pos && r.d[axis] <= 0.0);
 
                     let (first_child_idx, second_child_idx) = if below_first {
                         (node_idx + 1, above_child)
@@ -566,12 +555,11 @@ impl Primitive for KDTreeAccel {
         false
     }
 
-    /// Returns a reference to the AreaLight that describes the primitive’s
-    /// emission distribution, if the primitive is itself a light source.
-    /// If the primitive is not emissive, this method should return `None`.
+    /// Returns a reference to the AreaLight that describes the primitive’s emission distribution, if the primitive is
+    /// itself a light source. If the primitive is not emissive, this method should return `None`.
     ///
-    /// *NOTE*: This should never be called. Calling code should directly call
-    /// get_area_light() on the primitive from the ray-primitive intersection.
+    /// *NOTE*: This should never be called. Calling code should directly call get_area_light() on the primitive from
+    /// the ray-primitive intersection.
     fn get_area_light(&self) -> Option<ArcLight> {
         error!(
             "TransformedPrimitive::get_area_light() shouldn't be called; \
@@ -580,14 +568,13 @@ impl Primitive for KDTreeAccel {
         None
     }
 
-    /// Returns a reference to the material instance assigned to the primitive.
-    /// If `None` is returned, ray intersections with the primitive should be
-    /// ignored; the primitive only serves to delineate a volume of space for
-    /// participating media. This method is also used to check if two rays have
-    /// intersected the same object by comparing their Material pointers.
+    /// Returns a reference to the material instance assigned to the primitive. If `None` is returned, ray intersections
+    /// with the primitive should be ignored; the primitive only serves to delineate a volume of space for participating
+    /// media. This method is also used to check if two rays have intersected the same object by comparing their
+    /// Material pointers.
     ///
-    /// *NOTE*: This should never be called. Calling code should directly call
-    /// get_material() on the primitive from the ray-primitive intersection.
+    /// *NOTE*: This should never be called. Calling code should directly call get_material() on the primitive from
+    /// the ray-primitive intersection.
     fn get_material(&self) -> Option<ArcMaterial> {
         error!(
             "TransformedPrimitive::get_material() shouldn't be called; \
@@ -596,18 +583,17 @@ impl Primitive for KDTreeAccel {
         None
     }
 
-    /// Initializes representations of the light-scattering properties of the
-    /// material at the intersection point on the surface.
+    /// Initializes representations of the light-scattering properties of the material at the intersection point on the
+    /// surface.
     ///
-    /// *NOTE*: This should never be called. Calling code should directly call
-    /// compute_scattering_functions() on the primitive from the ray-primitive
-    /// intersection.
+    /// *NOTE*: This should never be called. Calling code should directly call `compute_scattering_functions()` on the
+    /// primitive from the ray-primitive intersection.
     ///
-    /// * `_si`                   - The surface interaction at the intersection.
-    /// * `_mode`                 - Transport mode.
-    /// * `_allow_multiple_lobes` - Allow multiple lobes.
-    /// * `_bsdf`                 - The computed BSDF.
-    /// * `_bssrdf`               - The computed BSSSRDF.
+    /// * `si`                   - The surface interaction at the intersection.
+    /// * `mode`                 - Transport mode.
+    /// * `allow_multiple_lobes` - Allow multiple lobes.
+    /// * `bsdf`                 - The computed BSDF.
+    /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene>(
         &self,
         _si: &mut SurfaceInteraction<'scene>,
@@ -624,7 +610,7 @@ impl Primitive for KDTreeAccel {
 }
 
 impl From<(&ParamSet, &[ArcPrimitive])> for KDTreeAccel {
-    /// Create a `KDTreeAccel ` from given parameter set and primitives.
+    /// Create a `KDTreeAccel` from given parameter set and primitives.
     ///
     /// * `p` - Tuple containing the parameter set and primitives.
     fn from(p: (&ParamSet, &[ArcPrimitive])) -> Self {
@@ -635,13 +621,6 @@ impl From<(&ParamSet, &[ArcPrimitive])> for KDTreeAccel {
         let max_prims = params.find_one_int("maxprims", 1) as usize;
         let max_depth = params.find_one_int("maxdepth", -1);
 
-        Self::new(
-            prims,
-            isect_cost,
-            trav_cost,
-            empty_bonus,
-            max_prims,
-            max_depth,
-        )
+        Self::new(prims, isect_cost, trav_cost, empty_bonus, max_prims, max_depth)
     }
 }

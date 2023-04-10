@@ -26,8 +26,8 @@ pub(crate) fn correct_shading_normal(
             let num = wo.abs_dot(&isect.shading.n) * wi.abs_dot(&isect.hit.n);
             let denom = wo.abs_dot(&isect.hit.n) * wi.abs_dot(&isect.shading.n);
 
-            // wi is occasionally perpendicular to isect.shading.n; this is fine, but we don't want to
-            // return an infinite or NaN value in that case.
+            // `wi` is occasionally perpendicular to isect.shading.n; this is fine, but we don't want to return an
+            // infinite or NaN value in that case.
             if denom == 0.0 {
                 0.0
             } else {
@@ -38,9 +38,9 @@ pub(crate) fn correct_shading_normal(
     }
 }
 
-/// Calculates the spatial density of infinite area light endpoints expressed as a probability per
-/// unit solid angle while accounting for presence of other infinite area lights. It performs a
-/// weighted sum of directional densities of all infinite area lights.
+/// Calculates the spatial density of infinite area light endpoints expressed as a probability per unit solid angle
+/// while accounting for presence of other infinite area lights. It performs a weighted sum of directional densities of
+/// all infinite area lights.
 ///
 /// * `scene`                - The scene.
 /// * `light_distr`          - Light probabilities.

@@ -45,7 +45,7 @@ pub trait Shape {
 
     /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
+    /// *NOTE*: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample(&self, u: &Point2f) -> (Hit, Float);
@@ -167,7 +167,7 @@ pub struct ShapeData {
     /// The world to object transfomation.
     pub world_to_object: Option<ArcTransform>,
 
-    /// Indicates whether their surface normal directions should be reversed from the default
+    /// Indicates whether their surface normal directions should be reversed from the default.
     pub reverse_orientation: bool,
 
     /// Indicates if `object_to_world` transformation changes the handedness of the coordinate system.
@@ -179,7 +179,7 @@ impl ShapeData {
     ///
     /// * `object_to_world`     - The object to world transfomation.
     /// * `world_to_object`     - The world to object transfomation.
-    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default
+    /// * `reverse_orientation` - Indicates whether their surface normal directions should be reversed from the default.
     pub fn new(
         object_to_world: ArcTransform,
         world_to_object: Option<ArcTransform>,

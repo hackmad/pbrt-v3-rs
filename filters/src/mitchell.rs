@@ -18,11 +18,9 @@ pub struct MitchellFilter {
 }
 
 impl MitchellFilter {
-    /// Returns a new instance of `MitchellFilter`. Ideally the 2 parameters
-    /// `B` and `C` should satisfy `B + 2C = 1`.
+    /// Returns a new instance of `MitchellFilter`. Ideally the 2 parameters `B` and `C` should satisfy `B + 2C = 1`.
     ///
-    /// * `radius` - Radius of the filter in x and y directions; beyond this
-    ///              filter is 0.
+    /// * `radius` - Radius of the filter in x and y directions; beyond this filter is 0.
     /// * `b`      - Parameter `B`.
     /// * `c`      - Parameter `C`.
     pub fn new(radius: Vector2f, b: Float, c: Float) -> Self {
@@ -62,11 +60,10 @@ impl Filter for MitchellFilter {
 
     /// Returns value of the filter at a given point.
     ///
-    /// * `p` - The position of the sample point relative to the center of the
-    ///         filter. The point should be within the filter's extent.
+    /// * `p` - The position of the sample point relative to the center of the filter. The point should be within the
+    ///         filter's extent.
     fn evaluate(&self, p: &Point2f) -> Float {
-        self.mitchell_1d(p.x * self.data.inv_radius.x)
-            * self.mitchell_1d(p.y * self.data.inv_radius.y)
+        self.mitchell_1d(p.x * self.data.inv_radius.x) * self.mitchell_1d(p.y * self.data.inv_radius.y)
     }
 }
 

@@ -200,8 +200,8 @@ impl Film {
 
     /// Merge the `FilmTile`'s pixel contribution into the image.
     ///
-    /// This is same as merge_film_tile_old() to reduce all but one call to tile.get_pixel_offset() and
-    /// self.get_pixel_offset().
+    /// This is same as `merge_film_tile_old()` to reduce all but one call to `tile.get_pixel_offset()` and
+    /// `self.get_pixel_offset()`.
     ///
     /// * `tile` - The `FilmTile` to merge.
     pub fn merge_film_tile(&self, tile: &FilmTile) {
@@ -349,7 +349,7 @@ impl Film {
             rgb[rgb_offset + 2] *= self.scale;
         }
 
-        // Write RGB image
+        // Write RGB image.
         if let Err(err) = write_image(&self.filename, &rgb, &self.cropped_pixel_bounds) {
             panic!("Error writing output image {}. {:}.", self.filename, err);
         }

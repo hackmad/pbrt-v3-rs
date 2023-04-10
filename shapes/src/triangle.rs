@@ -163,7 +163,7 @@ impl TriangleMesh {
     /// Create a triangle mesh from given parameter set, object to world transform, world to object transform and
     /// whether or not surface normal orientation is reversed.
     ///
-    /// NOTE: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
+    /// *NOTE*: Because we return a set of curves as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
     ///
     /// * `p`              - A tuple containing the parameter set, object to world transform, world to object transform
     ///                      and whether or not surface normal orientation is reversed.
@@ -891,7 +891,7 @@ impl Shape for Triangle {
 
     /// Sample a point on the surface and return the PDF with respect to area on the surface.
     ///
-    /// NOTE: The returned `Hit` value will have `wo` = Vector3f::ZERO.
+    /// *NOTE*: The returned `Hit` value will have `wo` = Vector3f::ZERO.
     ///
     /// * `u` - Sample value to use.
     fn sample(&self, u: &Point2f) -> (Hit, Float) {

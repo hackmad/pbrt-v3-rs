@@ -188,8 +188,8 @@ impl Integrator for VolPathIntegrator {
 
                 let it = Interaction::Surface { si: isect };
 
-                // Sample illumination from lights to find path contribution. (But
-                // skip this for perfectly specular BSDFs).
+                // Sample illumination from lights to find path contribution. (But skip this for perfectly specular
+                // BSDFs).
                 let ld = beta * uniform_sample_one_light(&it, Some(&bsdf), scene, sampler, true, distrib);
                 debug!("Sampled direct lighting Ld = {ld}");
                 assert!(ld.y() >= 0.0);
@@ -286,7 +286,8 @@ impl Integrator for VolPathIntegrator {
                     }
                 }
             }
-            // Possibly terminate the path with Russian roulette. Factor out radiance scaling due to refraction in `rr_beta`.
+            // Possibly terminate the path with Russian roulette. Factor out radiance scaling due to refraction in
+            // `rr_beta`.
             let rr_beta = beta * eta_scale;
             if rr_beta.max_component_value() < self.rr_threshold && bounces > 3 {
                 let q = max(0.05, 1.0 - rr_beta.max_component_value());

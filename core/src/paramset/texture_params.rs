@@ -20,8 +20,7 @@ pub struct TextureParams {
     pub mat_params: ParamSet,
 }
 
-/// Define a macro that can be used to generate a function for finding
-/// parameter set item that is stored as a list.
+/// Define a macro that can be used to generate a function for finding parameter set item that is stored as a list.
 macro_rules! texture_params_find {
     ($func: ident, $t: ty, $paramset_func: ident) => {
         pub fn $func(&self, name: &str, mat_default: $t) -> $t {
@@ -59,8 +58,7 @@ impl TextureParams {
         self.float_textures.get(&String::from(name)).map(Arc::clone)
     }
 
-    /// Returns a floating point texture, a floating point value or none
-    /// texture if not found.
+    /// Returns a floating point texture, a floating point value or none texture if not found.
     ///
     /// * `name` - Parameter name.
     pub fn get_float_texture_or_none(&self, name: &str) -> Option<ArcTexture<Float>> {
@@ -94,19 +92,12 @@ impl TextureParams {
         self.float_textures.get(&tex_name).map(Arc::clone)
     }
 
-    /// Returns a floating point texture, a floating point value or the given
-    /// default texture if not found.
+    /// Returns a floating point texture, a floating point value or the given default texture if not found.
     ///
     /// * `name`            - Parameter name.
     /// * `default`         - Default floating point value.
-    /// * `constant_tex_fn` - Function that will generate specific texture given
-    ///                       a floating point value.
-    pub fn get_float_texture_or_else<F>(
-        &self,
-        name: &str,
-        default: Float,
-        constant_tex_fn: F,
-    ) -> ArcTexture<Float>
+    /// * `constant_tex_fn` - Function that will generate specific texture given a floating point value.
+    pub fn get_float_texture_or_else<F>(&self, name: &str, default: Float, constant_tex_fn: F) -> ArcTexture<Float>
     where
         F: Fn(Float) -> ArcTexture<Float>,
     {
@@ -147,9 +138,7 @@ impl TextureParams {
     ///
     /// * `name` - Parameter name.
     pub fn get_spectrum_texture(&self, name: &str) -> Option<ArcTexture<Spectrum>> {
-        self.spectrum_textures
-            .get(&String::from(name))
-            .map(Arc::clone)
+        self.spectrum_textures.get(&String::from(name)).map(Arc::clone)
     }
 
     /// Returns a spectrum texture, a spectrum value or none if not found.
@@ -191,8 +180,7 @@ impl TextureParams {
     ///
     /// * `name`            - Parameter name.
     /// * `default`         - Default spectrum value.
-    /// * `constant_tex_fn` - Function that will generate specific texture given
-    ///                       a spectrum value.
+    /// * `constant_tex_fn` - Function that will generate specific texture given a spectrum value.
     pub fn get_spectrum_texture_or_else<F>(
         &self,
         name: &str,
@@ -265,11 +253,6 @@ impl TextureParams {
 impl Default for TextureParams {
     /// Initializes a new `TextureParams` with default values.
     fn default() -> Self {
-        Self::new(
-            ParamSet::new(),
-            ParamSet::new(),
-            HashMap::new(),
-            HashMap::new(),
-        )
+        Self::new(ParamSet::new(), ParamSet::new(), HashMap::new(), HashMap::new())
     }
 }

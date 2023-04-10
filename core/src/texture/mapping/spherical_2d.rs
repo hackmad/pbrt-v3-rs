@@ -17,13 +17,11 @@ impl SphericalMapping2D {
         Self { world_to_texture }
     }
 
-    /// Project a single point along the vector from the sphere's center through
-    /// it up to the surface.
+    /// Project a single point along the vector from the sphere's center through it up to the surface.
     ///
     /// * `p` - The point.
     fn sphere(&self, p: &Point3f) -> Point2f {
-        let vec =
-            (self.world_to_texture.transform_point(p) - Point3f::new(0.0, 0.0, 0.0)).normalize();
+        let vec = (self.world_to_texture.transform_point(p) - Point3f::new(0.0, 0.0, 0.0)).normalize();
         let theta = spherical_theta(&vec);
         let phi = spherical_phi(&vec);
         Point2f::new(theta * INV_PI, phi * INV_TWO_PI)

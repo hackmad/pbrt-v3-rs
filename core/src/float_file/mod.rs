@@ -10,12 +10,11 @@ use std::result::Result;
 #[grammar = "float_file/grammar.pest"]
 struct FloatParser;
 
-/// Reads a file containing floating point values. If a line contains `#`
-/// indicating a comment, the remainder of that line is ignored. Values are
-/// read in left to right, top to bottom into a single list. If there are
-/// non-comments or numeric values an error is returned.
+/// Reads a file containing floating point values. If a line contains `#` indicating a comment, the remainder of that
+/// line is ignored. Values are read in left to right, top to bottom into a single list. If there are non-comments or
+/// numeric values an error is returned.
 ///
-/// NOTE: This will not be very efficient for extremely large files.
+/// *NOTE*: This will not be very efficient for extremely large files.
 ///
 /// * `path` - Path to file.
 pub fn parse_float_file(path: &str) -> Result<Vec<Float>, String> {
@@ -62,8 +61,7 @@ fn file_to_string(path: &str) -> Result<String, String> {
     }
 }
 
-/// Parse the initial `file` rule of the grammar and return the resulting token
-/// pairs for remaining rules.
+/// Parse the initial `file` rule of the grammar and return the resulting token pairs for remaining rules.
 ///
 /// * `path` - Path to file.
 fn parse_file_rule(unparsed_file: &str) -> Result<Pair<'_, Rule>, String> {

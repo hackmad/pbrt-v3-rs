@@ -12,8 +12,8 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements a layered model that varies between glossy specular and diffuse
-/// reflection depending on the viewing angle (based on the FresnelBlend BRDF).
+/// Implements a layered model that varies between glossy specular and diffuse reflection depending on the viewing angle
+/// (based on the FresnelBlend BRDF).
 pub struct SubstrateMaterial {
     /// Coefficient of diffuse reflection.
     kd: ArcTexture<Spectrum>,
@@ -21,19 +21,15 @@ pub struct SubstrateMaterial {
     /// Coefficient of specular reflection.
     ks: ArcTexture<Spectrum>,
 
-    /// Microfacet roughness in the u direction. If zero, perfect specular
-    /// reflection is modeled.
+    /// Microfacet roughness in the u direction. If zero, perfect specular reflection is modeled.
     u_roughness: ArcTexture<Float>,
 
-    /// Microfacet roughness in the v direction. If zero, perfect specular
-    /// reflection is modeled.
+    /// Microfacet roughness in the v direction. If zero, perfect specular reflection is modeled.
     v_roughness: ArcTexture<Float>,
 
-    /// If true, roughness values are expected to be in the range [0,1], and are
-    /// remapped to microfacet distribution function parameter values that range
-    /// from near-perfect-specular at 0 to very rough at 1. Otherwise the
-    /// roughness parameters are used directly for the alpha parameters of the
-    /// microfacet distribution function.
+    /// If true, roughness values are expected to be in the range [0,1], and are remapped to microfacet distribution
+    /// function parameter values that range from near-perfect-specular at 0 to very rough at 1. Otherwise the roughness
+    /// parameters are used directly for the alpha parameters of the microfacet distribution function.
     remap_roughness: bool,
 
     /// Bump map.
@@ -45,17 +41,12 @@ impl SubstrateMaterial {
     ///
     /// * `kd`              - Coefficient of diffuse reflection.
     /// * `ks`              - Coefficient of specular reflection.
-    /// * `u_roughness`     - Microfacet roughness in the u direction. If zero,
-    ///                       perfect specular reflection is modeled.
-    /// * `v_roughness`     - Microfacet roughness in the v direction. If zero,
-    ///                       perfect specular reflection is modeled.
-    /// * `remap_roughness` - If true, roughness values are expected to be in
-    ///                       the range [0,1], and are remapped to microfacet
-    ///                       distribution function parameter values that range
-    ///                       from near-perfect-specular at 0 to very rough at 1.
-    ///                       Otherwise the roughness parameters are used directly
-    ///                       for the alpha parameters of the microfacet distribution
-    ///                       function.
+    /// * `u_roughness`     - Microfacet roughness in the u direction. If zero, perfect specular reflection is modeled.
+    /// * `v_roughness`     - Microfacet roughness in the v direction. If zero, perfect specular reflection is modeled.
+    /// * `remap_roughness` - If true, roughness values are expected to be in the range [0,1], and are remapped to
+    ///                       microfacet distribution function parameter values that range from near-perfect-specular at
+    ///                       0 to very rough at 1. Otherwise the roughness parameters are used directly for the alpha
+    ///                       parameters of the microfacet distribution function.
     /// * `bump_map`        - Optional bump map.
     pub fn new(
         kd: ArcTexture<Spectrum>,
@@ -77,15 +68,13 @@ impl SubstrateMaterial {
 }
 
 impl Material for SubstrateMaterial {
-    /// Initializes representations of the light-scattering properties of the
-    /// material at the intersection point on the surface.
+    /// Initializes representations of the light-scattering properties of the material at the intersection point on the
+    /// surface.
     ///
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
-    /// * `allow_multiple_lobes` - Indicates whether the material should use
-    ///                            BxDFs that aggregate multiple types of
-    ///                            scattering into a single BxDF when such BxDFs
-    ///                            are available (ignored).
+    /// * `allow_multiple_lobes` - Indicates whether the material should use BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene>(
@@ -129,19 +118,13 @@ impl From<&TextureParams> for SubstrateMaterial {
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
-        let kd = tp.get_spectrum_texture_or_else("Kd", Spectrum::new(0.5), |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
+        let kd = tp.get_spectrum_texture_or_else("Kd", Spectrum::new(0.5), |v| Arc::new(ConstantTexture::new(v)));
 
-        let ks = tp.get_spectrum_texture_or_else("Ks", Spectrum::new(0.5), |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
+        let ks = tp.get_spectrum_texture_or_else("Ks", Spectrum::new(0.5), |v| Arc::new(ConstantTexture::new(v)));
 
-        let u_roughness =
-            tp.get_float_texture_or_else("uroughness", 0.1, |v| Arc::new(ConstantTexture::new(v)));
+        let u_roughness = tp.get_float_texture_or_else("uroughness", 0.1, |v| Arc::new(ConstantTexture::new(v)));
 
-        let v_roughness =
-            tp.get_float_texture_or_else("vroughness", 0.1, |v| Arc::new(ConstantTexture::new(v)));
+        let v_roughness = tp.get_float_texture_or_else("vroughness", 0.1, |v| Arc::new(ConstantTexture::new(v)));
 
         let bump_map = tp.get_float_texture_or_none("bumpmap");
         let remap_roughness = tp.find_bool("remaproughness", true);

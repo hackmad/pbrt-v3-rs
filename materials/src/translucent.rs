@@ -12,8 +12,7 @@ use core::texture::*;
 use std::sync::Arc;
 use textures::*;
 
-/// Implements a material that describes diffuse and glossy specular reflection
-/// and transmission through the surface.
+/// Implements a material that describes diffuse and glossy specular reflection and transmission through the surface.
 pub struct TranslucentMaterial {
     /// Coefficient of diffuse reflection and transmission.
     kd: ArcTexture<Spectrum>,
@@ -33,9 +32,8 @@ pub struct TranslucentMaterial {
     /// Bump map.
     bump_map: Option<ArcTexture<Float>>,
 
-    /// Remap roughness value to [0, 1] where higher values represent larger
-    /// highlights. If this is `false`, use the microfacet distributions `alpha`
-    /// parameter.
+    /// Remap roughness value to [0, 1] where higher values represent larger highlights. If this is `false`, use the
+    /// microfacet distributions `alpha` parameter.
     remap_roughness: bool,
 }
 
@@ -47,9 +45,8 @@ impl TranslucentMaterial {
     /// * `roughness`       - Roughness.
     /// * `reflect`         - Fraction of reflected light.
     /// * `transmit`        - Fraction of transmitted light.
-    /// * `remap_roughness` - Remap roughness value to [0, 1] where higher values
-    ///                       represent larger highlights. If this is `false`,
-    ///                       use the microfacet distributions `alpha` parameter.
+    /// * `remap_roughness` - Remap roughness value to [0, 1] where higher values represent larger highlights. If this
+    ///                       is `false`, use the microfacet distributions `alpha` parameter.
     /// * `bump_map`        - Optional bump map.
     pub fn new(
         kd: ArcTexture<Spectrum>,
@@ -73,15 +70,13 @@ impl TranslucentMaterial {
 }
 
 impl Material for TranslucentMaterial {
-    /// Initializes representations of the light-scattering properties of the
-    /// material at the intersection point on the surface.
+    /// Initializes representations of the light-scattering properties of the material at the intersection point on the
+    /// surface.
     ///
     /// * `si`                   - The surface interaction at the intersection.
     /// * `mode`                 - Transport mode (ignored).
-    /// * `allow_multiple_lobes` - Indicates whether the material should use
-    ///                            BxDFs that aggregate multiple types of
-    ///                            scattering into a single BxDF when such BxDFs
-    ///                            are available (ignored).
+    /// * `allow_multiple_lobes` - Indicates whether the material should use BxDFs that aggregate multiple types of
+    ///                            scattering into a single BxDF when such BxDFs are available (ignored).
     /// * `bsdf`                 - The computed BSDF.
     /// * `bssrdf`               - The computed BSSSRDF.
     fn compute_scattering_functions<'scene>(
@@ -101,14 +96,8 @@ impl Material for TranslucentMaterial {
         let mut result = BSDF::new(&si.hit, &si.shading, Some(ETA));
 
         // Evaluate textures for `TranslucentMaterial` material and allocate BRDF.
-        let r = self
-            .reflect
-            .evaluate(&si.hit, &si.uv, &si.der)
-            .clamp_default();
-        let t = self
-            .transmit
-            .evaluate(&si.hit, &si.uv, &si.der)
-            .clamp_default();
+        let r = self.reflect.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
+        let t = self.transmit.evaluate(&si.hit, &si.uv, &si.der).clamp_default();
         if r.is_black() && t.is_black() {
             return;
         }
@@ -152,32 +141,17 @@ impl From<&TextureParams> for TranslucentMaterial {
     ///
     /// * `tp` - Texture parameter set.
     fn from(tp: &TextureParams) -> Self {
-        let kd = tp.get_spectrum_texture_or_else("Kd", Spectrum::new(0.25), |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
-        let ks = tp.get_spectrum_texture_or_else("Ks", Spectrum::new(0.25), |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
-        let reflect = tp.get_spectrum_texture_or_else("reflect", Spectrum::new(0.5), |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
-        let transmit = tp.get_spectrum_texture_or_else("transmit", Spectrum::new(0.5), |v| {
-            Arc::new(ConstantTexture::new(v))
-        });
-        let roughness =
-            tp.get_float_texture_or_else("roughness", 0.1, |v| Arc::new(ConstantTexture::new(v)));
+        let kd = tp.get_spectrum_texture_or_else("Kd", Spectrum::new(0.25), |v| Arc::new(ConstantTexture::new(v)));
+        let ks = tp.get_spectrum_texture_or_else("Ks", Spectrum::new(0.25), |v| Arc::new(ConstantTexture::new(v)));
+        let reflect =
+            tp.get_spectrum_texture_or_else("reflect", Spectrum::new(0.5), |v| Arc::new(ConstantTexture::new(v)));
+        let transmit =
+            tp.get_spectrum_texture_or_else("transmit", Spectrum::new(0.5), |v| Arc::new(ConstantTexture::new(v)));
+        let roughness = tp.get_float_texture_or_else("roughness", 0.1, |v| Arc::new(ConstantTexture::new(v)));
 
         let bump_map = tp.get_float_texture_or_none("bumpmap");
         let remap_roughness = tp.find_bool("remaproughness", true);
 
-        Self::new(
-            kd,
-            ks,
-            roughness,
-            reflect,
-            transmit,
-            remap_roughness,
-            bump_map,
-        )
+        Self::new(kd, ks, roughness, reflect, transmit, remap_roughness, bump_map)
     }
 }

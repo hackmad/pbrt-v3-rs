@@ -32,8 +32,7 @@ pub struct CIE {
 }
 
 impl CIE {
-    /// Creates the CIE XYZ matching curves. This is useful for initializing
-    /// at startup time.
+    /// Creates the CIE XYZ matching curves. This is useful for initializing at startup time.
     pub fn new() -> Self {
         let x = Self::samples(&CIE_X);
         let y = Self::samples(&CIE_Y);
@@ -82,9 +81,7 @@ impl CIE {
 
     /// Returns the list of wavelengths for the samples.
     pub fn lambda() -> Vec<Float> {
-        (0..CIE_SAMPLES)
-            .map(|i| (CIE_LAMBDA_START + i) as Float)
-            .collect()
+        (0..CIE_SAMPLES).map(|i| (CIE_LAMBDA_START + i) as Float).collect()
     }
 }
 

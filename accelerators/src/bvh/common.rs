@@ -10,19 +10,16 @@ pub enum SplitMethod {
     /// Surface Area Heuristic.
     SAH,
 
-    /// Hierarchical Linear Bounding Volume Hierarchy. Morton-curve-based
-    /// clustering is used to first build trees for the lower levels of the
-    /// hierarchy (`treelets`) and the top levels of the tree are then created
-    /// using the surface area heuristic.
+    /// Hierarchical Linear Bounding Volume Hierarchy. Morton-curve-based clustering is used to first build trees for
+    /// the lower levels of the hierarchy (`treelets`) and the top levels of the tree are then created using the
+    /// surface area heuristic.
     HLBVH,
 
-    /// Linear Bounding Volume Hierarchy using splitting planes that are
-    /// midpoint of each region of space.
+    /// Linear Bounding Volume Hierarchy using splitting planes that are midpoint of each region of space.
     Middle,
 
-    /// Partition primitives into equally sized subsets such that the first half
-    /// of the primitives have smallest centroid coordinate values along the
-    /// chosen axis, and second have have the largest centroid coordinate values.
+    /// Partition primitives into equally sized subsets such that the first half of the primitives have smallest
+    /// centroid coordinate values along the chosen axis, and second have have the largest centroid coordinate values.
     EqualCounts,
 }
 
@@ -79,19 +76,17 @@ pub struct BVHBuildNode {
     /// Index of first primitive from `BVHAccel::primitives` stored at this node.
     pub first_prim_offset: usize,
 
-    /// Number of primitives stored from `BVHAccel::primitives` stored at this
-    /// node` starting at `first_prim_offset` but not including
-    /// `first_prim_offset` + `n_primitives`.
+    /// Number of primitives stored from `BVHAccel::primitives` stored at this node` starting at `first_prim_offset`
+    /// but not including `first_prim_offset` + `n_primitives`.
     pub n_primitives: usize,
 }
 
 impl BVHBuildNode {
     /// Create a leaf BVH node.
     ///
-    /// * `first`  - Index of first primitive from `BVHAccel::primitives` stored at
-    ///              this node.
-    /// * `n`      - Number of primitives stored from `BVHAccel::primitives` stored
-    ///              at this node` starting at `first` but not including `first` + `n`.
+    /// * `first`  - Index of first primitive from `BVHAccel::primitives` stored at this node.
+    /// * `n`      - Number of primitives stored from `BVHAccel::primitives` stored at this node` starting at `first`
+    ///              but not including `first` + `n`.
     /// * `bounds` - Bounding box.
     pub fn new_leaf_node(first: usize, n: usize, bounds: Bounds3f) -> Self {
         Self {
@@ -108,11 +103,7 @@ impl BVHBuildNode {
     /// * `axis` - Axis used for partitioning children.
     /// * `c0`   - First child.
     /// * `c1`   - Second child.
-    pub fn new_interior_node(
-        axis: Axis,
-        c0: ArenaArc<BVHBuildNode>,
-        c1: ArenaArc<BVHBuildNode>,
-    ) -> Self {
+    pub fn new_interior_node(axis: Axis, c0: ArenaArc<BVHBuildNode>, c1: ArenaArc<BVHBuildNode>) -> Self {
         Self {
             first_prim_offset: 0,
             n_primitives: 0,
@@ -129,12 +120,10 @@ pub struct LinearBVHNode {
     /// Bounding box for the node.
     pub bounds: Bounds3f,
 
-    /// For leaf nodes, offset for the primitives in the node.
-    /// For interior nodes, offset to the second child.
+    /// For leaf nodes, offset for the primitives in the node. For interior nodes, offset to the second child.
     pub offset: u32,
 
-    /// For leaf nodes, the number of primitives in the node.
-    /// For interior nodes, 0.
+    /// For leaf nodes, the number of primitives in the node. For interior nodes, 0.
     pub n_primitives: u16,
 
     /// For interior nodes, which coordinate axis was used for partitioning.

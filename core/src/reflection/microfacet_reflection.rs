@@ -66,7 +66,7 @@ impl MicrofacetReflection {
         }
     }
 
-    /// Returns the value of the BxDF given the outgpoing direction. directions.
+    /// Returns the value of the BxDF given the outgpoing direction.
     ///
     /// * `wo` - Outgoing direction.
     /// * `u`  - The 2D uniform random values.

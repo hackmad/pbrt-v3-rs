@@ -4,9 +4,7 @@ use super::*;
 use crate::pbrt::*;
 use std::convert::TryInto;
 use std::fmt;
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
-};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// Starting wavelength in nm for SPDs.
 pub const SAMPLED_LAMBDA_START: usize = 400;
@@ -17,11 +15,11 @@ pub const SAMPLED_LAMBDA_END: usize = 700;
 /// Number of spectral samples to use for `SampledSpectrum`.
 pub const SPECTRAL_SAMPLES: usize = 60;
 
-/// SampledSpectrum represents an spectral power distribution (SPD) with
-/// uniformly spaced samples between a starting and ending wavelength.
+/// SampledSpectrum represents an spectral power distribution (SPD) with uniformly spaced samples between a starting
+/// and ending wavelength.
 ///
-/// The wavelength range covers human visual range of 400 nm to 700 nm and
-/// 60 samples is more than enough to accurately represent complex SPDs.
+/// The wavelength range covers human visual range of 400 nm to 700 nm and 60 samples is more than enough to accurately
+/// represent complex SPDs.
 #[derive(Copy, Clone, PartialEq)]
 pub struct SampledSpectrum {
     /// The sampled spectral values.
@@ -29,8 +27,7 @@ pub struct SampledSpectrum {
 }
 
 impl SampledSpectrum {
-    /// Create a new `SampledSpectrum` with a constant value across all
-    /// wavelengths.
+    /// Create a new `SampledSpectrum` with a constant value across all wavelengths.
     ///
     /// * `v` - Constant value.
     pub fn new(v: Float) -> Self {
@@ -60,8 +57,7 @@ impl Default for SampledSpectrum {
 }
 
 impl From<Float> for SampledSpectrum {
-    /// Create a new `SampledSpectrum` with a constant value across all
-    /// wavelengths.
+    /// Create a new `SampledSpectrum` with a constant value across all wavelengths.
     ///
     /// * `v` - Constant value.
     fn from(v: Float) -> Self {
@@ -76,11 +72,7 @@ impl From<Vec<Float>> for SampledSpectrum {
     fn from(c: Vec<Float>) -> Self {
         let ret = Self {
             c: c.try_into().unwrap_or_else(|v: Vec<Float>| {
-                panic!(
-                    "Expected a Vec of length {} but it was {}",
-                    SPECTRAL_SAMPLES,
-                    v.len()
-                )
+                panic!("Expected a Vec of length {} but it was {}", SPECTRAL_SAMPLES, v.len())
             }),
         };
         assert!(!ret.has_nans());
@@ -133,8 +125,7 @@ impl CoefficientSpectrum for SampledSpectrum {
     /// Converts XYZ values to a full SPD.
     ///
     /// * `xyz`           - XYZ colour value.
-    /// * `spectrum_type` - Indicates type of colour value. If `None`,
-    ///                     defaults to `SpectrumType::Reflectance`.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`. Defaults to `SpectrumType::Reflectance`.
     fn from_xyz(xyz: &[Float; 3], spectrum_type: Option<SpectrumType>) -> Self {
         Self::from_rgb(&xyz_to_rgb(xyz), spectrum_type)
     }
@@ -149,8 +140,7 @@ impl CoefficientSpectrum for SampledSpectrum {
             )
         });
 
-        let scale = (SAMPLED_LAMBDA_END - SAMPLED_LAMBDA_START) as Float
-            / (CIE_Y_INTEGRAL * SPECTRAL_SAMPLES as Float);
+        let scale = (SAMPLED_LAMBDA_END - SAMPLED_LAMBDA_START) as Float / (CIE_Y_INTEGRAL * SPECTRAL_SAMPLES as Float);
 
         [x * scale, y * scale, z * scale]
     }
@@ -164,8 +154,7 @@ impl CoefficientSpectrum for SampledSpectrum {
     /// Converts RGB values to a full SPD.
     ///
     /// * `rgb`           - RGB colour value.
-    /// * `spectrum_type` - Indicates type of colour value. If `None`,
-    ///                     defaults to `SpectrumType::Reflectance`.
+    /// * `spectrum_type` - Indicates type of colour value. If `None`. Defaults to `SpectrumType::Reflectance`.
     #[rustfmt::skip]
     fn from_rgb(rgb: &[Float; 3], spectrum_type: Option<SpectrumType>) -> Self {
         let spectrum_type = spectrum_type.map_or(SpectrumType::Reflectance, |s| s);
@@ -360,8 +349,7 @@ impl MulAssign<Float> for SampledSpectrum {
 impl Div for SampledSpectrum {
     type Output = Self;
 
-    /// Divides the corresponding sample values from another
-    /// `SampledSpectrum`.
+    /// Divides the corresponding sample values from another `SampledSpectrum`.
     ///
     /// * `other` - The other `SampledSpectrum`.
     fn div(self, other: Self) -> Self::Output {

@@ -22,8 +22,7 @@ impl RGB {
 
         for j in 0..NUM_RGB_SPECTRUM_TYPES {
             for k in 0..NUM_RGB_SPECTRUM_COLOURS {
-                // Combine the wavelength and corresponding values for the
-                // colour spectrum.
+                // Combine the wavelength and corresponding values for the colour spectrum.
                 let samples = values_to_samples(&RGB_TO_SPECTRUM_VALUES[j][k]);
 
                 // Compute the RGB spectrum functions for `SampledSpectrum`.
@@ -72,8 +71,7 @@ impl Index<SpectrumType> for RGB {
 
 /// Creates a `Vec<Sample>` for given SPD sample values.
 ///
-/// * `values` - The sample values from RGB_TO_SPECTRUM_VALUES for `SpectrumType`
-///              and `SpectrumColour`.
+/// * `values` - The sample values from RGB_TO_SPECTRUM_VALUES for `SpectrumType` and `SpectrumColour`.
 fn values_to_samples(values: &[Float; RGB_TO_SPECTRUM_SAMPLES]) -> Vec<Sample> {
     (0..RGB_TO_SPECTRUM_SAMPLES)
         .map(|i| Sample {

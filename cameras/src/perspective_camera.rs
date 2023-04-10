@@ -35,8 +35,7 @@ pub struct PerspectiveCamera {
 impl PerspectiveCamera {
     /// Create a new perspective camera.
     ///
-    /// * `camera_to_world` - Animated transformation describing the camera's
-    ///                       motion in the scene.
+    /// * `camera_to_world` - Animated transformation describing the camera's motion in the scene.
     /// * `screen_window`   - Bounds of screen space.
     /// * `shutter_open`    - Time when shutter is open.
     /// * `shutter_close`   - Time when shutter is closed.
@@ -102,9 +101,8 @@ impl Camera for PerspectiveCamera {
         &self.data
     }
 
-    /// Returns a ray corresponding to a given sample. It also returns, a floating
-    /// point value that affects how much the radiance arriving at the film plane
-    /// will contribute to final image.
+    /// Returns a ray corresponding to a given sample. It also returns, a floating point value that affects how much the
+    /// radiance arriving at the film plane will contribute to final image.
     ///
     /// * `sample` - The sample.
     fn generate_ray(&self, sample: &CameraSample) -> (Ray, Float) {
@@ -138,10 +136,9 @@ impl Camera for PerspectiveCamera {
         (self.data.camera_to_world.transform_ray(&ray), 1.0)
     }
 
-    /// Returns a main ray and rays shifted one pixel in x and y directions on
-    /// the film plane for corresponding to a given sample. It also returns a
-    /// floating point value that affects how much the radiance arriving at the
-    /// film plane will contribute to final image.
+    /// Returns a main ray and rays shifted one pixel in x and y directions on the film plane for corresponding to a
+    /// given sample. It also returns a floating point value that affects how much the radiance arriving at the film
+    /// plane will contribute to final image.
     ///
     /// * `sample` - The sample.
     fn generate_ray_differential(&self, sample: &CameraSample) -> (Ray, Float) {
@@ -206,13 +203,11 @@ impl Camera for PerspectiveCamera {
         (self.data.camera_to_world.transform_ray(&ray), 1.0)
     }
 
-    /// Evaluate the importance emitted from the point on the camera in a
-    /// direction. The `include_raster_point` is true, then a raster position
-    /// associated with the ray on the film is returned as well.
+    /// Evaluate the importance emitted from the point on the camera in a direction. The `include_raster_point` is true,
+    /// then a raster position associated with the ray on the film is returned as well.
     ///
     /// * `ray`                  - The ray.
-    /// * `include_raster_point` - Indicates whether or not to return the raster
-    ///                            position.
+    /// * `include_raster_point` - Indicates whether or not to return the raster position.
     fn we(&self, ray: &Ray, include_raster: bool) -> (Spectrum, Option<Point2f>) {
         let mut p_raster2: Option<Point2f> = None;
 
@@ -262,8 +257,7 @@ impl Camera for PerspectiveCamera {
         (importance, p_raster2)
     }
 
-    /// Return the spatial and directional PDFs, as a tuple, for sampling a
-    /// particular ray leaving the camera.
+    /// Return the spatial and directional PDFs, as a tuple, for sampling a particular ray leaving the camera.
     ///
     /// * `ray` - The ray.
     fn pdf_we(&self, ray: &Ray) -> PDFResult {
@@ -308,8 +302,7 @@ impl Camera for PerspectiveCamera {
     ///
     /// * `interaction`          - The interaction point.
     /// * `u`                    - Used to sample point on the lens.
-    /// * `include_raster_point` - Indicates whether or not to return the raster
-    ///                            position.
+    /// * `include_raster_point` - Indicates whether or not to return the raster position.
     fn sample_wi(&self, interaction: &Interaction, u: &Point2f) -> SampleResult {
         // Uniformly sample a lens interaction `lensIntr`.
         let interaction_hit = interaction.get_hit().to_owned();
@@ -362,11 +355,9 @@ impl Camera for PerspectiveCamera {
 }
 
 impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for PerspectiveCamera {
-    /// Create a `PerspectiveCamera` from given parameter set, animated transform,
-    /// film and medium.
+    /// Create a `PerspectiveCamera` from given parameter set, animated transform, film and medium.
     ///
-    /// * `p` - A tuple containing  parameter set, animated transform, film and
-    ///         medium.
+    /// * `p` - A tuple containing  parameter set, animated transform, film and medium.
     fn from(p: (&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)) -> Self {
         let (params, cam2world, film, medium) = p;
 
@@ -411,8 +402,7 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>)> for Perspect
         let mut fov = params.find_one_float("fov", 90.0);
         let half_fov = params.find_one_float("halffov", -1.0);
         if half_fov > 0.0 {
-            // Hack for structure synth, which exports half of the full
-            // fov.
+            // Hack for structure synth, which exports half of the full fov.
             fov = 2.0 * half_fov;
         }
 

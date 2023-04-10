@@ -18,7 +18,7 @@ impl PLYMesh {
     /// Create mesh from a PLY file using given parameter set, object to world transform, world to object transform,
     /// whether or not surface normal orientation is reversed, floating point texture maps and current working directory.
     ///
-    /// NOTE: Because we return a set of shapes as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
+    /// *NOTE*: Because we return a set of shapes as `Vec<Arc<Shape>>` we cannot implement this as `From` trait :(
     ///
     /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform, whether or
     ///         not surface normal orientation is reversed, floating point texture maps and current working directory.

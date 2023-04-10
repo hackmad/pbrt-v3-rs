@@ -57,11 +57,9 @@ where
 }
 
 impl<T> From<(&TextureParams, ArcTransform)> for WrinkledTexture<T> {
-    /// Create a `WrinkledTexture<T>` from given parameter set and
-    /// transformation from texture space to world space.
+    /// Create a `WrinkledTexture<T>` from given parameter set and transformation from texture space to world space.
     ///
-    /// * `p` - Tuple containing texture parameters and texture space
-    ///         to world space transform.
+    /// * `p` - Tuple containing texture parameters and texture space to world space transform.
     fn from(p: (&TextureParams, ArcTransform)) -> Self {
         let (tp, tex2world) = p;
         let map = Arc::new(IdentityMapping3D::new(tex2world));

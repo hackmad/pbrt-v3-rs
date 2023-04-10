@@ -13,8 +13,7 @@ pub enum KdAccelNode {
         /// Split axis.
         split_axis: Axis,
 
-        /// The position in the nodes list of the child representing the space
-        /// above the splitting plane.
+        /// The position in the nodes list of the child representing the space above the splitting plane.
         above_child: usize,
     },
 
@@ -25,8 +24,7 @@ pub enum KdAccelNode {
         /// Stores primitive id when single primitive stored in leaf.
         one_primitive: usize,
 
-        /// Stores offset to the first index for the leaf node when more than one
-        /// primitive is stored in leaf.
+        /// Stores offset to the first index for the leaf node when more than one primitive is stored in leaf.
         primitive_indices_offset: usize,
     },
 }
@@ -35,8 +33,7 @@ impl KdAccelNode {
     /// Initialize a leaf node.
     ///
     /// * `prim_nums`         - Indices into `primitive_indices`.
-    /// * `primitive_indices` - Primitive indices (will be extended with prim_nums
-    ///                         if prim_nums.len() > 1).
+    /// * `primitive_indices` - Primitive indices (will be extended with prim_nums if prim_nums.len() > 1).
     pub fn new_leaf(prim_nums: &[usize], primitive_indices: &mut Vec<usize>) -> Self {
         // Store primitive ids for leaf node.
         let np = prim_nums.len();
@@ -116,11 +113,7 @@ impl BoundEdge {
     /// * `prim_num`  - Index of primitive.
     /// * `edge_type` - Indicates whether edge is starting or ending.
     pub fn new(t: Float, prim_num: usize, edge_type: EdgeType) -> Self {
-        Self {
-            t,
-            prim_num,
-            edge_type,
-        }
+        Self { t, prim_num, edge_type }
     }
 }
 
@@ -145,9 +138,8 @@ impl PartialOrd for BoundEdge {
     }
 }
 
-/// Used to record the nodes yet to be processed for the ray; it is ordered so
-/// that the last active entry in the array is the next node that should be
-/// considered.
+/// Used to record the nodes yet to be processed for the ray; it is ordered so that the last active entry in the array
+/// is the next node that should be considered.
 #[derive(Copy, Clone, Default)]
 pub(crate) struct KdToDo<'a> {
     /// The current node.
@@ -163,7 +155,6 @@ pub(crate) struct KdToDo<'a> {
     pub(crate) t_max: Float,
 }
 
-/// The maximum number of entries needed in `KdToDo` array is the maximum depth
-/// of the kd-tree; the array size used in the following should be more than
-/// enough in practice.
+/// The maximum number of entries needed in `KdToDo` array is the maximum depth of the kd-tree; the array size used in
+/// the following should be more than enough in practice.
 pub const MAX_TO_DO: usize = 64;

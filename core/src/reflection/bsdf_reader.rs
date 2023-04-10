@@ -22,7 +22,7 @@ pub fn open_file(path: &str) -> Result<File, String> {
 /// Interface to add custom helpers for reading BSDF files that supports little and big endian integer format of the
 /// system.
 ///
-/// NOTE: This is just a convenience way to add helpers to `File`.
+/// `NOTE`: This is just a convenience way to add helpers to `File`.
 pub trait BSDFReader {
     /// Reads the header bytes and compares them to the expected header.
     fn check_header(&mut self) -> Result<(), String>;
