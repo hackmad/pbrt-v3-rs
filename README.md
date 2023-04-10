@@ -3,16 +3,12 @@
 The motivation is to explore the algorithms outlined in the [book](http://www.pbr-book.org/) while simultaneously 
 learning a new language like Rust.
 
-## Releases
-
-Completed work from the book will be tagged as a release which can be found [here](https://github.com/hackmad/pbr_rust/releases).
 ## Renders
 
 Some scenes include PBRT files from:
-- [Scenes for pbrt-v3](https://www.pbrt.org/scenes-v3) under `../pbrt-v3-scenes` 
+- [Scenes for pbrt-v3](https://www.pbrt.org/scenes-v3) under `../pbrt-v3-scenes` relative to this repositories root. 
+- [Vripped reconstruction of Dragon Model](http://graphics.stanford.edu/data/3Dscanrep/) under `../dragon_recon`
   relative to this repositories root. 
-- [Vripped reconstruction of Dragon Model](http://graphics.stanford.edu/data/3Dscanrep/) 
-  under `../dragon_recon` relative to this repositories root. 
 
 The relative paths for `Texture`, `Include` etc are relative to the scene file location.
 
@@ -100,23 +96,23 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Random" href="renders/samplers/random.png"><img src="renders/samplers/random.png" style="height: 100px"/></a>
 <a title="Stratified" href="renders/samplers/stratified.png"><img src="renders/samplers/stratified.png" style="height: 100px"/></a>
 
-### Transforms
+### Transforms &amp; Object Instancing
 
 <a title="Animation" href="renders/transforms/anim-bluespheres.png"><img src="renders/transforms/anim-bluespheres.png" style="height: 100px"/></a>
-
-### Object Instancing
-
 <a title="Instances" href="renders/objects/instances.png"><img src="renders/objects/instances.png" style="height: 100px"/></a>
 
-### pbrt-v3-scenes
+### Integrators
 
 <a title="SPPM 10 iterations caustic-glass" href="renders/integrators/sppm/f16-9a.png"><img src="renders/integrators/sppm/f16-9a.png" style="height: 200px"/></a>
 <a title="SPPM 100 iterations caustic-glass" href="renders/integrators/sppm/f16-9b.png"><img src="renders/integrators/sppm/f16-9b.png" style="height: 200px"/></a>
-<a title="bunny-fur" href="renders/pbrt-v3-scenes/bunny-fur/f3-15.png"><img src="renders/pbrt-v3-scenes/bunny-fur/f3-15.png" style="height: 200px"/></a>
 <a title="BDPT breakfast" href="renders/integrators/bdpt/breakfast.png"><img src="renders/integrators/bdpt/breakfast.png" style="height: 200px"/></a>
+<a title="MLT" href="renders/integrators/mlt/f16-22b.png"><img src="renders/integrators/mlt/f16-22b.png" style="height: 200px"/></a>
+
+### pbrt-v3-scenes
+
 <a title="barcelona-pavilion" href="renders/pbrt-v3-scenes/barcelona-pavilion/pavilion-day.png"><img src="renders/pbrt-v3-scenes/barcelona-pavilion/pavilion-day.png" style="height: 200px"/></a>
 <a title="head" href="renders/pbrt-v3-scenes/head/head.png"><img src="renders/pbrt-v3-scenes/head/head.png" style="height: 200px"/></a>
-
+<a title="bunny-fur" href="renders/pbrt-v3-scenes/bunny-fur/f3-15.png"><img src="renders/pbrt-v3-scenes/bunny-fur/f3-15.png" style="height: 200px"/></a>
 
 ## Building
 
@@ -125,8 +121,7 @@ Build debug profile. The executable will be `target/debug/pbr_rust`.
 cargo build
 ```
 
-Use `--release` when building/running for faster executable. The executable
-will be `target/release/pbr-rust`.
+Use `--release` when building/running for faster executable. The executable will be `target/release/pbr-rust`.
 ```bash
 cargo build --release
 ```
