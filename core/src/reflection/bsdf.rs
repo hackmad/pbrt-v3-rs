@@ -8,6 +8,7 @@ use std::fmt;
 
 bitflags! {
     /// Stores combinations of reflection models.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
     pub struct BxDFType: u8 {
         const BSDF_NONE = 0;
         const BSDF_REFLECTION = 1 << 0;
@@ -31,28 +32,28 @@ impl fmt::Display for BxDFType {
     /// * `f` - Formatter.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        if self.bits & Self::BSDF_REFLECTION.bits == Self::BSDF_REFLECTION.bits {
+        if self.bits() & Self::BSDF_REFLECTION.bits() == Self::BSDF_REFLECTION.bits() {
             s += "BSDF_REFLECTION";
         }
-        if self.bits & Self::BSDF_TRANSMISSION.bits == Self::BSDF_TRANSMISSION.bits {
+        if self.bits() & Self::BSDF_TRANSMISSION.bits() == Self::BSDF_TRANSMISSION.bits() {
             if !s.is_empty() {
                 s += " | ";
             }
             s += "BSDF_TRANSMISSION";
         }
-        if self.bits & Self::BSDF_DIFFUSE.bits == Self::BSDF_DIFFUSE.bits {
+        if self.bits() & Self::BSDF_DIFFUSE.bits() == Self::BSDF_DIFFUSE.bits() {
             if !s.is_empty() {
                 s += " | ";
             }
             s += "BSDF_DIFFUSE";
         }
-        if self.bits & Self::BSDF_GLOSSY.bits == Self::BSDF_GLOSSY.bits {
+        if self.bits() & Self::BSDF_GLOSSY.bits() == Self::BSDF_GLOSSY.bits() {
             if !s.is_empty() {
                 s += " | ";
             }
             s += "BSDF_GLOSSY";
         }
-        if self.bits & Self::BSDF_SPECULAR.bits == Self::BSDF_SPECULAR.bits {
+        if self.bits() & Self::BSDF_SPECULAR.bits() == Self::BSDF_SPECULAR.bits() {
             if !s.is_empty() {
                 s += " | ";
             }

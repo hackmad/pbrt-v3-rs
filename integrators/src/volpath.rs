@@ -213,10 +213,10 @@ impl Integrator for VolPathIntegrator {
                 debug!("Updated beta = {beta}");
                 assert!(beta.y() >= 0.0);
                 debug_assert!(!beta.y().is_infinite());
-                specular_bounce = (flags & BxDFType::BSDF_SPECULAR) > BxDFType::BSDF_NONE;
+                specular_bounce = (flags & BxDFType::BSDF_SPECULAR) != BxDFType::BSDF_NONE;
 
-                if (flags & BxDFType::BSDF_SPECULAR > BxDFType::BSDF_NONE)
-                    && (flags & BxDFType::BSDF_TRANSMISSION) > BxDFType::BSDF_NONE
+                if ((flags & BxDFType::BSDF_SPECULAR) != BxDFType::BSDF_NONE)
+                    && ((flags & BxDFType::BSDF_TRANSMISSION) != BxDFType::BSDF_NONE)
                 {
                     let eta = bsdf.eta;
                     // Update the term that tracks radiance scaling for refraction
@@ -234,7 +234,7 @@ impl Integrator for VolPathIntegrator {
                     .map(|b| b.bxdfs)
                     .map(|b| if b.is_empty() { None } else { Some(b[0].clone()) })
                     .flatten();
-                if bssrdf_bxdf.is_some() && (flags & BxDFType::BSDF_TRANSMISSION) > BxDFType::BSDF_NONE {
+                if bssrdf_bxdf.is_some() && (flags & BxDFType::BSDF_TRANSMISSION) != BxDFType::BSDF_NONE {
                     match bssrdf_bxdf.unwrap() {
                         BxDF::TabulatedBSSRDF(bxdf) => {
                             // Importance sample the BSSRDF.
@@ -279,7 +279,7 @@ impl Integrator for VolPathIntegrator {
                             }
                             beta *= f * wi.abs_dot(&pi_shading_n) / pdf;
                             debug_assert!(!beta.y().is_infinite());
-                            specular_bounce = (flags & BxDFType::BSDF_SPECULAR) > BxDFType::BSDF_NONE;
+                            specular_bounce = (flags & BxDFType::BSDF_SPECULAR) != BxDFType::BSDF_NONE;
                             *ray = pi.spawn_ray(&wi);
                         }
                         _ => warn!("bssrdf reflection model should be BxDF::*BSSRDF."),

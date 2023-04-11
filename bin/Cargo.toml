@@ -1,5 +1,5 @@
 [package]
-name = "pbr-rust"
+name = "pbrt-v3-rs"
 version = "0.0.1"
 authors = ["Ahmad Kabani <ahmadkabani@yahoo.com>"]
 edition = "2021"
@@ -8,11 +8,12 @@ edition = "2021"
 api = { path = "../api" }
 core = { path = "../core" }
 
+env_logger = { workspace = true }
+log = { workspace = true }
+pest = { workspace = true }
+pest_derive = { workspace = true }
+
 dhat = { version = "0.2.4", optional = true }
-env_logger = "0.9.0"
-log = "0.4.14"
-pest = "2.1.3"
-pest_derive = "2.1.0"
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = { version = "0.4.1", optional = true }

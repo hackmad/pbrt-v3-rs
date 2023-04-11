@@ -2,6 +2,7 @@
 members = [
     "accelerators",
     "api",
+    "bin",
     "cameras",
     "core",
     "filters",
@@ -9,11 +10,37 @@ members = [
     "lights",
     "materials",
     "media",
-    "pbr-rust",
     "samplers",
     "shapes",
     "textures",
 ]
+
+[workspace.dependencies]
+
+arc-swap = "1"
+bitflags = "2"
+byteorder = "1"
+clap = { version = "4", features = ["derive"] }
+crossbeam-channel = "0.5"
+either = "1"
+env_logger = "0.10"
+exr = "1"
+float-cmp = "0.9"
+log = "0.4"
+hexf = "0.2"
+image = "0.24"
+indicatif = "0.17"
+itertools = "0.10"
+lazy_static = "1"
+num-traits = "0.2"
+ordered-float = "3"
+order-stat = "0.1"
+pest = "2"
+pest_consume = "1"
+pest_derive = "2"
+ply-rs = "0.1"
+regex = "1"
+shared_arena = "0.8"
 
 [profile.dev]
 opt-level = 0

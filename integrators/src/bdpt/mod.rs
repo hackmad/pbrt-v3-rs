@@ -674,7 +674,7 @@ fn random_walk<'scene>(
             beta *= f * wi.abs_dot(&isect.shading.n) / pdf_fwd;
             info!("Random walk beta now {beta}");
             pdf_rev = bsdf.pdf(&wi, &wo, BxDFType::all());
-            if bxdf_type & BxDFType::BSDF_SPECULAR > BxDFType::BSDF_NONE {
+            if (bxdf_type & BxDFType::BSDF_SPECULAR) != BxDFType::BSDF_NONE {
                 path[vertex].delta = true;
                 pdf_rev = 0.0;
                 pdf_fwd = 0.0;

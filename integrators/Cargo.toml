@@ -9,6 +9,6 @@ core = { path = "../core" }
 filters = { path = "../filters" }
 samplers = { path = "../samplers" }
 
-crossbeam-channel = "0.5.6"
-itertools = "0.10.3"
-log = "0.4.14"
+crossbeam-channel = { workspace = true }
+itertools = { workspace = true }
+log = { workspace = true }

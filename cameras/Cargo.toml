@@ -7,5 +7,5 @@ edition = "2021"
 [dependencies]
 core = { path = "../core" }
 
-crossbeam-channel = "0.5.6"
-log = "0.4.14"
+crossbeam-channel = { workspace = true }
+log = { workspace = true }

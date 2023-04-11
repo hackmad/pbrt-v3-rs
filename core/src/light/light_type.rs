@@ -4,6 +4,7 @@ use bitflags::bitflags;
 
 bitflags! {
     /// Stores combination of flags for the light types.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
     pub struct LightType: u8 {
         const DELTA_POSITION_LIGHT = 1;
         const DELTA_DIRECTION_LIGHT = 2;
@@ -17,7 +18,7 @@ impl LightType {
     ///
     /// * `other` - Light type flag to match.
     pub fn matches(&self, other: Self) -> bool {
-        self.bits & other.bits > 0
+        self.bits() & other.bits() > 0
     }
 
     /// Returns true if the light flags has the `LightType::DELTA_POSITION_LIGHT` or `LightType::DELTA_DIRECTION_LIGHT`

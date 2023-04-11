@@ -8,5 +8,5 @@ edition = "2021"
 core = { path = "../core" }
 textures = { path = "../textures" }
 
-lazy_static = "1.4.0"
-log = "0.4.14"
+lazy_static = { workspace = true }
+log = { workspace = true }

@@ -238,7 +238,7 @@ pub fn estimate_direct(
                     scattering_pdf = scatter_pdf;
                     wi = wi2;
                     f = f1 * wi.abs_dot(&si.shading.n);
-                    sampled_specular = (sampled_type & BxDFType::BSDF_SPECULAR) > BxDFType::BSDF_NONE;
+                    sampled_specular = (sampled_type & BxDFType::BSDF_SPECULAR) != BxDFType::BSDF_NONE;
                 }
             }
             Interaction::Medium { mi } => {

@@ -10,10 +10,10 @@ lazy_static! {
 
 /// System wide options.
 #[derive(Parser, Clone)]
-#[clap(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None)]
 pub struct Options {
     /// Number of threads to use for rendering.
-    #[clap(
+    #[arg(
         long = "nthreads",
         short = 't',
         value_name = "NUM",
@@ -23,18 +23,18 @@ pub struct Options {
     n_threads: usize,
 
     /// Automatically reduce a number of quality settings to render more quickly.
-    #[clap(
+    #[arg(
         long = "quick",
         help = "Automatically reduce a number of quality settings to render more quickly."
     )]
     pub quick_render: bool,
 
     /// Suppress all text output other than error messages.:
-    #[clap(long, help = "Suppress all text output other than error messages.")]
+    #[arg(long, help = "Suppress all text output other than error messages.")]
     pub quiet: bool,
 
     /// Path to the image file.
-    #[clap(
+    #[arg(
         long = "outfile",
         short = 'o',
         value_name = "FILE",
@@ -43,7 +43,7 @@ pub struct Options {
     pub image_file: Option<String>,
 
     /// The crop window x0, x1, y0, y1.
-    #[clap(
+    #[arg(
         long = "cropwindow",
         short = 'c',
         value_name = "FLOAT",
@@ -53,11 +53,11 @@ pub struct Options {
     pub crop_window: Vec<Float>,
 
     /// Input file paths. Empty vector implies read from stdin.
-    #[clap(multiple_occurrences = true, help = "Input files")]
+    #[arg(help = "Input files")]
     pub paths: Vec<String>,
 
     /// Tile size.
-    #[clap(
+    #[arg(
         long = "tilesize",
         short = 'p',
         value_name = "NUM",
@@ -67,11 +67,11 @@ pub struct Options {
     pub tile_size: usize,
 
     /// Write SPPM radius image
-    #[clap(long = "sppm-radius", help = "SPPM radius image file path")]
+    #[arg(long = "sppm-radius", help = "SPPM radius image file path")]
     pub sppm_radius: Option<String>,
 
     /// Path prefix to the mipmap file for debugging purposses.
-    #[clap(
+    #[arg(
         long = "mipmap",
         short = 'm',
         value_name = "FILE",

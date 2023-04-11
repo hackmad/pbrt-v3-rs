@@ -503,7 +503,7 @@ fn generate_visible_point(
             if pdf == 0.0 || f.is_black() {
                 break;
             }
-            specular_bounce = (bxdf_type & BxDFType::BSDF_SPECULAR) > BxDFType::BSDF_NONE;
+            specular_bounce = (bxdf_type & BxDFType::BSDF_SPECULAR) != BxDFType::BSDF_NONE;
             beta *= f * wi.abs_dot(&isect.shading.n) / pdf;
             if beta.y() < 0.25 {
                 let continue_prob = min(1.0, beta.y());

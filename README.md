@@ -7,8 +7,7 @@ learning a new language like Rust.
 
 Some scenes include PBRT files from:
 - [Scenes for pbrt-v3](https://www.pbrt.org/scenes-v3) under `../pbrt-v3-scenes` relative to this repositories root. 
-- [Vripped reconstruction of Dragon Model](http://graphics.stanford.edu/data/3Dscanrep/) under `../dragon_recon`
-  relative to this repositories root. 
+- [Vripped reconstruction of Dragon Model](http://graphics.stanford.edu/data/3Dscanrep/) under `../dragon_recon` relative to this repositories root. 
 
 The relative paths for `Texture`, `Include` etc are relative to the scene file location.
 
@@ -117,12 +116,12 @@ pngquant --ext .png --force renders/shapes/*.png
 
 ## Building
 
-Build debug profile. The executable will be `target/debug/pbr_rust`.
+Build debug profile. The executable will be `target/debug/pbrt-v3-rs`.
 ```bash
 cargo build
 ```
 
-Use `--release` when building/running for faster executable. The executable will be `target/release/pbr-rust`.
+Use `--release` when building/running for faster executable. The executable will be `target/release/pbrt-v3-rs`.
 ```bash
 cargo build --release
 ```
@@ -148,7 +147,7 @@ cargo run --release -- [OPTIONS] <FILE1> <FILE2> ...
 
 To run the compiled binary directly use:
 ```bash
-./target/release/pbr-rust [OPTIONS] <FILE1> <FILE2> ...
+./target/release/pbrt-v3-rs [OPTIONS] <FILE1> <FILE2> ...
 ```
 
 To run all scenes:
@@ -156,7 +155,7 @@ To run all scenes:
 cargo run --release -- [OPTIONS] <FILE1> <FILE2> ...
 ```
 ```bash
-./target/releases/pbr-rust [OPTIONS] $(find scenes | grep -v geometry | grep "\.pbrt$")
+./target/releases/pbrt-v3-rs [OPTIONS] $(find scenes | grep -v geometry | grep "\.pbrt$")
 ```
 
 To run examples from `../pbrt-v3-scenes` you can use relative paths to point to the binary. For example, the example in
@@ -164,7 +163,7 @@ To run examples from `../pbrt-v3-scenes` you can use relative paths to point to 
 ```bash
 cd ../pbrt-v3-scenes/caustic-glass
 
-../../pbr_rust/target/release/pbr-rust -t 4 f16-9a.pbrt
+../../pbrt-v3-rs/target/release/pbrt-v3-rs -t 4 f16-9a.pbrt
 ```
 
 ## Profiling / Performance
@@ -205,8 +204,8 @@ export PATH=~/.asdf/installs/rust/1.57.0/toolchains/1.57.0-x86_64-apple-darwin/l
 RUSTFLAGS="-Cprofile-generate=/tmp/pgo-data" cargo build --release --target=x86_64-apple-darwin
 
 # STEP 2: Run the instrumented binaries with some typical data
-./target/x86_64-apple-darwin/release/pbr-rust scene1.pbrt
-./target/x86_64-apple-darwin/release/pbr-rust scene2.pbrt
+./target/x86_64-apple-darwin/release/pbrt-v3-rs scene1.pbrt
+./target/x86_64-apple-darwin/release/pbrt-v3-rs scene2.pbrt
 
 # STEP 3: Merge the `.profraw` files into a `.profdata` file
 llvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data
@@ -223,12 +222,12 @@ cargo install flamegraph
 
 On MacOS DTrace needs root permissions!
 ```bash
-sudo cargo flamegraph --dev -- target/release/pbr-rust scene.pbrt
+sudo cargo flamegraph --dev -- target/release/pbrt-v3-rs scene.pbrt
 ```
 
 Ignore this error if you see `cargo-flamegraph.stacks`.
 ```bash
-[2021-12-25T21:36:44Z ERROR pbr_rust] Error reading file 'target/release/pbr-rust': stream did not contain valid UTF-8
+[2021-12-25T21:36:44Z ERROR pbrt-v3-rs] Error reading file 'target/release/pbrt-v3-rs': stream did not contain valid UTF-8
 ```
 
 The result should be in `flamegraph.svg`.

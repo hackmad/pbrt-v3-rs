@@ -18,7 +18,7 @@ WorldBegin
                 "rgb I" [.4 .45 .5] 
                 "rgb scale" [200 200 200]
                 "float fov" 45
-                "string mapname" "/Users/ahmad/Documents/Projects/Dev/rust/pbr_rust/scenes/images/goniometric-upward-downward.png"
+                "string mapname" "../images/goniometric-upward-downward.png"
   AttributeEnd
 
   AttributeBegin
