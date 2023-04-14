@@ -927,27 +927,29 @@ impl Api {
                 error!("ObjectInstance can't be called inside of instance definition.");
                 return;
             }
-            if let Some(instance) = self.render_options.instances.get(&name) {
-                let inst = match instance.len() {
-                    0 => {
-                        return;
-                    }
-                    1 => Arc::clone(&(&*instance)[0]),
-                    _ => {
-                        // Create an aggregate for the instance `Primitives`.
-                        match GraphicsState::make_accelerator(
-                            &self.render_options.accelerator_name,
-                            &*instance,
-                            &self.render_options.accelerator_params,
-                        ) {
-                            Ok(acc) => acc.clone(),
-                            Err(err) => {
-                                error!("{}", err);
-                                return;
-                            }
+
+            if let Some(instances) = self.render_options.instances.get_mut(&name) {
+                if instances.is_empty() {
+                    return;
+                }
+
+                if instances.len() > 1 {
+                    // Create an aggregate for the instance `Primitives`.
+                    let instance = match GraphicsState::make_accelerator(
+                        &self.render_options.accelerator_name,
+                        &*instances,
+                        &self.render_options.accelerator_params,
+                    ) {
+                        Ok(accel) => accel,
+                        Err(err) => {
+                            warn!("Error: {err}. Creating BVH Accelerator for ObjectInstance '{name}'.");
+                            info!("Default to BVH");
+                            Arc::new(BVHAccel::new(instances, 1, SplitMethod::SAH))
                         }
-                    }
-                };
+                    };
+                    instances.clear();
+                    instances.push(instance);
+                }
 
                 // Create `animated_instance_to_world` transform for instance.
                 let mut transform_cache = self.transform_cache.lock().unwrap();
@@ -961,7 +963,7 @@ impl Api {
                     self.render_options.transform_start_time,
                     self.render_options.transform_end_time,
                 );
-                let prim = TransformedPrimitive::new(inst, animated_instance2world);
+                let prim = TransformedPrimitive::new(Arc::clone(&instances[0]), animated_instance2world);
                 self.render_options.primitives.push(Arc::new(prim));
             } else {
                 error!("Unable to find object instance named '{}'", name);

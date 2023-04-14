@@ -84,6 +84,15 @@ impl BVHAccel {
                 ),
             };
 
+            let (arena_used, _arean_free) = arena.stats();
+            info!(
+                "BVH created with {} nodes for {} primitives ({:2} MB), arena allocated {:2} MB",
+                total_nodes,
+                primitives.len(),
+                (total_nodes * std::mem::size_of::<LinearBVHNode>()) as f32 / (1024.0 * 1024.0),
+                arena_used as f32 / (1024.0 * 1024.0)
+            );
+
             // Compute representation of depth-first traversal of BVH tree.
             let mut nodes = vec![LinearBVHNode::default(); total_nodes];
             let mut offset = 0_u32;

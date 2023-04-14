@@ -375,8 +375,12 @@ where
     let resampled_image: Arc<RwLock<Vec<T>>> = Arc::new(RwLock::new(vec![T::default(); res]));
 
     info!(
-        "Resampling MIPMap from {}x{} to {}x{}",
-        resolution[0], resolution[1], res_pow2[0], res_pow2[1],
+        "Resampling MIPMap from {}x{} to {}x{}. Ratio={}",
+        resolution[0],
+        resolution[1],
+        res_pow2[0],
+        res_pow2[1],
+        (res_pow2[0] * res_pow2[1]) as Float / (resolution[0] * resolution[1]) as Float,
     );
 
     // Resample image in `s` direction.

@@ -9,7 +9,7 @@ use std::fmt;
 use std::ops::{DivAssign, Index, Mul, Range};
 
 /// 2D Axis Aligned Bounding Box.
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct Bounds2<T: Num> {
     /// Minimum bounds.
     pub p_min: Point2<T>,

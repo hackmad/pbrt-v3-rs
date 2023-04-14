@@ -766,7 +766,7 @@ fn compute_cardinal_points(r_in: &Ray, r_out: &Ray) -> (Float, Float) {
 /// * `camera`        - The camera.
 /// * `film_diagonal` - The diaogonal of the film's physical area in meters.
 fn compute_exit_pupil_bounds(camera: &RealisticCamera, film_diagonal: Float) -> Vec<Bounds2f> {
-    let exit_pupil_bounds = Arc::new(Mutex::new(vec![Bounds2f::default(); N_SAMPLES]));
+    let exit_pupil_bounds = Arc::new(Mutex::new(vec![Bounds2f::EMPTY; N_SAMPLES]));
 
     let progress = create_progress_bar(N_SAMPLES as u64);
     progress.set_message("Calculate exit pupil");

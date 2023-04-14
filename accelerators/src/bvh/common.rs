@@ -24,13 +24,23 @@ pub enum SplitMethod {
 }
 
 /// SAH bucket information.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug)]
 pub struct BucketInfo {
     /// Count of primitives.
     pub count: usize,
 
     /// Bounding box for the bucket.
     pub bounds: Bounds3f,
+}
+
+impl Default for BucketInfo {
+    /// Returns the "default value" for `BucketInfo`.
+    fn default() -> Self {
+        Self {
+            count: 0,
+            bounds: Bounds3f::EMPTY,
+        }
+    }
 }
 
 /// Stores information about a primitive.
@@ -61,7 +71,7 @@ impl BVHPrimitiveInfo {
 }
 
 /// BVHBuildNode represents a node of the Bound Volume Hierarchy.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct BVHBuildNode {
     /// Bounding box of all children beneath this node.
     pub bounds: Bounds3f,
@@ -79,6 +89,19 @@ pub struct BVHBuildNode {
     /// Number of primitives stored from `BVHAccel::primitives` stored at this node` starting at `first_prim_offset`
     /// but not including `first_prim_offset` + `n_primitives`.
     pub n_primitives: usize,
+}
+
+impl Default for BVHBuildNode {
+    /// Returns the "default value" for `BVHBuildNode`.
+    fn default() -> Self {
+        Self {
+            bounds: Bounds3f::EMPTY,
+            children: [None, None],
+            split_axis: Axis::default(),
+            first_prim_offset: 0,
+            n_primitives: 0,
+        }
+    }
 }
 
 impl BVHBuildNode {
@@ -115,7 +138,7 @@ impl BVHBuildNode {
 }
 
 /// Stores information needed to traverse the BVH.
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct LinearBVHNode {
     /// Bounding box for the node.
     pub bounds: Bounds3f,
@@ -131,6 +154,19 @@ pub struct LinearBVHNode {
 
     /// Padding used to align everything to 32 byte total size.
     pub pad: u8,
+}
+
+impl Default for LinearBVHNode {
+    /// Returns the "default value" for `LinearBVHNode`.
+    fn default() -> Self {
+        Self {
+            bounds: Bounds3f::EMPTY,
+            offset: 0,
+            n_primitives: 0,
+            axis: 0,
+            pad: 0,
+        }
+    }
 }
 
 impl LinearBVHNode {

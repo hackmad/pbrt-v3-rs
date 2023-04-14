@@ -571,7 +571,7 @@ fn add_visible_points_to_grid<'p>(
 
 /// Compute grid bounds for SPPM visible points.
 fn compute_grid_bounds(pixels: &[SPPMPixel]) -> (Bounds3f, Float) {
-    let mut grid_bounds = Bounds3f::default();
+    let mut grid_bounds = Bounds3f::EMPTY;
     let mut max_radius = 0.0;
     for pixel in pixels.iter() {
         if pixel.vp.beta.is_black() {

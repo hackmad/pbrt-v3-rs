@@ -32,7 +32,7 @@ pub fn build(
     arena: &SharedArena<BVHBuildNode>,
     primitives: &[ArcPrimitive],
     max_prims_in_node: u8,
-    primitive_info: &mut Vec<BVHPrimitiveInfo>,
+    primitive_info: &mut [BVHPrimitiveInfo],
     total_nodes: &mut usize,
     ordered_prims: Arc<Mutex<Vec<ArcPrimitive>>>,
 ) -> ArenaArc<BVHBuildNode> {
@@ -98,7 +98,7 @@ pub fn build(
 ///
 /// * `primitive_info` - Primitive information.
 /// * `bounds`         - Bounds of all primitives in BVH node.
-fn compute_morton_primitives(primitive_info: &Vec<BVHPrimitiveInfo>, bounds: &Bounds3f) -> Vec<MortonPrimitive> {
+fn compute_morton_primitives(primitive_info: &[BVHPrimitiveInfo], bounds: &Bounds3f) -> Vec<MortonPrimitive> {
     let n = primitive_info.len();
     let morton_prims = Arc::new(Mutex::new(vec![MortonPrimitive::default(); n]));
 
@@ -335,7 +335,7 @@ fn emit_lbvh(
 /// * `total_nodes`   - Total number of nodes.
 fn build_upper_sah(
     arena: &SharedArena<BVHBuildNode>,
-    treelet_roots: &mut Vec<ArenaArc<BVHBuildNode>>,
+    treelet_roots: &mut [ArenaArc<BVHBuildNode>],
     start: usize,
     end: usize,
     total_nodes: &mut usize,
