@@ -176,7 +176,7 @@ str = { (!QUOTATION_MARK ~ ANY)* }
 quoted_ident_expr = { quoted_ident ~ STMT_END? }
 quoted_ident = { QUOTATION_MARK ~ ident ~ QUOTATION_MARK }
 ident_expr = { ident ~ STMT_END? }
-ident = { LETTER ~ (ASCII_ALPHANUMERIC | "_" | "." | "-")* }
+ident = { (LETTER | ALPHABETIC) ~ (ASCII_ALPHANUMERIC | ALPHABETIC | "_" | "." | "-")* }
 
 
 WHITESPACE = _{ " " | "\t" }
