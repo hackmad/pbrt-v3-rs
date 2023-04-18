@@ -52,7 +52,7 @@ impl Primitive for TransformedPrimitive {
             interpolated_prim_to_world.transform_surface_interaction(&mut it);
         }
 
-        debug_assert!(it.hit.n.dot(&it.shading.n) >= 0.0);
+        assert!(it.hit.n.dot(&it.shading.n) >= 0.0);
 
         Some(it)
     }

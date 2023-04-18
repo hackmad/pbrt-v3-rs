@@ -66,7 +66,7 @@ impl Primitive for GeometricPrimitive {
             r.t_max = it.t;
             it.isect.primitive = Some(self);
 
-            debug_assert!(it.isect.hit.n.dot(&it.isect.shading.n) >= 0.0);
+            assert!(it.isect.hit.n.dot(&it.isect.shading.n) >= 0.0);
 
             // Initialize SurfaceInteraction::mediumInterface after Shape intersection.
             let is_medium_transition = self.medium_interface.is_medium_transition();
