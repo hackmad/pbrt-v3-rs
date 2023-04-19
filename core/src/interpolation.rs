@@ -194,7 +194,7 @@ pub fn sample_catmull_rom_2d(
     values: &[Float],
     cdf: &[Float],
     alpha: Float,
-    u: Float,
+    mut u: Float,
 ) -> (Float, Float, Float) {
     // Get number of nodes.
     let size2 = nodes2.len();
@@ -208,10 +208,10 @@ pub fn sample_catmull_rom_2d(
 
     // Define a lambda function to interpolate table entries.
     let interpolate = |array: &[Float], idx: usize| -> Float {
-        (0..4).fold(0.0, |a, i| {
-            if weights[i] != 0.0 {
+        weights.iter().enumerate().fold(0.0, |a, (i, &weight)| {
+            if weight != 0.0 {
                 let array_idx = (offset + i as isize) as usize * size2 + idx;
-                a + array[array_idx] * weights[i]
+                a + array[array_idx] * weight
             } else {
                 a
             }
@@ -220,7 +220,7 @@ pub fn sample_catmull_rom_2d(
 
     // Map `u` to a spline interval by inverting the interpolated `cdf`.
     let maximum = interpolate(cdf, size2 - 1);
-    let u = u * maximum;
+    u *= maximum;
     let idx = find_interval(size2, |i| interpolate(cdf, i) <= u);
 
     // Look up node positions and interpolated function values.
@@ -268,6 +268,7 @@ pub fn sample_catmull_rom_2d(
             * (f0
                 + t * (0.5 * d0
                     + t * ((1.0 / 3.0) * (-2.0 * d0 - d1) + f1 - f0 + t * (0.25 * (d0 + d1) + 0.5 * (f0 - f1)))));
+
         fhat = f0 + t * (d0 + t * (-2.0 * d0 - d1 + 3.0 * (f1 - f0) + t * (d0 + d1 + 2.0 * (f0 - f1))));
 
         // Stop the iteration if converged.
@@ -288,7 +289,7 @@ pub fn sample_catmull_rom_2d(
 
     // Return the sample position and function value.
     let fval = fhat;
-    let pdf = fhat / maximum;
+    let pdf = max(0.0, fhat / maximum);
     let sample = x0 + width * t;
     (sample, fval, pdf)
 }

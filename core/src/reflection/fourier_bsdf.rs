@@ -171,7 +171,13 @@ impl FourierBSDF {
 
         // Importance sample the luminance Fourier expansion.
         let (y, pdf_phi, phi) = sample_fourier(&ak, &self.bsdf_table.recip, m_max, u[0]);
-        let pdf = max(0.0, pdf_phi * pdf_mu);
+        let pdf = if pdf_phi == 0.0 || pdf_mu == 0.0 {
+            // Sometimes pdf_phi or pdf_mu might be NAN and in Rust NAN * 0 = NAN. We want
+            // NAN * 0 = 0. This will prevent calling code from getting PDF = NAN.
+            0.0
+        } else {
+            max(0.0, pdf_phi * pdf_mu)
+        };
 
         // Compute the scattered direction for `FourierBSDF`.
         let sin2_theta_i = max(0.0, 1.0 - mu_i * mu_i);
