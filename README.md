@@ -1,24 +1,53 @@
 # Physically Based Rendering in Rust
 
-The motivation is to explore the algorithms outlined in the [book](http://www.pbr-book.org/) while simultaneously 
+The motivation is to explore the algorithms outlined in the [book](http://www.pbr-book.org/) while simultaneously
 learning a new language like Rust.
 
 ## Renders
 
 Some scenes include PBRT files from:
-- [Scenes for pbrt-v3](https://www.pbrt.org/scenes-v3) under `../pbrt-v3-scenes` relative to this repositories root. 
-- [Vripped reconstruction of Dragon Model](http://graphics.stanford.edu/data/3Dscanrep/) under `../dragon_recon` relative to this repositories root. 
 
-The relative paths for `Texture`, `Include` etc are relative to the scene file location.
+- [Scenes for pbrt-v3](https://www.pbrt.org/scenes-v3) under `../pbrt-v3-scenes` relative to this repositories root.
+- [Vripped reconstruction of Dragon Model](http://graphics.stanford.edu/data/3Dscanrep/) under `../dragon_recon`
+  relative to this repositories root.
+
+**NOTES:**
+
+- The relative paths for `Texture`, `Include` etc are relative to the scene file location.
+- The parser was not ported from the original implementation and it uses [pest](https://github.com/pest-parser/pest).
+  So the `Include` statement works more like an `import` and cannot accommodate trailing parameters. The following
+  scenes were adapted from [Scenes for pbrt-v3](https://www.pbrt.org/scenes-v3) to accomodate for this:
+  - `scenes/media/smoke.pbrt`: `pbrt-v3-scenes/cloud/smoke.pbrt`
+  - `scenes/media/cloud.pbrt`: `pbrt-v3-scenes/cloud/cloud.pbrt`
+- Additional scenes adapted from `pbrt-v3-scenes` to make it easier to create test renders:
+  - `scenes/media/spotfog.pbrt`
+  - `scenes/materials/*.pbrt`
 
 PNG files can be compressed using `pngquant`:
+
 ```bash
 pngquant --ext .png --force renders/shapes/sphere.png
 ```
+
 OR
+
 ```bash
-pngquant --ext .png --force renders/shapes/*.png 
+pngquant --ext .png --force renders/shapes/*.png
 ```
+
+### PBRT v3 Scenes
+
+<a title="barcelona-pavilion" href="renders/pbrt-v3-scenes/barcelona-pavilion/pavilion-day.png"><img src="renders/pbrt-v3-scenes/barcelona-pavilion/pavilion-day.png" style="height: 100px"/></a>
+<a title="head" href="renders/pbrt-v3-scenes/head/head.png"><img src="renders/pbrt-v3-scenes/head/head.png" style="height: 100px"/></a>
+<a title="landscape-view-0" href="renders/pbrt-v3-scenes/landscape/view-0.png"><img src="renders/pbrt-v3-scenes/landscape/view-0.png" style="height: 100px"/></a>
+<a title="landscape-view-1" href="renders/pbrt-v3-scenes/landscape/view-1.png"><img src="renders/pbrt-v3-scenes/landscape/view-1.png" style="height: 100px"/></a>
+<a title="landscape-view-2" href="renders/pbrt-v3-scenes/landscape/view-2.png"><img src="renders/pbrt-v3-scenes/landscape/view-2.png" style="height: 100px"/></a>
+<a title="landscape-view-3" href="renders/pbrt-v3-scenes/landscape/view-3.png"><img src="renders/pbrt-v3-scenes/landscape/view-3.png" style="height: 100px"/></a>
+<a title="landscape-view-4" href="renders/pbrt-v3-scenes/landscape/view-4.png"><img src="renders/pbrt-v3-scenes/landscape/view-4.png" style="height: 100px"/></a>
+<a title="coffee-splash" href="renders/pbrt-v3-scenes/coffee-splash/splash.png"><img src="renders/pbrt-v3-scenes/coffee-splash/splash.png" style="height: 100px"/></a>
+<a title="BDPT breakfast" href="renders/integrators/bdpt/breakfast.png"><img src="renders/integrators/bdpt/breakfast.png" style="height: 100px"/></a>
+<a title="bunny-fur" href="renders/pbrt-v3-scenes/bunny-fur/f3-15.png"><img src="renders/pbrt-v3-scenes/bunny-fur/f3-15.png" style="height: 100px"/></a>
+<a title="ganesha" href="renders/pbrt-v3-scenes/ganesha/ganesha.png"><img src="renders/pbrt-v3-scenes/ganesha/ganesha.png" style="height: 100px"/></a>
 
 ### Shapes
 
@@ -28,8 +57,8 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="Other Quadrics" href="renders/shapes/other-quadrics.png"><img src="renders/shapes/other-quadrics.png" style="height: 100px;"/></a>
 <a title="PLY Mesh" href="renders/shapes/plymesh.png"><img src="renders/shapes/plymesh.png" style="height: 100px;"/></a>
 <a title="Loop Subdivision Surface" href="renders/shapes/loopsubdiv.png"><img src="renders/shapes/loopsubdiv.png" style="height: 100px;"/></a>
-<a title="All Shapes" href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" style="height: 100px;"/></a>
 <a title="Triangles Alpha Mask" href="renders/shapes/triangles-alpha-mask.png"><img src="renders/shapes/triangles-alpha-mask.png" style="height: 100px"/></a>
+<a title="All Shapes" href="renders/shapes/all-shapes.png"><img src="renders/shapes/all-shapes.png" style="height: 100px;"/></a>
 
 ### Textures
 
@@ -65,8 +94,9 @@ pngquant --ext .png --force renders/shapes/*.png
 
 ### Media
 
-<a title="Grid Density" href="renders/media/smoke.png"><img src="renders/media/smoke.png" style="height: 100px"/></a>
-<a title="Homogeneous" href="renders/media/spotfog.png"><img src="renders/media/spotfog.png" style="height: 100px"/></a>
+<a title="Grid Density - smoke" href="renders/media/smoke.png"><img src="renders/media/smoke.png" style="height: 100px"/></a>
+<a title="Grid Density - cloud" href="renders/media/cloud.png"><img src="renders/media/cloud.png" style="height: 100px"/></a>
+<a title="Homogeneous - spotfog" href="renders/media/spotfog.png"><img src="renders/media/spotfog.png" style="height: 100px"/></a>
 
 ### Cameras
 
@@ -102,26 +132,21 @@ pngquant --ext .png --force renders/shapes/*.png
 
 ### Integrators
 
-<a title="SPPM 10 iterations caustic-glass" href="renders/integrators/sppm/f16-9a.png"><img src="renders/integrators/sppm/f16-9a.png" style="height: 200px"/></a>
-<a title="SPPM 100 iterations caustic-glass" href="renders/integrators/sppm/f16-9b.png"><img src="renders/integrators/sppm/f16-9b.png" style="height: 200px"/></a>
-<a title="BDPT caustic-glass" href="renders/integrators/bdpt/f16-22a.png"><img src="renders/integrators/bdpt/f16-22a.png" style="height: 200px"/></a>
-<a title="MLT caustic-glass" href="renders/integrators/mlt/f16-22b.png"><img src="renders/integrators/mlt/f16-22b.png" style="height: 200px"/></a>
-
-### pbrt-v3-scenes
-
-<a title="barcelona-pavilion" href="renders/pbrt-v3-scenes/barcelona-pavilion/pavilion-day.png"><img src="renders/pbrt-v3-scenes/barcelona-pavilion/pavilion-day.png" style="height: 200px"/></a>
-<a title="head" href="renders/pbrt-v3-scenes/head/head.png"><img src="renders/pbrt-v3-scenes/head/head.png" style="height: 200px"/></a>
-<a title="BDPT breakfast" href="renders/integrators/bdpt/breakfast.png"><img src="renders/integrators/bdpt/breakfast.png" style="height: 200px"/></a>
-<a title="bunny-fur" href="renders/pbrt-v3-scenes/bunny-fur/f3-15.png"><img src="renders/pbrt-v3-scenes/bunny-fur/f3-15.png" style="height: 200px"/></a>
+<a title="SPPM 10 iterations caustic-glass" href="renders/integrators/sppm/f16-9a.png"><img src="renders/integrators/sppm/f16-9a.png" style="height: 100px"/></a>
+<a title="SPPM 100 iterations caustic-glass" href="renders/integrators/sppm/f16-9b.png"><img src="renders/integrators/sppm/f16-9b.png" style="height: 100px"/></a>
+<a title="BDPT caustic-glass" href="renders/integrators/bdpt/f16-22a.png"><img src="renders/integrators/bdpt/f16-22a.png" style="height: 100px"/></a>
+<a title="MLT caustic-glass" href="renders/integrators/mlt/f16-22b.png"><img src="renders/integrators/mlt/f16-22b.png" style="height: 100px"/></a>
 
 ## Building
 
 Build debug profile. The executable will be `target/debug/pbrt-v3-rs`.
+
 ```bash
 cargo build
 ```
 
 Use `--release` when building/running for faster executable. The executable will be `target/release/pbrt-v3-rs`.
+
 ```bash
 cargo build --release
 ```
@@ -129,37 +154,45 @@ cargo build --release
 ## Testing
 
 The unit tests can be run as follows:
+
 ```bash
 cargo test
 ```
 
 ## Running
 
-This section will be updated as new features get added while progressing through the book. The debug version can be run as:
+This section will be updated as new features get added while progressing through the book. The debug version can be run
+as:
+
 ```bash
 cargo run -- [OPTIONS] <FILE1> <FILE2> ...
 ```
 
 The release version can be run as:
+
 ```bash
 cargo run --release -- [OPTIONS] <FILE1> <FILE2> ...
 ```
 
 To run the compiled binary directly use:
+
 ```bash
 ./target/release/pbrt-v3-rs [OPTIONS] <FILE1> <FILE2> ...
 ```
 
 To run all scenes:
+
 ```bash
 cargo run --release -- [OPTIONS] <FILE1> <FILE2> ...
 ```
+
 ```bash
 ./target/releases/pbrt-v3-rs [OPTIONS] $(find scenes | grep -v geometry | grep "\.pbrt$")
 ```
 
 To run examples from `../pbrt-v3-scenes` you can use relative paths to point to the binary. For example, the example in
 `../pbrt-v3-scenes/caustic-glass` can be rendered like this:
+
 ```bash
 cd ../pbrt-v3-scenes/caustic-glass
 
@@ -172,18 +205,20 @@ cd ../pbrt-v3-scenes/caustic-glass
 
 Use `--features dhat-rs` to get heap profiling stats. Note that this will be a
 lot slower to run.
+
 ```bash
 cargo run --release --features dhat-rs -- [OPTIONS] <FILE1> <FILE2> ...
 ```
 
 This will generate a file `dhat-heap.json` which can be viewed using the DHAT
-viewer. There is an [online tool](https://nnethercote.github.io/dh_view/dh_view.html) 
+viewer. There is an [online tool](https://nnethercote.github.io/dh_view/dh_view.html)
 available as well.
 
 ### Jemalloc
 
-Use `--features jemalloc` to use jemalloc on Linux/MacOS. On Windows, it will use default global allocator. This is 
+Use `--features jemalloc` to use jemalloc on Linux/MacOS. On Windows, it will use default global allocator. This is
 mutually exclusive with `dhat-rs` feature.
+
 ```bash
 cargo run --release --features jemalloc -- [OPTIONS] <FILE1> <FILE2> ...
 ```
@@ -192,7 +227,7 @@ cargo run --release --features jemalloc -- [OPTIONS] <FILE1> <FILE2> ...
 
 See [profile guided optimization](https://doc.rust-lang.org/rustc/profile-guided-optimization.html#a-complete-cargo-workflow).
 
-__NOTE:__ Use of `asdf` is not symlinking toolchain components. Hence the export.
+**NOTE:** Use of `asdf` is not symlinking toolchain components. Hence the export.
 
 ```bash
 # STEP 0: Make sure there is no left-over profiling data from previous runs
@@ -216,16 +251,19 @@ RUSTFLAGS="-Cprofile-use=/tmp/pgo-data/merged.profdata" \
 ```
 
 ### Flamegraph
+
 ```bash
 cargo install flamegraph
 ```
 
 On MacOS DTrace needs root permissions!
+
 ```bash
 sudo cargo flamegraph --dev -- target/release/pbrt-v3-rs scene.pbrt
 ```
 
 Ignore this error if you see `cargo-flamegraph.stacks`.
+
 ```bash
 [2021-12-25T21:36:44Z ERROR pbrt-v3-rs] Error reading file 'target/release/pbrt-v3-rs': stream did not contain valid UTF-8
 ```
