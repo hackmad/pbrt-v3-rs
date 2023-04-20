@@ -5,11 +5,22 @@ use core::interaction::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::sampling::*;
+use core::stats::*;
 use core::texture::FloatTextureMap;
 use core::texture::*;
+use core::{register_stats, stat_inc, stat_percent};
 use std::mem::size_of;
 use std::sync::Arc;
 use textures::ConstantTexture;
+
+stat_percent!(
+    "Intersections/Ray-triangle intersection tests",
+    N_HITS,
+    N_TESTS,
+    triangle_stats_intersection_tests,
+);
+
+register_stats!(triangle_stats_intersection_tests);
 
 /// Triangle mesh
 #[derive(Clone)]
@@ -73,6 +84,8 @@ impl TriangleMesh {
         shadow_alpha_mask: Option<ArcTexture<Float>>,
         face_indices: Vec<usize>,
     ) -> Self {
+        register_stats();
+
         let num_triangles = vertex_indices.len() % 3;
         assert!(num_triangles == 0);
 
@@ -421,6 +434,8 @@ impl Shape for Triangle {
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests.
     fn intersect<'scene>(&self, r: &Ray, test_alpha_texture: bool) -> Option<Intersection<'scene>> {
+        stat_inc!(N_TESTS);
+
         // Get triangle vertices in p0, p1, and p2
         let p0 = self.mesh.p[self.mesh.vertex_indices[self.v]];
         let p1 = self.mesh.p[self.mesh.vertex_indices[self.v + 1]];
@@ -703,6 +718,7 @@ impl Shape for Triangle {
             isect.set_shading_geometry(ss, ts, dndu, dndv, true);
         }
 
+        stat_inc!(N_HITS);
         Some(Intersection::new(t, isect))
     }
 
@@ -711,6 +727,8 @@ impl Shape for Triangle {
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests.
     fn intersect_p(&self, r: &Ray, test_alpha_texture: bool) -> bool {
+        stat_inc!(N_TESTS);
+
         // Get triangle vertices in p0, p1, and p2
         let p0 = self.mesh.p[self.mesh.vertex_indices[self.v]];
         let p1 = self.mesh.p[self.mesh.vertex_indices[self.v + 1]];
@@ -878,6 +896,7 @@ impl Shape for Triangle {
             }
         }
 
+        stat_inc!(N_HITS);
         true
     }
 

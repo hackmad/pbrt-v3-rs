@@ -11,6 +11,7 @@ mod transform_cache;
 mod transform_set;
 
 use accelerators::*;
+use core::app::OPTIONS;
 use core::geometry::*;
 use core::light::*;
 use core::medium::*;
@@ -19,6 +20,8 @@ use core::paramset::*;
 use core::pbrt::*;
 use core::primitive::*;
 use core::primitives::*;
+use core::stats::*;
+use core::{clear_stats, print_stats, report_stats};
 use graphics_state::*;
 use material_instance::*;
 use render_options::*;
@@ -490,6 +493,12 @@ impl Api {
             clear_mipmap_caches();
 
             self.render_options = RenderOptions::new();
+
+            if !OPTIONS.quiet {
+                report_stats!();
+                print_stats!();
+                clear_stats!();
+            }
         }
     }
 

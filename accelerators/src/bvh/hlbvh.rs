@@ -6,6 +6,8 @@ use core::app::OPTIONS;
 use core::geometry::*;
 use core::pbrt::*;
 use core::primitive::*;
+use core::report_stats;
+use core::stats::*;
 use itertools::Itertools;
 use shared_arena::{ArenaArc, SharedArena};
 use std::cell::RefCell;
@@ -119,6 +121,9 @@ fn compute_morton_primitives(primitive_info: &[BVHPrimitiveInfo], bounds: &Bound
                     (*mp)[i].primitive_index = pi.primitive_number;
                     (*mp)[i].morton_code = encode_morton_3(&v);
                 }
+
+                // Report per thread statistics.
+                report_stats!();
             });
         }
         drop(rx); // Drop extra rx since we've cloned one for each worker.
@@ -192,6 +197,9 @@ fn build_treelets(
                     let mut tl = treelets.lock().unwrap();
                     (*tl).insert(i, build_node);
                 }
+
+                // Report per thread statistics.
+                report_stats!();
             });
         }
         drop(rx); // Drop extra rx since we've cloned one for each worker.

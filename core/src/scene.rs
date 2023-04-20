@@ -6,8 +6,24 @@ use crate::light::*;
 use crate::primitive::*;
 use crate::sampler::*;
 use crate::spectrum::*;
+use crate::stats::*;
+use crate::{register_stats, stat_counter, stat_inc};
 use std::collections::HashMap;
 use std::sync::Arc;
+
+stat_counter!(
+    "Intersections/Regular ray intersection tests",
+    N_INTERSECTION_TESTS,
+    scene_stats_n_intersection_tests,
+);
+
+stat_counter!(
+    "Intersections/Shadow ray intersection tests",
+    N_SHADOW_TESTS,
+    scene_stats_n_shadow_tests,
+);
+
+register_stats!(scene_stats_n_intersection_tests, scene_stats_n_shadow_tests);
 
 /// Scene.
 pub struct Scene {
@@ -33,6 +49,8 @@ impl Scene {
     /// * `aggregate` - An aggregate of all primitives in the scene.
     /// * `lights`    - All light sources in the scene.
     pub fn new(aggregate: ArcPrimitive, lights: Vec<ArcLight>) -> Self {
+        register_stats();
+
         let mut light_id_to_index = HashMap::new();
         for (i, light) in lights.iter().enumerate() {
             light_id_to_index.insert(light.get_id(), i);
@@ -69,6 +87,7 @@ impl Scene {
     ///
     /// * `ray` - The ray to trace.
     pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+        stat_inc!(N_INTERSECTION_TESTS);
         self.aggregate.intersect(ray)
     }
 
@@ -76,6 +95,7 @@ impl Scene {
     ///
     /// * `ray` - The ray to trace.
     pub fn intersect_p(&self, ray: &Ray) -> bool {
+        stat_inc!(N_SHADOW_TESTS);
         self.aggregate.intersect_p(ray)
     }
 

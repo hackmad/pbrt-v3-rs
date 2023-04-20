@@ -7,17 +7,18 @@ use core::geometry::*;
 use core::integrator::*;
 use core::paramset::ParamSet;
 use core::pbrt::*;
+use core::report_stats;
 use core::rng::*;
 use core::sampler::*;
 use core::sampling::*;
 use core::scene::*;
 use core::spectrum::*;
+use core::stats::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::thread;
 
 mod mlt_sampler;
-
 use mlt_sampler::*;
 
 /// Implements Multiplexed Metropolis Light Transport with Primary Sample Space Sampler to render images and
@@ -184,6 +185,9 @@ impl Integrator for MLTIntegrator {
                     for (rng_index, bootstrap_weight) in rx_collector.iter() {
                         bootstrap_weights[rng_index] = bootstrap_weight;
                     }
+
+                    // Report per thread statistics.
+                    report_stats!();
                 });
 
                 // Spawn worker threads.
@@ -216,6 +220,9 @@ impl Integrator for MLTIntegrator {
 
                             progress.inc(1);
                         }
+
+                        // Report per thread statistics.
+                        report_stats!();
                     });
                 }
                 drop(rx_worker); // Drop extra since we've cloned one for each woker.
@@ -318,6 +325,9 @@ impl Integrator for MLTIntegrator {
                                 }
                             }
                         }
+
+                        // Report per thread statistics.
+                        report_stats!();
                     });
                 }
                 drop(rx_worker); // Drop extra since we've cloned one for each woker.
