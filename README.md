@@ -44,10 +44,12 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="landscape-view-2" href="renders/pbrt-v3-scenes/landscape/view-2.png"><img src="renders/pbrt-v3-scenes/landscape/view-2.png" style="height: 100px"/></a>
 <a title="landscape-view-3" href="renders/pbrt-v3-scenes/landscape/view-3.png"><img src="renders/pbrt-v3-scenes/landscape/view-3.png" style="height: 100px"/></a>
 <a title="landscape-view-4" href="renders/pbrt-v3-scenes/landscape/view-4.png"><img src="renders/pbrt-v3-scenes/landscape/view-4.png" style="height: 100px"/></a>
+<a title="chopper-titan" href="renders/pbrt-v3-scenes/chopper-titan/chopper-titan.png"><img src="renders/pbrt-v3-scenes/chopper-titan/chopper-titan.png" style="height: 100px"/></a>
 <a title="coffee-splash" href="renders/pbrt-v3-scenes/coffee-splash/splash.png"><img src="renders/pbrt-v3-scenes/coffee-splash/splash.png" style="height: 100px"/></a>
 <a title="BDPT breakfast" href="renders/integrators/bdpt/breakfast.png"><img src="renders/integrators/bdpt/breakfast.png" style="height: 100px"/></a>
 <a title="bunny-fur" href="renders/pbrt-v3-scenes/bunny-fur/f3-15.png"><img src="renders/pbrt-v3-scenes/bunny-fur/f3-15.png" style="height: 100px"/></a>
 <a title="ganesha" href="renders/pbrt-v3-scenes/ganesha/ganesha.png"><img src="renders/pbrt-v3-scenes/ganesha/ganesha.png" style="height: 100px"/></a>
+<a title="crown" href="renders/pbrt-v3-scenes/crown/crown.png"><img src="renders/pbrt-v3-scenes/crown/crown.png" style="height: 100px"/></a>
 
 ### Shapes
 

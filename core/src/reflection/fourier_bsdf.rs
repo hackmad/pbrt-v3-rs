@@ -170,14 +170,14 @@ impl FourierBSDF {
         }
 
         // Importance sample the luminance Fourier expansion.
-        let (y, pdf_phi, phi) = sample_fourier(&ak, &self.bsdf_table.recip, m_max, u[0]);
-        let pdf = if pdf_phi == 0.0 || pdf_mu == 0.0 {
-            // Sometimes pdf_phi or pdf_mu might be NAN and in Rust NAN * 0 = NAN. We want
-            // NAN * 0 = 0. This will prevent calling code from getting PDF = NAN.
-            0.0
-        } else {
-            max(0.0, pdf_phi * pdf_mu)
-        };
+        let (y, mut pdf_phi, phi) = sample_fourier(&ak, &self.bsdf_table.recip, m_max, u[0]);
+
+        if pdf_phi.is_nan() {
+            // Sometimes pdf_phi = NAN and NAN * 0 = NAN. We want NAN * 0 = 0 (same as pbrt-v3 implementation).
+            // Also use a threshold for pdf_mu < EPSILON => 0; edge case is hit in the bmw-m6 scene.
+            pdf_phi = 0.0;
+        }
+        let pdf = max(0.0, pdf_phi * pdf_mu); // Avoid negative PDF.
 
         // Compute the scattered direction for `FourierBSDF`.
         let sin2_theta_i = max(0.0, 1.0 - mu_i * mu_i);
