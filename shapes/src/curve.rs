@@ -4,7 +4,37 @@ use core::geometry::*;
 use core::interaction::*;
 use core::paramset::*;
 use core::pbrt::*;
+use core::stat_inc;
+use core::stats::*;
+use core::{register_stats, stat_counter, stat_distribution, stat_int_distribution, stat_memory_counter, stat_percent};
 use std::sync::Arc;
+
+stat_memory_counter!("Memory/Curves", CURVE_BYTES, curve_stats_bytes);
+
+stat_percent!(
+    "Intersections/Ray-curve intersection tests",
+    N_HITS,
+    N_TESTS,
+    curve_stats_hits,
+);
+
+stat_int_distribution!(
+    "Intersections/Curve refinement level",
+    REFINEMENT_LEVEL,
+    curve_stats_refinement_level,
+);
+
+stat_counter!("Scene/Curves", N_CURVES, curve_stats_count);
+
+stat_counter!("Scene/Split curves", N_SPLIT_CURVES, curve_stats_split_count);
+
+register_stats!(
+    curve_stats_bytes,
+    curve_stats_hits,
+    curve_stats_refinement_level,
+    curve_stats_count,
+    curve_stats_split_count,
+);
 
 /// Curve types.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -104,6 +134,10 @@ impl Curve {
             segments.push(Arc::new(curve));
         }
 
+        let size = std::mem::size_of::<CurveData>() + num_segments * std::mem::size_of::<Curve>();
+        stat_inc!(CURVE_BYTES, size as u64);
+        stat_inc!(N_SPLIT_CURVES, num_segments as i64);
+
         segments
     }
 
@@ -115,6 +149,8 @@ impl Curve {
     /// * `p` - A tuple containing the parameter set, object to world transform, world to object transform and whether
     ///         or not surface normal orientation is reversed.
     pub fn from_props(p: (&ParamSet, ArcTransform, ArcTransform, bool)) -> Vec<ArcShape> {
+        register_stats();
+
         let (params, o2w, w2o, reverse_orientation) = p;
 
         let width = params.find_one_float("width", 1.0);
@@ -496,6 +532,7 @@ impl Curve {
             );
             self.data.object_to_world.transform_surface_interaction(&mut si);
 
+            stat_inc!(N_HITS, 1);
             Some(Intersection::new(t_hit, si))
         }
     }
@@ -506,6 +543,8 @@ impl Curve {
     /// * `r`             - The ray.
     /// * `is_shadow_ray` - Used to terminate recursion on first hit for shadow rays.
     fn intersect<'scene>(&self, r: &Ray, is_shadow_ray: bool) -> Option<Intersection<'scene>> {
+        stat_inc!(N_TESTS, 1);
+
         // Transform ray to object space.
         //
         // We could just use transform_ray() but there is minor adjustment in it that adjusts t_max which is not in
@@ -593,6 +632,8 @@ impl Curve {
         // Compute log base 4 by dividing log2int in half.
         let r0 = (1.41421356237 * 6.0 * l0 / (8.0 * eps)).log2int() / 2;
         let max_depth = clamp(r0, 0, 10);
+
+        stat_distribution!(REFINEMENT_LEVEL, max_depth as i64);
 
         self.recursive_intersect(
             &ray,
@@ -709,6 +750,8 @@ impl CurveData {
 
         let normal_angle = clamp(n[0].dot(&n[1]), 0.0, 1.0).acos();
         let inv_sin_normal_angle = 1.0 / normal_angle.sin();
+
+        stat_inc!(N_CURVES, 1);
 
         Self {
             curve_type,

@@ -87,7 +87,7 @@ impl Scene {
     ///
     /// * `ray` - The ray to trace.
     pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
-        stat_inc!(N_INTERSECTION_TESTS);
+        stat_inc!(N_INTERSECTION_TESTS, 1);
         self.aggregate.intersect(ray)
     }
 
@@ -95,7 +95,7 @@ impl Scene {
     ///
     /// * `ray` - The ray to trace.
     pub fn intersect_p(&self, ray: &Ray) -> bool {
-        stat_inc!(N_SHADOW_TESTS);
+        stat_inc!(N_SHADOW_TESTS, 1);
         self.aggregate.intersect_p(ray)
     }
 

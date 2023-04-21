@@ -25,6 +25,87 @@ macro_rules! stat_counter {
     };
 }
 
+/// Create a thread local variable to track memory usage as a counter across threads.
+///
+/// * `$title`     - Descriptive title of the statistic that uses `/` as a separator for categories.
+///                  For example: "Intersections/Regular ray intersection tests",
+/// * `$var`       - An identifier for the thread local variable.
+/// * `stats_func` - An identifier for the callback function used by `StatsRegistrar::call_stats_funcs() to report to
+///                 `StatsAccumulator`.
+#[macro_export]
+macro_rules! stat_memory_counter {
+    ($title: expr, $var: ident, $stats_func: ident $(,)?) => {
+        thread_local! { static $var: std::cell::RefCell<u64> = std::cell::RefCell::new(0); }
+
+        pub fn $stats_func(accum: &mut StatsAccumulator) {
+            // Report thread stats.
+            let val = $var.with(|v| *v.borrow());
+            accum.report_memory_counter($title, val);
+
+            // Reset thread stats.
+            $var.with(|v| {
+                *v.borrow_mut() = 0;
+            });
+        }
+    };
+}
+
+/// Create a thread local variable to track an integer distribution across threads.
+///
+/// * `$title`     - Descriptive title of the statistic that uses `/` as a separator for categories.
+///                  For example: "Intersections/Regular ray intersection tests",
+/// * `$var`       - An identifier for the thread local variable.
+/// * `stats_func` - An identifier for the callback function used by `StatsRegistrar::call_stats_funcs() to report to
+///                 `StatsAccumulator`.
+#[macro_export]
+macro_rules! stat_int_distribution {
+    ($title: expr, $var: ident, $stats_func: ident, $(,)?) => {
+        thread_local! {
+            static $var: std::cell::RefCell<StatsDistribution<i64>> =
+                std::cell::RefCell::new(StatsDistribution::default());
+        }
+
+        pub fn $stats_func(accum: &mut StatsAccumulator) {
+            // Report thread stats.
+            let val = $var.with(|v| v.borrow().clone());
+            accum.report_int_distribution($title, val);
+
+            // Reset thread stats.
+            $var.with(|v| {
+                v.borrow_mut().clear();
+            });
+        }
+    };
+}
+
+/// Create a thread local variable to track an float distribution across threads.
+///
+/// * `$title`     - Descriptive title of the statistic that uses `/` as a separator for categories.
+///                  For example: "Intersections/Regular ray intersection tests",
+/// * `$var`       - An identifier for the thread local variable.
+/// * `stats_func` - An identifier for the callback function used by `StatsRegistrar::call_stats_funcs() to report to
+///                 `StatsAccumulator`.
+#[macro_export]
+macro_rules! stat_float_distribution {
+    ($title: expr, $var: ident, $stats_func: ident, $(,)?) => {
+        thread_local! {
+            static $var: std::cell::RefCell<StatsDistribution<f64>> =
+                std::cell::RefCell::new(StatsDistribution::default());
+        }
+
+        pub fn $stats_func(accum: &mut StatsAccumulator) {
+            // Report thread stats.
+            let val = $var.with(|v| v.borrow().clone());
+            accum.report_float_distribution($title, val);
+
+            // Reset thread stats.
+            $var.with(|v| {
+                v.borrow_mut().clear();
+            });
+        }
+    };
+}
+
 /// Create thread local variables to track an `i64` values for numerator/denominator across threads.
 ///
 /// * `$title`     - Descriptive title of the statistic that uses `/` as a separator for categories.
@@ -61,16 +142,23 @@ macro_rules! stat_percent {
 /// Convenience macro to increment a thread local variable for counter/percent statistics.
 #[macro_export]
 macro_rules! stat_inc {
-    ($var: ident) => {
-        $var.with(|v| *v.borrow_mut() += 1);
+    ($var: ident, $e: expr) => {
+        $var.with(|v| *v.borrow_mut() += $e);
     };
 }
 
 /// Convenience macro to decrement a thread local variable for counter/percent statistics.
 #[macro_export]
 macro_rules! stat_dec {
-    ($var: ident) => {
-        $var.with(|v| *v.borrow_mut() -= 1);
+    ($var: ident, $e: expr) => {
+        $var.with(|v| *v.borrow_mut() -= $e);
+    };
+}
+
+#[macro_export]
+macro_rules! stat_distribution {
+    ($var: ident, $e: expr) => {
+        $var.with(|v| v.borrow_mut().report($e));
     };
 }
 
@@ -85,8 +173,13 @@ macro_rules! register_stats {
             static ref IS_STATS_REGISTERED: std::sync::Mutex<bool> = std::sync::Mutex::new(false);
         }
 
-        /// Call this function in a module core/top-level struct to register the statistics. Typically done in `new()`.
-        /// Avoid unnecessarily calling it from all structs; for example in `TriangleMesh::new()` vs `Triangle::new()`.
+        /// Call this function in a module core/top-level struct to register the statistics. Typically done in:
+        /// 1. Type constructor like new(). Avoid unnecessarily calling it from all structs.
+        ///    e.g. `TriangleMesh::new()` (but not `Triangle::new()` as this would result in a huge number of calls)
+        /// 2. impl From<(&ParamSet, ...)> for ... { ... }.
+        ///    e.g. GonioPhotometricLight
+        /// 3. pub fn from_props(p: (&ParamSet, ...)) { ... }
+        ///    e.g. PLYMesh
         fn register_stats() {
             let mut is_registered = IS_STATS_REGISTERED.lock().unwrap();
             if !*is_registered  {

@@ -434,7 +434,7 @@ impl Shape for Triangle {
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests.
     fn intersect<'scene>(&self, r: &Ray, test_alpha_texture: bool) -> Option<Intersection<'scene>> {
-        stat_inc!(N_TESTS);
+        stat_inc!(N_TESTS, 1);
 
         // Get triangle vertices in p0, p1, and p2
         let p0 = self.mesh.p[self.mesh.vertex_indices[self.v]];
@@ -718,7 +718,7 @@ impl Shape for Triangle {
             isect.set_shading_geometry(ss, ts, dndu, dndv, true);
         }
 
-        stat_inc!(N_HITS);
+        stat_inc!(N_HITS, 1);
         Some(Intersection::new(t, isect))
     }
 
@@ -727,7 +727,7 @@ impl Shape for Triangle {
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests.
     fn intersect_p(&self, r: &Ray, test_alpha_texture: bool) -> bool {
-        stat_inc!(N_TESTS);
+        stat_inc!(N_TESTS, 1);
 
         // Get triangle vertices in p0, p1, and p2
         let p0 = self.mesh.p[self.mesh.vertex_indices[self.v]];
@@ -896,7 +896,7 @@ impl Shape for Triangle {
             }
         }
 
-        stat_inc!(N_HITS);
+        stat_inc!(N_HITS, 1);
         true
     }
 
