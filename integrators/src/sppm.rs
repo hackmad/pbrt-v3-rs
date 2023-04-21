@@ -13,10 +13,12 @@ use core::parallel::AtomicFloat;
 use core::paramset::*;
 use core::pbrt::*;
 use core::reflection::*;
+use core::report_stats;
 use core::sampler::*;
 use core::sampling::Distribution1D;
 use core::scene::*;
 use core::spectrum::*;
+use core::stats::*;
 use samplers::HaltonSampler;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicI32, Ordering};
@@ -364,6 +366,9 @@ fn generate_visible_points(
                     pixels[pixel_offset].vp = vp;
                 }
             }
+
+            // Report per thread statistics.
+            report_stats!();
         });
 
         // Spawn worker threads.
@@ -400,6 +405,9 @@ fn generate_visible_points(
                         }
                     }
                 }
+
+                // Report per thread statistics.
+                report_stats!();
             });
         }
         drop(rx_worker); // Drop extra since we've cloned one for each woker.
@@ -558,6 +566,9 @@ fn add_visible_points_to_grid<'p>(
                         }
                     }
                 }
+
+                // Report per thread statistics.
+                report_stats!();
             });
         }
         drop(rx_worker); // Drop extra since we've cloned one for each woker.
@@ -635,6 +646,9 @@ fn trace_photons<'p>(
                         grid,
                     );
                 }
+
+                // Report per thread statistics.
+                report_stats!();
             });
         }
         drop(rx_worker); // Drop extra since we've cloned one for each woker.
@@ -827,6 +841,9 @@ fn update_pixels(pixels: &mut Vec<SPPMPixel>) {
                     p.vp.beta = Spectrum::ZERO;
                     p.vp.bsdf = None;
                 }
+
+                // Report per thread statistics.
+                report_stats!();
             });
         }
         drop(rx_worker); // Drop extra since we've cloned one for each woker.

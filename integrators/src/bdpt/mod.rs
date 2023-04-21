@@ -13,10 +13,12 @@ use core::medium::MediumInterface;
 use core::paramset::*;
 use core::pbrt::*;
 use core::reflection::*;
+use core::report_stats;
 use core::sampler::*;
 use core::sampling::*;
 use core::scene::*;
 use core::spectrum::*;
+use core::stats::*;
 use filters::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -328,6 +330,9 @@ impl Integrator for BDPTIntegrator {
                             camera_data.film.merge_film_tile(&film_tile);
                             progress.inc(1);
                         }
+
+                        // Report per thread statistics.
+                        report_stats!();
                     });
                 }
                 drop(rx); // Drop extra rx since we've cloned one for each woker.

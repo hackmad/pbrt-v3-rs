@@ -9,9 +9,11 @@ use core::medium::*;
 use core::mipmap::*;
 use core::paramset::*;
 use core::pbrt::*;
+use core::report_stats;
 use core::sampling::*;
 use core::scene::*;
 use core::spectrum::*;
+use core::stats::*;
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 
@@ -346,6 +348,9 @@ fn compute_scalar_image(l_map: &MIPMap<Spectrum>) -> Vec<Vec<Float>> {
                         })
                         .collect();
                 }
+
+                // Report per thread statistics.
+                report_stats!();
             });
         }
         drop(rx); // Drop extra rx since we've cloned one for each worker.

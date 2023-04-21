@@ -8,9 +8,11 @@ use crate::geometry::*;
 use crate::interaction::*;
 use crate::pbrt::*;
 use crate::reflection::*;
+use crate::report_stats;
 use crate::sampler::*;
 use crate::scene::*;
 use crate::spectrum::*;
+use crate::stats::*;
 use std::sync::Arc;
 use std::thread;
 
@@ -241,7 +243,6 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         );
         let tile_count = n_tiles.x * n_tiles.y;
 
-        // Parallelize.
         info!("Rendering {}x{} tiles", n_tiles.x, n_tiles.y);
 
         let progress = create_progress_bar(tile_count as u64 + 1_u64); // Render + image write
@@ -265,6 +266,9 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                         camera_data.film.merge_film_tile(&film_tile);
                         progress.inc(1);
                     }
+
+                    // Report per thread statistics.
+                    report_stats!();
                 });
             }
             drop(rx); // Drop extra rx since we've cloned one for each woker.

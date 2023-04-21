@@ -11,6 +11,8 @@ use core::medium::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::reflection::*;
+use core::report_stats;
+use core::stats::*;
 use std::mem::swap;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -790,6 +792,9 @@ fn compute_exit_pupil_bounds(camera: &RealisticCamera, film_diagonal: Float) -> 
                     (*ep)[i] = camera.bound_exit_pupil(r0, r1);
                     progress.inc(1);
                 }
+
+                // Report per thread statistics.
+                report_stats!();
             });
         }
         drop(rx); // Drop extra rx since we've cloned one for each worker.

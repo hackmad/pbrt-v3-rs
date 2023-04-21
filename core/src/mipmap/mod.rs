@@ -4,6 +4,8 @@ use crate::app::OPTIONS;
 use crate::geometry::*;
 use crate::memory::*;
 use crate::pbrt::*;
+use crate::report_stats;
+use crate::stats::*;
 use crate::texture::*;
 use itertools::{iproduct, Itertools};
 use std::hash::Hash;
@@ -422,6 +424,9 @@ where
                         (*r_img)[pixel_index] += pixel;
                     }
                 }
+
+                // Report per thread statistics.
+                report_stats!();
             });
         }
         drop(rx); // Drop extra rx since we've cloned one for each woker.
@@ -492,6 +497,9 @@ where
                         }
                     }
                 }
+
+                // Report per thread statistics.
+                report_stats!();
             });
         }
         drop(rx); // Drop extra rx since we've cloned one for each woker.
