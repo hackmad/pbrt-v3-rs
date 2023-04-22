@@ -38,19 +38,22 @@ pngquant --ext .png --force renders/shapes/*.png
 ### PBRT v3 Scenes
 
 <a title="barcelona-pavilion" href="renders/pbrt-v3-scenes/barcelona-pavilion/pavilion-day.png"><img src="renders/pbrt-v3-scenes/barcelona-pavilion/pavilion-day.png" style="height: 100px"/></a>
-<a title="head" href="renders/pbrt-v3-scenes/head/head.png"><img src="renders/pbrt-v3-scenes/head/head.png" style="height: 100px"/></a>
+<a title="head" href="renders/pbrt-v3-scenes/head.png"><img src="renders/pbrt-v3-scenes/head.png" style="height: 100px"/></a>
 <a title="landscape-view-0" href="renders/pbrt-v3-scenes/landscape/view-0.png"><img src="renders/pbrt-v3-scenes/landscape/view-0.png" style="height: 100px"/></a>
 <a title="landscape-view-1" href="renders/pbrt-v3-scenes/landscape/view-1.png"><img src="renders/pbrt-v3-scenes/landscape/view-1.png" style="height: 100px"/></a>
 <a title="landscape-view-2" href="renders/pbrt-v3-scenes/landscape/view-2.png"><img src="renders/pbrt-v3-scenes/landscape/view-2.png" style="height: 100px"/></a>
 <a title="landscape-view-3" href="renders/pbrt-v3-scenes/landscape/view-3.png"><img src="renders/pbrt-v3-scenes/landscape/view-3.png" style="height: 100px"/></a>
 <a title="landscape-view-4" href="renders/pbrt-v3-scenes/landscape/view-4.png"><img src="renders/pbrt-v3-scenes/landscape/view-4.png" style="height: 100px"/></a>
-<a title="chopper-titan" href="renders/pbrt-v3-scenes/chopper-titan/chopper-titan.png"><img src="renders/pbrt-v3-scenes/chopper-titan/chopper-titan.png" style="height: 100px"/></a>
-<a title="BMW M6" href="renders/pbrt-v3-scenes/bmw-m6/bmw-m6.png"><img src="renders/pbrt-v3-scenes/bmw-m6/bmw-m6.png" style="height: 100px"/></a>
-<a title="coffee-splash" href="renders/pbrt-v3-scenes/coffee-splash/splash.png"><img src="renders/pbrt-v3-scenes/coffee-splash/splash.png" style="height: 100px"/></a>
+<a title="chopper-titan" href="renders/pbrt-v3-scenes/chopper-titan.png"><img src="renders/pbrt-v3-scenes/chopper-titan.png" style="height: 100px"/></a>
+<a title="BMW M6" href="renders/pbrt-v3-scenes/bmw-m6.png"><img src="renders/pbrt-v3-scenes/bmw-m6.png" style="height: 100px"/></a>
+<a title="ecosys" href="renders/pbrt-v3-scenes/ecosys.png"><img src="renders/pbrt-v3-scenes/ecosys.png" style="height: 100px"/></a>
+<a title="ecosys" href="renders/pbrt-v3-scenes/bathroom.png"><img src="renders/pbrt-v3-scenes/bathroom.png" style="height: 100px"/></a>
+<a title="sssdragon" href="renders/pbrt-v3-scenes/sssdragon/f15-7.png"><img src="renders/pbrt-v3-scenes/sssdragon/f15-7.png" style="height: 100px"/></a>
+<a title="coffee-splash" href="renders/pbrt-v3-scenes/coffee-splash.png"><img src="renders/pbrt-v3-scenes/coffee-splash.png" style="height: 100px"/></a>
 <a title="BDPT breakfast" href="renders/integrators/bdpt/breakfast.png"><img src="renders/integrators/bdpt/breakfast.png" style="height: 100px"/></a>
 <a title="bunny-fur" href="renders/pbrt-v3-scenes/bunny-fur/f3-15.png"><img src="renders/pbrt-v3-scenes/bunny-fur/f3-15.png" style="height: 100px"/></a>
-<a title="ganesha" href="renders/pbrt-v3-scenes/ganesha/ganesha.png"><img src="renders/pbrt-v3-scenes/ganesha/ganesha.png" style="height: 100px"/></a>
-<a title="crown" href="renders/pbrt-v3-scenes/crown/crown.png"><img src="renders/pbrt-v3-scenes/crown/crown.png" style="height: 100px"/></a>
+<a title="ganesha" href="renders/pbrt-v3-scenes/ganesha.png"><img src="renders/pbrt-v3-scenes/ganesha.png" style="height: 100px"/></a>
+<a title="crown" href="renders/pbrt-v3-scenes/crown.png"><img src="renders/pbrt-v3-scenes/crown.png" style="height: 100px"/></a>
 
 ### Shapes
 
