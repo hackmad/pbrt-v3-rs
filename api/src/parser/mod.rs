@@ -20,9 +20,8 @@ struct PbrtParser;
 impl PbrtParser {
     /// Parse rule `pbrt`.
     fn pbrt(input: Node) -> Result<Pbrt> {
-        let scene_path = input.user_data().clone();
         Ok(match_nodes!(input.into_children();
-            [stmt(stmts).., EOI(_)] => Pbrt { scene_path, stmts: stmts.collect() },
+            [stmt(stmts).., EOI(_)] => Pbrt { stmts: stmts.collect() },
         ))
     }
 
@@ -39,7 +38,13 @@ impl PbrtParser {
             [option_stmt(stmt)] => Stmt::Option(stmt),
             [scene_stmt(stmt)] => Stmt::Scene(stmt),
             [ctm_stmt(stmt)] => Stmt::CTM(stmt),
+            [comment_stmt(_stmt)] => Stmt::Comment
         ))
+    }
+
+    /// Parse rule `comment_stmt`.
+    fn comment_stmt(input: Node) -> Result<Stmt> {
+        Ok(Stmt::Comment)
     }
 
     /// Parse rule `include_stmt`.
@@ -109,7 +114,7 @@ impl PbrtParser {
     /// Parse rule `object_begin_stmt`.
     fn object_begin_stmt(input: Node) -> Result<BlockStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => BlockStmt::ObjectBegin(name),
+            [quoted_str_expr(name)] => BlockStmt::ObjectBegin(name),
         ))
     }
 
@@ -134,56 +139,56 @@ impl PbrtParser {
     /// Parse rule `accelerator_stmt`.
     fn accelerator_stmt(input: Node) -> Result<OptionStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => OptionStmt::Accelerator(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::Accelerator(name, params),
+            [quoted_str_expr(name)] => OptionStmt::Accelerator(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => OptionStmt::Accelerator(name, params),
         ))
     }
 
     /// Parse rule `camera_stmt`.
     fn camera_stmt(input: Node) -> Result<OptionStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => OptionStmt::Camera(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::Camera(name, params),
+            [quoted_str_expr(name)] => OptionStmt::Camera(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => OptionStmt::Camera(name, params),
         ))
     }
 
     /// Parse rule `film_stmt`.
     fn film_stmt(input: Node) -> Result<OptionStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => OptionStmt::Film(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::Film(name, params),
+            [quoted_str_expr(name)] => OptionStmt::Film(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => OptionStmt::Film(name, params),
         ))
     }
 
     /// Parse rule `integrator_stmt`.
     fn integrator_stmt(input: Node) -> Result<OptionStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => OptionStmt::Integrator(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::Integrator(name, params),
+            [quoted_str_expr(name)] => OptionStmt::Integrator(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => OptionStmt::Integrator(name, params),
         ))
     }
 
     /// Parse rule `make_named_medium_stmt`.
     fn make_named_medium_stmt(input: Node) -> Result<OptionStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => OptionStmt::MakeNamedMedium(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::MakeNamedMedium(name, params),
+            [quoted_str_expr(name)] => OptionStmt::MakeNamedMedium(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => OptionStmt::MakeNamedMedium(name, params),
         ))
     }
 
     /// Parse rule `sampler_stmt`.
     fn sampler_stmt(input: Node) -> Result<OptionStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => OptionStmt::Sampler(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::Sampler(name, params),
+            [quoted_str_expr(name)] => OptionStmt::Sampler(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => OptionStmt::Sampler(name, params),
         ))
     }
 
     /// Parse rule `pixel_filter_stmt`.
     fn pixel_filter_stmt(input: Node) -> Result<OptionStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => OptionStmt::PixelFilter(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => OptionStmt::PixelFilter(name, params),
+            [quoted_str_expr(name)] => OptionStmt::PixelFilter(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => OptionStmt::PixelFilter(name, params),
         ))
     }
 
@@ -207,40 +212,40 @@ impl PbrtParser {
     /// Parse rule `area_light_source_stmt`.
     fn area_light_source_stmt(input: Node) -> Result<SceneStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => SceneStmt::AreaLightSource(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => SceneStmt::AreaLightSource(name, params),
+            [quoted_str_expr(name)] => SceneStmt::AreaLightSource(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => SceneStmt::AreaLightSource(name, params),
         ))
     }
 
     /// Parse rule `light_source_stmt`.
     fn light_source_stmt(input: Node) -> Result<SceneStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => SceneStmt::LightSource(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => SceneStmt::LightSource(name, params),
+            [quoted_str_expr(name)] => SceneStmt::LightSource(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => SceneStmt::LightSource(name, params),
         ))
     }
 
     /// Parse rule `make_named_material_stmt`.
     fn make_named_material_stmt(input: Node) -> Result<SceneStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => SceneStmt::MakeNamedMaterial(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => SceneStmt::MakeNamedMaterial(name, params),
+            [quoted_str_expr(name)] => SceneStmt::MakeNamedMaterial(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => SceneStmt::MakeNamedMaterial(name, params),
         ))
     }
 
     /// Parse rule `material_stmt`.
     fn material_stmt(input: Node) -> Result<SceneStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => SceneStmt::Material(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => SceneStmt::Material(name, params),
+            [quoted_str_expr(name)] => SceneStmt::Material(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => SceneStmt::Material(name, params),
         ))
     }
 
     /// Parse rule `shape_stmt`.
     fn shape_stmt(input: Node) -> Result<SceneStmt> {
         Ok(match_nodes!(input.into_children();
-            [quoted_str_expr_opt_end(name)] => SceneStmt::Shape(name, vec![]),
-            [quoted_str_expr_opt_end(name), param_list(params)] => SceneStmt::Shape(name, params),
+            [quoted_str_expr(name)] => SceneStmt::Shape(name, vec![]),
+            [quoted_str_expr(name), param_list(params)] => SceneStmt::Shape(name, params),
         ))
     }
 
@@ -248,14 +253,14 @@ impl PbrtParser {
     fn texture_stmt(input: Node) -> Result<SceneStmt> {
         Ok(match_nodes!(input.into_children();
             [
-                quoted_str_expr_opt_end(name),
-                quoted_str_expr_opt_end(tex_type),
-                quoted_str_expr_opt_end(tex_class)
+                quoted_str_expr(name),
+                quoted_str_expr(tex_type),
+                quoted_str_expr(tex_class)
             ] => SceneStmt::Texture(name, tex_type, tex_class, vec![]),
             [
-                quoted_str_expr_opt_end(name),
-                quoted_str_expr_opt_end(tex_type),
-                quoted_str_expr_opt_end(tex_class),
+                quoted_str_expr(name),
+                quoted_str_expr(tex_type),
+                quoted_str_expr(tex_class),
                 param_list(params)
             ] => SceneStmt::Texture(name, tex_type, tex_class, params),
         ))
@@ -662,13 +667,6 @@ impl PbrtParser {
         ))
     }
 
-    /// Parse rule `quoted_str_expr_opt_end`.
-    fn quoted_str_expr_opt_end(input: Node) -> Result<String> {
-        Ok(match_nodes!(input.into_children();
-            [quoted_str(v)] => v,
-        ))
-    }
-
     /// Parse rule `quoted_str_expr`.
     fn quoted_str_expr(input: Node) -> Result<String> {
         Ok(match_nodes!(input.into_children();
@@ -722,7 +720,7 @@ impl PbrtParser {
 /// * `api`      - The PBRT API interface.
 pub fn parse(abs_path: &str, api: &mut Api) -> std::result::Result<(), String> {
     // Get path to scene file's folder for resolving relative paths to includes, images, etc.
-    let scene_path = parent_path(abs_path).unwrap();
+    let scene_path = api.cwd.clone();
 
     // Load input file.
     let unparsed_file = file_to_string(&abs_path)?;

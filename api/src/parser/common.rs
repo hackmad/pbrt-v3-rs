@@ -8,9 +8,6 @@ use std::fs;
 
 /// Represents the `pbrt` rule of the PBRT file.
 pub(crate) struct Pbrt {
-    /// Absolute path to scene file.
-    pub(crate) scene_path: String,
-
     /// Parsed `stmt`s.
     pub(crate) stmts: Vec<Stmt>,
 }
@@ -20,7 +17,6 @@ impl Pbrt {
     ///
     /// * `api` - The PBRT API interface.
     pub(crate) fn process(&self, api: &mut Api) {
-        api.set_current_working_dir(&self.scene_path);
         self.stmts.iter().for_each(|stmt| stmt.process(api));
     }
 }
@@ -32,6 +28,7 @@ pub(crate) enum Stmt {
     Option(OptionStmt), // option_stmt
     Scene(SceneStmt),   // scene_stmt
     CTM(CTMStmt),       // ctm_stmt
+    Comment,            // comment_stmt
 }
 
 impl Stmt {
@@ -40,22 +37,15 @@ impl Stmt {
     /// * `api` - The PBRT API interface.
     pub(crate) fn process(&self, api: &mut Api) {
         match self {
-            Self::Include(ref abs_path) => {
-                let cwd = api.cwd.clone();
-
-                let result = match super::parse(abs_path, api) {
-                    Ok(()) => (),
-                    Err(e) => error!("Error parsing include file '{}'. {}", abs_path, e),
-                };
-
-                api.set_current_working_dir(&cwd);
-
-                result
-            }
+            Self::Include(ref abs_path) => match super::parse(abs_path, api) {
+                Ok(()) => (),
+                Err(e) => error!("Error parsing include file '{}'. {}", abs_path, e),
+            },
             Self::Block(stmt) => stmt.process(api),
             Self::Option(stmt) => stmt.process(api),
             Self::Scene(stmt) => stmt.process(api),
             Self::CTM(stmt) => stmt.process(api),
+            Self::Comment => (),
         }
     }
 }

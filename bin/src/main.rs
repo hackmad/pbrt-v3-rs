@@ -36,12 +36,24 @@ fn main() {
     api.pbrt_init();
 
     // Process scene description.
-    OPTIONS.paths.iter().for_each(|path| {
-        match absolute_path(path).and_then(|abs_path| parser::parse(&abs_path, &mut api)) {
-            Err(e) => error!("{}", e),
-            _ => (),
+    for path in OPTIONS.paths.iter() {
+        // In case of error report it and continue.
+        if let Err(e) = render(path, &mut api) {
+            error!("{e}");
         }
-    });
+    }
 
     api.pbrt_cleanup();
+}
+
+fn render(path: &str, api: &mut Api) -> Result<(), String> {
+    // Get absolute path to the scene file.
+    let abs_path = absolute_path(path)?;
+
+    // Get path of scene file.
+    let scene_path = parent_path(&abs_path).ok_or(format!("Invalid '{path}' for rendering."))?;
+    api.set_current_working_dir(&scene_path);
+
+    // Parse and render scene.
+    parser::parse(&abs_path, api)
 }

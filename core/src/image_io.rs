@@ -73,7 +73,14 @@ fn read_exr(path: &str) -> Result<RGBImage, String> {
 
     // Return the `RGBImage`.
     match reader.from_file(path) {
-        Ok(image) => Ok(image.layer_data.channel_data.pixels),
+        Ok(image) => {
+            let pixels = image.layer_data.channel_data.pixels;
+            info!(
+                "Read EXR image {path} ({} x {})",
+                pixels.resolution.x, pixels.resolution.y,
+            );
+            Ok(pixels)
+        }
         Err(err) => Err(err.to_string()),
     }
 }
@@ -173,7 +180,7 @@ fn read_pfm(path: &str) -> Result<RGBImage, String> {
             .collect()
     };
 
-    info!("Read PFM image '{path}' ({width} x {height} x {n_channels})");
+    info!("Read PFM image {path} ({width} x {height} x {n_channels})");
 
     Ok(RGBImage::new(rgb, width, height))
 }
@@ -204,6 +211,8 @@ fn read_8_bit(path: &str) -> Result<RGBImage, String> {
             ])
         })
         .collect();
+
+    info!("Read 8-bit image {path} ({width} x {height})");
 
     // Return the `RGBImage`.
     Ok(RGBImage { pixels, resolution })

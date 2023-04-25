@@ -1,6 +1,8 @@
 pbrt = { SOI ~ NEWLINE* ~ stmt* ~ NEWLINE* ~ EOI }
 
-stmt = { include_stmt | option_stmt | scene_stmt | block_stmt | ctm_stmt }
+stmt = { comment_stmt | include_stmt | option_stmt | scene_stmt | block_stmt | ctm_stmt }
+
+comment_stmt = { WHITESPACE* ~ comment }
 
 include_stmt = { "Include" ~ quoted_str_expr }
 
@@ -15,7 +17,7 @@ attribute_begin_stmt = { "AttributeBegin" ~ STMT_END? }
 attribute_end_stmt = { "AttributeEnd" ~ STMT_END? }
 transform_begin_stmt = { "TransformBegin" ~ STMT_END? }
 transform_end_stmt = { "TransformEnd" ~ STMT_END? }
-object_begin_stmt = { "ObjectBegin" ~ quoted_str_expr_opt_end }
+object_begin_stmt = { "ObjectBegin" ~ quoted_str_expr }
 object_end_stmt = { "ObjectEnd" ~ STMT_END? }
 
 
@@ -24,13 +26,13 @@ option_stmt = {
     | make_named_medium_stmt | sampler_stmt | pixel_filter_stmt
 }
 
-accelerator_stmt = { "Accelerator" ~ quoted_str_expr_opt_end ~ param_list? }
-camera_stmt = { "Camera" ~ quoted_str_expr_opt_end ~ param_list? }
-film_stmt = { "Film" ~ quoted_str_expr_opt_end ~ param_list? }
-integrator_stmt = { "Integrator" ~ quoted_str_expr_opt_end ~ param_list? }
-make_named_medium_stmt = { "MakeNamedMedium" ~ quoted_str_expr_opt_end ~ param_list? }
-sampler_stmt = { "Sampler" ~ quoted_str_expr_opt_end ~ param_list? }
-pixel_filter_stmt = { "PixelFilter" ~ quoted_str_expr_opt_end ~ param_list? }
+accelerator_stmt = { "Accelerator" ~ quoted_str_expr ~ param_list? }
+camera_stmt = { "Camera" ~ quoted_str_expr ~ param_list? }
+film_stmt = { "Film" ~ quoted_str_expr ~ param_list? }
+integrator_stmt = { "Integrator" ~ quoted_str_expr ~ param_list? }
+make_named_medium_stmt = { "MakeNamedMedium" ~ quoted_str_expr ~ param_list? }
+sampler_stmt = { "Sampler" ~ quoted_str_expr ~ param_list? }
+pixel_filter_stmt = { "PixelFilter" ~ quoted_str_expr ~ param_list? }
 
 
 scene_stmt = {
@@ -40,12 +42,12 @@ scene_stmt = {
     | active_transform_stmt
 }
 
-area_light_source_stmt = { "AreaLightSource" ~ quoted_str_expr_opt_end ~ param_list? }
-light_source_stmt = { "LightSource" ~ quoted_str_expr_opt_end ~ param_list? }
-make_named_material_stmt = { "MakeNamedMaterial" ~ quoted_str_expr_opt_end ~ param_list? }
-material_stmt = { "Material" ~ quoted_str_expr_opt_end ~ param_list? }
-shape_stmt = { "Shape" ~ quoted_str_expr_opt_end ~ param_list? }
-texture_stmt = { "Texture" ~ quoted_str_expr_opt_end{3} ~ param_list? }
+area_light_source_stmt = { "AreaLightSource" ~ quoted_str_expr ~ param_list? }
+light_source_stmt = { "LightSource" ~ quoted_str_expr ~ param_list? }
+make_named_material_stmt = { "MakeNamedMaterial" ~ quoted_str_expr ~ param_list? }
+material_stmt = { "Material" ~ quoted_str_expr ~ param_list? }
+shape_stmt = { "Shape" ~ quoted_str_expr ~ param_list? }
+texture_stmt = { "Texture" ~ quoted_str_expr{3} ~ param_list? }
 named_material_stmt = { "NamedMaterial" ~ quoted_ident_expr }
 object_instance_stmt = { "ObjectInstance" ~ quoted_ident_expr }
 reverse_orientation_stmt = { "ReverseOrientation" ~ STMT_END? }
@@ -72,12 +74,12 @@ concat_transform_stmt = { "ConcatTransform" ~ float_list_expr }
 transform_times_stmt = { "TransformTimes" ~ float ~ float_expr }
 
 
-param_list = { param+ }
+param_list = { (param ~ comment*)+ }
 param = {
     point3d_param | vector3d_param | normal3d_param | point2d_param
     | vector2d_param | string_param | bool_param | float_param
     | int_param | colour_param | spectrum_param | blackbody_param
-    | texture_param
+    | texture_param 
 }
 
 point3d_param = ${
@@ -167,7 +169,6 @@ bool = { "true" | "false" }
 
 
 quoted_str_list_expr = { "[" ~ WHITESPACE_OR_NEWLINE* ~ (quoted_str_expr ~ WHITESPACE_OR_NEWLINE*)+ ~ "]" ~ STMT_END? }
-quoted_str_expr_opt_end = { quoted_str ~ STMT_END? }
 quoted_str_expr = { quoted_str ~ STMT_END? }
 quoted_str = { QUOTATION_MARK ~ str ~ QUOTATION_MARK }
 str = { (!QUOTATION_MARK ~ ANY)* }
@@ -179,7 +180,9 @@ ident_expr = { ident ~ STMT_END? }
 ident = { (LETTER | ALPHABETIC) ~ (ASCII_ALPHANUMERIC | ALPHABETIC | "_" | "." | "-")* }
 
 
+comment = _{ "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE+ }
+
+
 WHITESPACE = _{ " " | "\t" }
 WHITESPACE_OR_NEWLINE = _{ WHITESPACE | NEWLINE }
-COMMENT = _{ WHITESPACE_OR_NEWLINE* ~ "#" ~ (!NEWLINE ~ ANY)* ~ WHITESPACE_OR_NEWLINE+ }
-STMT_END = _{ WHITESPACE* ~ WHITESPACE_OR_NEWLINE+ }
+STMT_END = _{ WHITESPACE* ~ (WHITESPACE_OR_NEWLINE+ | comment+) }
