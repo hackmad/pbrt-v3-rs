@@ -222,7 +222,10 @@ impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, &str, usize)> for GonioPh
 
         let intensity = params.find_one_spectrum("I", Spectrum::ONE);
         let sc = params.find_one_spectrum("scale", Spectrum::ONE);
-        let texmap = params.find_one_filename("mapname", Some(cwd));
+        let texmap = match params.find_one_filename("mapname", Some(cwd)) {
+            Ok(f) => f,
+            Err(e) => panic!("{e}"),
+        };
 
         Self::new(
             id,

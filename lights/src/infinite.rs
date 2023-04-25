@@ -300,7 +300,10 @@ impl From<(&ParamSet, ArcTransform, &str, usize)> for InfiniteAreaLight {
 
         let l = params.find_one_spectrum("L", Spectrum::ONE);
         let sc = params.find_one_spectrum("scale", Spectrum::ONE);
-        let texmap = params.find_one_filename("mapname", Some(cwd));
+        let texmap = match params.find_one_filename("mapname", Some(cwd)) {
+            Ok(f) => f,
+            Err(e) => panic!("{e}"),
+        };
 
         let mut n_samples = params.find_one_int("samples", params.find_one_int("nsamples", 1));
         if OPTIONS.quick_render {

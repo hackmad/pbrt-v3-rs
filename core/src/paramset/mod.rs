@@ -316,11 +316,12 @@ impl ParamSet {
     /// * `name` - Parameter name.
     /// * `cwd`  - Current working directory used for relative path handling. If it is None, assume path is relative to
     ///            program path.
-    pub fn find_one_filename(&self, name: &str, cwd: Option<&str>) -> Option<String> {
+    pub fn find_one_filename(&self, name: &str, cwd: Option<&str>) -> Result<Option<String>, String> {
         let mut filename = self.find_one_string(name, String::from(""));
         if filename.is_empty() {
-            return None;
+            return Ok(None);
         }
+
         if is_relative_path(&filename) {
             if let Some(c) = cwd {
                 if !c.is_empty() {
@@ -329,9 +330,10 @@ impl ParamSet {
                 }
             }
         }
+
         match absolute_path(&filename) {
-            Ok(s) => Some(s),
-            Err(_) => None,
+            Ok(s) => Ok(Some(s)),
+            Err(e) => Err(format!("{e}")),
         }
     }
 

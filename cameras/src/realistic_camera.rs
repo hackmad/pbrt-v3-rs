@@ -551,9 +551,11 @@ impl From<(&ParamSet, &AnimatedTransform, Film, Option<ArcMedium>, &str)> for Re
         }
 
         // Realistic camera-specific parameters
-        let lens_file = params
-            .find_one_filename("lensfile", Some(cwd))
-            .expect("No lens description file supplied!");
+        let lens_file = match params.find_one_filename("lensfile", Some(cwd)) {
+            Ok(Some(f)) => f,
+            Ok(None) => panic!("No lens description file supplied!"),
+            Err(e) => panic!("{e}"),
+        };
         let aperture_diameter = params.find_one_float("aperturediameter", 1.0);
         let focus_distance = params.find_one_float("focusdistance", 10.0);
         let simple_weighting = params.find_one_bool("simpleweighting", true);

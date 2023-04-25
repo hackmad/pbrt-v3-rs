@@ -25,9 +25,11 @@ impl PLYMesh {
     pub fn from_props(p: (&ParamSet, ArcTransform, ArcTransform, bool, &FloatTextureMap, &str)) -> Vec<ArcShape> {
         let (params, o2w, w2o, reverse_orientation, float_textures, cwd) = p;
 
-        let path = params
-            .find_one_filename("filename", Some(cwd))
-            .expect("PLY filename not provided");
+        let path = match params.find_one_filename("filename", Some(cwd)) {
+            Ok(Some(s)) => s,
+            Ok(None) => panic!("PLY filename not provided"),
+            Err(e) => panic!("{e}"),
+        };
 
         // Look up an alpha texture, if applicable.
         let alpha_tex_name = params.find_one_texture("alpha", String::from(""));

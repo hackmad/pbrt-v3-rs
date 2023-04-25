@@ -279,7 +279,10 @@ impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, &str, usize)> for Project
         let intensity = params.find_one_spectrum("I", Spectrum::ONE);
         let sc = params.find_one_spectrum("scale", Spectrum::ONE);
         let fov = params.find_one_float("fov", 45.0);
-        let texmap = params.find_one_filename("mapname", Some(cwd));
+        let texmap = match params.find_one_filename("mapname", Some(cwd)) {
+            Ok(f) => f,
+            Err(e) => panic!("{e}"),
+        };
 
         Self::new(
             id,
