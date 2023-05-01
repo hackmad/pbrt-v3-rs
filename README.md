@@ -54,6 +54,7 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="bunny-fur" href="renders/pbrt-v3-scenes/bunny-fur/f3-15.png"><img src="renders/pbrt-v3-scenes/bunny-fur/f3-15.png" style="height: 100px"/></a>
 <a title="ganesha" href="renders/pbrt-v3-scenes/ganesha.png"><img src="renders/pbrt-v3-scenes/ganesha.png" style="height: 100px"/></a>
 <a title="crown" href="renders/pbrt-v3-scenes/crown.png"><img src="renders/pbrt-v3-scenes/crown.png" style="height: 100px"/></a>
+<a title="sanmiguel pathtraced" href="renders/pbrt-v3-scenes/sanmiguel.path.png"><img src="renders/pbrt-v3-scenes/sanmiguel.path.png" style="height: 100px"/></a>
 
 ### Shapes
 
