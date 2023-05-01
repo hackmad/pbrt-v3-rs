@@ -80,16 +80,16 @@ impl Matrix4x4 {
             // Choose pivot
             for j in 0..4 {
                 if ipiv[j] != 1 {
-                    for (k, ipiv_k) in ipiv.iter().enumerate() {
-                        if *ipiv_k == 0 {
+                    for (k, &ipiv_k) in ipiv.iter().enumerate() {
+                        if ipiv_k == 0 {
                             let abs_minv = abs(minv[j][k]);
                             if abs_minv >= big {
                                 big = abs_minv;
                                 irow = j;
                                 icol = k;
                             }
-                        } else if *ipiv_k > 1 {
-                            panic!("Singular matrix in MatrixInvert");
+                        } else if ipiv_k > 1 {
+                            error!("Singular matrix in Matrix4x4::invert()");
                         }
                     }
                 }
@@ -109,7 +109,7 @@ impl Matrix4x4 {
             indxr[i] = irow;
             indxc[i] = icol;
             if minv[icol][icol] == 0.0 {
-                panic!("Singular matrix in MatrixInvert");
+                error!("Singular matrix in Matrix4x4::invert()");
             }
 
             // Set `m[icol][icol]` to one by scaling row `icol` appropriately.
