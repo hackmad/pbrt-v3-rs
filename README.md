@@ -57,6 +57,7 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="sanmiguel pathtraced" href="renders/pbrt-v3-scenes/sanmiguel.path.png"><img src="renders/pbrt-v3-scenes/sanmiguel.path.png" style="height: 100px"/></a>
 <a title="transparent machines 542" href="renders/pbrt-v3-scenes/transparent-machines/frame542.png"><img src="renders/pbrt-v3-scenes/transparent-machines/frame542.png" style="height: 100px"/></a>
 <a title="transparent machines 888" href="renders/pbrt-v3-scenes/transparent-machines/frame888.png"><img src="renders/pbrt-v3-scenes/transparent-machines/frame888.png" style="height: 100px"/></a>
+<a title="villa-daylight" href="renders/pbrt-v3-scenes/villa/villa-daylight.png"><img src="renders/pbrt-v3-scenes/villa/villa-daylight.png" style="height: 100px"/></a>
 
 ### Shapes
 
