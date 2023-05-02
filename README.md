@@ -55,6 +55,8 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="ganesha" href="renders/pbrt-v3-scenes/ganesha.png"><img src="renders/pbrt-v3-scenes/ganesha.png" style="height: 100px"/></a>
 <a title="crown" href="renders/pbrt-v3-scenes/crown.png"><img src="renders/pbrt-v3-scenes/crown.png" style="height: 100px"/></a>
 <a title="sanmiguel pathtraced" href="renders/pbrt-v3-scenes/sanmiguel.path.png"><img src="renders/pbrt-v3-scenes/sanmiguel.path.png" style="height: 100px"/></a>
+<a title="transparent machines 542" href="renders/pbrt-v3-scenes/transparent-machines/frame542.png"><img src="renders/pbrt-v3-scenes/transparent-machines/frame542.png" style="height: 100px"/></a>
+<a title="transparent machines 888" href="renders/pbrt-v3-scenes/transparent-machines/frame888.png"><img src="renders/pbrt-v3-scenes/transparent-machines/frame888.png" style="height: 100px"/></a>
 
 ### Shapes
 
