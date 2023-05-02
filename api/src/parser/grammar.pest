@@ -177,7 +177,7 @@ str = { (!QUOTATION_MARK ~ ANY)* }
 quoted_ident_expr = { quoted_ident ~ STMT_END? }
 quoted_ident = { QUOTATION_MARK ~ ident ~ QUOTATION_MARK }
 ident_expr = { ident ~ STMT_END? }
-ident = { (LETTER | ALPHABETIC) ~ (ASCII_ALPHANUMERIC | ALPHABETIC | "_" | "." | "-")* }
+ident = { (LETTER | ALPHABETIC) ~ (!QUOTATION_MARK ~ ANY)* }
 
 
 comment = _{ "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE+ }
@@ -185,4 +185,4 @@ comment = _{ "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE+ }
 
 WHITESPACE = _{ " " | "\t" }
 WHITESPACE_OR_NEWLINE = _{ WHITESPACE | NEWLINE }
-STMT_END = _{ WHITESPACE* ~ (WHITESPACE_OR_NEWLINE+ | comment+) }
+STMT_END = _{ WHITESPACE* ~ (WHITESPACE_OR_NEWLINE | comment)+ }
