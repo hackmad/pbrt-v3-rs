@@ -7,6 +7,8 @@ use crate::image_io::*;
 use crate::paramset::*;
 use crate::pbrt::*;
 use crate::spectrum::*;
+use crate::stats::*;
+use crate::{register_stats, stat_inc, stat_memory_counter};
 use std::sync::{Arc, RwLock};
 
 mod film_tile;
@@ -22,6 +24,10 @@ pub const FILTER_TABLE_SIZE: usize = FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH;
 
 /// Reciprocal of `FILTER_TABLE_WIDTH`.
 pub const INV_FILTER_TABLE_WIDTH: Float = 1.0 / (FILTER_TABLE_WIDTH as Float);
+
+stat_memory_counter!("Memory/Film pixels", FILM_PIXEL_MEMORY, film_stats_pixels);
+
+register_stats!(film_stats_pixels);
 
 /// Pixel data.
 #[derive(Copy, Clone, Default)]
@@ -89,6 +95,8 @@ impl Film {
         scale: Option<Float>,
         max_sample_luminance: Option<Float>,
     ) -> Self {
+        register_stats();
+
         // Compute the film image bounds.
         let cropped_pixel_bounds = Bounds2i::new(
             Point2i::new(
@@ -119,6 +127,7 @@ impl Film {
         // Allocate film image storage.
         let n = cropped_pixel_bounds.area() as usize;
         let pixels = RwLock::new(vec![Pixel::default(); n]);
+        stat_inc!(FILM_PIXEL_MEMORY, (n * std::mem::size_of::<Pixel>()) as u64);
 
         Self {
             full_resolution: *resolution,

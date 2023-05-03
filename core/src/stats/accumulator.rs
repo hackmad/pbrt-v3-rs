@@ -225,7 +225,7 @@ impl StatsAccumulator {
             }
 
             let (category, title) = get_category_and_title(k);
-            let s = format!("{:-42}               {:12}", title, v).to_string();
+            let s = format!("{title:-42}               {v:12}");
 
             if let Some(list) = to_print.get_mut(&category) {
                 list.push(s);
@@ -241,14 +241,14 @@ impl StatsAccumulator {
             let (category, title) = get_category_and_title(k);
             let kb = *v as f64 / 1024.0;
             let s = if kb < 1024.0 {
-                format!("{:-42}               {:9.2} kB", title, kb)
+                format!("{title:-42}                  {kb:9.2} kB")
             } else {
                 let mib = kb / 1024.0;
                 if mib < 1024.0 {
-                    format!("{:-42}                  {:9.2} MiB", title, mib)
+                    format!("{title:-42}                  {mib:9.2} MiB")
                 } else {
                     let gib = mib / 1024.0;
-                    format!("{:-42}                  {:9.2} GiB", title, gib)
+                    format!("{title:-42}                  {gib:9.2} GiB")
                 }
             };
             if let Some(list) = to_print.get_mut(&category) {
@@ -268,10 +268,7 @@ impl StatsAccumulator {
 
             let (category, title) = get_category_and_title(&k);
             let avg = v.sum as f64 / v.count as f64;
-            let s = format!(
-                "{:-42}                      {:.3} avg [range {} - {}]",
-                title, avg, mn, mx
-            );
+            let s = format!("{title:-42}                      {avg:.3} avg [range {mn} - {mx}]");
             if let Some(list) = to_print.get_mut(&category) {
                 list.push(s);
             } else {
@@ -289,9 +286,22 @@ impl StatsAccumulator {
 
             let (category, title) = get_category_and_title(&k);
             let avg = v.sum / v.count as f64;
+            let s = format!("{title:-42}                      {avg:.3} avg [range {mn} - {mx}]");
+            if let Some(list) = to_print.get_mut(&category) {
+                list.push(s);
+            } else {
+                to_print.insert(category, vec![s]);
+            }
+        }
+
+        for (k, &(num, denom)) in self.percentages.iter() {
+            if denom == 0 {
+                continue;
+            }
+            let (category, title) = get_category_and_title(k);
             let s = format!(
-                "{:-42}                      {:.3} avg [range {} - {}]",
-                title, avg, mn, mx
+                "{title:-42}{num:12} / {denom:12} ({:.2}%)",
+                (100.0 * num as f64) / denom as f64,
             );
             if let Some(list) = to_print.get_mut(&category) {
                 list.push(s);
@@ -300,37 +310,12 @@ impl StatsAccumulator {
             }
         }
 
-        for (k, (num, denom)) in self.percentages.iter() {
-            if *denom == 0 {
+        for (k, &(num, denom)) in self.ratios.iter() {
+            if denom == 0 {
                 continue;
             }
             let (category, title) = get_category_and_title(k);
-            let s = format!(
-                "{:-42}{:12} / {:12} ({:.2}%)",
-                title,
-                *num,
-                *denom,
-                (100.0 * *num as f64) / *denom as f64
-            );
-            if let Some(list) = to_print.get_mut(&category) {
-                list.push(s);
-            } else {
-                to_print.insert(category, vec![s]);
-            }
-        }
-
-        for (k, (num, denom)) in self.ratios.iter() {
-            if *denom == 0 {
-                continue;
-            }
-            let (category, title) = get_category_and_title(k);
-            let s = format!(
-                "{:-42}{:12} / {:12} ({:.2}x)",
-                title,
-                *num,
-                *denom,
-                *num as f64 / *denom as f64
-            );
+            let s = format!("{title:-42}{num:12} / {denom:12} ({:.2}x)", num as f64 / denom as f64);
             if let Some(list) = to_print.get_mut(&category) {
                 list.push(s);
             } else {
