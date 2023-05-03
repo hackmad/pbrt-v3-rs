@@ -7,6 +7,7 @@ use core::material::*;
 use core::paramset::*;
 use core::primitive::*;
 use core::reflection::*;
+use core::stat_inc;
 
 mod common;
 mod hlbvh;
@@ -40,6 +41,8 @@ impl BVHAccel {
     /// * `max_prims_in_node` - Maximum number of primitives in a node.
     /// * `split_method`      - The splitting method.
     pub fn new(primitives: &[ArcPrimitive], max_prims_in_node: u8, split_method: SplitMethod) -> Self {
+        register_stats();
+
         let n_primitives = primitives.len();
         if n_primitives == 0 {
             Self {
@@ -94,6 +97,11 @@ impl BVHAccel {
             );
 
             // Compute representation of depth-first traversal of BVH tree.
+            let tree_bytes = total_nodes * std::mem::size_of::<LinearBVHNode>()
+                + std::mem::size_of::<Self>()
+                + primitives.len() * std::mem::size_of::<ArcPrimitive>();
+            stat_inc!(TREE_BYTES, tree_bytes as u64);
+
             let mut nodes = vec![LinearBVHNode::default(); total_nodes];
             let mut offset = 0_u32;
             Self::flatten_bvh_tree(root, &mut nodes, &mut offset);

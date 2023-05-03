@@ -2,7 +2,26 @@
 
 use core::geometry::*;
 use core::pbrt::*;
+use core::stats::*;
+use core::{register_stats, stat_counter, stat_inc, stat_memory_counter, stat_ratio};
 use shared_arena::ArenaArc;
+
+stat_memory_counter!("Memory/BVH tree", TREE_BYTES, bvh_stats_tree_bytes);
+stat_ratio!(
+    "BVH/Primitives per leaf node",
+    TOTAL_PRIMITIVES,
+    TOTAL_LEAF_NODES,
+    bvh_stats_prims_per_leaf_node,
+);
+stat_counter!("BVH/Interior nodes", INTERIOR_NODES, bvh_stats_interior_nodes);
+stat_counter!("BVH/Leaf nodes", LEAF_NODES, bvh_stats_leaf_nodes);
+
+register_stats!(
+    bvh_stats_tree_bytes,
+    bvh_stats_prims_per_leaf_node,
+    bvh_stats_interior_nodes,
+    bvh_stats_leaf_nodes,
+);
 
 /// Splitting method to use to subdivide primitives.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -112,6 +131,9 @@ impl BVHBuildNode {
     ///              but not including `first` + `n`.
     /// * `bounds` - Bounding box.
     pub fn new_leaf_node(first: usize, n: usize, bounds: Bounds3f) -> Self {
+        stat_inc!(LEAF_NODES, 1);
+        stat_inc!(TOTAL_LEAF_NODES, 1);
+        stat_inc!(TOTAL_PRIMITIVES, n as i64);
         Self {
             first_prim_offset: first,
             n_primitives: n,
@@ -127,6 +149,7 @@ impl BVHBuildNode {
     /// * `c0`   - First child.
     /// * `c1`   - Second child.
     pub fn new_interior_node(axis: Axis, c0: ArenaArc<BVHBuildNode>, c1: ArenaArc<BVHBuildNode>) -> Self {
+        stat_inc!(INTERIOR_NODES, 1);
         Self {
             first_prim_offset: 0,
             n_primitives: 0,
