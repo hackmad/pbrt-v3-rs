@@ -1,6 +1,8 @@
 //! The API
 
 #[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate log;
 extern crate pest_consume;
 

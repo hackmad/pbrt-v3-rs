@@ -61,7 +61,7 @@ impl BVHAccel {
             }
 
             // Build BVH tree for primitives using `primitive_info`.
-            let arena = SharedArena::<BVHBuildNode>::with_capacity(1024 * 1024);
+            let arena = SharedArena::<BVHBuildNode>::with_capacity(512 * 512);
             let mut total_nodes = 0;
             let ordered_prims = Arc::new(Mutex::new(Vec::<ArcPrimitive>::with_capacity(n_primitives)));
 
@@ -87,13 +87,13 @@ impl BVHAccel {
                 ),
             };
 
-            let (arena_used, _arean_free) = arena.stats();
+            let (arena_used, arena_free) = arena.stats();
             info!(
-                "BVH created with {} nodes for {} primitives ({:2} MB), arena allocated {:2} MB",
+                "BVH created with {} nodes for {} primitives ({:.2} MB), arena allocated {:.2} MB",
                 total_nodes,
                 primitives.len(),
                 (total_nodes * std::mem::size_of::<LinearBVHNode>()) as f32 / (1024.0 * 1024.0),
-                arena_used as f32 / (1024.0 * 1024.0)
+                ((arena_used + arena_free) * std::mem::size_of::<BVHBuildNode>()) as f32 / (1024.0 * 1024.0)
             );
 
             // Compute representation of depth-first traversal of BVH tree.
