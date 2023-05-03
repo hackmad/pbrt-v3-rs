@@ -13,9 +13,19 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::report_stats;
 use core::stats::*;
+use core::{register_stats, stat_inc, stat_percent};
 use std::mem::swap;
 use std::sync::{Arc, Mutex};
 use std::thread;
+
+stat_percent!(
+    "Camera/Rays vignetted by lens system",
+    VIGNETTED_RAYS,
+    TOTAL_RAYS,
+    realistic_camera_stats_vignetted_rays,
+);
+
+register_stats!(realistic_camera_stats_vignetted_rays);
 
 /// Number of samples for exit pupil bounds.
 const N_SAMPLES: usize = 64_usize;
@@ -64,6 +74,8 @@ impl RealisticCamera {
         film: Film,
         medium: Option<ArcMedium>,
     ) -> Self {
+        register_stats();
+
         let film_clone = film;
         let film_diagonal = film_clone.diagonal;
 
@@ -600,6 +612,8 @@ impl Camera for RealisticCamera {
     ///
     /// * `sample` - The sample.
     fn generate_ray(&self, sample: &CameraSample) -> (Ray, Float) {
+        stat_inc!(TOTAL_RAYS, 1);
+
         // Find point on film, `p_film`, corresponding to `sample.p_film`.
         let s = Point2f::new(
             sample.p_film.x / self.data.film.full_resolution.x as Float,
@@ -636,6 +650,7 @@ impl Camera for RealisticCamera {
             };
             (ray, weight)
         } else {
+            stat_inc!(VIGNETTED_RAYS, 1);
             (Ray::default(), 0.0)
         }
     }
