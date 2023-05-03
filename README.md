@@ -15,12 +15,8 @@ Some scenes include PBRT files from:
 
 - The relative paths for `Texture`, `Include` etc are relative to the scene file location.
 - The parser was not ported from the original implementation and it uses [pest](https://github.com/pest-parser/pest).
-  So the `Include` statement works more like an `import` and cannot accommodate trailing parameters. The following
-  scenes were adapted from [Scenes for pbrt-v3](https://www.pbrt.org/scenes-v3) to accomodate for this:
-  - `scenes/media/smoke.pbrt`: `pbrt-v3-scenes/cloud/smoke.pbrt`
-  - `scenes/media/cloud.pbrt`: `pbrt-v3-scenes/cloud/cloud.pbrt`
+  There is an [online editor](https://pest.rs/#editor) that is useful for testing grammars.
 - Additional scenes adapted from `pbrt-v3-scenes` to make it easier to create test renders:
-  - `scenes/media/spotfog.pbrt`
   - `scenes/materials/*.pbrt`
 
 PNG files can be compressed using `pngquant`:
@@ -55,6 +51,7 @@ pngquant --ext .png --force renders/shapes/*.png
 <a title="ganesha" href="renders/pbrt-v3-scenes/ganesha.png"><img src="renders/pbrt-v3-scenes/ganesha.png" style="height: 100px"/></a>
 <a title="crown" href="renders/pbrt-v3-scenes/crown.png"><img src="renders/pbrt-v3-scenes/crown.png" style="height: 100px"/></a>
 <a title="sanmiguel pathtraced" href="renders/pbrt-v3-scenes/sanmiguel.path.png"><img src="renders/pbrt-v3-scenes/sanmiguel.path.png" style="height: 100px"/></a>
+<a title="smoke-plume" href="renders/pbrt-v3-scenes/smoke-plume/plume-284.png"><img src="renders/pbrt-v3-scenes/smoke-plume/plume-284.png" style="height: 100px"/></a>
 <a title="transparent machines 542" href="renders/pbrt-v3-scenes/transparent-machines/frame542.png"><img src="renders/pbrt-v3-scenes/transparent-machines/frame542.png" style="height: 100px"/></a>
 <a title="transparent machines 888" href="renders/pbrt-v3-scenes/transparent-machines/frame888.png"><img src="renders/pbrt-v3-scenes/transparent-machines/frame888.png" style="height: 100px"/></a>
 <a title="villa-daylight" href="renders/pbrt-v3-scenes/villa/villa-daylight.png"><img src="renders/pbrt-v3-scenes/villa/villa-daylight.png" style="height: 100px"/></a>

@@ -4,7 +4,7 @@ stmt = { comment_stmt | include_stmt | option_stmt | scene_stmt | block_stmt | c
 
 comment_stmt = { WHITESPACE* ~ comment }
 
-include_stmt = { "Include" ~ quoted_str_expr }
+include_stmt = { "Include" ~ quoted_str_expr ~ param_list? }
 
 block_stmt = {
     world_begin_stmt | world_end_stmt | attribute_begin_stmt | attribute_end_stmt

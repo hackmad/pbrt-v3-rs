@@ -55,5 +55,5 @@ fn render(path: &str, api: &mut Api) -> Result<(), String> {
     api.set_current_working_dir(&scene_path);
 
     // Parse and render scene.
-    parser::parse(&abs_path, api)
+    parser::parse(&abs_path, "", api)
 }

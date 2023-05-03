@@ -23,12 +23,12 @@ impl Pbrt {
 
 /// Represents the `stmt` rule of the PBRT file.
 pub(crate) enum Stmt {
-    Include(String),    // include_stmt(abs_path)
-    Block(BlockStmt),   // block_stmt
-    Option(OptionStmt), // option_stmt
-    Scene(SceneStmt),   // scene_stmt
-    CTM(CTMStmt),       // ctm_stmt
-    Comment,            // comment_stmt
+    Include(String, String), // include_stmt(abs_path, params)
+    Block(BlockStmt),        // block_stmt
+    Option(OptionStmt),      // option_stmt
+    Scene(SceneStmt),        // scene_stmt
+    CTM(CTMStmt),            // ctm_stmt
+    Comment,                 // comment_stmt
 }
 
 impl Stmt {
@@ -37,7 +37,7 @@ impl Stmt {
     /// * `api` - The PBRT API interface.
     pub(crate) fn process(&self, api: &mut Api) {
         match self {
-            Self::Include(ref abs_path) => match super::parse(abs_path, api) {
+            Self::Include(abs_path, params) => match super::parse(abs_path, params, api) {
                 Ok(()) => (),
                 Err(e) => error!("Error parsing include file '{}'. {}", abs_path, e),
             },

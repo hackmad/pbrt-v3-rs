@@ -52,19 +52,24 @@ impl PbrtParser {
         let scene_path = input.user_data().clone();
         let span = input.as_span();
 
-        match_nodes!(input.into_children();
-            [quoted_str_expr(path)] => {
-                if is_relative_path(&path) && !scene_path.is_empty() {
-                    let p = format!("{}/{}", scene_path, path);
-                    match absolute_path(&p) {
-                        Ok(abs_path) => Ok(Stmt::Include(abs_path)),
-                        Err(e) => Err(Error::new_from_span(CustomError { message: e }, span))
-                    }
-                } else {
-                    Ok(Stmt::Include(path))
-                }
+        let (path, params) = match_nodes!(input.into_children();
+            [quoted_str_expr(path)] => (path, "".to_string()),
+            [quoted_str_expr(path), params] => {
+                // We will be injecting unparsed parameters into the included unparsed file contents.
+                let node: Node = params;
+                let unparsed_params = node.as_str().to_string();
+                (path, unparsed_params)
             },
-        )
+        );
+        if is_relative_path(&path) && !scene_path.is_empty() {
+            let p = format!("{}/{}", scene_path, path);
+            match absolute_path(&p) {
+                Ok(abs_path) => Ok(Stmt::Include(abs_path, params)),
+                Err(e) => Err(Error::new_from_span(CustomError { message: e }, span)),
+            }
+        } else {
+            Ok(Stmt::Include(path, params))
+        }
     }
 
     /// Parse rule `block_stmt`.
@@ -716,14 +721,21 @@ impl PbrtParser {
 
 /// Reads a PBRT file format and calls the API wrapper functions.
 ///
-/// * `abs_path` - The absolute path to scene file.
-/// * `api`      - The PBRT API interface.
-pub fn parse(abs_path: &str, api: &mut Api) -> std::result::Result<(), String> {
+/// * `abs_path`        - The absolute path to scene file or an `Include` file.
+/// * `unparsed_params` - Trailing parameters to append to `Include` file. Use empty string for main scene file.
+///                       *NOTE:* If the `Include` file does not account for this, errors will point to lines from the
+///                       original files as though they are in the include file.
+/// * `api`             - The PBRT API interface.
+pub fn parse(abs_path: &str, unparsed_params: &str, api: &mut Api) -> std::result::Result<(), String> {
     // Get path to scene file's folder for resolving relative paths to includes, images, etc.
     let scene_path = api.cwd.clone();
 
-    // Load input file.
-    let unparsed_file = file_to_string(&abs_path)?;
+    // Load input file and append trailing parameters if any.
+    let mut unparsed_file = file_to_string(&abs_path)?;
+    if !unparsed_params.is_empty() {
+        unparsed_file.push(' '); // Add whitespace to account for no leading whitespace in unparsed_params.
+        unparsed_file.push_str(unparsed_params);
+    }
 
     // Parse the input file into `Nodes`.
     match PbrtParser::parse_with_userdata(Rule::pbrt, &unparsed_file, scene_path)
