@@ -1,8 +1,7 @@
 //! Transform Cache
 
 use core::geometry::{ArcTransform, Transform};
-use core::{register_stats, stats::*};
-use core::{stat_inc, stat_memory_counter, stat_percent};
+use core::{stat_inc, stat_memory_counter, stat_percent, stat_register_fns, stats::*};
 use shared_arena::SharedArena;
 use std::collections::HashSet;
 use std::mem::MaybeUninit;
@@ -20,7 +19,7 @@ stat_percent!(
     transform_cache_stats_hits,
 );
 
-register_stats!(transform_cache_stats_bytes, transform_cache_stats_hits);
+stat_register_fns!(transform_cache_stats_bytes, transform_cache_stats_hits);
 
 /// Allocates and stores a single `Transform` reference for each unique transformation.
 pub struct TransformCache {

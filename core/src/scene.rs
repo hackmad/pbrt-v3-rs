@@ -6,8 +6,7 @@ use crate::light::*;
 use crate::primitive::*;
 use crate::sampler::*;
 use crate::spectrum::*;
-use crate::stats::*;
-use crate::{register_stats, stat_counter, stat_inc};
+use crate::{stat_counter, stat_inc, stat_register_fns, stats::*};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -23,7 +22,7 @@ stat_counter!(
     scene_stats_n_shadow_tests,
 );
 
-register_stats!(scene_stats_n_intersection_tests, scene_stats_n_shadow_tests);
+stat_register_fns!(scene_stats_n_intersection_tests, scene_stats_n_shadow_tests);
 
 /// Scene.
 pub struct Scene {

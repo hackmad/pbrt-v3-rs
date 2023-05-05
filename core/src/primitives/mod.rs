@@ -1,5 +1,6 @@
 //! Primitve
 
+mod common;
 mod geometric_primitive;
 mod transformed_primitive;
 

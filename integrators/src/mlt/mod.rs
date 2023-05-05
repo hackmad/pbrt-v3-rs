@@ -13,13 +13,22 @@ use core::sampler::*;
 use core::sampling::*;
 use core::scene::*;
 use core::spectrum::*;
-use core::stats::*;
+use core::{stat_inc, stat_percent, stat_register_fns, stats::*};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::thread;
 
 mod mlt_sampler;
 use mlt_sampler::*;
+
+stat_percent!(
+    "Integrator/Acceptance rate",
+    ACCEPTED_MUTATIONS,
+    TOTAL_MUTATIONS,
+    mlt_stats_acceptance_rate
+);
+
+stat_register_fns!(mlt_stats_acceptance_rate);
 
 /// Implements Multiplexed Metropolis Light Transport with Primary Sample Space Sampler to render images and
 /// Bidirectional Path Tracing.
@@ -67,6 +76,9 @@ impl MLTIntegrator {
         sigma: Float,
         large_step_probability: Float,
     ) -> Self {
+        register_stats();
+        crate::bdpt::register_stats();
+
         Self {
             camera,
             max_depth,
@@ -314,9 +326,11 @@ impl Integrator for MLTIntegrator {
                                     p_current = p_proposed;
                                     l_current = l_proposed;
                                     sampler.accept();
+                                    stat_inc!(ACCEPTED_MUTATIONS, 1);
                                 } else {
                                     sampler.reject();
                                 }
+                                stat_inc!(TOTAL_MUTATIONS, 1);
 
                                 if (i * n_total_mutations as usize / self.n_chains + j) % PROGRESS_FREQUENCY as usize
                                     == 0

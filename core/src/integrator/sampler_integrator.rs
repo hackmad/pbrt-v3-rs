@@ -12,9 +12,17 @@ use crate::report_stats;
 use crate::sampler::*;
 use crate::scene::*;
 use crate::spectrum::*;
-use crate::stats::*;
+use crate::{stat_counter, stat_inc, stat_register_fns, stats::*};
 use std::sync::Arc;
 use std::thread;
+
+stat_counter!(
+    "Integrator/Camera rays traced",
+    N_CAMERA_RAYS,
+    sampler_integrator_stats_rays_traced
+);
+
+stat_register_fns!(sampler_integrator_stats_rays_traced);
 
 /// Common data for sampler integrators.
 pub struct SamplerIntegratorData {
@@ -228,6 +236,8 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
     ///
     /// * `scene` - The scene.
     fn render(&self, scene: &Scene) {
+        register_stats();
+
         // Get sampler and camera data.
         let data = self.get_data();
         let camera = Arc::clone(&data.camera);
@@ -340,6 +350,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                 // Generate camera ray for current sample.
                 let (mut ray, ray_weight) = { camera.generate_ray_differential(&camera_sample) };
                 ray.scale_differentials(1.0 / (samples_per_pixel as Float).sqrt());
+                stat_inc!(N_CAMERA_RAYS, 1);
 
                 // Evaluate radiance along camera ray.
                 let mut l = Spectrum::new(0.0);

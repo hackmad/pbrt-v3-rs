@@ -9,9 +9,24 @@ use crate::pbrt::*;
 use crate::sampling::*;
 use crate::scene::*;
 use crate::spectrum::*;
+use crate::{stat_counter, stat_inc, stat_ratio, stat_register_fns, stats::*};
 use arc_swap::ArcSwapOption;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+
+stat_counter!(
+    "SpatialLightDistribution/Distributions created",
+    N_CREATED,
+    spatial_light_dist_stats_count,
+);
+stat_ratio!(
+    "SpatialLightDistribution/Lookups per distribution",
+    N_LOOKUPS,
+    N_DISTRIBUTIONS,
+    spatial_light_dist_stats_lookups,
+);
+
+stat_register_fns!(spatial_light_dist_stats_count, spatial_light_dist_stats_lookups);
 
 /// Voxel coordinates are packed into a usize (64-bit) for hash table lookups; 10 bits are allocated to each coordinate.
 /// `INVALID_PACKED_POS` is an impossible packed coordinate value, which we use to represent.
@@ -48,6 +63,8 @@ impl SpatialLightDistribution {
     /// * `scene`      - The scene.
     /// * `max_voxels` - Maximum number of voxels (default to 64).
     pub fn new(scene: &Scene, max_voxels: usize) -> Self {
+        register_stats();
+
         // Compute the number of voxels so that the widest scene bounding box dimension has maxVoxels
         // voxels and the other dimensions have a number of voxels so that voxels are roughly cube shaped.
         let b = scene.world_bound;
@@ -78,6 +95,9 @@ impl SpatialLightDistribution {
 
     // Compute the sampling distribution for the voxel with integer coordiantes given by "pi".
     fn compute_distribution(&self, pi: &Point3i) -> Distribution1D {
+        stat_inc!(N_CREATED, 1);
+        stat_inc!(N_DISTRIBUTIONS, 1);
+
         // Compute the world-space bounding box of the voxel corresponding to |pi|.
         let p0 = Point3f::new(
             pi[0] as Float / self.n_voxels[0] as Float,
@@ -148,6 +168,8 @@ impl LightDistribution for SpatialLightDistribution {
     /// Given a point |p| in space, this method returns a (hopefully effective) sampling distribution for light sources
     /// at that point.
     fn lookup(&self, p: &Point3f) -> Option<Arc<Distribution1D>> {
+        stat_inc!(N_LOOKUPS, 1);
+
         // First, compute integer voxel coordinates for the given point |p| with respect to the overall voxel grid.
         let offset = self.world_bound.offset(p); // offset in [0,1].
         let mut pi = Point3i::ZERO;

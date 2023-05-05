@@ -1,5 +1,6 @@
 //! Geometric Primitives
 
+use super::common::*;
 use crate::bssrdf::*;
 use crate::geometry::*;
 use crate::interaction::*;
@@ -8,6 +9,7 @@ use crate::material::*;
 use crate::medium::*;
 use crate::primitive::*;
 use crate::reflection::*;
+use crate::stat_inc;
 use std::sync::Arc;
 
 /// GeometricPrimitive represents a single shape in a scene.
@@ -39,6 +41,10 @@ impl GeometricPrimitive {
         area_light: Option<ArcLight>,
         medium_interface: MediumInterface,
     ) -> Self {
+        register_stats();
+
+        stat_inc!(PRIMITIVE_MEMORY, std::mem::size_of::<Self>() as u64);
+
         Self {
             shape,
             material,

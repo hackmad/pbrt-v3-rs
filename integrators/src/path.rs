@@ -12,7 +12,18 @@ use core::reflection::*;
 use core::sampler::*;
 use core::scene::*;
 use core::spectrum::*;
+use core::{stat_dist, stat_inc, stat_int_distribution, stat_percent, stat_register_fns, stats::*};
 use std::sync::Arc;
+
+stat_percent!(
+    "Integrator/Zero-radiance paths",
+    ZERO_RADIANCE_PATHS,
+    TOTAL_PATHS,
+    path_stats_zero_radiance_paths
+);
+stat_int_distribution!("Integrator/Path length", PATH_LENGTH, path_stats_path_length);
+
+stat_register_fns!(path_stats_zero_radiance_paths, path_stats_path_length);
 
 /// Implements path tracing algorithm.
 pub struct PathIntegrator {
@@ -46,6 +57,7 @@ impl PathIntegrator {
         rr_threshold: Float,
         light_sample_strategy: LightSampleStategy,
     ) -> Self {
+        register_stats();
         Self {
             data: SamplerIntegratorData::new(max_depth, camera, sampler, pixel_bounds),
             rr_threshold,
@@ -144,8 +156,12 @@ impl Integrator for PathIntegrator {
             // Sample illumination from lights to find path contribution. (But skip this for perfectly specular BSDFs).
             let num_components = bsdf.num_components(BxDFType::all() & !BxDFType::BSDF_SPECULAR);
             if num_components > 0 {
+                stat_inc!(TOTAL_PATHS, 1);
                 let ld = beta * uniform_sample_one_light(&it, Some(&bsdf), scene, sampler, false, distrib);
                 debug!("Sampled direct lighting Ld = {ld}");
+                if ld.is_black() {
+                    stat_inc!(ZERO_RADIANCE_PATHS, 1);
+                }
                 assert!(ld.y() >= 0.0);
                 l += ld;
             }
@@ -256,6 +272,8 @@ impl Integrator for PathIntegrator {
 
             bounces += 1;
         }
+
+        stat_dist!(PATH_LENGTH, bounces as i64);
 
         l
     }

@@ -18,13 +18,41 @@ use core::sampler::*;
 use core::sampling::Distribution1D;
 use core::scene::*;
 use core::spectrum::*;
-use core::stats::*;
+use core::{
+    stat_counter, stat_dist, stat_inc, stat_int_distribution, stat_memory_counter, stat_ratio, stat_register_fns,
+    stats::*,
+};
 use samplers::HaltonSampler;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+
+stat_ratio!(
+    "Stochastic Progressive Photon Mapping/Visible points checked per photon intersection",
+    VISIBLE_POINTS_CHECKED,
+    TOTAL_PHOTON_SURFACE_INTERACTIONS,
+    sppm_stats_vis_pts_checked_per_photon_interaction,
+);
+stat_counter!(
+    "Stochastic Progressive Photon Mapping/Photon paths followed",
+    PHOTON_PATHS,
+    sppm_stats_photon_paths_followed,
+);
+stat_int_distribution!(
+    "Stochastic Progressive Photon Mapping/Grid cells per visible point",
+    GRID_CELLS_PER_VISIBLE_POINT,
+    sppm_stats_grid_cells_per_vis_pt,
+);
+stat_memory_counter!("Memory/SPPM Pixels", PIXEL_MEMORY_BYTES, sppm_stats_pixel_memory);
+
+stat_register_fns!(
+    sppm_stats_vis_pts_checked_per_photon_interaction,
+    sppm_stats_photon_paths_followed,
+    sppm_stats_grid_cells_per_vis_pt,
+    sppm_stats_pixel_memory,
+);
 
 /// Implements the stochastic progressive photon mapping integrator.
 pub struct SPPMIntegrator {
@@ -64,6 +92,8 @@ impl SPPMIntegrator {
         photons_per_iteration: usize,
         write_frequency: usize,
     ) -> Self {
+        register_stats();
+
         let photons_per_iter = if photons_per_iteration > 0 {
             photons_per_iteration
         } else {
@@ -99,6 +129,9 @@ impl Integrator for SPPMIntegrator {
             .map(|_| SPPMPixel::new(self.initial_search_radius))
             .collect();
         let inv_sqrt_spp = 1.0 / (self.n_iterations as Float).sqrt();
+
+        let bytes = n_pixels * std::mem::size_of::<SPPMPixel>();
+        stat_inc!(PIXEL_MEMORY_BYTES, bytes as u64);
 
         // Compute `light_distr` for sampling lights proportional to power.
         let light_distr = compute_light_power_distribution(scene);
@@ -455,6 +488,8 @@ fn generate_visible_point(
     let mut specular_bounce = false;
     let mut depth = 0;
     while depth < max_depth {
+        stat_inc!(TOTAL_PHOTON_SURFACE_INTERACTIONS, 1);
+
         let isect = scene.intersect(&mut ray);
         if isect.is_none() {
             // Accumulate light contributions for ray with no intersection.
@@ -564,6 +599,9 @@ fn add_visible_points_to_grid<'p>(
                                 }
                             }
                         }
+
+                        let grid_cells = (1 + p_max.x - p_min.x) * (1 + p_max.y - p_min.y) * (1 + p_max.z - p_min.z);
+                        stat_dist!(GRID_CELLS_PER_VISIBLE_POINT, grid_cells as i64);
                     }
                 }
 
@@ -658,6 +696,8 @@ fn trace_photons<'p>(
             tx_worker.send(photon_index).unwrap();
         }
     });
+
+    stat_inc!(PHOTON_PATHS, photons_per_iteration as i64);
 }
 
 /// Trace single photon and accumulate contribution.
@@ -732,6 +772,8 @@ fn trace_photon<'p>(
         }
         let mut isect = isect.unwrap();
 
+        stat_inc!(TOTAL_PHOTON_SURFACE_INTERACTIONS, 1);
+
         if depth > 0 {
             // Add photon contribution to nearby visible points.
             let (result, photon_grid_index) = to_grid(&isect.hit.p, &grid_bounds, &grid_res);
@@ -741,6 +783,8 @@ fn trace_photon<'p>(
                 // Add photon contribution to visible points in `grid[h]`.
                 let grid_h = grid[h].lock().unwrap();
                 for pixel in (*grid_h).iter() {
+                    stat_inc!(VISIBLE_POINTS_CHECKED, 1);
+
                     let radius = pixel.radius;
                     if pixel.vp.p.distance_squared(isect.hit.p) > radius * radius {
                         continue;

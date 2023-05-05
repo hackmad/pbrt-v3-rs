@@ -18,7 +18,7 @@ use core::sampler::*;
 use core::sampling::*;
 use core::scene::*;
 use core::spectrum::*;
-use core::stats::*;
+use core::{stat_dist, stat_inc, stat_int_distribution, stat_percent, stat_register_fns, stats::*};
 use filters::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -29,6 +29,16 @@ mod vertex;
 
 pub(crate) use common::*;
 pub(crate) use vertex::*;
+
+stat_percent!(
+    "Integrator/Zero-radiance paths",
+    ZERO_RADIANCE_PATHS,
+    TOTAL_PATHS,
+    bdpt_stats_zero_radiance_paths
+);
+stat_int_distribution!("Integrator/Path length", PATH_LENGTH, bdpt_stats_path_length);
+
+stat_register_fns!(bdpt_stats_zero_radiance_paths, bdpt_stats_path_length);
 
 /// Implements bi-directional path tracing integrator.
 pub struct BDPTIntegrator {
@@ -76,6 +86,8 @@ impl BDPTIntegrator {
         pixel_bounds: Bounds2i,
         light_sample_strategy: LightSampleStategy,
     ) -> Self {
+        register_stats();
+
         let inv_sample_count = 1.0 / sampler.get_data().samples_per_pixel as Float;
 
         Self {
@@ -1023,6 +1035,12 @@ pub(crate) fn connect_bdpt<'scene>(
             }
         }
     }
+
+    stat_inc!(TOTAL_PATHS, 1);
+    if l.is_black() {
+        stat_inc!(ZERO_RADIANCE_PATHS, 1);
+    }
+    stat_dist!(PATH_LENGTH, (s + t - 2) as i64);
 
     // Compute MIS weight for connection strategy.
     let mis_wt = if l.is_black() {

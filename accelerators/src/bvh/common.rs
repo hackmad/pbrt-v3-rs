@@ -2,8 +2,7 @@
 
 use core::geometry::*;
 use core::pbrt::*;
-use core::stats::*;
-use core::{register_stats, stat_counter, stat_inc, stat_memory_counter, stat_ratio};
+use core::{stat_counter, stat_inc, stat_memory_counter, stat_ratio, stat_register_fns, stats::*};
 use shared_arena::ArenaArc;
 
 stat_memory_counter!("Memory/BVH tree", TREE_BYTES, bvh_stats_tree_bytes);
@@ -16,7 +15,7 @@ stat_ratio!(
 stat_counter!("BVH/Interior nodes", INTERIOR_NODES, bvh_stats_interior_nodes);
 stat_counter!("BVH/Leaf nodes", LEAF_NODES, bvh_stats_leaf_nodes);
 
-register_stats!(
+stat_register_fns!(
     bvh_stats_tree_bytes,
     bvh_stats_prims_per_leaf_node,
     bvh_stats_interior_nodes,

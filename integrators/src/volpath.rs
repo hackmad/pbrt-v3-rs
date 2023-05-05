@@ -13,7 +13,26 @@ use core::reflection::*;
 use core::sampler::*;
 use core::scene::*;
 use core::spectrum::*;
+use core::{stat_counter, stat_dist, stat_inc, stat_int_distribution, stat_register_fns, stats::*};
 use std::sync::Arc;
+
+stat_int_distribution!("Integrator/Path length", PATH_LENGTH, volpath_stats_path_length);
+stat_counter!(
+    "Integrator/Volume interactions",
+    VOLUME_INTERACTIONS,
+    volpath_stats_volume_interactions
+);
+stat_counter!(
+    "Integrator/Surface interactions",
+    SURFACE_INTERACTIONS,
+    volpath_stats_surface_interactions
+);
+
+stat_register_fns!(
+    volpath_stats_path_length,
+    volpath_stats_volume_interactions,
+    volpath_stats_surface_interactions
+);
 
 /// Implements volumetric light transport path tracing algorithm.
 pub struct VolPathIntegrator {
@@ -47,6 +66,7 @@ impl VolPathIntegrator {
         rr_threshold: Float,
         light_sample_strategy: LightSampleStategy,
     ) -> Self {
+        register_stats();
         Self {
             data: SamplerIntegratorData::new(max_depth, camera, sampler, pixel_bounds),
             rr_threshold,
@@ -126,6 +146,8 @@ impl Integrator for VolPathIntegrator {
                     break;
                 }
 
+                stat_inc!(VOLUME_INTERACTIONS, 1);
+
                 // Handle scattering at point in medium for volumetric path tracer.
                 let light_distribution = self.light_distribution.as_ref().unwrap();
                 let distrib = light_distribution.lookup(&mi.hit.p);
@@ -147,6 +169,8 @@ impl Integrator for VolPathIntegrator {
 
                 specular_bounce = false;
             } else {
+                stat_inc!(SURFACE_INTERACTIONS, 1);
+
                 // Handle scattering at point on surface for volumetric path tracer.
 
                 // Possibly add emitted light at intersection.
@@ -302,6 +326,8 @@ impl Integrator for VolPathIntegrator {
 
             bounces += 1;
         }
+
+        stat_dist!(PATH_LENGTH, bounces as i64);
 
         l
     }

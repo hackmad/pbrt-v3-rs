@@ -5,8 +5,8 @@ use crate::geometry::*;
 use crate::memory::*;
 use crate::pbrt::*;
 use crate::report_stats;
-use crate::stats::*;
 use crate::texture::*;
+use crate::{stat_counter, stat_inc, stat_memory_counter, stat_register_fns, stats::*};
 use itertools::{iproduct, Itertools};
 use std::hash::Hash;
 use std::marker::{Send, Sync};
@@ -24,6 +24,20 @@ pub use cache::*;
 pub use convert_in::*;
 pub use image_writer::*;
 pub use tex_info::*;
+
+stat_counter!("Texture/EWA lookups", N_EWA_LOOKUPS, mipmap_stats_ewa_lookups);
+stat_counter!(
+    "Texture/Trilinear lookups",
+    N_TRILERP_LOOKUPS,
+    mipmap_stats_trilerp_lookups,
+);
+stat_memory_counter!("Memory/Texture MIP maps", MIPMAP_MEMORY, mipmap_stats_memory);
+
+stat_register_fns!(
+    mipmap_stats_ewa_lookups,
+    mipmap_stats_trilerp_lookups,
+    mipmap_stats_memory,
+);
 
 /// Size of the weights lookup table.
 const WEIGHT_LUT_SIZE: usize = 128;
@@ -113,6 +127,8 @@ where
         wrap_mode: ImageWrap,
         max_anisotropy: Float,
     ) -> Self {
+        register_stats();
+
         let (resampled_image, resolution) = if !resolution[0].is_power_of_two() || !resolution[1].is_power_of_two() {
             resample_image(resolution, img, wrap_mode)
         } else {
@@ -160,6 +176,9 @@ where
             *w = (-ALPHA * r2).exp() - (-ALPHA).exp();
         }
 
+        let bytes = (4 * resolution[0] * resolution[1] * std::mem::size_of::<T>()) / 3;
+        stat_inc!(MIPMAP_MEMORY, bytes as u64);
+
         Self {
             filtering_method,
             wrap_mode,
@@ -205,6 +224,8 @@ where
     /// * `st`    - The sample point coordinates (s, t).
     /// * `width` - Filter width (default to 0).
     pub fn lookup_triangle(&self, st: &Point2f, width: Float) -> T {
+        stat_inc!(N_TRILERP_LOOKUPS, 1);
+
         // Compute MIPMap level for trilinear filtering.
         let levels = self.levels();
         let level = levels as Float - 1.0 + max(width, 1e-8).log2();
@@ -229,6 +250,8 @@ where
     /// * `dst0` - Length of first elliptical axis.
     /// * `dst1` - Length of second elliptical axis.
     fn lookup_ewa(&self, st: &Point2f, dst0: &Vector2f, dst1: &Vector2f) -> T {
+        stat_inc!(N_EWA_LOOKUPS, 1);
+
         // Compute ellipse minor and major axes.
         let (dst0, mut dst1) = if dst0.length_squared() < dst1.length_squared() {
             (*dst1, *dst0)

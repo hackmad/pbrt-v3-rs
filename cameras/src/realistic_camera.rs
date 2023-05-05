@@ -13,7 +13,7 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::report_stats;
 use core::stats::*;
-use core::{register_stats, stat_inc, stat_percent};
+use core::{stat_inc, stat_percent, stat_register_fns};
 use std::mem::swap;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -25,7 +25,7 @@ stat_percent!(
     realistic_camera_stats_vignetted_rays,
 );
 
-register_stats!(realistic_camera_stats_vignetted_rays);
+stat_register_fns!(realistic_camera_stats_vignetted_rays);
 
 /// Number of samples for exit pupil bounds.
 const N_SAMPLES: usize = 64_usize;

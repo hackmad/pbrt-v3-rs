@@ -4,9 +4,10 @@ use core::geometry::*;
 use core::interaction::*;
 use core::paramset::*;
 use core::pbrt::*;
-use core::stat_inc;
-use core::stats::*;
-use core::{register_stats, stat_counter, stat_distribution, stat_int_distribution, stat_memory_counter, stat_percent};
+use core::{
+    stat_counter, stat_dist, stat_inc, stat_int_distribution, stat_memory_counter, stat_percent, stat_register_fns,
+    stats::*,
+};
 use std::sync::Arc;
 
 stat_memory_counter!("Memory/Curves", CURVE_BYTES, curve_stats_bytes);
@@ -17,18 +18,15 @@ stat_percent!(
     N_TESTS,
     curve_stats_hits,
 );
-
 stat_int_distribution!(
     "Intersections/Curve refinement level",
     REFINEMENT_LEVEL,
     curve_stats_refinement_level,
 );
-
 stat_counter!("Scene/Curves", N_CURVES, curve_stats_count);
-
 stat_counter!("Scene/Split curves", N_SPLIT_CURVES, curve_stats_split_count);
 
-register_stats!(
+stat_register_fns!(
     curve_stats_bytes,
     curve_stats_hits,
     curve_stats_refinement_level,
@@ -633,7 +631,7 @@ impl Curve {
         let r0 = (1.41421356237 * 6.0 * l0 / (8.0 * eps)).log2int() / 2;
         let max_depth = clamp(r0, 0, 10);
 
-        stat_distribution!(REFINEMENT_LEVEL, max_depth as i64);
+        stat_dist!(REFINEMENT_LEVEL, max_depth as i64);
 
         self.recursive_intersect(
             &ray,

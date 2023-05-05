@@ -7,6 +7,16 @@ use core::medium::Medium;
 use core::pbrt::*;
 use core::sampler::*;
 use core::spectrum::*;
+use core::{stat_inc, stat_ratio, stat_register_fns, stats::*};
+
+stat_ratio!(
+    "Media/Grid steps per Tr() call",
+    N_TR_STEPS,
+    N_TR_CALLS,
+    grid_density_medium_stats_grid_steps_per_tr
+);
+
+stat_register_fns!(grid_density_medium_stats_grid_steps_per_tr);
 
 /// Implements medium densities at a regular 3D grid of positions, similar to the way that the ImageTexture represents
 /// images with a 2D grid of samples. These samples are interpolated to compute the density at positions between the
@@ -66,6 +76,8 @@ impl GridDensityMedium {
         medium_to_world: Transform,
         density: Vec<Float>,
     ) -> Self {
+        register_stats();
+
         // Precompute values for Monte Carlo sampling of `GridDensityMedium`.
         let sigma_t = sigma_s + sigma_a;
         if Spectrum::new(sigma_t[0]) != sigma_t {
@@ -146,6 +158,8 @@ impl Medium for GridDensityMedium {
     /// * `ray`     - The ray.
     /// * `sampler` - The sampler.
     fn tr(&self, ray: &Ray, sampler: &mut dyn Sampler) -> Spectrum {
+        stat_inc!(N_TR_CALLS, 1);
+
         let r = Ray::new(ray.o, ray.d.normalize(), ray.t_max * ray.d.length(), 0.0, None);
         let ray_medium = self.world_to_medium.transform_ray(&r);
 
@@ -156,6 +170,8 @@ impl Medium for GridDensityMedium {
             let mut tr_val = 1.0;
             let mut t = t_min;
             loop {
+                stat_inc!(N_TR_STEPS, 1);
+
                 t -= (1.0 - sampler.get_1d()).ln() * self.inv_max_density / self.sigma_t;
                 if t >= t_max {
                     break;

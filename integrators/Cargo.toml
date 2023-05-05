@@ -11,4 +11,5 @@ samplers = { path = "../samplers" }
 
 crossbeam-channel = { workspace = true }
 itertools = { workspace = true }
+lazy_static = { workspace = true }
 log = { workspace = true }

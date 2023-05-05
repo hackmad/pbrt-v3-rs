@@ -1,11 +1,13 @@
 //! Object Instancing and Animated Primitives.
 
+use super::common::*;
 use crate::geometry::*;
 use crate::interaction::*;
 use crate::light::*;
 use crate::material::*;
 use crate::primitive::*;
 use crate::reflection::*;
+use crate::stat_inc;
 use std::sync::Arc;
 
 /// TransformedPrimitive stores an underlying primitive and animated transform and is used for object instancing and
@@ -25,6 +27,10 @@ impl TransformedPrimitive {
     /// * `primitive`          - The primitive.
     /// * `primitive_to_world` - The animated transform.
     pub fn new(primitive: ArcPrimitive, primitive_to_world: AnimatedTransform) -> Self {
+        register_stats();
+
+        stat_inc!(PRIMITIVE_MEMORY, std::mem::size_of::<Self>() as u64);
+
         Self {
             primitive: Arc::clone(&primitive),
             primitive_to_world,

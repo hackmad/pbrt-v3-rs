@@ -5,10 +5,9 @@ use core::interaction::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::sampling::*;
-use core::stats::*;
 use core::texture::FloatTextureMap;
 use core::texture::*;
-use core::{register_stats, stat_inc, stat_percent};
+use core::{stat_inc, stat_memory_counter, stat_percent, stat_register_fns, stats::*};
 use std::mem::size_of;
 use std::sync::Arc;
 use textures::ConstantTexture;
@@ -19,8 +18,9 @@ stat_percent!(
     N_TESTS,
     triangle_stats_intersection_tests,
 );
+stat_memory_counter!("Memory/Triangle meshes", TRI_MESH_BYTES, triangle_stats_mesh_bytes);
 
-register_stats!(triangle_stats_intersection_tests);
+stat_register_fns!(triangle_stats_intersection_tests, triangle_stats_mesh_bytes);
 
 /// Triangle mesh
 #[derive(Clone)]
@@ -330,7 +330,7 @@ impl TriangleMesh {
 
 /// Triangle.
 #[derive(Clone)]
-pub struct Triangle {
+struct Triangle {
     /// Common shape data.
     pub data: Arc<ShapeData>,
 
@@ -359,6 +359,8 @@ impl Triangle {
         mesh: Arc<TriangleMesh>,
         triangle_index: usize,
     ) -> Self {
+        stat_inc!(TRI_MESH_BYTES, std::mem::size_of::<Self>() as u64);
+
         let face_index = if mesh.face_indices.len() > 0 {
             mesh.face_indices[triangle_index]
         } else {

@@ -17,6 +17,7 @@ use core::primitive::*;
 use core::sampler::*;
 use core::spectrum::*;
 use core::texture::*;
+use core::{stat_counter, stat_inc, stat_register_fns, stats::*};
 use filters::*;
 use lights::*;
 use materials::*;
@@ -27,6 +28,30 @@ use std::rc::Rc;
 use std::result::Result;
 use std::sync::{Arc, Mutex};
 use textures::*;
+
+stat_counter!("Scene/Lights", N_LIGHTS_CREATED, light_stats_created);
+stat_counter!("Scene/AreaLights", N_AREA_LIGHTS_CREATED, area_light_stats_created);
+stat_counter!("Scene/Shapes created", N_SHAPES_CREATED, shape_stats_created);
+stat_counter!("Scene/Materials created", N_MATERIALS_CREATED, material_stats_count);
+stat_counter!(
+    "Scene/Object instances created",
+    N_OBJECT_INSTANCES_CREATED,
+    object_instance_stats_created,
+);
+stat_counter!(
+    "Scene/Object instances used",
+    N_OBJECT_INSTANCES_USED,
+    object_instance_stats_used,
+);
+
+stat_register_fns!(
+    light_stats_created,
+    area_light_stats_created,
+    shape_stats_created,
+    material_stats_count,
+    object_instance_stats_created,
+    object_instance_stats_used,
+);
 
 /// Used as a stack to perform hierarchical state management.
 #[derive(Clone)]
@@ -83,6 +108,8 @@ impl GraphicsState {
     /// * `transform_cache` - The `TransformCache`.
     /// * `cwd`             - Current working directory.
     pub fn new(transform_cache: Rc<Mutex<TransformCache>>, cwd: &str) -> Self {
+        register_stats();
+
         // Create a default material.
         let mp = TextureParams::default();
         let matte = Arc::new(MatteMaterial::from(&mp));
@@ -232,7 +259,7 @@ impl GraphicsState {
         reverse_orientation: bool,
         paramset: &ParamSet,
     ) -> Result<Vec<ArcShape>, String> {
-        match name {
+        let shape: Result<Vec<ArcShape>, String> = match name {
             "plymesh" => {
                 let p = (
                     paramset,
@@ -259,7 +286,13 @@ impl GraphicsState {
                     _ => Err(format!("Shape '{}' unknown.", name)),
                 }
             }
+        };
+
+        if let Ok(s) = shape.as_ref() {
+            stat_inc!(N_SHAPES_CREATED, s.len() as i64);
         }
+
+        shape
     }
 
     /// Creates the given type of material from parameter set.
@@ -267,7 +300,7 @@ impl GraphicsState {
     /// * `name` - Name.
     /// * `mp`   - Parameter set.
     pub fn make_material(&self, name: &str, mp: &TextureParams) -> Option<ArcMaterial> {
-        match name {
+        let material: Option<ArcMaterial> = match name {
             "fourier" => Some(Arc::new(FourierMaterial::from((mp, self.cwd.as_ref())))),
             "glass" => Some(Arc::new(GlassMaterial::from(mp))),
             "kdsubsurface" => Some(Arc::new(KdSubsurfaceMaterial::from(mp))),
@@ -305,7 +338,13 @@ impl GraphicsState {
                 warn!("Material '{}' unknown. Using 'matte'.", name);
                 Some(Arc::new(MatteMaterial::from(mp)))
             }
+        };
+
+        if material.is_some() {
+            stat_inc!(N_MATERIALS_CREATED, 1);
         }
+
+        material
     }
 
     /// Creates a float texture.
@@ -464,7 +503,7 @@ impl GraphicsState {
         paramset: &ParamSet,
         id: usize,
     ) -> Result<ArcLight, String> {
-        match name {
+        let light: Result<ArcLight, String> = match name {
             "distant" => {
                 let p = (paramset, Arc::clone(&light2world), id);
                 Ok(Arc::new(DistantLight::from(p)))
@@ -516,7 +555,13 @@ impl GraphicsState {
                 Ok(Arc::new(SpotLight::from(p)))
             }
             _ => Err(format!("Light '{}' unknown.", name)),
+        };
+
+        if light.is_ok() {
+            stat_inc!(N_LIGHTS_CREATED, 1);
         }
+
+        light
     }
 
     /// Creates an area light.
@@ -537,7 +582,7 @@ impl GraphicsState {
         paramset: &ParamSet,
         id: usize,
     ) -> Result<ArcLight, String> {
-        match name {
+        let light: Result<ArcLight, String> = match name {
             "area" | "diffuse" => {
                 let p = (
                     paramset,
@@ -549,7 +594,14 @@ impl GraphicsState {
                 Ok(Arc::new(DiffuseAreaLight::from(p)))
             }
             _ => Err(format!("AreaLight '{}' unknown.", name)),
+        };
+
+        if light.is_ok() {
+            stat_inc!(N_LIGHTS_CREATED, 1);
+            stat_inc!(N_AREA_LIGHTS_CREATED, 1);
         }
+
+        light
     }
 
     /// Creates an accelerator.

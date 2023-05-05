@@ -59,7 +59,7 @@ macro_rules! stat_memory_counter {
 ///                 `StatsAccumulator`.
 #[macro_export]
 macro_rules! stat_int_distribution {
-    ($title: expr, $var: ident, $stats_func: ident, $(,)?) => {
+    ($title: expr, $var: ident, $stats_func: ident $(,)?) => {
         thread_local! {
             pub(crate) static $var: std::cell::RefCell<StatsDistribution<i64>> =
                 std::cell::RefCell::new(StatsDistribution::default());
@@ -87,7 +87,7 @@ macro_rules! stat_int_distribution {
 ///                 `StatsAccumulator`.
 #[macro_export]
 macro_rules! stat_float_distribution {
-    ($title: expr, $var: ident, $stats_func: ident, $(,)?) => {
+    ($title: expr, $var: ident, $stats_func: ident $(,)?) => {
         thread_local! {
             pub(crate) static $var: std::cell::RefCell<StatsDistribution<f64>> =
                 std::cell::RefCell::new(StatsDistribution::default());
@@ -188,8 +188,9 @@ macro_rules! stat_dec {
     };
 }
 
+/// Convenience macro to report a thread local variable for int/float distribution statistics.
 #[macro_export]
-macro_rules! stat_distribution {
+macro_rules! stat_dist {
     ($var: ident, $e: expr) => {
         $var.with(|v| v.borrow_mut().report($e));
     };
@@ -199,7 +200,7 @@ macro_rules! stat_distribution {
 ///
 /// * `$($func: ident),+` - One or more callback functions created by the `stat_*` macros.
 #[macro_export]
-macro_rules! register_stats {
+macro_rules! stat_register_fns {
     ($($stat_func: ident),+ $(,)?) => {
         lazy_static! {
             /// Used to ensure stats are registered exactly once in the module's private scope.

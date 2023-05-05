@@ -7,8 +7,7 @@ use crate::image_io::*;
 use crate::paramset::*;
 use crate::pbrt::*;
 use crate::spectrum::*;
-use crate::stats::*;
-use crate::{register_stats, stat_inc, stat_memory_counter};
+use crate::{stat_inc, stat_memory_counter, stat_register_fns, stats::*};
 use std::sync::{Arc, RwLock};
 
 mod film_tile;
@@ -27,7 +26,7 @@ pub const INV_FILTER_TABLE_WIDTH: Float = 1.0 / (FILTER_TABLE_WIDTH as Float);
 
 stat_memory_counter!("Memory/Film pixels", FILM_PIXEL_MEMORY, film_stats_pixels);
 
-register_stats!(film_stats_pixels);
+stat_register_fns!(film_stats_pixels);
 
 /// Pixel data.
 #[derive(Copy, Clone, Default)]

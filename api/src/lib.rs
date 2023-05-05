@@ -22,8 +22,7 @@ use core::paramset::*;
 use core::pbrt::*;
 use core::primitive::*;
 use core::primitives::*;
-use core::stats::*;
-use core::{clear_stats, print_stats, report_stats};
+use core::{clear_stats, print_stats, report_stats, stat_inc, stats::*};
 use graphics_state::*;
 use material_instance::*;
 use render_options::*;
@@ -925,6 +924,7 @@ impl Api {
             }
             self.render_options.current_instance = None;
             self.pbrt_attribute_end();
+            stat_inc!(N_OBJECT_INSTANCES_CREATED, 1);
         }
     }
 
@@ -943,6 +943,8 @@ impl Api {
                 if instances.is_empty() {
                     return;
                 }
+
+                stat_inc!(N_OBJECT_INSTANCES_USED, 1);
 
                 if instances.len() > 1 {
                     // Create an aggregate for the instance `Primitives`.
