@@ -38,6 +38,7 @@ pub mod paramset;
 pub mod pbrt;
 pub mod primitive;
 pub mod primitives;
+pub mod profiler;
 pub mod reflection;
 pub mod rng;
 pub mod sampler;

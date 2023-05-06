@@ -22,6 +22,7 @@ use core::paramset::*;
 use core::pbrt::*;
 use core::primitive::*;
 use core::primitives::*;
+use core::profiler::*;
 use core::{clear_stats, print_stats, report_stats, stat_inc, stats::*};
 use graphics_state::*;
 use material_instance::*;
@@ -122,6 +123,7 @@ impl Api {
             error!("pbrt_init() has already been called.");
         }
         self.current_api_state = ApiState::OptionsBlock;
+        init_profiler();
     }
 
     /// API Cleanup.
@@ -132,6 +134,7 @@ impl Api {
             error!("pbrt_cleanup() called while inside world block.");
         }
         self.current_api_state = ApiState::Uninitialized;
+        cleanup_profiler();
     }
 
     /// Set current tranformation matrix to the identity matrix.
@@ -471,7 +474,22 @@ impl Api {
 
             let scene = self.render_options.make_scene();
             integrator.preprocess(&scene);
+
+            // This is kind of ugly; we directly override the current profiler state to switch from parsing/scene
+            // construction related stuff to rendering stuff and then switch it back below. The underlying issue is
+            // that all the rest of the profiling system assumes hierarchical inheritance of profiling state; this is
+            // the only place where that isn't the case.
+            PROFILER_STATE.with(|s| {
+                assert!(*s.borrow() == Prof::SceneConstruction.to_bits());
+                *s.borrow_mut() = Prof::IntegratorRender.to_bits();
+            });
+
             integrator.render(&scene);
+
+            PROFILER_STATE.with(|s| {
+                assert!(*s.borrow() == Prof::IntegratorRender.to_bits());
+                *s.borrow_mut() = Prof::SceneConstruction.to_bits();
+            });
 
             // Clean up after rendering.
             let mut transform_cache = self.transform_cache.lock().unwrap();
@@ -497,8 +515,10 @@ impl Api {
 
             if !OPTIONS.quiet {
                 report_stats!();
+                report_profiler_results();
                 print_stats!();
                 clear_stats!();
+                clear_profiler();
             }
         }
     }

@@ -3,6 +3,7 @@
 use super::{FILTER_TABLE_SIZE, FILTER_TABLE_WIDTH};
 use crate::geometry::*;
 use crate::pbrt::*;
+use crate::profiler::{Prof, ProfilePhase};
 use crate::spectrum::*;
 use std::sync::Arc;
 
@@ -60,6 +61,8 @@ impl FilmTile {
     /// * `l`              - Radiance value `L`.
     /// * `sample_weight`  - Weight for the sample's contribution.
     pub fn add_sample(&mut self, p_film: Point2f, l: Spectrum, sample_weight: Float) {
+        let _p = ProfilePhase::new(Prof::AddFilmSample);
+
         let ly = l.y();
         let l = if ly > self.max_sample_luminance {
             l * self.max_sample_luminance / ly

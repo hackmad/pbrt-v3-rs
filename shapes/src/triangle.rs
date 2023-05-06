@@ -4,6 +4,7 @@ use core::geometry::*;
 use core::interaction::*;
 use core::paramset::*;
 use core::pbrt::*;
+use core::profiler::*;
 use core::sampling::*;
 use core::texture::FloatTextureMap;
 use core::texture::*;
@@ -436,6 +437,7 @@ impl Shape for Triangle {
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests.
     fn intersect<'scene>(&self, r: &Ray, test_alpha_texture: bool) -> Option<Intersection<'scene>> {
+        let _p = ProfilePhase::new(Prof::TriIntersect);
         stat_inc!(N_TESTS, 1);
 
         // Get triangle vertices in p0, p1, and p2
@@ -729,6 +731,7 @@ impl Shape for Triangle {
     /// * `r`                  - The ray.
     /// * `test_alpha_texture` - Perform alpha texture tests.
     fn intersect_p(&self, r: &Ray, test_alpha_texture: bool) -> bool {
+        let _p = ProfilePhase::new(Prof::TriIntersectP);
         stat_inc!(N_TESTS, 1);
 
         // Get triangle vertices in p0, p1, and p2
