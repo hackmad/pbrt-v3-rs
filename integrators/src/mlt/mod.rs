@@ -1,7 +1,7 @@
 //! MLTIntegrator
 
 use crate::bdpt::*;
-use core::app::OPTIONS;
+use core::app::options;
 use core::camera::*;
 use core::geometry::*;
 use core::integrator::*;
@@ -165,7 +165,7 @@ impl Integrator for MLTIntegrator {
     ///
     /// * `scene` - The scene.
     fn render(&self, scene: &Scene) {
-        let n_threads = OPTIONS.threads();
+        let n_threads = options().threads();
 
         let light_distr = compute_light_power_distribution(scene).map(Arc::new).unwrap();
 
@@ -391,7 +391,7 @@ impl From<(&ParamSet, ArcCamera)> for MLTIntegrator {
         let large_step_probability = params.find_one_float("largestepprobability", 0.3);
         let sigma = params.find_one_float("sigma", 0.01);
 
-        if OPTIONS.quick_render {
+        if options().quick_render {
             mutations_per_pixel = max(1, mutations_per_pixel / 16);
             n_bootstrap = max(1, n_bootstrap / 16);
         }

@@ -8,11 +8,13 @@ use core::pbrt::*;
 use core::reflection::*;
 use core::texture::*;
 use std::collections::HashMap;
+use std::sync::OnceLock;
 use std::sync::{Arc, Mutex};
 
-lazy_static! {
-    /// Caches BSDF table data by file path.
-    static ref BSDF_TABLES: Mutex<HashMap<String, Arc<FourierBSDFTable>>> = Mutex::new(HashMap::new());
+/// Returns cached BSDF table data by file path.
+fn bsdf_tables() -> &'static Mutex<HashMap<String, Arc<FourierBSDFTable>>> {
+    static DATA: OnceLock<Mutex<HashMap<String, Arc<FourierBSDFTable>>>> = OnceLock::new();
+    DATA.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
 /// Implements materials using measured or synthetic BSDF data that has been tabulated into the directional basis.
@@ -33,7 +35,7 @@ impl FourierMaterial {
         let key = String::from(path);
 
         // Use preloaded BSDF data if available.
-        let mut tables = BSDF_TABLES.lock().unwrap();
+        let mut tables = bsdf_tables().lock().unwrap();
         let bsdf_table = if let Some(table) = tables.get(&key) {
             Arc::clone(table)
         } else {

@@ -5,10 +5,12 @@ use num_traits::{Num, Zero};
 use std::collections::HashMap;
 use std::ops::AddAssign;
 use std::sync::Mutex;
+use std::sync::OnceLock;
 
-lazy_static! {
-    /// The global statistics accumulator.
-    pub static ref STATS_ACCUMULATOR: Mutex<StatsAccumulator> = Mutex::new(StatsAccumulator::new());
+/// Return the global statistics accumulator.
+pub fn stats_accumulator() -> &'static Mutex<StatsAccumulator> {
+    static DATA: OnceLock<Mutex<StatsAccumulator>> = OnceLock::new();
+    DATA.get_or_init(|| Mutex::new(StatsAccumulator::new()))
 }
 
 /// Distribution statistic.

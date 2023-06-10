@@ -1,6 +1,6 @@
 //! Film
 
-use crate::app::OPTIONS;
+use crate::app::options;
 use crate::filter::*;
 use crate::geometry::*;
 use crate::image_io::*;
@@ -371,7 +371,7 @@ impl From<(&ParamSet, ArcFilter)> for Film {
     fn from(p: (&ParamSet, ArcFilter)) -> Self {
         let (params, filter) = p;
 
-        let filename = if let Some(image_file) = OPTIONS.image_file.as_ref() {
+        let filename = if let Some(image_file) = options().image_file.as_ref() {
             let params_filename = params.find_one_string("filename", "".to_owned());
             if !params_filename.is_empty() {
                 warn!(
@@ -386,7 +386,7 @@ impl From<(&ParamSet, ArcFilter)> for Film {
 
         let mut xres = params.find_one_int("xresolution", 1280);
         let mut yres = params.find_one_int("yresolution", 720);
-        if OPTIONS.quick_render {
+        if options().quick_render {
             xres = max(1, xres / 4);
             yres = max(1, yres / 4);
         }
@@ -401,15 +401,15 @@ impl From<(&ParamSet, ArcFilter)> for Film {
             crop.p_max.y = clamp(max(cr[2], cr[3]), 0.0, 1.0);
         } else if cwi > 0 {
             panic!("{} values supplied for 'cropwindow'. Expected 4.", cwi);
-        } else if OPTIONS.crop_window.len() == 4 {
+        } else if options().crop_window.len() == 4 {
             crop = Bounds2f::new(
                 Point2f::new(
-                    clamp(OPTIONS.crop_window[0], 0.0, 1.0),
-                    clamp(OPTIONS.crop_window[2], 0.0, 1.0),
+                    clamp(options().crop_window[0], 0.0, 1.0),
+                    clamp(options().crop_window[2], 0.0, 1.0),
                 ),
                 Point2f::new(
-                    clamp(OPTIONS.crop_window[1], 0.0, 1.0),
-                    clamp(OPTIONS.crop_window[3], 0.0, 1.0),
+                    clamp(options().crop_window[1], 0.0, 1.0),
+                    clamp(options().crop_window[3], 0.0, 1.0),
                 ),
             );
         } else {

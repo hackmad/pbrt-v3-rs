@@ -2,10 +2,12 @@
 
 use crate::pbrt::Float;
 use clap::Parser;
+use std::sync::OnceLock;
 
-lazy_static! {
-    /// The global application options.
-    pub static ref OPTIONS: Options = Options::parse();
+/// Return the global application options.
+pub fn options() -> &'static Options {
+    static DATA: OnceLock<Options> = OnceLock::new();
+    DATA.get_or_init(|| Options::parse())
 }
 
 /// System wide options.

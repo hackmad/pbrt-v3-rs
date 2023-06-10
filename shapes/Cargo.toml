@@ -9,5 +9,4 @@ core = { path = "../core" }
 textures = { path = "../textures" }
 
 log = { workspace = true }
-lazy_static = { workspace = true }
 ply-rs = { workspace = true }

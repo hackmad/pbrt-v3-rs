@@ -9,5 +9,4 @@ edition = "2021"
 [dependencies]
 core = { path = "../core" }
 
-lazy_static = { workspace = true }
 log = { workspace = true }

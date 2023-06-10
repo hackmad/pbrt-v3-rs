@@ -2,7 +2,7 @@
 
 use super::common::*;
 use super::morton::*;
-use core::app::OPTIONS;
+use core::app::options;
 use core::geometry::*;
 use core::pbrt::*;
 use core::primitive::*;
@@ -104,7 +104,7 @@ fn compute_morton_primitives(primitive_info: &[BVHPrimitiveInfo], bounds: &Bound
     let n = primitive_info.len();
     let morton_prims = Arc::new(Mutex::new(vec![MortonPrimitive::default(); n]));
 
-    let n_threads = OPTIONS.threads();
+    let n_threads = options().threads();
 
     thread::scope(|scope| {
         let (tx, rx) = crossbeam_channel::bounded::<(usize, &BVHPrimitiveInfo)>(n_threads);
@@ -164,7 +164,7 @@ fn build_treelets(
     let n = treelets_to_build.len();
     let treelets: Arc<Mutex<BTreeMap<usize, ArenaArc<BVHBuildNode>>>> = Arc::new(Mutex::new(BTreeMap::new()));
 
-    let n_threads = OPTIONS.threads();
+    let n_threads = options().threads();
 
     thread::scope(|scope| {
         let (tx, rx) = crossbeam_channel::bounded(n_threads);

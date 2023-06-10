@@ -1,6 +1,6 @@
 //! MIPMap
 
-use crate::app::OPTIONS;
+use crate::app::options;
 use crate::geometry::*;
 use crate::memory::*;
 use crate::pbrt::*;
@@ -412,7 +412,7 @@ where
     let s_weights = resample_weights(resolution[0], res_pow2[0]);
     let s_weights = s_weights.iter().enumerate().take(res_pow2[0]);
 
-    let n_threads = OPTIONS.threads();
+    let n_threads = options().threads();
 
     // Apply `s_weights` in the `s` direction.
     thread::scope(|scope| {
@@ -465,7 +465,7 @@ where
     let t_weights = resample_weights(resolution[1], res_pow2[1]);
 
     // Setup some mutexes for temporarily holding working data; one per thread.
-    let n_threads = OPTIONS.threads();
+    let n_threads = options().threads();
     let work_data: Vec<Arc<RwLock<Vec<T>>>> = vec![Arc::new(RwLock::new(vec![])); n_threads];
 
     // Apply `t_weights` in the `t` direction.

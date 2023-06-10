@@ -134,9 +134,9 @@ impl CoefficientSpectrum for SampledSpectrum {
     fn to_xyz(&self) -> [Float; 3] {
         let (x, y, z) = (0..SPECTRAL_SAMPLES).fold((0.0, 0.0, 0.0), |(sx, sy, sz), i| {
             (
-                sx + CIE_CURVES.x[i] * self.c[i],
-                sy + CIE_CURVES.y[i] * self.c[i],
-                sz + CIE_CURVES.z[i] * self.c[i],
+                sx + cie_curves().x[i] * self.c[i],
+                sy + cie_curves().y[i] * self.c[i],
+                sz + cie_curves().z[i] * self.c[i],
             )
         });
 
@@ -147,7 +147,7 @@ impl CoefficientSpectrum for SampledSpectrum {
 
     /// Returns the y-coefficient of XYZ colour.
     fn y(&self) -> Float {
-        let yy = (0..SPECTRAL_SAMPLES).fold(0.0, |a, i| a + CIE_CURVES.y[i] * self.c[i]);
+        let yy = (0..SPECTRAL_SAMPLES).fold(0.0, |a, i| a + cie_curves().y[i] * self.c[i]);
         yy * (SAMPLED_LAMBDA_END - SAMPLED_LAMBDA_START) as Float / (SPECTRAL_SAMPLES as Float)
     }
 
@@ -161,35 +161,36 @@ impl CoefficientSpectrum for SampledSpectrum {
         let mut r = Self::default();
 
         // Convert spectrum to RGB.
+        let rgb2spectrum = rgb_to_spectrum();
         if rgb[0] <= rgb[1] && rgb[0] <= rgb[2] {
             // Compute reflectance `SampledSpectrum` with `rgb[0]` as minimum.
-            r += rgb[0] * RGB_TO_SPECTRUM[spectrum_type][WHITE];
+            r += rgb[0] * rgb2spectrum [spectrum_type][WHITE];
             if rgb[1] <= rgb[2] {
-                r += (rgb[1] - rgb[0]) * RGB_TO_SPECTRUM[spectrum_type][CYAN];
-                r += (rgb[2] - rgb[1]) * RGB_TO_SPECTRUM[spectrum_type][BLUE];
+                r += (rgb[1] - rgb[0]) * rgb2spectrum[spectrum_type][CYAN];
+                r += (rgb[2] - rgb[1]) * rgb2spectrum [spectrum_type][BLUE];
             } else {
-                r += (rgb[2] - rgb[0]) * RGB_TO_SPECTRUM[spectrum_type][CYAN];
-                r += (rgb[1] - rgb[2]) * RGB_TO_SPECTRUM[spectrum_type][GREEN];
+                r += (rgb[2] - rgb[0]) * rgb2spectrum[spectrum_type][CYAN];
+                r += (rgb[1] - rgb[2]) * rgb2spectrum[spectrum_type][GREEN];
             }
         } else if rgb[1] <= rgb[0] && rgb[1] <= rgb[2] {
             // Compute reflectance `SampledSpectrum` with 1rgb[1]1 as minimum.
-            r += rgb[1] * RGB_TO_SPECTRUM[spectrum_type][WHITE];
+            r += rgb[1] * rgb2spectrum[spectrum_type][WHITE];
             if rgb[0] <= rgb[2] {
-                r += (rgb[0] - rgb[1]) * RGB_TO_SPECTRUM[spectrum_type][MAGENTA];
-                r += (rgb[2] - rgb[0]) * RGB_TO_SPECTRUM[spectrum_type][BLUE];
+                r += (rgb[0] - rgb[1]) * rgb2spectrum[spectrum_type][MAGENTA];
+                r += (rgb[2] - rgb[0]) * rgb2spectrum[spectrum_type][BLUE];
             } else {
-                r += (rgb[2] - rgb[1]) * RGB_TO_SPECTRUM[spectrum_type][MAGENTA];
-                r += (rgb[0] - rgb[2]) * RGB_TO_SPECTRUM[spectrum_type][RED];
+                r += (rgb[2] - rgb[1]) * rgb2spectrum[spectrum_type][MAGENTA];
+                r += (rgb[0] - rgb[2]) * rgb2spectrum[spectrum_type][RED];
             }
         } else {
             // Compute reflectance `SampledSpectrum` with `rgb[2]` as minimum.
-            r += rgb[2] * RGB_TO_SPECTRUM[spectrum_type][WHITE];
+            r += rgb[2] * rgb2spectrum[spectrum_type][WHITE];
             if rgb[0] <= rgb[1] {
-                r += (rgb[0] - rgb[2]) * RGB_TO_SPECTRUM[spectrum_type][YELLOW];
-                r += (rgb[1] - rgb[0]) * RGB_TO_SPECTRUM[spectrum_type][GREEN];
+                r += (rgb[0] - rgb[2]) * rgb2spectrum[spectrum_type][YELLOW];
+                r += (rgb[1] - rgb[0]) * rgb2spectrum[spectrum_type][GREEN];
             } else {
-                r += (rgb[1] - rgb[2]) * RGB_TO_SPECTRUM[spectrum_type][YELLOW];
-                r += (rgb[0] - rgb[1]) * RGB_TO_SPECTRUM[spectrum_type][RED];
+                r += (rgb[1] - rgb[2]) * rgb2spectrum[spectrum_type][YELLOW];
+                r += (rgb[0] - rgb[1]) * rgb2spectrum[spectrum_type][RED];
             }
         }
 

@@ -8,7 +8,6 @@ edition = "2021"
 core = { path = "../core" }
 
 crossbeam-channel = { workspace = true }
-lazy_static = { workspace = true }
 log = { workspace = true }
 itertools = { workspace = true }
 order-stat = { workspace = true }

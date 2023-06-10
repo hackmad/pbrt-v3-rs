@@ -1,8 +1,6 @@
 //! The API
 
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate log;
 extern crate pest_consume;
 
@@ -13,7 +11,7 @@ mod transform_cache;
 mod transform_set;
 
 use accelerators::*;
-use core::app::OPTIONS;
+use core::app::options;
 use core::geometry::*;
 use core::light::*;
 use core::medium::*;
@@ -495,7 +493,7 @@ impl Api {
 
             self.render_options = RenderOptions::new();
 
-            if !OPTIONS.quiet {
+            if !options().quiet {
                 report_stats!();
                 print_stats!();
                 clear_stats!();

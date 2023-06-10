@@ -1,6 +1,6 @@
 //! Infinate Area Light Source
 
-use core::app::OPTIONS;
+use core::app::options;
 use core::geometry::*;
 use core::image_io::*;
 use core::interaction::*;
@@ -306,7 +306,7 @@ impl From<(&ParamSet, ArcTransform, &str, usize)> for InfiniteAreaLight {
         };
 
         let mut n_samples = params.find_one_int("samples", params.find_one_int("nsamples", 1));
-        if OPTIONS.quick_render {
+        if options().quick_render {
             n_samples = max(1, n_samples / 4);
         }
 
@@ -330,7 +330,7 @@ fn compute_scalar_image(l_map: &MIPMap<Spectrum>) -> Vec<Vec<Float>> {
 
     let img: Arc<Mutex<Vec<Vec<Float>>>> = Arc::new(Mutex::new(vec![vec![]; height]));
 
-    let n_threads = OPTIONS.threads();
+    let n_threads = options().threads();
 
     thread::scope(|scope| {
         let (tx, rx) = crossbeam_channel::bounded(n_threads);

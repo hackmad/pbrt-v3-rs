@@ -202,9 +202,10 @@ macro_rules! stat_dist {
 #[macro_export]
 macro_rules! stat_register_fns {
     ($($stat_func: ident),+ $(,)?) => {
-        lazy_static! {
-            /// Used to ensure stats are registered exactly once in the module's private scope.
-            pub(crate) static ref IS_STATS_REGISTERED: std::sync::Mutex<bool> = std::sync::Mutex::new(false);
+        /// Return the whether stats are registered.
+        pub(crate) fn is_stats_registered() -> &'static std::sync::Mutex<bool> {
+            static DATA: std::sync::OnceLock<std::sync::Mutex<bool>> = std::sync::OnceLock::new();
+            DATA.get_or_init(|| std::sync::Mutex::new(false))
         }
 
         /// Call this function in a module core/top-level struct to register the statistics. Typically done in:
@@ -215,9 +216,9 @@ macro_rules! stat_register_fns {
         /// 3. pub fn from_props(p: (&ParamSet, ...)) { ... }
         ///    e.g. PLYMesh
         pub(crate) fn register_stats() {
-            let mut is_registered = IS_STATS_REGISTERED.lock().unwrap();
+            let mut is_registered = is_stats_registered().lock().unwrap();
             if !*is_registered  {
-                let mut sr = STATS_REGISTRAR.lock().unwrap();
+                let mut sr = stats_registrar().lock().unwrap();
                 $(
                     sr.register_stat_func($stat_func);
                 )+
@@ -227,29 +228,29 @@ macro_rules! stat_register_fns {
     };
 }
 
-/// Convenience function to accumulate thread local statistics in `STATS_ACCUMULATOR`. This will call the registered
-/// callbacks created with `stat_*` macros. This should be called at the end of each spawned thread and at the end of
-/// rendering a scene from the main thread.
+/// Convenience function to accumulate thread local statistics in the global `StatsAccumulator`. This will call the
+/// registered callbacks created with `stat_*` macros. This should be called at the end of each spawned thread and at
+/// the end of rendering a scene from the main thread.
 #[macro_export]
 macro_rules! report_stats {
     () => {{
-        let mut accum = STATS_ACCUMULATOR.lock().unwrap();
-        STATS_REGISTRAR.lock().unwrap().call_stat_funcs(&mut accum);
+        let mut accum = stats_accumulator().lock().unwrap();
+        stats_registrar().lock().unwrap().call_stat_funcs(&mut accum);
     }};
 }
 
-/// Convenience function to print accumulated statistic in `STATS_ACCUMULATOR`.
+/// Convenience function to print accumulated statistic in the global `StatsAccumulator`.
 #[macro_export]
 macro_rules! print_stats {
     () => {{
-        STATS_ACCUMULATOR.lock().unwrap().print();
+        stats_accumulator().lock().unwrap().print();
     }};
 }
 
-/// Convenience function to clear accumulated statistic in `STATS_ACCUMULATOR`.
+/// Convenience function to clear accumulated statistic in the global `StatsAccumulator`.
 #[macro_export]
 macro_rules! clear_stats {
     () => {{
-        STATS_ACCUMULATOR.lock().unwrap().clear();
+        stats_accumulator().lock().unwrap().clear();
     }};
 }

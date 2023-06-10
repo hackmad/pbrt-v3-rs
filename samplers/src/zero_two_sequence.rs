@@ -1,6 +1,6 @@
 //! (0, 2)-Sequence Sampler.
 
-use core::app::OPTIONS;
+use core::app::options;
 use core::geometry::*;
 use core::low_discrepency::*;
 use core::paramset::*;
@@ -150,7 +150,7 @@ impl From<(&ParamSet, Bounds2i)> for ZeroTwoSequenceSampler {
         let (params, _sample_bounds) = p;
 
         let mut samples_per_pixel = params.find_one_int("pixelsamples", 16) as usize;
-        if OPTIONS.quick_render {
+        if options().quick_render {
             samples_per_pixel = 1;
         }
 

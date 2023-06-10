@@ -1,11 +1,12 @@
 //! Common
 
-use crate::app::OPTIONS;
+use crate::app::options;
 
 use super::clamp::*;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use num_traits::{Num, Zero};
 use std::ops::{Add, Mul, Neg};
+use std::sync::OnceLock;
 use std::{mem, slice};
 
 /// Use 32-bit precision for floating point numbers.
@@ -50,18 +51,16 @@ pub const SHADOW_EPSILON: Float = 0.0001;
 /// √2
 pub const SQRT2: Float = 1.41421356237309504880;
 
-lazy_static! {
-    /// Determines system is big endian or little endian.
-    pub static ref IS_BIG_ENDIAN: bool = is_big_endian();
-}
-
 /// Returns `true` if the system is using Big Endian to store integers.
-fn is_big_endian() -> bool {
-    let i: u64 = 0x01020304;
-    let ip: *const u64 = &i;
-    let bp: *const u8 = ip as *const _;
-    let bs: &[u8] = unsafe { slice::from_raw_parts(bp, mem::size_of::<u64>()) };
-    bs[0] == 1_u8
+pub fn is_big_endian() -> &'static bool {
+    static DATA: OnceLock<bool> = OnceLock::new();
+    DATA.get_or_init(|| {
+        let i: u64 = 0x01020304;
+        let ip: *const u64 = &i;
+        let bp: *const u8 = ip as *const _;
+        let bs: &[u8] = unsafe { slice::from_raw_parts(bp, mem::size_of::<u64>()) };
+        bs[0] == 1_u8
+    })
 }
 
 /// Returns the absolute value of a number.
@@ -433,7 +432,7 @@ pub fn create_multi_progress() -> MultiProgress {
 ///
 /// * `len` - The length.
 pub fn create_progress_bar(len: u64) -> ProgressBar {
-    if OPTIONS.quiet {
+    if options().quiet {
         ProgressBar::hidden()
     } else {
         let progress_style = ProgressStyle::with_template(

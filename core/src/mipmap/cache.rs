@@ -23,7 +23,7 @@ pub trait MIPMapCacheProvider<Tmemory> {
 /// Type for result of retrieving `MIPMapCacheProvider<Tmemory>::get()`.
 pub type MIPMapCacheResult<Tmemory> = Result<ArcMIPMap<Tmemory>, String>;
 
-/// Type for storing `MIPMap`s of type `Tmemory` in a `lazy_static`.
+/// Type for storing `MIPMap`s of type `Tmemory` in a `OnceLock`.
 type MIPMaps<Tmemory> = Mutex<HashMap<TexInfo, Arc<MIPMap<Tmemory>>>>;
 
 /// Provides a way to cache and retrieve `MIPMap`s for `ImageTexture`s.
@@ -31,9 +31,10 @@ pub struct MIPMapCache {}
 
 macro_rules! cache_provider {
     ($t: ty, $id: ident) => {
-        lazy_static! {
-            /// Caches `MIPMap<$t>`.
-            static ref $id: MIPMaps<$t> = Mutex::new(HashMap::new());
+        /// Caches `MIPMap<$t>`.
+        fn $id() -> &'static MIPMaps<$t> {
+            static DATA: std::sync::OnceLock<MIPMaps<$t>> = std::sync::OnceLock::new();
+            DATA.get_or_init(|| Mutex::new(HashMap::new()))
         }
 
         impl MIPMapCacheProvider<$t> for MIPMapCache {
@@ -42,7 +43,7 @@ macro_rules! cache_provider {
             ///
             /// * `tex_info` - Texture information.
             fn get(info: TexInfo) -> Result<ArcMIPMap<$t>, String> {
-                let mut mipmaps = $id.lock().expect("Unable to access mipmap mutex");
+                let mut mipmaps = $id().lock().expect("Unable to access mipmap mutex");
                 match mipmaps.get(&info) {
                     Some(mipmap) => Ok(Arc::clone(&mipmap)),
                     None => {
@@ -56,17 +57,17 @@ macro_rules! cache_provider {
     };
 }
 
-cache_provider!(RGBSpectrum, RGB_SPECTRUM_MIPMAPS);
-cache_provider!(Float, FLOAT_MIPMAPS);
+cache_provider!(RGBSpectrum, rgb_spectrum_mipmaps);
+cache_provider!(Float, float_mipmaps);
 
 /// Clears all MIPMap caches.
 pub fn clear_mipmap_caches() {
-    let mut mipmaps = RGB_SPECTRUM_MIPMAPS
+    let mut mipmaps = rgb_spectrum_mipmaps()
         .lock()
         .expect("Unable to access RGB_SPECTRUM_MIPMAPS mutex");
     mipmaps.clear();
 
-    let mut mipmaps = FLOAT_MIPMAPS.lock().expect("Unable to access FLOAT_MIPMAPS mutex");
+    let mut mipmaps = float_mipmaps().lock().expect("Unable to access FLOAT_MIPMAPS mutex");
     mipmaps.clear();
 }
 

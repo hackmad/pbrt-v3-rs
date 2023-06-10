@@ -2,10 +2,12 @@
 
 use super::StatsAccumulator;
 use std::sync::Mutex;
+use std::sync::OnceLock;
 
-lazy_static! {
-    /// The global registrar for statistics.
-    pub static ref STATS_REGISTRAR: Mutex<StatsRegistrar> = Mutex::new(StatsRegistrar::new());
+/// Return the global registrar for statistics.
+pub fn stats_registrar() -> &'static Mutex<StatsRegistrar> {
+    static DATA: OnceLock<Mutex<StatsRegistrar>> = OnceLock::new();
+    DATA.get_or_init(|| Mutex::new(StatsRegistrar::new()))
 }
 
 /// Registers callback functions for statistics.

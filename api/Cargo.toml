@@ -17,7 +17,6 @@ samplers = { path = "../samplers" }
 shapes = { path = "../shapes" }
 textures = { path = "../textures" }
 
-lazy_static = { workspace = true }
 log = { workspace = true }
 pest = { workspace = true }
 pest_consume = { workspace = true }

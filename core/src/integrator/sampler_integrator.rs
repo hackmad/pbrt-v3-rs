@@ -1,7 +1,7 @@
 //! Sampler Integrator
 
 use super::*;
-use crate::app::OPTIONS;
+use crate::app::options;
 use crate::camera::*;
 use crate::film::FilmTile;
 use crate::geometry::*;
@@ -246,7 +246,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         // Compute number of tiles, `n_tiles`, to use for parallel rendering.
         let sample_bounds = camera_data.film.get_sample_bounds();
         let sample_extent = sample_bounds.diagonal();
-        let tile_size = OPTIONS.tile_size as i32;
+        let tile_size = options().tile_size as i32;
         let n_tiles = Point2::new(
             ((sample_extent.x + tile_size - 1) / tile_size) as usize,
             ((sample_extent.y + tile_size - 1) / tile_size) as usize,
@@ -258,7 +258,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         let progress = create_progress_bar(tile_count as u64 + 1_u64); // Render + image write
         progress.set_message("Rendering scene");
 
-        let n_threads = OPTIONS.threads();
+        let n_threads = options().threads();
 
         thread::scope(|scope| {
             let (tx, rx) = crossbeam_channel::bounded(n_threads);
@@ -322,7 +322,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
         };
 
         // Compute sample bounds for tile.
-        let tile_size = OPTIONS.tile_size as i32;
+        let tile_size = options().tile_size as i32;
         let x0 = sample_bounds.p_min.x + tile_x as i32 * tile_size;
         let x1 = min(x0 + tile_size, sample_bounds.p_max.x);
         let y0 = sample_bounds.p_min.y + tile_y as i32 * tile_size;

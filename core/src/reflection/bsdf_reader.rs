@@ -1,6 +1,6 @@
 //! BSDF Reader
 
-use crate::pbrt::IS_BIG_ENDIAN;
+use crate::pbrt::is_big_endian;
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 use std::fs::File;
 use std::io::Read;
@@ -66,7 +66,7 @@ impl BSDFReader for File {
 
     /// Reads one 32-bit unsigned value.
     fn read_i32(&mut self) -> Result<i32, String> {
-        match if *IS_BIG_ENDIAN {
+        match if *is_big_endian() {
             ReadBytesExt::read_i32::<BigEndian>(self)
         } else {
             ReadBytesExt::read_i32::<LittleEndian>(self)
@@ -78,7 +78,7 @@ impl BSDFReader for File {
 
     /// Reads one 32-bit floating point value.
     fn read_f32(&mut self) -> Result<f32, String> {
-        match if *IS_BIG_ENDIAN {
+        match if *is_big_endian() {
             ReadBytesExt::read_f32::<BigEndian>(self)
         } else {
             ReadBytesExt::read_f32::<LittleEndian>(self)
@@ -93,7 +93,7 @@ impl BSDFReader for File {
     /// * `count` - Number of values to read.
     fn read_i32_vec(&mut self, count: usize) -> Result<Vec<i32>, String> {
         let mut buffer = vec![0_i32; count];
-        match if *IS_BIG_ENDIAN {
+        match if *is_big_endian() {
             ReadBytesExt::read_i32_into::<BigEndian>(self, &mut buffer)
         } else {
             ReadBytesExt::read_i32_into::<LittleEndian>(self, &mut buffer)
@@ -108,7 +108,7 @@ impl BSDFReader for File {
     /// * `count` - Number of values to read.
     fn read_f32_vec(&mut self, count: usize) -> Result<Vec<f32>, String> {
         let mut buffer: Vec<f32> = vec![0.0; count];
-        match if *IS_BIG_ENDIAN {
+        match if *is_big_endian() {
             ReadBytesExt::read_f32_into::<BigEndian>(self, &mut buffer)
         } else {
             ReadBytesExt::read_f32_into::<LittleEndian>(self, &mut buffer)
