@@ -108,8 +108,8 @@ impl Integrator for WhittedIntegrator {
             }
             if depth + 1 < self.data.max_depth {
                 // Trace rays for specular reflection and refraction.
-                let refl = self.specular_reflect(ray, &isect, &bsdf, scene, sampler, depth);
-                let trans = self.specular_transmit(ray, &isect, &bsdf, scene, sampler, depth);
+                let refl = self.specular_reflect(ray, &isect, bsdf.as_ref(), scene, sampler, depth);
+                let trans = self.specular_transmit(ray, &isect, bsdf.as_ref(), scene, sampler, depth);
                 l += refl + trans;
             }
         } else {

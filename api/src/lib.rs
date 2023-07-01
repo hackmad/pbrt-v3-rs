@@ -1048,7 +1048,7 @@ impl Api {
     }
 
     /// Returns named medium or None.
-    fn get_named_medium(&self, name: &Option<String>) -> Option<ArcMedium> {
+    fn get_named_medium(&self, name: Option<&str>) -> Option<ArcMedium> {
         match name {
             Some(name) if !name.is_empty() => {
                 let medium = self.render_options.named_media.get(name).map(Arc::clone);
@@ -1063,8 +1063,8 @@ impl Api {
 
     /// Creates a new medium interface.
     fn create_medium_interface(&self) -> MediumInterface {
-        let inside = self.get_named_medium(&self.graphics_state.current_inside_medium);
-        let outside = self.get_named_medium(&self.graphics_state.current_outside_medium);
+        let inside = self.get_named_medium(self.graphics_state.current_inside_medium.as_deref());
+        let outside = self.get_named_medium(self.graphics_state.current_outside_medium.as_deref());
         MediumInterface::new(inside, outside)
     }
 }
