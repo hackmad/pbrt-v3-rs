@@ -14,9 +14,9 @@ members = [
     "shapes",
     "textures",
 ]
+resolver = "2" # Rust edition 2021 resolver
 
 [workspace.dependencies]
-
 arc-swap = "1"
 bitflags = "2"
 byteorder = "1"
