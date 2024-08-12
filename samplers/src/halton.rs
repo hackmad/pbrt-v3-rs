@@ -1,25 +1,22 @@
 //! Halton Sampler.
 
-use core::app::options;
+use core::app::OPTIONS;
 use core::geometry::*;
 use core::low_discrepency::*;
 use core::paramset::*;
 use core::pbrt::*;
 use core::rng::*;
 use core::sampler::*;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 /// Maximum resolution for sampling first 2 dimensions.
 const K_MAX_RESOLUTION: Int = 128;
 
-/// Returns precomputed radical inverse permutations.
-fn radical_inverse_permutations() -> &'static Vec<u16> {
-    static DATA: OnceLock<Vec<u16>> = OnceLock::new();
-    DATA.get_or_init(|| {
-        let mut rng = RNG::default();
-        compute_radical_inverse_permutations(&mut rng)
-    })
-}
+/// Precomputed radical inverse permutations.
+static RADICAL_INVERSE_PERMUTATIONS: LazyLock<Vec<u16>> = LazyLock::new(|| {
+    let mut rng = RNG::default();
+    compute_radical_inverse_permutations(&mut rng)
+});
 
 /// Implements a low-discrepency sampler using Halton sequences.
 pub struct HaltonSampler {
@@ -111,7 +108,7 @@ impl HaltonSampler {
             "HaltonSampler can only sample {} dimensions",
             PRIME_TABLE_SIZE
         );
-        &radical_inverse_permutations()[PRIME_SUMS[dim as usize]..]
+        &RADICAL_INVERSE_PERMUTATIONS[PRIME_SUMS[dim as usize]..]
     }
 
     /// Performs the inverse mapping from the current pixel and given sample index to a global index into the overall
@@ -280,7 +277,7 @@ impl From<(&ParamSet, Bounds2i)> for HaltonSampler {
         let (params, sample_bounds) = p;
 
         let mut samples_per_pixel = params.find_one_int("pixelsamples", 16) as usize;
-        if options().quick_render {
+        if OPTIONS.quick_render {
             samples_per_pixel = 1;
         }
 

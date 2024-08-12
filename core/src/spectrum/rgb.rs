@@ -3,13 +3,10 @@
 use super::*;
 use crate::pbrt::*;
 use std::ops::Index;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
-/// Return the SPD sample values to convert RGB to `SampledSpectrum`.
-pub fn rgb_to_spectrum() -> &'static RGB {
-    static DATA: OnceLock<RGB> = OnceLock::new();
-    DATA.get_or_init(|| RGB::new())
-}
+/// The global SPD sample values to convert RGB to `SampledSpectrum`.
+pub static RGB_TO_SPECTRUM: LazyLock<RGB> = LazyLock::new(|| RGB::new());
 
 /// RGB struct holds the SPD samples values to convert RGB to `SampledSpectrum`.
 pub struct RGB {

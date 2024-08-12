@@ -4,14 +4,11 @@ use crate::pbrt;
 use num_traits::{Num, Zero};
 use std::collections::HashMap;
 use std::ops::AddAssign;
+use std::sync::LazyLock;
 use std::sync::Mutex;
-use std::sync::OnceLock;
 
-/// Return the global statistics accumulator.
-pub fn stats_accumulator() -> &'static Mutex<StatsAccumulator> {
-    static DATA: OnceLock<Mutex<StatsAccumulator>> = OnceLock::new();
-    DATA.get_or_init(|| Mutex::new(StatsAccumulator::new()))
-}
+/// The global statistics accumulator.
+pub static STATS_ACCUMULATOR: LazyLock<Mutex<StatsAccumulator>> = LazyLock::new(|| Mutex::new(StatsAccumulator::new()));
 
 /// Distribution statistic.
 #[derive(Default, Clone)]

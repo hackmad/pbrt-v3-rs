@@ -3,7 +3,7 @@
 use crate::pbrt::Float;
 use crate::spectrum::*;
 use std::collections::HashMap;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 /// Measured BSSRDF values.
 #[derive(Copy, Clone, Default)]
@@ -30,11 +30,9 @@ impl MeasuredSS {
     }
 }
 
+/// Measured BSSRDF table for participating media.
 #[rustfmt::skip]
-fn subsurface_parameter_table() -> &'static HashMap<&'static str, MeasuredSS>{
-    /// Measured BSSRDF table for participating media.
-    static DATA: OnceLock<HashMap<&'static str, MeasuredSS>> = OnceLock::new();
-    DATA.get_or_init(|| [
+static SUBSURFACE_PARAMETER_TABLE: LazyLock<HashMap<&'static str, MeasuredSS>> = LazyLock::new(|| [
         // From "A Practical Model for Subsurface Light Transport"
         // Jensen, Marschner, Levoy, Hanrahan
         // Proc SIGGRAPH 2001
@@ -94,12 +92,11 @@ fn subsurface_parameter_table() -> &'static HashMap<&'static str, MeasuredSS>{
     ]
     .iter()
     .copied()
-    .collect())
-}
+    .collect());
 
 /// Returns subsurface scattering properties for a named media or None.
 ///
 /// * `name` - The name.
 pub fn get_medium_scattering_properties(name: &str) -> Option<&MeasuredSS> {
-    subsurface_parameter_table().get(name)
+    SUBSURFACE_PARAMETER_TABLE.get(name)
 }

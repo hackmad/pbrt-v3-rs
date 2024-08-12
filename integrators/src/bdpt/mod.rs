@@ -1,6 +1,6 @@
 //! Bi-directional Path Tracer
 
-use core::app::options;
+use core::app::OPTIONS;
 use core::camera::*;
 use core::film::{Film, FilmTile};
 use core::geometry::*;
@@ -134,7 +134,7 @@ impl BDPTIntegrator {
         let mut tile_sampler = self.sampler.clone_sampler(tile_idx as u64);
 
         // Compute sample bounds for tile.
-        let tile_size = options().tile_size as i32;
+        let tile_size = OPTIONS.tile_size as i32;
         let x0 = sample_bounds.p_min.x + tile_x as i32 * tile_size;
         let x1 = min(x0 + tile_size, sample_bounds.p_max.x);
         let y0 = sample_bounds.p_min.y + tile_y as i32 * tile_size;
@@ -270,7 +270,7 @@ impl Integrator for BDPTIntegrator {
         let camera_data = self.camera.get_data();
         let sample_bounds = camera_data.film.get_sample_bounds();
         let sample_extent = sample_bounds.diagonal();
-        let tile_size = options().tile_size;
+        let tile_size = OPTIONS.tile_size;
         let n_tiles = Point2::new(
             ((sample_extent.x + tile_size as Int - 1) / tile_size as Int) as usize,
             ((sample_extent.y + tile_size as Int - 1) / tile_size as Int) as usize,
@@ -312,7 +312,7 @@ impl Integrator for BDPTIntegrator {
 
         // Render and write the output image to disk.
         if !scene.lights.is_empty() {
-            let n_threads = options().threads();
+            let n_threads = OPTIONS.threads();
 
             thread::scope(|scope| {
                 let (tx, rx) = crossbeam_channel::bounded(n_threads);

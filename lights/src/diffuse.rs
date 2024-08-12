@@ -1,6 +1,6 @@
 //! Diffuse Area Light Source
 
-use core::app::options;
+use core::app::OPTIONS;
 use core::geometry::*;
 use core::interaction::*;
 use core::light::*;
@@ -238,7 +238,7 @@ impl From<(&ParamSet, ArcTransform, Option<ArcMedium>, ArcShape, usize)> for Dif
         let two_sided = params.find_one_bool("twosided", false);
 
         let mut n_samples = params.find_one_int("samples", params.find_one_int("nsamples", 1));
-        if options().quick_render {
+        if OPTIONS.quick_render {
             n_samples = max(1, n_samples / 4);
         }
 

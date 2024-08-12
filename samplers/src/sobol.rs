@@ -1,6 +1,6 @@
 //! Sobol Sampler.
 
-use core::app::options;
+use core::app::OPTIONS;
 use core::geometry::*;
 use core::low_discrepency::*;
 use core::paramset::*;
@@ -206,7 +206,7 @@ impl From<(&ParamSet, Bounds2i)> for SobolSampler {
         let (params, sample_bounds) = p;
 
         let mut samples_per_pixel = params.find_one_int("pixelsamples", 16) as usize;
-        if options().quick_render {
+        if OPTIONS.quick_render {
             samples_per_pixel = 1;
         }
 

@@ -203,10 +203,7 @@ macro_rules! stat_dist {
 macro_rules! stat_register_fns {
     ($($stat_func: ident),+ $(,)?) => {
         /// Return the whether stats are registered.
-        pub(crate) fn is_stats_registered() -> &'static std::sync::Mutex<bool> {
-            static DATA: std::sync::OnceLock<std::sync::Mutex<bool>> = std::sync::OnceLock::new();
-            DATA.get_or_init(|| std::sync::Mutex::new(false))
-        }
+        pub(crate) static IS_STATS_REGISTERED: std::sync::LazyLock<std::sync::Mutex<bool>> = std::sync::LazyLock::new(|| std::sync::Mutex::new(false));
 
         /// Call this function in a module core/top-level struct to register the statistics. Typically done in:
         /// 1. Type constructor like new(). Avoid unnecessarily calling it from all structs.
@@ -216,9 +213,9 @@ macro_rules! stat_register_fns {
         /// 3. pub fn from_props(p: (&ParamSet, ...)) { ... }
         ///    e.g. PLYMesh
         pub(crate) fn register_stats() {
-            let mut is_registered = is_stats_registered().lock().unwrap();
+            let mut is_registered = IS_STATS_REGISTERED.lock().unwrap();
             if !*is_registered  {
-                let mut sr = stats_registrar().lock().unwrap();
+                let mut sr = STATS_REGISTRAR.lock().unwrap();
                 $(
                     sr.register_stat_func($stat_func);
                 )+
@@ -234,8 +231,8 @@ macro_rules! stat_register_fns {
 #[macro_export]
 macro_rules! report_stats {
     () => {{
-        let mut accum = stats_accumulator().lock().unwrap();
-        stats_registrar().lock().unwrap().call_stat_funcs(&mut accum);
+        let mut accum = STATS_ACCUMULATOR.lock().unwrap();
+        STATS_REGISTRAR.lock().unwrap().call_stat_funcs(&mut accum);
     }};
 }
 
@@ -243,7 +240,7 @@ macro_rules! report_stats {
 #[macro_export]
 macro_rules! print_stats {
     () => {{
-        stats_accumulator().lock().unwrap().print();
+        STATS_ACCUMULATOR.lock().unwrap().print();
     }};
 }
 
@@ -251,6 +248,6 @@ macro_rules! print_stats {
 #[macro_export]
 macro_rules! clear_stats {
     () => {{
-        stats_accumulator().lock().unwrap().clear();
+        STATS_ACCUMULATOR.lock().unwrap().clear();
     }};
 }

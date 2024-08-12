@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::pbrt::*;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 /// Starting wavelength in nm for CIE colour space.
 pub const CIE_LAMBDA_START: usize = 360;
@@ -16,11 +16,8 @@ pub const CIE_SAMPLES: usize = 471;
 /// The CIE Y function integral.
 pub const CIE_Y_INTEGRAL: Float = 106.856895;
 
-/// Returns the CIE curves.
-pub fn cie_curves() -> &'static CIE {
-    static DATA: OnceLock<CIE> = OnceLock::new();
-    DATA.get_or_init(|| CIE::new())
-}
+/// The global CIE curves.
+pub static CIE_CURVES: LazyLock<CIE> = LazyLock::new(|| CIE::new());
 
 /// CIE struct holds the `SampledSpectrum` for XYZ matching curves.
 pub struct CIE {

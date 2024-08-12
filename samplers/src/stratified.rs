@@ -1,6 +1,6 @@
 //! Stratified Sampler.
 
-use core::app::options;
+use core::app::OPTIONS;
 use core::geometry::*;
 use core::paramset::*;
 use core::pbrt::*;
@@ -160,7 +160,7 @@ impl From<(&ParamSet, Bounds2i)> for StratifiedSampler {
 
         let mut x_samples = params.find_one_int("xsamples", 4) as usize;
         let mut y_samples = params.find_one_int("ysamples", 4) as usize;
-        if options().quick_render {
+        if OPTIONS.quick_render {
             x_samples = 1;
             y_samples = 1;
         }

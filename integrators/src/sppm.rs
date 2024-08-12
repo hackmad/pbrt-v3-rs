@@ -1,6 +1,6 @@
 //! SPPM Integrator
 
-use core::app::options;
+use core::app::OPTIONS;
 use core::camera::*;
 use core::geometry::*;
 use core::image_io::write_image;
@@ -141,7 +141,7 @@ impl Integrator for SPPMIntegrator {
 
         // Compute number of tiles to use for SPPM camera pass.
         let pixel_extent = pixel_bounds.diagonal();
-        let tile_size = options().tile_size;
+        let tile_size = OPTIONS.tile_size;
         let n_tiles = Point2::new(
             ((pixel_extent.x + tile_size as Int - 1) / tile_size as Int) as usize,
             ((pixel_extent.y + tile_size as Int - 1) / tile_size as Int) as usize,
@@ -237,7 +237,7 @@ impl From<(&ParamSet, ArcCamera)> for SPPMIntegrator {
 
         let n_iterations = params.find_one_int("numiterations", 64);
         let mut n_iterations = params.find_one_int("iterations", n_iterations) as usize;
-        if options().quick_render {
+        if OPTIONS.quick_render {
             n_iterations = max(1, n_iterations / 16);
         }
 
@@ -383,7 +383,7 @@ fn generate_visible_points(
     max_depth: usize,
     camera: ArcCamera,
 ) {
-    let n_threads = options().threads();
+    let n_threads = OPTIONS.threads();
     let camera = &camera;
 
     thread::scope(|scope| {
@@ -572,7 +572,7 @@ fn add_visible_points_to_grid<'p>(
     hash_size: usize,
     grid: &[SPPMPixelList<'p>],
 ) {
-    let n_threads = options().threads();
+    let n_threads = OPTIONS.threads();
 
     thread::scope(|scope| {
         let (tx_worker, rx_worker) = crossbeam_channel::bounded::<(usize, &SPPMPixel)>(4096);
@@ -660,7 +660,7 @@ fn trace_photons<'p>(
     hash_size: usize,
     grid: &[SPPMPixelList<'p>],
 ) {
-    let n_threads = options().threads();
+    let n_threads = OPTIONS.threads();
 
     thread::scope(|scope| {
         let (tx_worker, rx_worker) = crossbeam_channel::bounded::<usize>(8192);
@@ -850,7 +850,7 @@ fn trace_photon<'p>(
 
 /// Update pixel values from this pass' photons.
 fn update_pixels(pixels: &mut Vec<SPPMPixel>) {
-    let n_threads = options().threads();
+    let n_threads = OPTIONS.threads();
 
     thread::scope(|scope| {
         let (tx_worker, rx_worker) = crossbeam_channel::bounded::<&mut SPPMPixel>(4096);
@@ -931,7 +931,7 @@ fn write_sppm_image(
     camera_data.film.write_image(1.0);
 
     // Write SPPM radius image, if requested.
-    if let Some(sppm_radius) = options().sppm_radius.as_ref() {
+    if let Some(sppm_radius) = OPTIONS.sppm_radius.as_ref() {
         let mut rimg: Vec<Float> = vec![0.0; 3 * n_pixels];
         let mut minrad: Float = 1e30;
         let mut maxrad: Float = 0.0;

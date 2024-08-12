@@ -10,7 +10,7 @@ use image::*;
 use regex::Regex;
 use std::fs::File;
 use std::result::Result;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 /// Stores RGB image data.
 pub struct RGBImage {
@@ -239,19 +239,16 @@ pub fn write_image(path: &str, rgb: &[Float], output_bounds: &Bounds2i) -> Resul
     }
 }
 
-/// Returns regular expression for extracting the file extension. This will match the last occurrence of a period
-/// followed by no periods or slashes (could be tightened to exclude other illegal characters but the code that reads
-/// files will bomb anyway).
-fn regex_file_ext() -> &'static Regex {
-    static DATA: OnceLock<Regex> = OnceLock::new();
-    DATA.get_or_init(|| Regex::new(r"(\.[^./\\]+)$").unwrap())
-}
+/// Regular expression for extracting the file extension. This will match the last occurrence of a period followed by
+/// no periods or slashes (could be tightened to exclude other illegal characters but the code that reads files will
+/// bomb anyway).
+static REGEX_FILE_EXT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(\.[^./\\]+)$").unwrap());
 
 /// Retrieve the extension from a file path.
 ///
 /// * `path` - The file path.
 fn get_extension_from_filename(path: &str) -> Option<&str> {
-    regex_file_ext()
+    REGEX_FILE_EXT
         .captures(path)
         .map(|c| c.get(1).map_or("", |m| m.as_str()))
 }
@@ -352,7 +349,7 @@ fn write_pfm(path: &str, rgb: &[Float], res_x: u32, res_y: u32) -> Result<(), St
         .map_err(|e| format!("write_pfm(): Error writing PFM dimensions '{path}': {e}"))?;
 
     // Write the scale, which encodes endianness.
-    let scale = if *is_big_endian() { 1.0 } else { -1.0 };
+    let scale = if *IS_BIG_ENDIAN { 1.0 } else { -1.0 };
     write_pfm_string(&mut file, format!("{scale}\n").as_str())
         .map_err(|e| format!("write_pfm(): Error writing PFM scale '{path}': {e}"))?;
 
@@ -363,7 +360,7 @@ fn write_pfm(path: &str, rgb: &[Float], res_x: u32, res_y: u32) -> Result<(), St
         // In case Float is 'double', copy into a staging buffer that's definitely a 32-bit float.
         for x in 0..3 * width {
             let f = rgb[y * width * 3 + x];
-            if *is_big_endian() {
+            if *IS_BIG_ENDIAN {
                 file.write_f32::<BigEndian>(f)
                     .map_err(|e| format!("write_pfm(): Error writing PFM pixels '{path}': {e}"))?;
             } else {

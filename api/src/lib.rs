@@ -11,7 +11,7 @@ mod transform_cache;
 mod transform_set;
 
 use accelerators::*;
-use core::app::options;
+use core::app::OPTIONS;
 use core::geometry::*;
 use core::light::*;
 use core::medium::*;
@@ -493,7 +493,7 @@ impl Api {
 
             self.render_options = RenderOptions::new();
 
-            if !options().quiet {
+            if !OPTIONS.quiet {
                 report_stats!();
                 print_stats!();
                 clear_stats!();

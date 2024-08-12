@@ -36,7 +36,7 @@ fn main() {
     api.pbrt_init();
 
     // Process scene description.
-    for path in options().paths.iter() {
+    for path in OPTIONS.paths.iter() {
         // In case of error report it and continue.
         if let Err(e) = render(path, &mut api) {
             error!("{e}");

@@ -1,14 +1,11 @@
 //! Statistics Regisration
 
 use super::StatsAccumulator;
+use std::sync::LazyLock;
 use std::sync::Mutex;
-use std::sync::OnceLock;
 
-/// Return the global registrar for statistics.
-pub fn stats_registrar() -> &'static Mutex<StatsRegistrar> {
-    static DATA: OnceLock<Mutex<StatsRegistrar>> = OnceLock::new();
-    DATA.get_or_init(|| Mutex::new(StatsRegistrar::new()))
-}
+/// The global registrar for statistics.
+pub static STATS_REGISTRAR: LazyLock<Mutex<StatsRegistrar>> = LazyLock::new(|| Mutex::new(StatsRegistrar::new()));
 
 /// Registers callback functions for statistics.
 pub struct StatsRegistrar {

@@ -5,7 +5,8 @@ authors = ["Ahmad Kabani <ahmadkabani@yahoo.com>"]
 edition = "2021"
 
 [features]
-#sampled-spectrum = []
+default = []
+sampled-spectrum = []
 
 [dependencies]
 arc-swap = { workspace = true }
