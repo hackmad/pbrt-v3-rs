@@ -1,6 +1,9 @@
 //! Film
 
 use crate::app::OPTIONS;
+use crate::app::WINDOW_HEIGHT;
+use crate::app::WINDOW_PIXELS;
+use crate::app::WINDOW_WIDTH;
 use crate::filter::*;
 use crate::geometry::*;
 use crate::image_io::*;
@@ -242,6 +245,63 @@ impl Film {
                 merge_pixel += cropped_pixel_width - tile_width;
             }
         }
+
+        merge_pixel = self.get_pixel_offset(&tile_pixel_bounds.p_min);
+        x = tile_pixel_bounds.p_min.x;
+        WINDOW_PIXELS
+            .get()
+            .map(|wp| wp.write().ok())
+            .flatten()
+            .map(|mut window_pixels| {
+                const SPLAT_SCALE: f32 = 1.0;
+
+                let wp = window_pixels.frame_mut();
+                for _ in 0..tile_size {
+                    // Convert pixel XYZ color to RGB.
+                    let xyz = pixels[merge_pixel].xyz;
+                    let mut rgb = xyz_to_rgb(&xyz);
+
+                    // Normalize pixel with weight sum.
+                    let filter_weight_sum = pixels[merge_pixel].filter_weight_sum;
+                    if filter_weight_sum != 0.0 {
+                        let inv_wt = 1.0 / filter_weight_sum;
+                        rgb[0] = max(0.0, rgb[0] * inv_wt);
+                        rgb[1] = max(0.0, rgb[1] * inv_wt);
+                        rgb[2] = max(0.0, rgb[2] * inv_wt);
+                    }
+
+                    // Add splat value at pixel.
+                    let splat_rgb = xyz_to_rgb(&pixels[merge_pixel].splat_xyz);
+                    rgb[0] += SPLAT_SCALE * splat_rgb[0];
+                    rgb[1] += SPLAT_SCALE * splat_rgb[1];
+                    rgb[2] += SPLAT_SCALE * splat_rgb[2];
+
+                    // Scale pixel value by `scale`.
+                    rgb[0] *= self.scale;
+                    rgb[1] *= self.scale;
+                    rgb[2] *= self.scale;
+
+                    // TODO Account for window dimensions not matching rendered image dimensions by scaling the
+                    // tile appropriately.
+                    let wpx = merge_pixel % WINDOW_WIDTH as usize;
+                    let wpy = merge_pixel / WINDOW_HEIGHT as usize;
+                    let off = (wpy * WINDOW_WIDTH as usize + wpx) * 4;
+
+                    let rgb = apply_gamma(&rgb);
+                    wp[off + 0] = rgb[0];
+                    wp[off + 1] = rgb[1];
+                    wp[off + 2] = rgb[2];
+                    wp[off + 3] = 255; // Alpha
+
+                    x += 1;
+                    merge_pixel += 1;
+
+                    if x == tile_pixel_bounds.p_max.x {
+                        x = tile_pixel_bounds.p_min.x;
+                        merge_pixel += cropped_pixel_width - tile_width;
+                    }
+                }
+            });
     }
 
     /// Merge the `FilmTile`'s pixel contribution into the image.

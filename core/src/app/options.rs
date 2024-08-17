@@ -1,4 +1,4 @@
-//! Application related stuff
+//! Aplication Options
 
 use crate::pbrt::Float;
 use clap::Parser;

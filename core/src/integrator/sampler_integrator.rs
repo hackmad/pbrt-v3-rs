@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::app::OPTIONS;
+use crate::app::WINDOW;
 use crate::camera::*;
 use crate::film::FilmTile;
 use crate::geometry::*;
@@ -274,6 +275,10 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
                         // Merge image tile into `Film`.
                         camera_data.film.merge_film_tile(&film_tile);
+
+                        // Request a redraw.
+                        WINDOW.get().map(|w| w.request_redraw());
+
                         progress.inc(1);
                     }
 
