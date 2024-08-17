@@ -274,7 +274,7 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                         let film_tile = self.render_tile(tile_idx, n_tiles, scene, sample_bounds);
 
                         // Merge image tile into `Film`.
-                        camera_data.film.merge_film_tile(&film_tile);
+                        camera_data.film.merge_film_tile(&film_tile, 1.0);
 
                         // Request a redraw.
                         WINDOW.get().map(|w| w.request_redraw());

@@ -339,7 +339,7 @@ impl Integrator for BDPTIntegrator {
                             );
 
                             // Merge image tile into `Film`.
-                            camera_data.film.merge_film_tile(&film_tile);
+                            camera_data.film.merge_film_tile(&film_tile, self.inv_sample_count);
                             progress.inc(1);
                         }
 

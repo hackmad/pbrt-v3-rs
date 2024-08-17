@@ -11,6 +11,7 @@ use crate::paramset::*;
 use crate::pbrt::*;
 use crate::spectrum::*;
 use crate::{stat_inc, stat_memory_counter, stat_register_fns, stats::*};
+use std::sync::RwLockWriteGuard;
 use std::sync::{Arc, RwLock};
 
 mod film_tile;
@@ -209,13 +210,14 @@ impl Film {
         }
     }
 
-    /// Merge the `FilmTile`'s pixel contribution into the image.
+    /// Merge the `FilmTile`'s pixel contribution into the image. Also merge it with the render preview in window.
     ///
     /// This is same as `merge_film_tile_old()` to reduce all but one call to `tile.get_pixel_offset()` and
     /// `self.get_pixel_offset()`.
     ///
-    /// * `tile` - The `FilmTile` to merge.
-    pub fn merge_film_tile(&self, tile: &FilmTile) {
+    /// * `tile`        - The `FilmTile` to merge.
+    /// * `splat_scale` - Scale factor for `add_splat()` (default = 1.0).
+    pub fn merge_film_tile(&self, tile: &FilmTile, splat_scale: Float) {
         let mut pixels = self.pixels.write().unwrap();
 
         let cropped_pixel_width = (self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x) as usize;
@@ -246,62 +248,14 @@ impl Film {
             }
         }
 
-        merge_pixel = self.get_pixel_offset(&tile_pixel_bounds.p_min);
-        x = tile_pixel_bounds.p_min.x;
-        WINDOW_PIXELS
-            .get()
-            .map(|wp| wp.write().ok())
-            .flatten()
-            .map(|mut window_pixels| {
-                const SPLAT_SCALE: f32 = 1.0;
-
-                let wp = window_pixels.frame_mut();
-                for _ in 0..tile_size {
-                    // Convert pixel XYZ color to RGB.
-                    let xyz = pixels[merge_pixel].xyz;
-                    let mut rgb = xyz_to_rgb(&xyz);
-
-                    // Normalize pixel with weight sum.
-                    let filter_weight_sum = pixels[merge_pixel].filter_weight_sum;
-                    if filter_weight_sum != 0.0 {
-                        let inv_wt = 1.0 / filter_weight_sum;
-                        rgb[0] = max(0.0, rgb[0] * inv_wt);
-                        rgb[1] = max(0.0, rgb[1] * inv_wt);
-                        rgb[2] = max(0.0, rgb[2] * inv_wt);
-                    }
-
-                    // Add splat value at pixel.
-                    let splat_rgb = xyz_to_rgb(&pixels[merge_pixel].splat_xyz);
-                    rgb[0] += SPLAT_SCALE * splat_rgb[0];
-                    rgb[1] += SPLAT_SCALE * splat_rgb[1];
-                    rgb[2] += SPLAT_SCALE * splat_rgb[2];
-
-                    // Scale pixel value by `scale`.
-                    rgb[0] *= self.scale;
-                    rgb[1] *= self.scale;
-                    rgb[2] *= self.scale;
-
-                    // TODO Account for window dimensions not matching rendered image dimensions by scaling the
-                    // tile appropriately.
-                    let wpx = merge_pixel % WINDOW_WIDTH as usize;
-                    let wpy = merge_pixel / WINDOW_HEIGHT as usize;
-                    let off = (wpy * WINDOW_WIDTH as usize + wpx) * 4;
-
-                    let rgb = apply_gamma(&rgb);
-                    wp[off + 0] = rgb[0];
-                    wp[off + 1] = rgb[1];
-                    wp[off + 2] = rgb[2];
-                    wp[off + 3] = 255; // Alpha
-
-                    x += 1;
-                    merge_pixel += 1;
-
-                    if x == tile_pixel_bounds.p_max.x {
-                        x = tile_pixel_bounds.p_min.x;
-                        merge_pixel += cropped_pixel_width - tile_width;
-                    }
-                }
-            });
+        self.merge_film_tile_for_preview(
+            tile_pixel_bounds,
+            tile_size,
+            tile_width,
+            cropped_pixel_width,
+            splat_scale,
+            &mut pixels,
+        );
     }
 
     /// Merge the `FilmTile`'s pixel contribution into the image.
@@ -319,6 +273,62 @@ impl Film {
             }
             pixels[merge_pixel].filter_weight_sum += tile.pixels[tile_pixel].filter_weight_sum;
         }
+    }
+
+    /// Merge the `FilmTile`'s pixel contribution into the window image for preview.
+    ///
+    /// * `tile`                - The `FilmTile` to merge.
+    /// * `tile_size`           - Area of tile in pixels.
+    /// * `tile_width`          - Horizontal size of tile.
+    /// * `cropped_pixel_width` - Cropped width of the subset of the image to render.
+    /// * `splat_scale`         - Scale factor for `add_splat()` (default = 1.0).
+    /// * `pixels`              - The RwLockWriteGuard for `self.pixels`.
+    fn merge_film_tile_for_preview(
+        &self,
+        tile_pixel_bounds: Bounds2i,
+        tile_size: usize,
+        tile_width: usize,
+        cropped_pixel_width: usize,
+        splat_scale: Float,
+        pixels: &mut RwLockWriteGuard<Vec<Pixel>>,
+    ) {
+        let mut merge_pixel = self.get_pixel_offset(&tile_pixel_bounds.p_min);
+        let mut x = tile_pixel_bounds.p_min.x;
+        WINDOW_PIXELS
+            .get()
+            .map(|wp| wp.write().ok())
+            .flatten()
+            .map(|mut window_pixels| {
+                let wp = window_pixels.frame_mut();
+                for _ in 0..tile_size {
+                    let pixel_rgb = self.get_pixel_rgb(
+                        &pixels[merge_pixel].xyz,
+                        &pixels[merge_pixel].splat_xyz,
+                        pixels[merge_pixel].filter_weight_sum,
+                        splat_scale,
+                    );
+
+                    // TODO Account for window dimensions not matching rendered image dimensions by scaling the
+                    // tile appropriately.
+                    let window_pixels_x = merge_pixel % WINDOW_WIDTH as usize;
+                    let window_pixels_y = merge_pixel / WINDOW_HEIGHT as usize;
+                    let offset = (window_pixels_y * WINDOW_WIDTH as usize + window_pixels_x) * 4; // RGBA
+
+                    let rgb = apply_gamma(&pixel_rgb);
+                    wp[offset + 0] = rgb[0];
+                    wp[offset + 1] = rgb[1];
+                    wp[offset + 2] = rgb[2];
+                    wp[offset + 3] = 255; // Alpha
+
+                    x += 1;
+                    merge_pixel += 1;
+
+                    if x == tile_pixel_bounds.p_max.x {
+                        x = tile_pixel_bounds.p_min.x;
+                        merge_pixel += cropped_pixel_width - tile_width;
+                    }
+                }
+            });
     }
 
     /// Sets all pixel values in the cropped area with the given spectrum values.
@@ -389,38 +399,57 @@ impl Film {
         for p in self.cropped_pixel_bounds {
             // Convert pixel XYZ color to RGB.
             let pixel_offset = self.get_pixel_offset(&p);
-            let rgb_offset = 3 * pixel_offset;
 
-            let pixel_rgb = xyz_to_rgb(&pixels[pixel_offset].xyz);
-            rgb[rgb_offset] = pixel_rgb[0];
+            let pixel_rgb = self.get_pixel_rgb(
+                &pixels[pixel_offset].xyz,
+                &pixels[pixel_offset].splat_xyz,
+                pixels[pixel_offset].filter_weight_sum,
+                splat_scale,
+            );
+
+            let rgb_offset = 3 * pixel_offset;
+            rgb[rgb_offset + 0] = pixel_rgb[0];
             rgb[rgb_offset + 1] = pixel_rgb[1];
             rgb[rgb_offset + 2] = pixel_rgb[2];
-
-            // Normalize pixel with weight sum.
-            let filter_weight_sum = pixels[pixel_offset].filter_weight_sum;
-            if filter_weight_sum != 0.0 {
-                let inv_wt = 1.0 / filter_weight_sum;
-                rgb[rgb_offset] = max(0.0, rgb[rgb_offset] * inv_wt);
-                rgb[rgb_offset + 1] = max(0.0, rgb[rgb_offset + 1] * inv_wt);
-                rgb[rgb_offset + 2] = max(0.0, rgb[rgb_offset + 2] * inv_wt);
-            }
-
-            // Add splat value at pixel.
-            let splat_rgb = xyz_to_rgb(&pixels[pixel_offset].splat_xyz);
-            rgb[rgb_offset] += splat_scale * splat_rgb[0];
-            rgb[rgb_offset + 1] += splat_scale * splat_rgb[1];
-            rgb[rgb_offset + 2] += splat_scale * splat_rgb[2];
-
-            // Scale pixel value by `scale`.
-            rgb[rgb_offset] *= self.scale;
-            rgb[rgb_offset + 1] *= self.scale;
-            rgb[rgb_offset + 2] *= self.scale;
         }
 
         // Write RGB image.
         if let Err(err) = write_image(&self.filename, &rgb, &self.cropped_pixel_bounds) {
             panic!("Error writing output image {}. {:}.", self.filename, err);
         }
+    }
+
+    /// Compute the RGB colour value for a pixel from XYZ colour space.
+    ///
+    /// * `pixel_xyz`         - The XYZ colour value of pixel.
+    /// * `splat_xyz`         - The unweighted sum of sample splats.
+    /// * `filter_weight_sum` - The sum of filter weight values for the sample contributions to the pixel.
+    /// * `splat_scale`       - Scale factor for `add_splat()` (default = 1.0).
+    fn get_pixel_rgb(
+        &self,
+        pixel_xyz: &[Float; 3],
+        splat_xyz: &[Float; 3],
+        filter_weight_sum: Float,
+        splat_scale: Float,
+    ) -> [Float; 3] {
+        let mut rgb = xyz_to_rgb(pixel_xyz);
+        let splat_rgb = xyz_to_rgb(splat_xyz);
+
+        for v in rgb.iter_mut() {
+            if filter_weight_sum != 0.0 {
+                // Normalize pixel with weight sum.
+                let inv_wt = 1.0 / filter_weight_sum;
+                *v = max(0.0, *v * inv_wt);
+            }
+
+            // Add splat value at pixel.
+            *v += splat_scale * splat_rgb[0];
+
+            // Scale pixel value by `scale`.
+            *v *= self.scale;
+        }
+
+        rgb
     }
 }
 
