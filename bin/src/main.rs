@@ -32,9 +32,11 @@ fn main() -> Result<(), String> {
     // Initialize `env_logger`.
     env_logger::init();
 
+    // Initialize PBRT API.
+    eprintln!("Initializing.");
+
     // Start a thread to render stuff.
     thread::spawn(|| {
-        // Initialize PBRT API.
         let mut api = Api::new();
         api.pbrt_init();
 
@@ -50,7 +52,7 @@ fn main() -> Result<(), String> {
     });
 
     // Display a window and run it's event loop.
-    Gui::build()?.run()
+    run_event_loop()
 }
 
 fn render(path: &str, api: &mut Api) -> Result<(), String> {

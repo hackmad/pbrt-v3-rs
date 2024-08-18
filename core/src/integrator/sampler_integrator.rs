@@ -1,8 +1,8 @@
 //! Sampler Integrator
 
 use super::*;
+use crate::app::request_preview_redraw;
 use crate::app::OPTIONS;
-use crate::app::WINDOW;
 use crate::camera::*;
 use crate::film::FilmTile;
 use crate::geometry::*;
@@ -63,6 +63,11 @@ impl SamplerIntegratorData {
 pub trait SamplerIntegrator: Integrator + Send + Sync {
     /// Returns the common data.
     fn get_data(&self) -> &SamplerIntegratorData;
+
+    /// Returns the cropped pixel bounds of the image.
+    fn get_cropped_pixel_bounds(&self) -> Bounds2i {
+        self.get_data().camera.get_data().film.cropped_pixel_bounds
+    }
 
     /// Trace rays for specular reflection.
     ///
@@ -276,8 +281,8 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
                         // Merge image tile into `Film`.
                         camera_data.film.merge_film_tile(&film_tile, 1.0);
 
-                        // Request a redraw.
-                        WINDOW.get().map(|w| w.request_redraw());
+                        // Request a redraw of the preview window.
+                        request_preview_redraw();
 
                         progress.inc(1);
                     }

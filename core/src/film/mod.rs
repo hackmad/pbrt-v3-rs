@@ -1,9 +1,7 @@
 //! Film
 
+use crate::app::render_preview;
 use crate::app::OPTIONS;
-use crate::app::WINDOW_HEIGHT;
-use crate::app::WINDOW_PIXELS;
-use crate::app::WINDOW_WIDTH;
 use crate::filter::*;
 use crate::geometry::*;
 use crate::image_io::*;
@@ -292,43 +290,42 @@ impl Film {
         splat_scale: Float,
         pixels: &mut RwLockWriteGuard<Vec<Pixel>>,
     ) {
-        let mut merge_pixel = self.get_pixel_offset(&tile_pixel_bounds.p_min);
-        let mut x = tile_pixel_bounds.p_min.x;
-        WINDOW_PIXELS
-            .get()
-            .map(|wp| wp.write().ok())
-            .flatten()
-            .map(|mut window_pixels| {
-                let wp = window_pixels.frame_mut();
-                for _ in 0..tile_size {
-                    let pixel_rgb = self.get_pixel_rgb(
-                        &pixels[merge_pixel].xyz,
-                        &pixels[merge_pixel].splat_xyz,
-                        pixels[merge_pixel].filter_weight_sum,
-                        splat_scale,
-                    );
+        render_preview(|window_pixels| {
+            let mut merge_pixel = self.get_pixel_offset(&tile_pixel_bounds.p_min);
+            let mut x = tile_pixel_bounds.p_min.x;
 
-                    // TODO Account for window dimensions not matching rendered image dimensions by scaling the
-                    // tile appropriately.
-                    let window_pixels_x = merge_pixel % WINDOW_WIDTH as usize;
-                    let window_pixels_y = merge_pixel / WINDOW_HEIGHT as usize;
-                    let offset = (window_pixels_y * WINDOW_WIDTH as usize + window_pixels_x) * 4; // RGBA
+            let size = self.cropped_pixel_bounds.diagonal();
+            let width = size.x as usize;
 
-                    let rgb = apply_gamma(&pixel_rgb);
-                    wp[offset + 0] = rgb[0];
-                    wp[offset + 1] = rgb[1];
-                    wp[offset + 2] = rgb[2];
-                    wp[offset + 3] = 255; // Alpha
+            for _ in 0..tile_size {
+                let pixel_rgb = self.get_pixel_rgb(
+                    &pixels[merge_pixel].xyz,
+                    &pixels[merge_pixel].splat_xyz,
+                    pixels[merge_pixel].filter_weight_sum,
+                    splat_scale,
+                );
 
-                    x += 1;
-                    merge_pixel += 1;
+                // Account for window dimensions not matching rendered image dimensions by scaling the
+                // tile appropriately.
+                let window_pixels_x = merge_pixel % width as usize;
+                let window_pixels_y = merge_pixel / width as usize;
+                let offset = (window_pixels_y * width as usize + window_pixels_x) * 4; // RGBA
 
-                    if x == tile_pixel_bounds.p_max.x {
-                        x = tile_pixel_bounds.p_min.x;
-                        merge_pixel += cropped_pixel_width - tile_width;
-                    }
+                let rgb = apply_gamma(&pixel_rgb);
+                window_pixels[offset + 0] = rgb[0];
+                window_pixels[offset + 1] = rgb[1];
+                window_pixels[offset + 2] = rgb[2];
+                window_pixels[offset + 3] = 0xff; // Alpha channel - full opacity.
+
+                x += 1;
+                merge_pixel += 1;
+
+                if x == tile_pixel_bounds.p_max.x {
+                    x = tile_pixel_bounds.p_min.x;
+                    merge_pixel += cropped_pixel_width - tile_width;
                 }
-            });
+            }
+        });
     }
 
     /// Sets all pixel values in the cropped area with the given spectrum values.

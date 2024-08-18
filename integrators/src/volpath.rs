@@ -91,6 +91,11 @@ impl Integrator for VolPathIntegrator {
         self.light_distribution = Some(create_light_sample_distribution(self.light_sample_strategy, scene));
     }
 
+    /// Returns the cropped pixel bounds of the image.
+    fn get_cropped_pixel_bounds(&self) -> Bounds2i {
+        self.get_data().camera.get_data().film.cropped_pixel_bounds
+    }
+
     /// Render the scene.
     ///
     /// * `scene` - The scene.

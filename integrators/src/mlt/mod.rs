@@ -366,6 +366,11 @@ impl Integrator for MLTIntegrator {
     /// * `scene` - The scene
     fn preprocess(&mut self, _scene: &Scene) {}
 
+    /// Returns the cropped pixel bounds of the image.
+    fn get_cropped_pixel_bounds(&self) -> Bounds2i {
+        self.camera.get_data().film.cropped_pixel_bounds
+    }
+
     /// Returns the incident radiance at the origin of a given ray.
     ///
     /// * `ray`     - The ray.
