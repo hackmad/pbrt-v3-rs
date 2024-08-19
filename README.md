@@ -5,6 +5,9 @@ learning a new language like Rust.
 
 For details on how to use this project please refer to [USAGE.md](USAGE.md).
 
+![GUI](renders/GUI.gif)
+
+
 ## [Scenes for pbrt-v3](https://www.pbrt.org/scenes-v3)
 
 ### Barcelona Pavillion

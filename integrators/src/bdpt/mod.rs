@@ -251,6 +251,11 @@ impl Integrator for BDPTIntegrator {
     /// * `scene` - The scene
     fn preprocess(&mut self, _scene: &Scene) {}
 
+    /// Returns the cropped pixel bounds of the image.
+    fn get_cropped_pixel_bounds(&self) -> Bounds2i {
+        self.camera.get_data().film.cropped_pixel_bounds
+    }
+
     /// Render the scene.
     ///
     /// * `scene` - The scene.
@@ -339,7 +344,7 @@ impl Integrator for BDPTIntegrator {
                             );
 
                             // Merge image tile into `Film`.
-                            camera_data.film.merge_film_tile(&film_tile);
+                            camera_data.film.merge_film_tile(&film_tile, self.inv_sample_count);
                             progress.inc(1);
                         }
 

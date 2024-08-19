@@ -44,6 +44,11 @@ impl Integrator for WhittedIntegrator {
     /// * `scene` - The scene
     fn preprocess(&mut self, _scene: &Scene) {}
 
+    /// Returns the cropped pixel bounds of the image.
+    fn get_cropped_pixel_bounds(&self) -> Bounds2i {
+        self.get_data().camera.get_data().film.cropped_pixel_bounds
+    }
+
     /// Render the scene.
     ///
     /// * `scene` - The scene.

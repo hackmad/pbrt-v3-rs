@@ -33,4 +33,7 @@ pub trait Integrator {
     fn li(&self, _ray: &mut Ray, _scene: &Scene, _sampler: &mut dyn Sampler, _depth: usize) -> Spectrum {
         Spectrum::ZERO
     }
+
+    /// Returns the cropped pixel bounds of the image.
+    fn get_cropped_pixel_bounds(&self) -> Bounds2i;
 }

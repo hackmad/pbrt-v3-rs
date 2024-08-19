@@ -89,6 +89,11 @@ impl Integrator for DirectLightingIntegrator {
         }
     }
 
+    /// Returns the cropped pixel bounds of the image.
+    fn get_cropped_pixel_bounds(&self) -> Bounds2i {
+        self.get_data().camera.get_data().film.cropped_pixel_bounds
+    }
+
     /// Render the scene.
     ///
     /// * `scene` - The scene.

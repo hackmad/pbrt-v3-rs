@@ -4,6 +4,7 @@ extern crate log;
 use api::*;
 use core::app::*;
 use core::fileutil::*;
+use std::thread;
 
 #[cfg(all(feature = "dhat-rs", feature = "jemalloc"))]
 compile_error!("feature 'dhat-rs' and feature 'jemalloc' cannot be enabled at the same time");
@@ -24,7 +25,7 @@ use tikv_jemallocator::Jemalloc;
 #[global_allocator]
 static ALLOCATOR: Jemalloc = Jemalloc;
 
-fn main() {
+fn main() -> Result<(), String> {
     #[cfg(feature = "dhat-rs")]
     let _dhat = Dhat::start_heap_profiling();
 
@@ -32,18 +33,26 @@ fn main() {
     env_logger::init();
 
     // Initialize PBRT API.
-    let mut api = Api::new();
-    api.pbrt_init();
+    eprintln!("Initializing.");
 
-    // Process scene description.
-    for path in OPTIONS.paths.iter() {
-        // In case of error report it and continue.
-        if let Err(e) = render(path, &mut api) {
-            error!("{e}");
+    // Start a thread to render stuff.
+    thread::spawn(|| {
+        let mut api = Api::new();
+        api.pbrt_init();
+
+        // Process scene description.
+        for path in OPTIONS.paths.iter() {
+            // In case of error report it and continue.
+            if let Err(e) = render(path, &mut api) {
+                error!("{e}");
+            }
         }
-    }
 
-    api.pbrt_cleanup();
+        api.pbrt_cleanup();
+    });
+
+    // Display a window and run it's event loop.
+    run_event_loop()
 }
 
 fn render(path: &str, api: &mut Api) -> Result<(), String> {

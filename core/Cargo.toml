@@ -26,7 +26,9 @@ num-traits = { workspace = true }
 ordered-float = { workspace = true }
 pest = { workspace = true }
 pest_derive = { workspace = true }
+pixels = { workspace = true }
 regex = { workspace = true }
+tao = { workspace = true }
 
 [dev-dependencies]
 proptest = "1.0.0"

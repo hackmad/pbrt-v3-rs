@@ -377,7 +377,7 @@ fn write_pfm(path: &str, rgb: &[Float], res_x: u32, res_y: u32) -> Result<(), St
 ///
 /// * `rgb` - RGB floating point pixel value.
 #[inline]
-fn apply_gamma(rgb: &[Float; 3]) -> [u8; 3] {
+pub fn apply_gamma(rgb: &[Float; 3]) -> [u8; 3] {
     [clamp_byte(rgb[0]), clamp_byte(rgb[1]), clamp_byte(rgb[2])]
 }
 

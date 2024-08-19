@@ -11,7 +11,7 @@ mod transform_cache;
 mod transform_set;
 
 use accelerators::*;
-use core::app::OPTIONS;
+use core::app::{clear_preview_window, set_preview_window_size, OPTIONS};
 use core::geometry::*;
 use core::light::*;
 use core::medium::*;
@@ -461,12 +461,17 @@ impl Api {
             self.pushed_graphics_states.shrink_to_fit();
             self.pushed_transforms.shrink_to_fit();
 
-            // Create scene and render.
+            // Create the integrator.
             let mut integrator = match self.render_options.make_integrator(&self.graphics_state) {
                 Ok(integrator) => integrator,
                 Err(err) => panic!("Error creating integrator. {}", err),
             };
 
+            // Setup the preview window.
+            set_preview_window_size(integrator.get_cropped_pixel_bounds());
+            clear_preview_window();
+
+            // Create scene and render.
             let scene = self.render_options.make_scene();
             integrator.preprocess(&scene);
             integrator.render(&scene);
