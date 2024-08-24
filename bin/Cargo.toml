@@ -1,6 +1,6 @@
 [package]
 name = "pbrt-v3-rs"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["Ahmad Kabani <ahmadkabani@yahoo.com>"]
 edition = "2021"
 

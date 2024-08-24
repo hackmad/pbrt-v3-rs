@@ -77,6 +77,14 @@ pub struct Options {
         help = "Write the mipmap images to the given file path prefix."
     )]
     pub mipmap_file_prefix: Option<String>,
+
+    /// Show preview window.
+    #[arg(
+        long = "gui",
+        default_value_t = false,
+        help = "Display the image in a preview window."
+    )]
+    pub show_gui: bool,
 }
 
 impl Options {

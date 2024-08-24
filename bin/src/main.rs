@@ -25,6 +25,7 @@ use tikv_jemallocator::Jemalloc;
 #[global_allocator]
 static ALLOCATOR: Jemalloc = Jemalloc;
 
+/// Main program entry point.
 fn main() -> Result<(), String> {
     #[cfg(feature = "dhat-rs")]
     let _dhat = Dhat::start_heap_profiling();
@@ -35,26 +36,39 @@ fn main() -> Result<(), String> {
     // Initialize PBRT API.
     eprintln!("Initializing.");
 
-    // Start a thread to render stuff.
-    thread::spawn(|| {
-        let mut api = Api::new();
-        api.pbrt_init();
+    if OPTIONS.show_gui {
+        // Start a separate thread for the main rendering function.
+        thread::spawn(|| render_all());
 
-        // Process scene description.
-        for path in OPTIONS.paths.iter() {
-            // In case of error report it and continue.
-            if let Err(e) = render(path, &mut api) {
-                error!("{e}");
-            }
-        }
-
-        api.pbrt_cleanup();
-    });
-
-    // Display a window and run it's event loop.
-    run_event_loop()
+        // Display a window and run it's event loop.
+        run_event_loop()
+    } else {
+        // Just run the main rendering function.
+        render_all();
+        Ok(())
+    }
 }
 
+/// Renders all the PBRT files passed via the command line.
+fn render_all() {
+    let mut api = Api::new();
+    api.pbrt_init();
+
+    // Process scene description.
+    for path in OPTIONS.paths.iter() {
+        // In case of error report it and continue.
+        if let Err(e) = render(path, &mut api) {
+            error!("{e}");
+        }
+    }
+
+    api.pbrt_cleanup();
+}
+
+/// Renders a single PBRT file.
+///
+/// * `path` - The PBRT file to render.
+/// * `api`  - The PBRT API state.
 fn render(path: &str, api: &mut Api) -> Result<(), String> {
     // Get absolute path to the scene file.
     let abs_path = absolute_path(path)?;

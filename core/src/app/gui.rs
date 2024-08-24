@@ -15,7 +15,7 @@ use tao::{
     window::{Window, WindowBuilder},
 };
 
-use crate::geometry::Bounds2i;
+use crate::{app::OPTIONS, geometry::Bounds2i};
 
 /// The starting window inner size in pixels.
 const WINDOW_WIDTH: u32 = 400;
@@ -31,29 +31,31 @@ static WINDOW_PIXELS: OnceLock<RwLock<Pixels>> = OnceLock::new();
 ///
 /// * `bounds` - Crop window of the subset of the image to render.
 pub fn set_preview_window_size(bounds: Bounds2i) {
-    let size = bounds.diagonal();
-    let width = size.x as u32;
-    let height = size.y as u32;
+    if OPTIONS.show_gui {
+        let size = bounds.diagonal();
+        let width = size.x as u32;
+        let height = size.y as u32;
 
-    eprintln!("Setting up preview window {}x{}", width, height);
+        eprintln!("Setting up preview window {}x{}", width, height);
 
-    loop {
-        match (
-            WINDOW.get(),
-            WINDOW_PIXELS.get().map(|pixels| pixels.write().ok()).flatten(),
-        ) {
-            (Some(window), Some(mut pixels)) => {
-                let inner_size = LogicalSize::new(width, height);
-                window.set_inner_size(inner_size);
+        loop {
+            match (
+                WINDOW.get(),
+                WINDOW_PIXELS.get().map(|pixels| pixels.write().ok()).flatten(),
+            ) {
+                (Some(window), Some(mut pixels)) => {
+                    let inner_size = LogicalSize::new(width, height);
+                    window.set_inner_size(inner_size);
 
-                pixels.resize_surface(inner_size.width, inner_size.height).unwrap();
-                pixels.resize_buffer(width, height).unwrap();
+                    pixels.resize_surface(inner_size.width, inner_size.height).unwrap();
+                    pixels.resize_buffer(width, height).unwrap();
 
-                break;
-            }
-            _ => {
-                eprintln!("\rWaiting for window creation");
-                thread::sleep(Duration::from_secs(1));
+                    break;
+                }
+                _ => {
+                    eprintln!("\rWaiting for window creation");
+                    thread::sleep(Duration::from_secs(1));
+                }
             }
         }
     }
@@ -61,18 +63,20 @@ pub fn set_preview_window_size(bounds: Bounds2i) {
 
 /// Clear the preview window to black.
 pub fn clear_preview_window() {
-    WINDOW_PIXELS
-        .get()
-        .map(|pixels| pixels.write().ok())
-        .flatten()
-        .map(|mut pixels| {
-            for pixel in pixels.frame_mut().chunks_exact_mut(4) {
-                pixel[0] = 0x00; // R
-                pixel[1] = 0x00; // G
-                pixel[2] = 0x00; // B
-                pixel[3] = 0xff; // A
-            }
-        });
+    if OPTIONS.show_gui {
+        WINDOW_PIXELS
+            .get()
+            .map(|pixels| pixels.write().ok())
+            .flatten()
+            .map(|mut pixels| {
+                for pixel in pixels.frame_mut().chunks_exact_mut(4) {
+                    pixel[0] = 0x00; // R
+                    pixel[1] = 0x00; // G
+                    pixel[2] = 0x00; // B
+                    pixel[3] = 0xff; // A
+                }
+            });
+    }
 }
 
 /// Render the preview window's pixel frame buffer.
@@ -82,11 +86,13 @@ pub fn render_preview<F>(f: F)
 where
     F: Fn(&mut [u8]),
 {
-    WINDOW_PIXELS
-        .get()
-        .map(|wp| wp.write().ok())
-        .flatten()
-        .map(|mut window_pixels| f(window_pixels.frame_mut()));
+    if OPTIONS.show_gui {
+        WINDOW_PIXELS
+            .get()
+            .map(|wp| wp.write().ok())
+            .flatten()
+            .map(|mut window_pixels| f(window_pixels.frame_mut()));
+    }
 }
 
 /// Send request to preview window's event loop to redraw it.
