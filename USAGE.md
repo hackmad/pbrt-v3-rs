@@ -59,8 +59,26 @@ To run examples from `../pbrt-v3-scenes` you can use relative paths to point to 
 ```bash
 cd ../pbrt-v3-scenes/caustic-glass
 
-../../pbrt-v3-rs/target/release/pbrt-v3-rs -t 4 f16-9a.pbrt
+../../pbrt-v3-rs/target/release/pbrt-v3-rs f16-9a.pbrt
 ```
+
+To preview the images as they are rendered, use the `--gui` option:
+
+```bash
+cargo run --release -- [OPTIONS] <FILE1> <FILE2> ... --gui
+```
+```bash
+./target/release/pbrt-v3-rs [OPTIONS] <FILE1> <FILE2> ... --gui
+```
+
+To limit the number of threads use the `--nthreads` or `-t` option:
+```bash
+cargo run --release -- [OPTIONS] <FILE1> <FILE2> ... --nthreads 2
+```
+```bash
+./target/release/pbrt-v3-rs [OPTIONS] <FILE1> <FILE2> ... --nthreads 2
+```
+
 
 ## Profiling / Performance
 
