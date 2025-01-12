@@ -17,11 +17,15 @@ impl Pbrt {
     ///
     /// * `api` - The PBRT API interface.
     pub(crate) fn process(&self, api: &mut Api) {
-        self.stmts.iter().for_each(|stmt| stmt.process(api));
+        self.stmts.iter().for_each(|stmt| {
+            //eprintln!("Statement {:?}", stmt);
+            stmt.process(api)
+        });
     }
 }
 
 /// Represents the `stmt` rule of the PBRT file.
+#[derive(Debug)]
 pub(crate) enum Stmt {
     Include(String, String), // include_stmt(abs_path, params)
     Block(BlockStmt),        // block_stmt
@@ -51,6 +55,7 @@ impl Stmt {
 }
 
 /// Represents the `block_stmt` rule of the PBRT file.
+#[derive(Debug)]
 pub(crate) enum BlockStmt {
     WorldBegin,          // world_begin_stmt
     WorldEnd,            // world_end_stmt
@@ -81,6 +86,7 @@ impl BlockStmt {
 }
 
 /// Represents the `option_stmt` rule of the PBRT file.
+#[derive(Debug)]
 pub(crate) enum OptionStmt {
     Accelerator(String, Vec<Param>),     // accelerator_stmt(name, params)
     Camera(String, Vec<Param>),          // camera_stmt(name, params)
@@ -130,6 +136,7 @@ impl OptionStmt {
 }
 
 /// Represents the `scene_stmt` rule of the PBRT file.
+#[derive(Debug)]
 pub(crate) enum SceneStmt {
     AreaLightSource(String, Vec<Param>),         // area_light_source_stmt(name, params)
     LightSource(String, Vec<Param>),             // light_source_stmt(name, params)
@@ -188,6 +195,7 @@ impl SceneStmt {
 }
 
 /// Represents the `ctm_stmt` rule of the PBRT file.
+#[derive(Debug)]
 pub(crate) enum CTMStmt {
     Identity,                                   // identity_stmt
     Translate([Float; 3]),                      // translate_stmt(x, y, z)
@@ -224,6 +232,7 @@ impl CTMStmt {
 }
 
 /// Represents the `active_transform_time` rule of the PBRT file.
+#[derive(Debug)]
 pub(crate) enum ActiveTransformTime {
     Start, // StartTime
     End,   // EndTime
@@ -231,12 +240,14 @@ pub(crate) enum ActiveTransformTime {
 }
 
 /// Represents the `colour_type` rule of the PBRT file.
+#[derive(Debug)]
 pub(crate) enum ColourType {
     RGB, // colour, color, rgb
     XYZ, // xyz
 }
 
 /// Represents the `param` rule of the PBRT file.
+#[derive(Debug)]
 pub(crate) enum Param {
     Point3d(String, Vec<Point3f>),          // point_3d_param(name, p)
     Vector3d(String, Vec<Vector3f>),        // vector_3d_param(name, v)
