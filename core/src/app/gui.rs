@@ -1,212 +1,358 @@
 //! Window for displaying the rendered result
 
-use std::{
-    sync::{OnceLock, RwLock},
-    thread,
-    time::Duration,
-};
+use std::{sync::OnceLock, thread, time::Duration};
 
 use pixels::{Pixels, SurfaceTexture};
-use tao::{
+use winit::{
+    application::ApplicationHandler,
     dpi::{LogicalSize, PhysicalSize},
-    event::{ElementState, Event, KeyEvent, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    keyboard::Key,
-    window::{Window, WindowBuilder},
+    error::EventLoopError,
+    event::{ElementState, KeyEvent, WindowEvent},
+    event_loop::{ActiveEventLoop, EventLoop, EventLoopProxy},
+    keyboard::{Key, NamedKey},
+    window::Window,
 };
 
-use crate::{app::OPTIONS, geometry::Bounds2i};
+use crate::geometry::Bounds2i;
+
+use super::OPTIONS;
 
 /// The starting window inner size in pixels.
-const WINDOW_WIDTH: u32 = 400;
-const WINDOW_HEIGHT: u32 = 400;
+const DEFAULT_WINDOW_WIDTH: u32 = 400;
+const DEFAULT_WINDOW_HEIGHT: u32 = 400;
 
-/// The preview window.
-static WINDOW: OnceLock<Window> = OnceLock::new();
+/// User events for the render loop.
+#[derive(Debug, Clone, PartialEq)]
+enum UserEvent{
+    // Render the preview.
+    RenderPreview {
+        /// The tile pixel data.
+        pixels: Vec<u8>,
 
-/// The pixel frame buffer of the preview window.
-static WINDOW_PIXELS: OnceLock<RwLock<Pixels>> = OnceLock::new();
+        /// The starting offset of the merged pixel in the film.
+        starting_merge_pixel: usize,
+
+        /// Cropped width of the subset of the image to render.
+        cropped_pixel_width: usize,
+
+        /// The tile pixel bounds.
+        tile_pixel_bounds: Bounds2i,
+
+        /// The tile pixel width.
+        tile_width: usize,
+    },
+    // Clear the preview window.
+    ClearPreview,
+
+    /// Resize the preview window.
+    ResizePreview {
+        /// The new image size for the preview.
+        new_pixel_size: LogicalSize<u32>, 
+    },
+}
+
+/// This proxy will be used to trigger custom events from the render loop to the winit application window.
+static EVENT_LOOP_PROXY: OnceLock<EventLoopProxy<UserEvent>> = OnceLock::new();
+
+/// The winit application.
+struct App {
+    /// The preview window.
+    window: Option<Window>,
+
+    /// The preview image pixels.
+    pixels: Option<Pixels>,
+
+    /// The preview image pixel dimensions.
+    pixel_size: LogicalSize<u32>,
+
+    /// The inner dimensions of the preview window.
+    window_inner_size: PhysicalSize<u32>,
+}
+
+impl App {
+    /// Render the preview image to the window.
+    fn render(&self) -> Result<(), String> {
+        self.pixels.as_ref().map_or(Ok(()), |pixels| pixels.render())
+            .map_err(|err| format!("{}", err))
+    }
+
+    /// Resize the preview image.
+    ///
+    /// * `pixel_size`        - The dimensions of the preview image.
+    /// * `window_inner_size` - The inner dimensions of the preview window.
+    fn resize_pixels(
+        &mut self,
+        pixel_size: LogicalSize<u32>,
+        window_inner_size: PhysicalSize<u32>,
+    ) -> Result<(), String> {
+        // Render only if the application has initialized and we have pixels and window.
+        self.pixels.as_mut().map_or(Ok(()), |pixels| {
+            // Resize the pixel surface texture to fit the windows inner dimensions.
+            match pixels.resize_surface(window_inner_size.width, window_inner_size.height) {
+                Ok(()) => {
+                    // Resize the pixel image buffer.
+                    match pixels.resize_buffer(pixel_size.width, pixel_size.height) {
+                        Ok(()) => {
+                            // Store the new sizes.
+                            self.pixel_size = pixel_size;
+                            self.window_inner_size = window_inner_size;
+
+                            // Request a redraw.
+                            self.window.as_ref().map(|window| window.request_redraw());
+                            Ok(())
+                        }
+                        Err(err) => Err(format!("pixels.resize_buffer() failed.\n{}", err)),
+                    }
+                }
+                Err(err) => Err(format!("pixels.resize_surface() failed to resize frame buffer surface.\n{}", err)),
+            }
+        })
+    }
+}
+
+impl Default for App {
+    /// Returns the "default value" for `App` initialized to the default dimensions.
+    fn default() -> Self {
+        Self {
+            window: None,
+            pixels: None,
+            pixel_size: LogicalSize::new(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT),
+            window_inner_size: PhysicalSize::new(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT),
+        }
+    }
+}
+
+impl ApplicationHandler<UserEvent> for App {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        // Create a new window.
+        let window_attributes = Window::default_attributes()
+            .with_title("PBRT v3 (Rust)")
+            .with_inner_size(self.window_inner_size)
+            .with_resizable(true);
+
+        self.window = Some(event_loop
+            .create_window(window_attributes)
+            .expect("Unable to create window")
+        );
+
+        let inner_size = self.window.as_ref().map(|window| window.inner_size());
+
+        self.pixels = self.window.as_ref()
+            .map(|window| {
+                // Save the inner dimensions of the preview window.
+                self.window_inner_size = inner_size.unwrap();
+
+                // Create a surface texture that uses the logical inner size to render to the entire window's inner
+                // dimensions.
+                let surface_texture = SurfaceTexture::new(
+                    self.window_inner_size.width,
+                    self.window_inner_size.height,
+                    window,
+                );
+
+                // Create pixel frame buffer that matches rendered image dimensions that will be used to display it
+                // in the window.
+                Pixels::new(self.pixel_size.width, self.pixel_size.height, surface_texture)
+                    .expect("Unable to create pixel frame buffer for window")
+
+            });
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: winit::window::WindowId,
+        event: winit::event::WindowEvent,
+    ) {
+        match event {
+            WindowEvent::CloseRequested => {
+                println!("The close button was pressed; stopping");
+                event_loop.exit();
+            }
+
+            WindowEvent::RedrawRequested => {
+                match self.render() {
+                    Ok(()) => (),
+                    Err(err) => {
+                        eprintln!("Error redrawing pixels {}", err);
+                        event_loop.exit();
+                    }
+                }
+                self.window.as_ref().map(|window| window.request_redraw());
+            }
+            
+            WindowEvent::Resized(new_window_inner_size) => {
+                match self.resize_pixels(self.pixel_size, new_window_inner_size) {
+                    Ok(()) => (),
+                    Err(err) => {
+                        eprintln!("Error resizing window {}", err);
+                        event_loop.exit();
+                    }
+                }
+            }
+
+            WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        logical_key: key,
+                        state: ElementState::Pressed,
+                        ..
+                    },
+                ..
+            } => match key {
+                Key::Named(NamedKey::Escape) => {
+                    println!("Escape key was pressed; stopping");
+                    event_loop.exit();
+                }
+                _ => (),
+            },
+
+            _ => (),
+        }
+    }
+
+    fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) { 
+        match event {
+            UserEvent::RenderPreview {
+                pixels,
+                starting_merge_pixel,
+                cropped_pixel_width,
+                tile_pixel_bounds,
+                tile_width,
+            } => {
+                self.pixels.as_mut().map(|window_pixels| {
+                    let frame = window_pixels.frame_mut();
+
+                    // Some of this logic is duplicated from Film::merge_film_tile().
+                    let mut x = tile_pixel_bounds.p_min.x;
+                    let mut merge_pixel = starting_merge_pixel;
+
+                    for i in (0..pixels.len()).step_by(4) { // RGBA
+                        // Account for window dimensions not matching rendered image dimensions by scaling the
+                        // tile appropriately.
+                        let window_pixel_x = merge_pixel % cropped_pixel_width as usize;
+                        let window_pixel_y = merge_pixel / cropped_pixel_width as usize;
+                        let window_pixel_offset = (window_pixel_y * cropped_pixel_width as usize + window_pixel_x) * 4;
+
+                        frame[window_pixel_offset + 0] = pixels[i + 0];
+                        frame[window_pixel_offset + 1] = pixels[i + 1];
+                        frame[window_pixel_offset + 2] = pixels[i + 2];
+                        frame[window_pixel_offset + 3] = pixels[i + 3];
+
+                        x += 1;
+                        merge_pixel += 1;
+
+                        // We need to jump to the next line if we've exceeded the horizontal tile bounds.
+                        if x == tile_pixel_bounds.p_max.x {
+                            x = tile_pixel_bounds.p_min.x;
+                            merge_pixel += cropped_pixel_width - tile_width;
+                        }
+                    }
+
+                    self.window.as_ref().map(|window| window.request_redraw());
+                });
+            }
+
+            UserEvent::ClearPreview => {
+                if let Some(window_pixels) = self.pixels.as_mut() {
+                    // Clear the preview image to black.
+                    for pixel in window_pixels.frame_mut().chunks_exact_mut(4) {
+                        pixel[0] = 0x00; // R
+                        pixel[1] = 0x00; // G
+                        pixel[2] = 0x00; // B
+                        pixel[3] = 0xff; // A
+                    }
+
+                    self.window.as_ref().map(|window| window.request_redraw());
+                }
+            }
+
+            UserEvent::ResizePreview { new_pixel_size } => {
+                let resize_status = self.window.as_ref()
+                    .map(|window| window.request_inner_size(new_pixel_size).is_some());
+
+                match resize_status {
+                    Some(true) => {
+                        // If we have a window retrieve its inner size and resize the pixels.
+                        if let Some(window_inner_size) = self.window.as_ref().map(|window| window.inner_size()) {
+                            if let Err(err) = self.resize_pixels(new_pixel_size, window_inner_size) {
+                                eprintln!("{}", err);
+                                event_loop.exit()
+                            }
+                        } 
+                    }
+                    Some(false) => {
+                        // Wait for next WindowEvent::Resized. Store new pixel_size for now.
+                        self.pixel_size = new_pixel_size;
+                    }
+                    None => (), // No window yet
+                }
+            }
+        }
+    }
+}
+
+/// Run the event loop displaying a window until it is closed or some error occurs.
+pub fn run_event_loop() -> Result<(), EventLoopError> {
+    eprintln!("Creating event loop");
+    let event_loop = EventLoop::<UserEvent>::with_user_event().build().expect("Unable to create event loop");
+
+    eprintln!("Creating up event loop proxy");
+    EVENT_LOOP_PROXY.get_or_init(|| event_loop.create_proxy());
+
+    eprintln!("Running winit app");
+    let mut app = App::default();
+    event_loop.run_app(&mut app)
+}
+
+/// Send a user event to the event loop.
+///
+/// * `event` - The user event to send.
+fn send_user_event(event: UserEvent) {
+    if OPTIONS.show_gui {
+        // The rendering is done a different thread. We could end up here before the event loop is created. So just 
+        // check and wait until event loop is ready. This loop will execute only once when the first scene starts 
+        // processing.
+        while EVENT_LOOP_PROXY.get().is_none() {
+            thread::sleep(Duration::from_millis(100));
+        }
+        EVENT_LOOP_PROXY.get().map(|proxy| proxy.send_event(event));
+    }
+}
 
 /// Set the window size. This function will wait for window and its frame buffer to be initialized.
 ///
 /// * `bounds` - Crop window of the subset of the image to render.
 pub fn set_preview_window_size(bounds: Bounds2i) {
-    if OPTIONS.show_gui {
-        let size = bounds.diagonal();
-        let width = size.x as u32;
-        let height = size.y as u32;
-
-        eprintln!("Setting up preview window {}x{}", width, height);
-
-        loop {
-            match (
-                WINDOW.get(),
-                WINDOW_PIXELS.get().map(|pixels| pixels.write().ok()).flatten(),
-            ) {
-                (Some(window), Some(mut pixels)) => {
-                    let inner_size = LogicalSize::new(width, height);
-                    window.set_inner_size(inner_size);
-
-                    pixels.resize_surface(inner_size.width, inner_size.height).unwrap();
-                    pixels.resize_buffer(width, height).unwrap();
-
-                    break;
-                }
-                _ => {
-                    eprintln!("\rWaiting for window creation");
-                    thread::sleep(Duration::from_secs(1));
-                }
-            }
-        }
-    }
+    let size = bounds.diagonal();
+    send_user_event(UserEvent::ResizePreview {
+        new_pixel_size: LogicalSize::new(size.x as u32, size.y as u32),
+    });
 }
 
 /// Clear the preview window to black.
 pub fn clear_preview_window() {
-    if OPTIONS.show_gui {
-        WINDOW_PIXELS
-            .get()
-            .map(|pixels| pixels.write().ok())
-            .flatten()
-            .map(|mut pixels| {
-                for pixel in pixels.frame_mut().chunks_exact_mut(4) {
-                    pixel[0] = 0x00; // R
-                    pixel[1] = 0x00; // G
-                    pixel[2] = 0x00; // B
-                    pixel[3] = 0xff; // A
-                }
-            });
-    }
+    send_user_event(UserEvent::ClearPreview);
 }
 
 /// Render the preview window's pixel frame buffer.
 ///
-/// * `f` - Callback that will receive the RGBA byte values of the frame buffer.
-pub fn render_preview<F>(f: F)
-where
-    F: Fn(&mut [u8]),
-{
-    if OPTIONS.show_gui {
-        WINDOW_PIXELS
-            .get()
-            .map(|wp| wp.write().ok())
-            .flatten()
-            .map(|mut window_pixels| f(window_pixels.frame_mut()));
-    }
-}
-
-/// Send request to preview window's event loop to redraw it.
-pub fn request_preview_redraw() {
-    WINDOW.get().map(|w| w.request_redraw());
-}
-
-/// Run the event loop displaying a window until it is closed or some error occurs.
-///
-/// TODO - When the event loop terminates find a way to signal threads to terminate and stop the rendering process.
-pub fn run_event_loop() -> ! {
-    // Create a new event loop for the application.
-    let event_loop = EventLoop::new();
-
-    // Create a new window with a starting size.
-    let window = WINDOW.get_or_init(|| {
-        WindowBuilder::new()
-            .with_title("PBRT v3 (Rust)")
-            .with_inner_size(LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
-            .with_resizable(true)
-            .build(&event_loop)
-            .expect("Unable to create window")
+/// * `pixels`               - The tile to render.
+/// * `starting_merge_pixel` - The starting offset of the merged pixel in the film.
+/// * `cropped_pixel_width`  - Cropped width of the subset of the image to render.
+/// * `tile_pixel_bounds`    - The tile pixel bounds.
+pub fn render_preview(
+    pixels: &[u8],
+    starting_merge_pixel: usize,
+    cropped_pixel_width: usize,
+    tile_pixel_bounds: Bounds2i,
+    tile_width: usize,
+) {
+    send_user_event(UserEvent::RenderPreview {
+        pixels: Vec::from(pixels), 
+        starting_merge_pixel,
+        cropped_pixel_width,
+        tile_pixel_bounds,
+        tile_width,
     });
-
-    let inner_size = window.inner_size();
-
-    // Create a surface texture that uses the logical inner size to render to the entire window's inner dimensions.
-    let surface_texture = SurfaceTexture::new(inner_size.width, inner_size.height, window);
-
-    // Create pixel frame buffer that matches rendered image dimensions that will be used to display it in the
-    // window.
-    WINDOW_PIXELS.get_or_init(|| {
-        RwLock::new(
-            Pixels::new(WINDOW_WIDTH, WINDOW_HEIGHT, surface_texture)
-                .expect("Unable to create pixel frame buffer for window"),
-        )
-    });
-
-    event_loop.run(move |event, _, control_flow| {
-        //println!("{:?}", event);
-        *control_flow = ControlFlow::Wait;
-
-        match event {
-            Event::WindowEvent { event, .. } => match event {
-                // When window is closed or destroyed or Escape key is pressed, stop rendering.
-                WindowEvent::CloseRequested
-                | WindowEvent::Destroyed
-                | WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            logical_key: Key::Escape,
-                            state: ElementState::Released,
-                            ..
-                        },
-                    ..
-                } => {
-                    eprintln!("Exiting application.");
-                    *control_flow = ControlFlow::Exit;
-                }
-                WindowEvent::Resized(size) => resize(size, control_flow),
-                _ => (),
-            },
-            Event::RedrawRequested(_) => redraw(control_flow),
-            _ => (),
-        }
-    })
-}
-
-/// Called when the window is resized. It will resize the pixel surface to ensure it can scale to fit. Note that pixels
-/// library does its best to resize so its not perfect.
-///
-/// * `size`         - The physical size of the window.
-/// * `control_flow` - Used to terminate the event loop in case of errors.
-fn resize(size: PhysicalSize<u32>, control_flow: &mut ControlFlow) {
-    match WINDOW_PIXELS.get().map(|pixels| pixels.write()) {
-        Some(Ok(mut pixels)) => match pixels.resize_surface(size.width, size.height) {
-            Ok(()) => {
-                // Use redraw event handler to update window. Don't call `redraw()` because it will lock up the app.
-                WINDOW.get().map(|window| window.request_redraw());
-            }
-            Err(err) => {
-                println!("pixels.render() failed to resize pixel frame buffer surface.\n{}", err);
-                *control_flow = ControlFlow::Exit;
-            }
-        },
-        Some(Err(err)) => {
-            println!("pixels.render() failed with error.\n{}", err);
-        }
-        None => {
-            println!("pixels.render() failed. Unable to get pixel frame buffer");
-        }
-    }
-}
-
-/// Called when the window needs to be redrawn.
-///
-/// * `control_flow` - Used to terminate the event loop in case of errors.
-fn redraw(control_flow: &mut ControlFlow) {
-    // Draw the pixel frame buffer to the window. If there are errors show the error and stop rendering.
-    match WINDOW_PIXELS.get().map(|pixels| pixels.read()) {
-        Some(Ok(pixels)) => match pixels.render() {
-            Ok(()) => {}
-            Err(err) => {
-                println!("pixels.render() failed with error.\n{}", err);
-                *control_flow = ControlFlow::Exit;
-            }
-        },
-        Some(Err(err)) => {
-            println!("pixels.render() failed with error.\n{}", err);
-            *control_flow = ControlFlow::Exit;
-        }
-        None => {
-            println!("pixels.render() failed. Unable to get pixel frame buffer");
-            *control_flow = ControlFlow::Exit;
-        }
-    }
 }

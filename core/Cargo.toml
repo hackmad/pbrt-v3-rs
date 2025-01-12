@@ -28,7 +28,7 @@ pest = { workspace = true }
 pest_derive = { workspace = true }
 pixels = { workspace = true }
 regex = { workspace = true }
-tao = { workspace = true }
+winit = { workspace = true }
 
 [dev-dependencies]
 proptest = "1.0.0"
