@@ -1,7 +1,6 @@
 //! Sampler Integrator
 
 use super::*;
-use crate::app::request_preview_redraw;
 use crate::app::OPTIONS;
 use crate::camera::*;
 use crate::film::FilmTile;
@@ -280,9 +279,6 @@ pub trait SamplerIntegrator: Integrator + Send + Sync {
 
                         // Merge image tile into `Film`.
                         camera_data.film.merge_film_tile(&film_tile, 1.0);
-
-                        // Request a redraw of the preview window.
-                        request_preview_redraw();
 
                         progress.inc(1);
                     }

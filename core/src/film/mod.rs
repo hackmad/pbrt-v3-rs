@@ -9,7 +9,6 @@ use crate::paramset::*;
 use crate::pbrt::*;
 use crate::spectrum::*;
 use crate::{stat_inc, stat_memory_counter, stat_register_fns, stats::*};
-use std::sync::RwLockWriteGuard;
 use std::sync::{Arc, RwLock};
 
 mod film_tile;
@@ -213,22 +212,34 @@ impl Film {
     /// This is same as `merge_film_tile_old()` to reduce all but one call to `tile.get_pixel_offset()` and
     /// `self.get_pixel_offset()`.
     ///
+    /// Additionally, if the GUI option is enabled., it will render the final tile image for preview and call the 
+    /// application to render it 
+    ///
     /// * `tile`        - The `FilmTile` to merge.
     /// * `splat_scale` - Scale factor for `add_splat()` (default = 1.0).
     pub fn merge_film_tile(&self, tile: &FilmTile, splat_scale: Float) {
         let mut pixels = self.pixels.write().unwrap();
 
-        let cropped_pixel_width = (self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x) as usize;
+        let cropped_pixel_width = self.cropped_pixel_bounds.diagonal().x as usize;
 
         let tile_pixel_bounds = tile.get_pixel_bounds();
         let tile_width = (tile_pixel_bounds.p_max.x - tile_pixel_bounds.p_min.x) as usize;
         let tile_size = tile_pixel_bounds.area() as usize;
 
         let mut tile_pixel = tile.get_pixel_offset(&tile_pixel_bounds.p_min);
-        let mut merge_pixel = self.get_pixel_offset(&tile_pixel_bounds.p_min);
+
+        let starting_merge_pixel = self.get_pixel_offset(&tile_pixel_bounds.p_min);
+        let mut merge_pixel = starting_merge_pixel;
+
         let mut x = tile_pixel_bounds.p_min.x;
 
-        for _ in 0..tile_size {
+        let mut window_pixels = if OPTIONS.show_gui {
+            Some(vec![0_u8; tile_size * 4]) // RGBA
+        } else {
+            None
+        };
+
+        for i in 0..tile_size {
             let xyz = tile.pixels[tile_pixel].contrib_sum.to_xyz();
             pixels[merge_pixel].xyz[0] += xyz[0];
             pixels[merge_pixel].xyz[1] += xyz[1];
@@ -236,24 +247,35 @@ impl Film {
 
             pixels[merge_pixel].filter_weight_sum += tile.pixels[tile_pixel].filter_weight_sum;
 
+            if let Some(ref mut wp) = window_pixels {
+                let wp_rgb = self.get_pixel_rgb(
+                    &pixels[merge_pixel].xyz,
+                    &pixels[merge_pixel].splat_xyz,
+                    pixels[merge_pixel].filter_weight_sum,
+                    splat_scale,
+                );
+
+                let rgb = apply_gamma(&wp_rgb);
+                wp[i * 4 + 0] = rgb[0];
+                wp[i * 4 + 1] = rgb[1];
+                wp[i * 4 + 2] = rgb[2];
+                wp[i * 4 + 3] = 0xff; // Alpha channel - full opacity
+            }
+
             x += 1;
             tile_pixel += 1;
             merge_pixel += 1;
 
+            // We need to jump to the start of next line if we've exceeded the horizontal tile bounds.
             if x == tile_pixel_bounds.p_max.x {
                 x = tile_pixel_bounds.p_min.x;
                 merge_pixel += cropped_pixel_width - tile_width;
             }
         }
 
-        self.merge_film_tile_for_preview(
-            tile_pixel_bounds,
-            tile_size,
-            tile_width,
-            cropped_pixel_width,
-            splat_scale,
-            &mut pixels,
-        );
+        if let Some(wp) = window_pixels.as_ref() {
+            render_preview(wp, starting_merge_pixel, cropped_pixel_width, tile_pixel_bounds, tile_width);
+        }
     }
 
     /// Merge the `FilmTile`'s pixel contribution into the image.
@@ -271,61 +293,6 @@ impl Film {
             }
             pixels[merge_pixel].filter_weight_sum += tile.pixels[tile_pixel].filter_weight_sum;
         }
-    }
-
-    /// Merge the `FilmTile`'s pixel contribution into the window image for preview.
-    ///
-    /// * `tile`                - The `FilmTile` to merge.
-    /// * `tile_size`           - Area of tile in pixels.
-    /// * `tile_width`          - Horizontal size of tile.
-    /// * `cropped_pixel_width` - Cropped width of the subset of the image to render.
-    /// * `splat_scale`         - Scale factor for `add_splat()` (default = 1.0).
-    /// * `pixels`              - The RwLockWriteGuard for `self.pixels`.
-    fn merge_film_tile_for_preview(
-        &self,
-        tile_pixel_bounds: Bounds2i,
-        tile_size: usize,
-        tile_width: usize,
-        cropped_pixel_width: usize,
-        splat_scale: Float,
-        pixels: &mut RwLockWriteGuard<Vec<Pixel>>,
-    ) {
-        render_preview(|window_pixels| {
-            let mut merge_pixel = self.get_pixel_offset(&tile_pixel_bounds.p_min);
-            let mut x = tile_pixel_bounds.p_min.x;
-
-            let size = self.cropped_pixel_bounds.diagonal();
-            let width = size.x as usize;
-
-            for _ in 0..tile_size {
-                let pixel_rgb = self.get_pixel_rgb(
-                    &pixels[merge_pixel].xyz,
-                    &pixels[merge_pixel].splat_xyz,
-                    pixels[merge_pixel].filter_weight_sum,
-                    splat_scale,
-                );
-
-                // Account for window dimensions not matching rendered image dimensions by scaling the
-                // tile appropriately.
-                let window_pixels_x = merge_pixel % width as usize;
-                let window_pixels_y = merge_pixel / width as usize;
-                let offset = (window_pixels_y * width as usize + window_pixels_x) * 4; // RGBA
-
-                let rgb = apply_gamma(&pixel_rgb);
-                window_pixels[offset + 0] = rgb[0];
-                window_pixels[offset + 1] = rgb[1];
-                window_pixels[offset + 2] = rgb[2];
-                window_pixels[offset + 3] = 0xff; // Alpha channel - full opacity.
-
-                x += 1;
-                merge_pixel += 1;
-
-                if x == tile_pixel_bounds.p_max.x {
-                    x = tile_pixel_bounds.p_min.x;
-                    merge_pixel += cropped_pixel_width - tile_width;
-                }
-            }
-        });
     }
 
     /// Sets all pixel values in the cropped area with the given spectrum values.

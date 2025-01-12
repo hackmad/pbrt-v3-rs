@@ -41,7 +41,10 @@ fn main() -> Result<(), String> {
         thread::spawn(|| render_all());
 
         // Display a window and run it's event loop.
-        run_event_loop()
+        match run_event_loop() {
+            Ok(()) => Ok(()),
+            Err(e) => Err(format!("Error: {}", e)),
+        }
     } else {
         // Just run the main rendering function.
         render_all();
