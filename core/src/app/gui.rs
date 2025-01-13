@@ -1,6 +1,6 @@
 //! Window for displaying the rendered result
 
-use std::{sync::OnceLock, thread, time::Duration};
+use std::{sync::{Arc, OnceLock}, thread, time::Duration};
 
 use pixels::{Pixels, SurfaceTexture};
 use winit::{
@@ -57,10 +57,10 @@ static EVENT_LOOP_PROXY: OnceLock<EventLoopProxy<UserEvent>> = OnceLock::new();
 /// The winit application.
 struct App {
     /// The preview window.
-    window: Option<Window>,
+    window: Option<Arc<Window>>,
 
     /// The preview image pixels.
-    pixels: Option<Pixels>,
+    pixels: Option<Pixels<'static>>,
 
     /// The preview image pixel dimensions.
     pixel_size: LogicalSize<u32>,
@@ -130,32 +130,27 @@ impl ApplicationHandler<UserEvent> for App {
             .with_inner_size(self.window_inner_size)
             .with_resizable(true);
 
-        self.window = Some(event_loop
-            .create_window(window_attributes)
-            .expect("Unable to create window")
+        let window = Arc::new(event_loop.create_window(window_attributes).expect("Unable to create window"));
+
+        // Save the inner dimensions of the preview window.
+        let window_inner_size = window.inner_size();
+
+        // Create a surface texture that uses the logical inner size to render to the entire window's inner
+        // dimensions.
+        let surface_texture = SurfaceTexture::new(
+            window_inner_size.width,
+            window_inner_size.height,
+            Arc::clone(&window),
         );
 
-        let inner_size = self.window.as_ref().map(|window| window.inner_size());
+        // Create pixel frame buffer that matches rendered image dimensions that will be used to display it
+        // in the window.
+        let pixels = Pixels::new(self.pixel_size.width, self.pixel_size.height, surface_texture)
+            .expect("Unable to create pixel frame buffer for window");
 
-        self.pixels = self.window.as_ref()
-            .map(|window| {
-                // Save the inner dimensions of the preview window.
-                self.window_inner_size = inner_size.unwrap();
-
-                // Create a surface texture that uses the logical inner size to render to the entire window's inner
-                // dimensions.
-                let surface_texture = SurfaceTexture::new(
-                    self.window_inner_size.width,
-                    self.window_inner_size.height,
-                    window,
-                );
-
-                // Create pixel frame buffer that matches rendered image dimensions that will be used to display it
-                // in the window.
-                Pixels::new(self.pixel_size.width, self.pixel_size.height, surface_texture)
-                    .expect("Unable to create pixel frame buffer for window")
-
-            });
+        self.window = Some(Arc::clone(&window));
+        self.pixels = Some(pixels);
+        self.window_inner_size = window_inner_size;
     }
 
     fn window_event(
