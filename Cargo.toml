@@ -41,7 +41,7 @@ pixels = "0.15"
 ply-rs = "0.1"
 regex = "1"
 shared_arena = "0.8"
-winit = { version = "0.30", features = ["rwh_05"] }
+winit = { version = "0.30" }
 
 [profile.dev]
 opt-level = 0
