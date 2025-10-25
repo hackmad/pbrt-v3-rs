@@ -64,7 +64,7 @@ impl Primitive for GeometricPrimitive {
     /// is no intersection, `None` is returned.
     ///
     /// * `r` - The ray.
-    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
+    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction<'_>> {
         let shape = Arc::clone(&self.shape);
         //debug!("GeometricPrimitive::intersect(): Shape: {}", shape.get_type());
 

@@ -170,7 +170,7 @@ impl Primitive for BVHAccel {
     /// is no intersection, `None` is returned.
     ///
     /// * `r` - The ray.
-    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
+    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction<'_>> {
         let mut si: Option<SurfaceInteraction> = None;
         if !self.nodes.is_empty() {
             let inv_dir = Vector3f::new(1.0 / r.d.x, 1.0 / r.d.y, 1.0 / r.d.z);

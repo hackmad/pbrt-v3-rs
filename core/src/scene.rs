@@ -85,7 +85,7 @@ impl Scene {
     /// Traces the ray into the scene and returns the `SurfaceInteraction` if an intersection occurred.
     ///
     /// * `ray` - The ray to trace.
-    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction<'_>> {
         stat_inc!(N_INTERSECTION_TESTS, 1);
         self.aggregate.intersect(ray)
     }
@@ -103,7 +103,7 @@ impl Scene {
     ///
     /// * `ray`     - The ray to trace.
     /// * `sampler` - Sampler.
-    pub fn intersect_tr(&self, ray: &mut Ray, sampler: &mut dyn Sampler) -> (Option<SurfaceInteraction>, Spectrum) {
+    pub fn intersect_tr(&self, ray: &mut Ray, sampler: &mut dyn Sampler) -> (Option<SurfaceInteraction<'_>>, Spectrum) {
         let mut tr = Spectrum::ONE;
 
         loop {

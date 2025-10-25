@@ -48,7 +48,7 @@ impl Primitive for TransformedPrimitive {
     /// is no intersection, `None` is returned.
     ///
     /// * `r` - The ray.
-    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
+    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction<'_>> {
         let interpolated_prim_to_world = self.primitive_to_world.interpolate(r.time);
         let mut ray = interpolated_prim_to_world.inverse().transform_ray(r);
 

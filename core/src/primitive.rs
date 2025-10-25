@@ -16,7 +16,7 @@ pub trait Primitive {
     /// is no intersection, `None` is returned.
     ///
     /// * `r`                  - The ray.
-    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction>;
+    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction<'_>>;
 
     /// Returns `true` if a ray-primitive intersection succeeds; otherwise `false`.
     ///

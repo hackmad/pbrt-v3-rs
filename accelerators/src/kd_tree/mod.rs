@@ -325,7 +325,7 @@ impl Primitive for KDTreeAccel {
     /// is no intersection, `None` is returned.
     ///
     /// * `r` - The ray.
-    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
+    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction<'_>> {
         if self.nodes.is_empty() {
             return None;
         }
