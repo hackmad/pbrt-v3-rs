@@ -81,10 +81,10 @@ macro_rules! from_params {
                 // Initialize 2D texture mapping `map` from `tp`.
                 let map = get_texture_mapping(tp, tex2world);
 
-                let inside = tp.$get_texture_or_else_func("inside", 1.0.into(), |v| Arc::new(ConstantTexture::new(v)));
-
+                let inside =
+                    tp.$get_texture_or_else_func("inside", 1.0_f32.into(), |v| Arc::new(ConstantTexture::new(v)));
                 let outside =
-                    tp.$get_texture_or_else_func("outside", 0.0.into(), |v| Arc::new(ConstantTexture::new(v)));
+                    tp.$get_texture_or_else_func("outside", 0.0_f32.into(), |v| Arc::new(ConstantTexture::new(v)));
 
                 Self::new(inside, outside, map)
             }

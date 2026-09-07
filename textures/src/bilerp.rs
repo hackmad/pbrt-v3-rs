@@ -84,10 +84,10 @@ macro_rules! from_params {
                 // Initialize 2D texture mapping `map` from `tp`.
                 let map = get_texture_mapping(tp, tex2world);
                 Self::new(
-                    tp.$find_func("v00", 0.0.into()),
-                    tp.$find_func("v01", 1.0.into()),
-                    tp.$find_func("v10", 0.0.into()),
-                    tp.$find_func("v11", 1.0.into()),
+                    tp.$find_func("v00", 0.0_f32.into()),
+                    tp.$find_func("v01", 1.0_f32.into()),
+                    tp.$find_func("v10", 0.0_f32.into()),
+                    tp.$find_func("v11", 1.0_f32.into()),
                     map,
                 )
             }

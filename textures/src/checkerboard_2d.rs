@@ -119,8 +119,8 @@ macro_rules! from_params {
                 }
 
                 // Get textures.
-                let tex1 = tp.$get_texture_or_else_func("tex1", 1.0.into(), |v| Arc::new(ConstantTexture::new(v)));
-                let tex2 = tp.$get_texture_or_else_func("tex2", 0.0.into(), |v| Arc::new(ConstantTexture::new(v)));
+                let tex1 = tp.$get_texture_or_else_func("tex1", 1.0_f32.into(), |v| Arc::new(ConstantTexture::new(v)));
+                let tex2 = tp.$get_texture_or_else_func("tex2", 0.0_f32.into(), |v| Arc::new(ConstantTexture::new(v)));
 
                 // Initialize 2D texture mapping `map` from `tp`.
                 let map = get_texture_mapping(tp, tex2world);

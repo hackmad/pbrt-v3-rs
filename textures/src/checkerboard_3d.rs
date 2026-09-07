@@ -65,10 +65,10 @@ macro_rules! from_params {
                 if dim != 3 {
                     panic!("Cannot create CheckerboardTexture3D for dim = {}", dim);
                 }
-                // Get textures.
-                let tex1 = tp.$get_texture_or_else_func("tex1", 1.0.into(), |v| Arc::new(ConstantTexture::new(v)));
 
-                let tex2 = tp.$get_texture_or_else_func("tex2", 0.0.into(), |v| Arc::new(ConstantTexture::new(v)));
+                // Get textures.
+                let tex1 = tp.$get_texture_or_else_func("tex1", 1.0_f32.into(), |v| Arc::new(ConstantTexture::new(v)));
+                let tex2 = tp.$get_texture_or_else_func("tex2", 0.0_f32.into(), |v| Arc::new(ConstantTexture::new(v)));
 
                 // Initialize 3D texture mapping `map` from `tex2world`.
                 let map = Arc::new(IdentityMapping3D::new(tex2world));

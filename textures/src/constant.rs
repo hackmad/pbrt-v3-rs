@@ -45,7 +45,7 @@ macro_rules! from_params {
             /// * `p` - Tuple containing texture parameters and texture space to world space transform.
             fn from(p: (&TextureParams, ArcTransform)) -> Self {
                 let (tp, _tex2world) = p;
-                Self::new(tp.$find_func("value", 1.0.into()))
+                Self::new(tp.$find_func("value", 1.0_f32.into()))
             }
         }
     };

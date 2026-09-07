@@ -59,9 +59,8 @@ macro_rules! from_params {
             fn from(p: (&TextureParams, ArcTransform)) -> Self {
                 let (tp, _tex2world) = p;
 
-                let tex1 = tp.$get_texture_or_else_func("tex1", 0.0.into(), |v| Arc::new(ConstantTexture::new(v)));
-
-                let tex2 = tp.$get_texture_or_else_func("tex2", 1.0.into(), |v| Arc::new(ConstantTexture::new(v)));
+                let tex1 = tp.$get_texture_or_else_func("tex1", 0.0_f32.into(), |v| Arc::new(ConstantTexture::new(v)));
+                let tex2 = tp.$get_texture_or_else_func("tex2", 1.0_f32.into(), |v| Arc::new(ConstantTexture::new(v)));
 
                 let amt = tp.get_float_texture_or_else("amount", 0.5, |v| Arc::new(ConstantTexture::new(v)));
 

@@ -1,7 +1,6 @@
 //! Endpiont Interactions
 
 use crate::camera::*;
-use crate::geometry::*;
 use crate::interaction::*;
 use crate::light::*;
 use std::sync::Arc;
